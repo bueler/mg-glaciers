@@ -1,0 +1,77 @@
+\documentclass[letterpaper,final,12pt,reqno]{amsart}
+
+\usepackage[total={6.3in,9.2in},top=1.1in,left=1.1in]{geometry}
+
+\usepackage{times,bm,bbm,empheq,fancyvrb,graphicx}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing}
+
+% hyperref should be the last package we load
+\usepackage[pdftex,
+colorlinks=true,
+plainpages=false, % only if colorlinks=true
+linkcolor=blue,   % ...
+citecolor=Red,    % ...
+urlcolor=black    % ...
+]{hyperref}
+
+\renewcommand{\baselinestretch}{1.05}
+
+\newtheorem{lemma}{Lemma}
+
+\newcommand{\Matlab}{\textsc{Matlab}\xspace}
+\newcommand{\eps}{\epsilon}
+\newcommand{\RR}{\mathbb{R}}
+
+\newcommand{\grad}{\nabla}
+\newcommand{\Div}{\nabla\cdot}
+\newcommand{\trace}{\operatorname{tr}}
+
+\newcommand{\hbn}{\hat{\mathbf{n}}}
+
+\newcommand{\bg}{\mathbf{g}}
+\newcommand{\bn}{\mathbf{n}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bw}{\mathbf{w}}
+\newcommand{\bx}{\mathbf{x}}
+
+\newcommand{\bV}{\mathbf{V}}
+\newcommand{\bX}{\mathbf{X}}
+
+\newcommand{\bxi}{\bm{\xi}}
+
+\newcommand{\bzero}{\bm{0}}
+
+\newcommand{\rhoi}{\rho_{\text{i}}}
+
+
+\begin{document}
+\title[Multigrid for glacier modeling]{Multigrid for glacier modeling: \\ A user's guide to principles and practicalities}
+
+\author{Ed Bueler}
+
+\begin{abstract} FIXME: two principles: mass conservation complementarity, solver optimality.  two examples: monotone multigrid for implicitly evolving SIA geometry, Schur-complement Newton-multigrid for fixed-geometry Glen-Stokes
+\end{abstract}
+
+\maketitle
+
+\thispagestyle{empty}
+\bigskip
+
+\section{Introduction} \label{sec:intro}
+
+The construction of effective numerical glacier and ice sheet models is challenging for two fundamental reasons.  First, the physics of glaciers is nonlinear, subject to incompletely-understood boundary conditions, and involves a two-phase fluid.  In fact the physics is highly-coupled in the sense that mass, momentum, and energy conservation interact in ways that are both relevant to glaciological modeling goals and which are not well-understood in the literature.  Second, the geometry of glaciers and ice sheets is complex, and in particular the fastest-flowing parts of ice sheets are near or on the geometrically nontrivial lateral boundary.  Numerical models need to perform expensive fine-mesh calculations to accomodate the complicated geometry of ice sheet and glacier boundaries.
+
+On the other hand, since the 1980s researchers in numerial methods have developed multigrid methods to solve partial differential equations like those which describe the ice fluid in glaciers.   For simpler problems like scalar elliptic equations and the linear Stokes system, these methods are now in routine use \cite{Briggsetal2000,Bueler2021,Trottenbergetal2001}.
+
+FIXME write it
+
+\small
+
+\bigskip
+\bibliography{review}
+\bibliographystyle{siam}
+
+\end{document}

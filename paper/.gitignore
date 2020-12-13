@@ -1,0 +1,16 @@
+/review.pdf
+
+*.aux
+*.log
+*.out
+*.toc
+
+*.dvi
+
+*.bbl
+*.blg
+
+*.nav
+*.vrb
+*.snm
+
