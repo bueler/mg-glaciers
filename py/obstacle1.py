@@ -8,7 +8,8 @@ parser = argparse.ArgumentParser(description='''
 Solve a 1D obstacle problem:            /1
                                 min     |  1/2 (u')^2 - f u
                               u >= phi  /0
-where  phi(x) = 8x(1-x)-1  and  f(x) = -2.  Where u>phi we have -u''=-2.
+where  phi(x) = 8x(1-x)-1,  f(x) = -2,  and  u in H_0^1[0,1].
+(Thus where u>phi we have -u''=-2.)
 FIXME this version is projected Gauss-Seidel
 ''',add_help=False)
 parser.add_argument('-m', type=int, default=8, metavar='N',
@@ -27,12 +28,16 @@ if args.obstacle1help:
     sys.exit(0)
 
 def phi(x):
+    '''The obstacle:  u >= phi.'''
     return 8.0 * x * (1.0 - x) - 1.0
 
 def f(x):
+    '''The source term:  -u'' = f.'''
     return - 2.0 * np.ones(np.shape(x))
 
 def uexact(x):
+    '''A by-hand calculation from -u''=-2, and given the above obstacle, shows
+    that u(a)=phi(a), u'(a)=phi'(a) for a<1/2 implies a=1/3.'''
     a = 1.0/3.0
     def upoisson(x):
         return x * (x - 18.0 * a + 8.0)
