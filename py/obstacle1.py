@@ -73,7 +73,7 @@ for s in range(args.sweeps):
 
 # evaluate numerical error
 udiff = uu - uexact(xx)
-l2 = np.sqrt(np.sum(udiff*udiff))
+l2 = np.sqrt(h*np.sum(udiff*udiff))
 print('  m = %4d from %4d sweeps:  |u-uexact|_2 = %.4e' % (args.m,args.sweeps,l2))
 
 # graphical output if desired
