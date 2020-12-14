@@ -5,13 +5,16 @@ import sys, argparse
 import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser(description='''
-Solve a 1D obstacle problem:            /1
-                                min     |  1/2 (u')^2 - f u
-                              u >= phi  /0
+Solve a 1D obstacle problem:
+                     /1
+    min_{u >= phi}   |  1/2 (u')^2 - f u
+                     /0
 where  phi(x) = 8x(1-x)-1,  f(x) = -2,  and  u in H_0^1[0,1].
 (Thus where u>phi we have -u''=-2.)
 
 FIXME this version is projected Gauss-Seidel
+
+FIXME implement G&K Algorithm 4.7
 
 Reference: Gräser, C., & Kornhuber, R. (2009). Multigrid methods for
 obstacle problems. J. Comput. Math., 1-44.
@@ -93,14 +96,25 @@ class Level(object):
         y[-1] = max(v[-2:])
         return y
 
-# mesh and discrete problem
-mesh = Level(k=args.j)
+# mesh hierarchy = [coarse,...,fine]
+hierarchy = [None] * (args.j+1)  # list [None,...,None] for indices 0,1,...,args.j
+for k in range(args.j+1):
+   hierarchy[k] = Level(k=k)
+mesh = hierarchy[-1]
+
+# discrete problem on fine level
 ff = f(mesh.xx)
 pphi = phi(mesh.xx)
 
 # initial iterate is feasible
 uinitial = np.maximum(pphi,np.zeros(np.shape(mesh.xx)))
 uu = uinitial.copy()
+
+# defect obstacles for initial; G&K formulas after (4.22)
+chi = [None] * (args.j+1)
+chi[args.j] = pphi - uinitial  # fine grid defect obstacle
+for k in range(args.j,0,-1):
+    chi[k-1] = hierarchy[k].MRO(chi[k])
 
 # sweeps of projected GS
 for s in range(args.sweeps):
@@ -116,10 +130,12 @@ print('  level %d (m = %d) using %d sweeps:  |u-uexact|_2 = %.4e' \
 # graphical output if desired
 if args.show or args.o:
     finalplot(mesh.xx,uinitial,uu)
+
     #plt.figure(figsize=(15.0,8.0))
-    #plt.plot(mesh.xx,pphi-uu,'k.-')
-    #plt.plot(mesh.xx[::2],mesh.MRO(pphi-uu),'k.--')
+    #for k in range(args.j+1):
+    #    plt.plot(hierarchy[k].xx,chi[k],'k.-')
     #plt.xlabel('x')
+
     if args.o:
         plt.savefig(args.o,bbox_inches='tight')
     else:
