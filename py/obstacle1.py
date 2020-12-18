@@ -28,10 +28,12 @@ parser.add_argument('-pgs', action='store_true', default=False,
                     help='do projected Gauss-Seidel (instead of multigrid)')
 parser.add_argument('-j', type=int, default=2, metavar='J',
                     help='fine grid level (default j=2 gives 8 subintervals)')
+parser.add_argument('-lowobstacle', action='store_true', default=False,
+                    help='use obstacle sufficiently low to have no contact')
 parser.add_argument('-obstacle1help', action='store_true', default=False,
                     help='print help for this program and quit')
-parser.add_argument('-o', metavar='FILE.pdf', type=str, default='',
-                    help='save plot at end in image file')
+parser.add_argument('-o', metavar='FILE', type=str, default='',
+                    help='save plot at end in image file, e.g. PDF or PNG')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-sweeps', type=int, default=1, metavar='N',
@@ -41,9 +43,12 @@ if args.obstacle1help:
     parser.print_help()
     sys.exit(0)
 
-def phi(x):
+def phi(low,x):
     '''The obstacle:  u >= phi.'''
-    return 8.0 * x * (1.0 - x) - 1.0
+    if low:
+        return 8.0 * x * (1.0 - x) - 10.0
+    else:
+        return 8.0 * x * (1.0 - x) - 1.0
 
 def fsource(x):
     '''The source term in -u'' = f.'''
@@ -53,23 +58,26 @@ def fzero(x):
     '''The zero function.'''
     return np.zeros(np.shape(x))
 
-def uexact(x):
+def uexact(low,x):
     '''A by-hand calculation from -u''=-2, and given the above obstacle, shows
     that u(a)=phi(a), u'(a)=phi'(a) for a<1/2 implies a=1/3.'''
-    a = 1.0/3.0
-    def upoisson(x):
-        return x * (x - 18.0 * a + 8.0)
-    u = phi(x)
-    u[x < a] = upoisson(x[x < a])
-    u[x > 1.0-a] = upoisson(1.0 - x[x > 1.0-a])
+    if low:
+        u = x * (x - 1.0)
+    else:
+        a = 1.0/3.0
+        def upoisson(x):
+            return x * (x - 18.0 * a + 8.0)
+        u = phi(False,x)
+        u[x < a] = upoisson(x[x < a])
+        u[x > 1.0-a] = upoisson(1.0 - x[x > 1.0-a])
     return u
 
 def finalplot(xx,uinitial,ufinal):
     plt.figure(figsize=(15.0,8.0))
     plt.plot(xx,uinitial,'k--',label='initial iterate',linewidth=2.0)
     plt.plot(xx,ufinal,'k',label='final iterate',linewidth=4.0)
-    plt.plot(xx,phi(xx),'r',label='obstacle',linewidth=2.0)
-    plt.plot(xx,uexact(xx),'g',label='exact',linewidth=2.0)
+    plt.plot(xx,phi(args.lowobstacle,xx),'r',label='obstacle',linewidth=2.0)
+    plt.plot(xx,uexact(args.lowobstacle,xx),'g',label='exact',linewidth=2.0)
     plt.axis([0.0,1.0,-0.3,1.1])
     plt.legend(fontsize=20.0)
     plt.xlabel('x')
@@ -159,7 +167,7 @@ for k in range(args.j+1):
 mesh = hierarchy[-1]  # fine mesh
 
 # discrete obstacle on fine level and feasible initial iterate
-pphi = phi(mesh.xx)
+pphi = phi(args.lowobstacle,mesh.xx)
 uinitial = np.maximum(pphi,np.zeros(np.shape(mesh.xx)))
 uu = uinitial.copy()
 
@@ -167,19 +175,17 @@ uu = uinitial.copy()
 if args.pgs:
     # sweeps of projected Gauss-Seidel on fine grid
     h2 = mesh.h / 2.0
-    hh = mesh.h * mesh.h
+    r = mesh.residual(fsource,mesh.zeros())
     for s in range(args.sweeps):
         for l in range(1,mesh.m):
-            # int_0^1 f(x) lambda_p(x) dx \approx h*ff  by midpoint rule
-            ff = 0.5 * (fsource(mesh.xx[l]-h2) + fsource(mesh.xx[l]+h2))
-            c = 0.5 * (hh*ff + uu[l-1] + uu[l+1]) - uu[l]
-            uu[l] += max(c,pphi[l]-uu[l])
+            c = 0.5 * (mesh.h*r[l] + uu[l-1] + uu[l+1]) - uu[l]
+            uu[l] += max(c,pphi[l] - uu[l])
 else:
     # Algorithm 4.7 in G&K
     # SETUP
     chi = [None] * (args.j+1)      # empty list of length j+1
     chi[args.j] = pphi - uinitial  # fine mesh defect obstacle
-    r = mesh.residual(fsource,uu)        # fine mesh residual
+    r = mesh.residual(fsource,uu)  # fine mesh residual
     # DOWN-SMOOTH
     for k in range(args.j,0,-1):
         # monotone restriction gives defect obstacle (G&K formulas after (4.22))
@@ -194,25 +200,22 @@ else:
         for s in range(args.sweeps):
             for l in range(1,hierarchy[k].m):
                 # int_0^1 f(x) lambda_p(x) dx \approx h*ff  by midpoint rule
-                xl = hierarchy[k].xx[l]
-                c = 0.5 * (hk*hk*r[l] + v[l-1] + v[l+1]) - v[l]
-                v[l] += max(c,psi[l])
+                c = 0.5 * (hk*r[l] + v[l-1] + v[l+1]) - v[l]
+                v[l] += max(c,psi[l] - v[l])
         hierarchy[k].vstate = v.copy()
         # update the residual and canonically-restrict it
         r += hierarchy[k].residual(fzero,v)
         r = hierarchy[k].CR(r)
     # COARSE SOLVE using fixed number of projected GS sweeps
-    coarsesweeps = 1  # FIXME make option
     psi = chi[0]
     h0 = hierarchy[0].h
     v = hierarchy[0].zeros()
     print('coarse: %d sweeps over %d interior points' \
-          % (coarsesweeps,hierarchy[0].m-1))
-    for s in range(coarsesweeps):
+          % (args.sweeps,hierarchy[0].m-1))
+    for s in range(args.sweeps):
         for l in range(1,hierarchy[0].m):
-            xl = hierarchy[0].xx[l]
-            c = 0.5 * (h0*h0*r[l] + v[l-1] + v[l+1]) - v[l]
-            v[l] += max(c,psi[l])
+            c = 0.5 * (h0*r[l] + v[l-1] + v[l+1]) - v[l]
+            v[l] += max(c,psi[l] - v[l])
     hierarchy[0].vstate = v.copy()
     # UP (WITHOUT SMOOTHING)
     for k in range(1,args.j+1):
@@ -223,7 +226,7 @@ else:
     uu += mesh.vstate
 
 # evaluate numerical error
-udiff = uu - uexact(mesh.xx)
+udiff = uu - uexact(args.lowobstacle,mesh.xx)
 print('  level %d (m = %d) using %d sweeps:  |u-uexact|_2 = %.4e' \
       % (args.j,mesh.m,args.sweeps,mesh.l2norm(udiff)))
 
@@ -231,10 +234,11 @@ print('  level %d (m = %d) using %d sweeps:  |u-uexact|_2 = %.4e' \
 if args.show or args.o:
     finalplot(mesh.xx,uinitial,uu)
 
-    #plt.figure(figsize=(15.0,8.0))
-    #for k in range(args.j+1):
-    #    plt.plot(hierarchy[k].xx,chi[k],'k.-')
-    #plt.xlabel('x')
+    if False:
+        plt.figure(figsize=(15.0,8.0))
+        for k in range(args.j+1):
+            plt.plot(hierarchy[k].xx,chi[k],'k.-')
+        plt.xlabel('x')
 
     if args.o:
         plt.savefig(args.o,bbox_inches='tight')
