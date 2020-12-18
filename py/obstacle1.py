@@ -9,18 +9,21 @@ Solve a 1D obstacle problem:
                      /1
     min_{u >= phi}   |  1/2 (u')^2 - f u
                      /0
-where  phi(x) = 8x(1-x)-1,  f(x) = -2,  and  u in H_0^1[0,1].
-(Thus where u>phi we have -u''=-2.)
+where phi(x) = 8x(1-x)-1, f(x) = -2, and u is in H_0^1[0,1].
+Interior condition is -u''=-2.
 
-The solution method is Algorithm 4.7 in Gräser & Kornhuber (2009),
-that is, by monotone multigrid V cycles using the Tai (2003)
-method.  The smoother at each level is projected Gauss-Seidel (pGS),
-with monotone restrictions to generate a hierarchical decomposition
-of the defect obstacle.  Option -pgs reverts to single-level pGS.
+Solution by Alg. 4.7 in Gräser & Kornhuber (2009), monotone multigrid
+V-cycles using the Tai (2003) method.  The smoother and the coarse-mesh
+solver is projected Gauss-Seidel (pGS).  Monotone restrictions decompose
+the defect obstacle.  Option -pgs reverts to single-level pGS.
 
-Reference: Gräser, C., & Kornhuber, R. (2009). Multigrid methods for
-obstacle problems. J. Comput. Math., 1-44.
-''',add_help=False)
+References:
+* Gräser, C., & Kornhuber, R. (2009). Multigrid methods for
+obstacle problems. J. Comput. Math. 27 (1), 1--44.
+* Tai, X.-C. (2003). Rate of convergence for some constraint
+decomposition methods for nonlinear variational inequalities.
+Numer. Math. 93 (4), 755--786.
+''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-pgs', action='store_true', default=False,
                     help='do projected Gauss-Seidel (instead of multigrid)')
 parser.add_argument('-j', type=int, default=2, metavar='J',
