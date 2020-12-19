@@ -26,8 +26,8 @@ obstacle problems. J. Comput. Math. 27 (1), 1--44.
 decomposition methods for nonlinear variational inequalities.
 Numer. Math. 93 (4), 755--786.
 ''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument('-pgs', action='store_true', default=False,
-                    help='do projected Gauss-Seidel (instead of multigrid)')
+parser.add_argument('-cycles', type=int, default=2, metavar='M',
+                    help='number of V-cycles (default=2)')
 parser.add_argument('-j', type=int, default=2, metavar='J',
                     help='fine grid level (default j=2 gives 8 subintervals)')
 parser.add_argument('-lowobstacle', action='store_true', default=False,
@@ -36,10 +36,14 @@ parser.add_argument('-obstacle1help', action='store_true', default=False,
                     help='print help for this program and quit')
 parser.add_argument('-o', metavar='FILE', type=str, default='',
                     help='save plot at end in image file, e.g. PDF or PNG')
+parser.add_argument('-pgs', action='store_true', default=False,
+                    help='do projected Gauss-Seidel (instead of multigrid)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-sweeps', type=int, default=1, metavar='N',
                     help='number of sweeps of projected Gauss-Seidel (default=1)')
+parser.add_argument('-mgview', action='store_true', default=False,
+                    help='view multigrid cycles by indented print statements')
 args, unknown = parser.parse_known_args()
 if args.obstacle1help:
     parser.print_help()
@@ -97,21 +101,20 @@ phifine = phi(args.lowobstacle,mesh.xx)
 
 # feasible initial iterate
 uinitial = np.maximum(phifine,np.zeros(np.shape(mesh.xx)))
-uu = uinitial.copy()
 
-# monotone multigrid V-cycles (unless user just wants pGS)
-# FIXME allow more than one
-if args.pgs:
-    # sweeps of projected Gauss-Seidel on fine grid
-    r = mesh.residual(mesh.zeros())
-    for s in range(args.sweeps):
-        mesh.pgssweep(uu,r=r,phi=phifine)
-else:
+def indentprint(n,s):
+    '''Indent n levels and print string s.'''
+    #for i in range(n):
+    #    print('  ',end='')
+    print(s)
+
+def vcycle(hierarchy,phifine,uinitial):
     # Algorithm 4.7 in G&K
     # FIXME indent printing and make it optional
     # SETUP
     chi = [None] * (args.j+1)         # empty list of length j+1
     chi[args.j] = phifine - uinitial  # fine mesh defect obstacle
+    uu = uinitial.copy()
     r = mesh.residual(uu)             # fine mesh residual
     # DOWN-SMOOTH
     for k in range(args.j,0,-1):
@@ -122,8 +125,9 @@ else:
         # do projected GS sweeps (FIXME try symmetric)
         hk = hierarchy[k].h
         v = hierarchy[k].zeros()
-        print('mesh %d: %d sweeps over %d interior points' \
-              % (k,args.sweeps,hierarchy[k].m-1))
+        if args.mgview:
+            indentprint(args.j-k,'mesh %d: %d sweeps over %d interior points' \
+                                 % (k,args.sweeps,hierarchy[k].m-1))
         for s in range(args.sweeps):
             hierarchy[k].pgssweep(v,r=r,phi=psi)
         hierarchy[k].vstate = v.copy()
@@ -134,22 +138,37 @@ else:
     psi = chi[0]
     h0 = hierarchy[0].h
     v = hierarchy[0].zeros()
-    print('coarse: %d sweeps over %d interior points' \
-          % (args.sweeps,hierarchy[0].m-1))
+    if args.mgview:
+        indentprint(args.j,'coarse: %d sweeps over %d interior points' \
+                           % (args.sweeps,hierarchy[0].m-1))
     for s in range(args.sweeps):
         hierarchy[0].pgssweep(v,r=r,phi=psi)
     hierarchy[0].vstate = v.copy()
     # UP (WITHOUT SMOOTHING)
     # FIXME allow up-smoothing
     for k in range(1,args.j+1):
-        print('mesh %d: interpolate up to %d interior points' \
-              % (k,hierarchy[k].m-1))
+        if args.mgview:
+            indentprint(args.j-k,'mesh %d: interpolate up to %d interior points' \
+                                 % (k,hierarchy[k].m-1))
         hierarchy[k].vstate += hierarchy[k].prolong(hierarchy[k-1].vstate)
     # FINALIZE
     uu += mesh.vstate
+    return uu
+
+# monotone multigrid V-cycles (unless user just wants pGS)
+# FIXME allow more than one
+if args.pgs:
+    # sweeps of projected Gauss-Seidel on fine grid
+    uu = uinitial.copy()
+    r = mesh.residual(mesh.zeros())
+    for s in range(args.sweeps):
+        mesh.pgssweep(uu,r=r,phi=phifine)
+else:
+    uu = vcycle(hierarchy,phifine,uinitial)
 
 # evaluate numerical error
 udiff = uu - uexact(args.lowobstacle,mesh.xx)
+#FIXME remove indent
 print('  level %d (m = %d) using %d sweeps:  |u-uexact|_2 = %.4e' \
       % (args.j,mesh.m,args.sweeps,mesh.l2norm(udiff)))
 
