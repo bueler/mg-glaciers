@@ -104,8 +104,8 @@ uinitial = np.maximum(phifine,np.zeros(np.shape(mesh.xx)))
 
 def indentprint(n,s):
     '''Indent n levels and print string s.'''
-    #for i in range(n):
-    #    print('  ',end='')
+    for i in range(n):
+        print('  ',end='')
     print(s)
 
 def vcycle(hierarchy,phifine,uinitial):
@@ -165,12 +165,17 @@ if args.pgs:
         mesh.pgssweep(uu,r=r,phi=phifine)
 else:
     uu = vcycle(hierarchy,phifine,uinitial)
+    for s in range(args.cycles-1):
+        uu = vcycle(hierarchy,phifine,uu)
 
 # evaluate numerical error
 udiff = uu - uexact(args.lowobstacle,mesh.xx)
-#FIXME remove indent
-print('  level %d (m = %d) using %d sweeps:  |u-uexact|_2 = %.4e' \
-      % (args.j,mesh.m,args.sweeps,mesh.l2norm(udiff)))
+if args.pgs:
+    print('level %d (m = %d) using with %d sweeps of pGS:  |u-uexact|_2 = %.4e' \
+          % (args.j,mesh.m,args.sweeps,mesh.l2norm(udiff)))
+else:
+    print('level %d (m = %d) using %2d V-cycles with %d sweeps:  |u-uexact|_2 = %.4e' \
+          % (args.j,mesh.m,args.cycles,args.sweeps,mesh.l2norm(udiff)))
 
 # graphical output if desired
 if args.show or args.o:

@@ -1,6 +1,6 @@
 mesh 2: 1 sweeps over 7 interior points
-mesh 1: 1 sweeps over 3 interior points
-coarse: 1 sweeps over 1 interior points
-mesh 1: interpolate up to 3 interior points
+  mesh 1: 1 sweeps over 3 interior points
+    coarse: 1 sweeps over 1 interior points
+  mesh 1: interpolate up to 3 interior points
 mesh 2: interpolate up to 7 interior points
-  level 2 (m = 8) using 1 sweeps:  |u-uexact|_2 = 2.8303e-02
+level 2 (m = 8) using  1 V-cycles with 1 sweeps:  |u-uexact|_2 = 2.8303e-02
