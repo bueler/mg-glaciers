@@ -5,63 +5,66 @@ import numpy as np
 __all__ = ['vcycle']
 
 def _fzero(x):
-    '''The zero function.'''
     return np.zeros(np.shape(x))
 
 def _indentprint(n,s):
-    '''Indent n levels and print string s.'''
     for i in range(n):
         print('  ',end='')
     print(s)
 
-# FIXME add coarsesweeps and upsweeps
-def vcycle(hierarchy,phifine,uinitial,
-           sweeps=None,view=False,level=None):
-    '''One V-cycle of Algorithm 4.7 in Graeser & Kornhuber (2009).
-    This monotone multigrid method is from Tai (2003).'''
-    # SETUP
-    mesh = hierarchy[-1]             # fine mesh
-    chi = [None] * (level+1)         # empty list of length level+1
-    chi[level] = phifine - uinitial  # fine mesh defect obstacle
-    uu = uinitial.copy()
-    r = mesh.residual(uu)            # fine mesh residual
-    # DOWN-SMOOTH
-    for k in range(level,0,-1):
-        # monotone restriction gives defect obstacle (G&K formulas after (4.22))
-        chi[k-1] = hierarchy[k].MRO(chi[k])
-        # defect obstacle change on mesh k
-        psi = chi[k] - hierarchy[k].prolong(chi[k-1])
+def _levelreport(fine,k,N,sweeps):
+    _indentprint(fine-k,'mesh %d: %d sweeps over %d nodes' \
+                        % (k,sweeps,N))
+
+def _coarsereport(fine,N,sweeps):
+    _indentprint(fine,'coarse: %d sweeps over %d nodes' \
+                      % (sweeps,N))
+
+def vcycle(u,phi,meshes,fine=None,view=False,
+           downsweeps=1,coarsesweeps=1,upsweeps=0):
+    '''Apply one V-cycle of Algorithm 4.7 in Graeser & Kornhuber (2009),
+    namely the monotone multigrid method from Tai (2003).  Updates (in place)
+    iterate u assuming an obstacle phi.  Both must be defined on the finest
+    mesh meshes[fine].  Note meshes[0],...,meshes[fine] (coarse to fine) are
+    of type MeshLevel.  The smoother is downsweeps (or upsweeps) iterations
+    of projected Gauss-Seidel (pGS).  The coarse solver is coarsesweeps
+    iterations of pGS, and thus not exact.'''
+    if not fine:
+        fine = len(meshes) - 1
+    chi = [None] * (fine+1)           # empty list of length fine+1
+    chi[fine] = phi - u               # fine mesh defect obstacle
+    r = meshes[fine].residual(u)      # fine mesh residual
+    # DOWN
+    for k in range(fine,0,-1):        # k=fine,fine-1,...,1
+        # monotone restriction gives defect obstacle
+        chi[k-1] = meshes[k].MR(chi[k])
+        # the actual obstacle is the *change* in chi
+        psi = chi[k] - meshes[k].prolong(chi[k-1])
         # do projected GS sweeps
-        hk = hierarchy[k].h
-        v = hierarchy[k].zeros()
         if view:
-            _indentprint(level-k,'mesh %d: %d sweeps over %d interior points' \
-                                 % (k,sweeps,hierarchy[k].m-1))
+            _levelreport(fine,k,meshes[k].m-1,downsweeps)
         # FIXME try symmetric
-        for s in range(sweeps):
-            hierarchy[k].pgssweep(v,r=r,phi=psi)
-        hierarchy[k].vstate = v.copy()
-        # update the residual and canonically-restrict it
-        r += hierarchy[k].residual(v,f=_fzero)
-        r = hierarchy[k].CR(r)
-    # COARSE SOLVE using fixed number of projected GS sweeps
+        v = meshes[k].zeros()
+        for s in range(downsweeps):
+            meshes[k].pgssweep(v,r=r,phi=psi)
+        meshes[k].vstate = v.copy()
+        # update and canonically-restrict the residual
+        r += meshes[k].residual(v,f=_fzero)
+        r = meshes[k].CR(r)
+    # COARSE SOLVE
     psi = chi[0]
-    h0 = hierarchy[0].h
-    v = hierarchy[0].zeros()
     if view:
-        _indentprint(level,'coarse: %d sweeps over %d interior points' \
-                           % (sweeps,hierarchy[0].m-1))
-    for s in range(sweeps):
-        hierarchy[0].pgssweep(v,r=r,phi=psi)
-    hierarchy[0].vstate = v.copy()
-    # UP (WITHOUT SMOOTHING)
-    # FIXME allow up-smoothing
-    for k in range(1,level+1):
+        _coarsereport(fine,meshes[0].m-1,coarsesweeps)
+    v = meshes[0].zeros()
+    for s in range(coarsesweeps):
+        meshes[0].pgssweep(v,r=r,phi=psi)
+    meshes[0].vstate = v.copy()
+    # UP
+    assert (upsweeps==0), 'up sweeps not implemented yet' # FIXME
+    for k in range(1,fine+1):        # k=1,2,...,fine
         if view:
-            _indentprint(level-k,'mesh %d: interpolate up to %d interior points' \
-                                 % (k,hierarchy[k].m-1))
-        hierarchy[k].vstate += hierarchy[k].prolong(hierarchy[k-1].vstate)
-    # FINALIZE
-    uu += mesh.vstate
-    return uu
+            _levelreport(fine,k,meshes[k].m-1,upsweeps)
+        meshes[k].vstate += meshes[k].prolong(meshes[k-1].vstate)
+    u += meshes[fine].vstate
+    return u
 

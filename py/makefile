@@ -1,7 +1,7 @@
 # testing
 
 runobstacle1_1:
-	-@./../testit.sh obstacle1.py "-pgs -j 3 -sweeps 3" 1 1
+	-@./../testit.sh obstacle1.py "-pgs -j 3 -downsweeps 3" 1 1
 
 runobstacle1_2:
 	-@./../testit.sh obstacle1.py "-mgview -cycles 1" 1 2

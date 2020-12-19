@@ -57,7 +57,7 @@ class MeshLevel(object):
             y[q] = 0.5 * (v[2*q-1] + v[2*q+1]) + v[2*q]
         return y
 
-    def MRO(self,v):
+    def MR(self,v):
         '''Evaluate the monotone restriction operator on a vector v
         on the current mesh (i.e. v in S_k):
           y = R_k^{k-1} v.

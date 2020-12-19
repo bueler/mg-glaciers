@@ -18,7 +18,8 @@ Interior condition is -u''=-2.
 Solution by Alg. 4.7 in Gräser & Kornhuber (2009), monotone multigrid
 V-cycles using the Tai (2003) method.  The smoother and the coarse-mesh
 solver is projected Gauss-Seidel (pGS).  Monotone restrictions decompose
-the defect obstacle.  Option -pgs reverts to single-level pGS.
+the defect obstacle.  Option -pgs reverts to single-level pGS (using
+-downsweeps).
 
 References:
 * Gräser, C., & Kornhuber, R. (2009). Multigrid methods for
@@ -27,8 +28,12 @@ obstacle problems. J. Comput. Math. 27 (1), 1--44.
 decomposition methods for nonlinear variational inequalities.
 Numer. Math. 93 (4), 755--786.
 ''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('-coarsesweeps', type=int, default=1, metavar='N',
+                    help='number of sweeps of projected Gauss-Seidel (default=1)')
 parser.add_argument('-cycles', type=int, default=2, metavar='M',
                     help='number of V-cycles (default=2)')
+parser.add_argument('-downsweeps', type=int, default=1, metavar='N',
+                    help='number of sweeps of projected Gauss-Seidel (default=1)')
 parser.add_argument('-j', type=int, default=2, metavar='J',
                     help='fine grid level (default j=2 gives 8 subintervals)')
 parser.add_argument('-lowobstacle', action='store_true', default=False,
@@ -41,10 +46,10 @@ parser.add_argument('-pgs', action='store_true', default=False,
                     help='do projected Gauss-Seidel (instead of multigrid)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
-parser.add_argument('-sweeps', type=int, default=1, metavar='N',
-                    help='number of sweeps of projected Gauss-Seidel (default=1)')
 parser.add_argument('-mgview', action='store_true', default=False,
                     help='view multigrid cycles by indented print statements')
+parser.add_argument('-upsweeps', type=int, default=0, metavar='N',
+                    help='number of sweeps of projected Gauss-Seidel (default=1)')
 args, unknown = parser.parse_known_args()
 if args.obstacle1help:
     parser.print_help()
@@ -105,23 +110,29 @@ if args.pgs:
     # sweeps of projected Gauss-Seidel on fine grid
     uu = uinitial.copy()
     r = mesh.residual(mesh.zeros())
-    for s in range(args.sweeps):
+    for s in range(args.downsweeps):
         mesh.pgssweep(uu,r=r,phi=phifine)
 else:
-    uu = vcycle(hierarchy,phifine,uinitial,
-                sweeps=args.sweeps,view=args.mgview,level=args.j)
+    uu = vcycle(uinitial,phifine,hierarchy,fine=args.j,view=args.mgview,
+                downsweeps=args.downsweeps,
+                coarsesweeps=args.coarsesweeps,
+                upsweeps=args.upsweeps)
     for s in range(args.cycles-1):
-        uu = vcycle(hierarchy,phifine,uu,
-                    sweeps=args.sweeps,view=args.mgview,level=args.j)
+        uu = vcycle(uu,phifine,hierarchy,fine=args.j,view=args.mgview,
+                    downsweeps=args.downsweeps,
+                    coarsesweeps=args.coarsesweeps,
+                    upsweeps=args.upsweeps)
 
 # evaluate numerical error
 udiff = uu - uexact(args.lowobstacle,mesh.xx)
 if args.pgs:
     print('level %d (m = %d) using with %d sweeps of pGS:  |u-uexact|_2 = %.4e' \
-          % (args.j,mesh.m,args.sweeps,mesh.l2norm(udiff)))
+          % (args.j,mesh.m,args.downsweeps,mesh.l2norm(udiff)))
 else:
-    print('level %d (m = %d) using %2d V-cycles with %d sweeps:  |u-uexact|_2 = %.4e' \
-          % (args.j,mesh.m,args.cycles,args.sweeps,mesh.l2norm(udiff)))
+    print('level %d (m = %d) using %2d V(%d,%d,%d) cycles:  |u-uexact|_2 = %.4e' \
+          % (args.j,mesh.m,args.cycles,
+             args.downsweeps,args.coarsesweeps,args.upsweeps,
+             mesh.l2norm(udiff)))
 
 # graphical output if desired
 if args.show or args.o:
