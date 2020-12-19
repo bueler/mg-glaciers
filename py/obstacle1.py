@@ -5,6 +5,7 @@ import sys, argparse
 import matplotlib.pyplot as plt
 
 from meshlevel import MeshLevel
+from monotonetai import vcycle
 
 parser = argparse.ArgumentParser(description='''
 Solve a 1D obstacle problem:
@@ -61,10 +62,6 @@ def fsource(x):
     '''The source term in -u'' = f.'''
     return - 2.0 * np.ones(np.shape(x))
 
-def fzero(x):
-    '''The zero function.'''
-    return np.zeros(np.shape(x))
-
 def uexact(low,x):
     '''A by-hand calculation from -u''=-2, and given the above obstacle, shows
     that u(a)=phi(a), u'(a)=phi'(a) for a<1/2 implies a=1/3.'''
@@ -102,59 +99,6 @@ phifine = phi(args.lowobstacle,mesh.xx)
 # feasible initial iterate
 uinitial = np.maximum(phifine,np.zeros(np.shape(mesh.xx)))
 
-def indentprint(n,s):
-    '''Indent n levels and print string s.'''
-    for i in range(n):
-        print('  ',end='')
-    print(s)
-
-def vcycle(hierarchy,phifine,uinitial):
-    # Algorithm 4.7 in G&K
-    # FIXME indent printing and make it optional
-    # SETUP
-    chi = [None] * (args.j+1)         # empty list of length j+1
-    chi[args.j] = phifine - uinitial  # fine mesh defect obstacle
-    uu = uinitial.copy()
-    r = mesh.residual(uu)             # fine mesh residual
-    # DOWN-SMOOTH
-    for k in range(args.j,0,-1):
-        # monotone restriction gives defect obstacle (G&K formulas after (4.22))
-        chi[k-1] = hierarchy[k].MRO(chi[k])
-        # defect obstacle change on mesh k
-        psi = chi[k] - hierarchy[k].prolong(chi[k-1])
-        # do projected GS sweeps (FIXME try symmetric)
-        hk = hierarchy[k].h
-        v = hierarchy[k].zeros()
-        if args.mgview:
-            indentprint(args.j-k,'mesh %d: %d sweeps over %d interior points' \
-                                 % (k,args.sweeps,hierarchy[k].m-1))
-        for s in range(args.sweeps):
-            hierarchy[k].pgssweep(v,r=r,phi=psi)
-        hierarchy[k].vstate = v.copy()
-        # update the residual and canonically-restrict it
-        r += hierarchy[k].residual(v,f=fzero)
-        r = hierarchy[k].CR(r)
-    # COARSE SOLVE using fixed number of projected GS sweeps
-    psi = chi[0]
-    h0 = hierarchy[0].h
-    v = hierarchy[0].zeros()
-    if args.mgview:
-        indentprint(args.j,'coarse: %d sweeps over %d interior points' \
-                           % (args.sweeps,hierarchy[0].m-1))
-    for s in range(args.sweeps):
-        hierarchy[0].pgssweep(v,r=r,phi=psi)
-    hierarchy[0].vstate = v.copy()
-    # UP (WITHOUT SMOOTHING)
-    # FIXME allow up-smoothing
-    for k in range(1,args.j+1):
-        if args.mgview:
-            indentprint(args.j-k,'mesh %d: interpolate up to %d interior points' \
-                                 % (k,hierarchy[k].m-1))
-        hierarchy[k].vstate += hierarchy[k].prolong(hierarchy[k-1].vstate)
-    # FINALIZE
-    uu += mesh.vstate
-    return uu
-
 # monotone multigrid V-cycles (unless user just wants pGS)
 # FIXME allow more than one
 if args.pgs:
@@ -164,9 +108,11 @@ if args.pgs:
     for s in range(args.sweeps):
         mesh.pgssweep(uu,r=r,phi=phifine)
 else:
-    uu = vcycle(hierarchy,phifine,uinitial)
+    uu = vcycle(hierarchy,phifine,uinitial,
+                sweeps=args.sweeps,view=args.mgview,level=args.j)
     for s in range(args.cycles-1):
-        uu = vcycle(hierarchy,phifine,uu)
+        uu = vcycle(hierarchy,phifine,uu,
+                    sweeps=args.sweeps,view=args.mgview,level=args.j)
 
 # evaluate numerical error
 udiff = uu - uexact(args.lowobstacle,mesh.xx)
