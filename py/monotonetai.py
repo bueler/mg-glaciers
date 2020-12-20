@@ -29,6 +29,8 @@ def vcycle(u,phi,meshes,fine=None,view=False,
     of type MeshLevel.  The smoother is downsweeps (or upsweeps) iterations
     of projected Gauss-Seidel (pGS).  The coarse solver is coarsesweeps
     iterations of pGS, and thus not exact.'''
+    # FIXME optional symmetric smoother application: forward GS on down
+    #                                                backward GS on up
     if not fine:
         fine = len(meshes) - 1
     chi = [None] * (fine+1)           # empty list of length fine+1
@@ -43,7 +45,6 @@ def vcycle(u,phi,meshes,fine=None,view=False,
         # do projected GS sweeps
         if view:
             _levelreport(fine,k,meshes[k].m-1,downsweeps)
-        # FIXME try symmetric
         v = meshes[k].zeros()
         for s in range(downsweeps):
             meshes[k].pgssweep(v,r=r,phi=psi)
