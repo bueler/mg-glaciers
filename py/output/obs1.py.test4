@@ -6,4 +6,4 @@ mesh 1: 0 sweeps over 31 nodes
 mesh 1: 1 sweeps over 31 nodes
   coarse: 1 sweeps over 15 nodes
 mesh 1: 0 sweeps over 31 nodes
-level 4 (m = 32) using  2 V(1,1,0) cycles:  |u-uexact|_2 = 4.5981e-02
+level 4 (m = 32) using 2 V(1,1,0) cycles:  |u-uexact|_2 = 4.5981e-02

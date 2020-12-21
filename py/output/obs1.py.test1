@@ -1,1 +1,1 @@
-level 3 (m = 16) using with 3 sweeps of pGS:  |u-uexact|_2 = 3.7106e-02
+level 3 (m = 16) with 3 sweeps of pGS:  |u-uexact|_2 = 3.7106e-02
