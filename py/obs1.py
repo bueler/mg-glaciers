@@ -34,10 +34,12 @@ parser.add_argument('-cycles', type=int, default=2, metavar='M',
                     help='number of V-cycles (default=2)')
 parser.add_argument('-downsweeps', type=int, default=1, metavar='N',
                     help='number of sweeps of projected Gauss-Seidel (default=1)')
-parser.add_argument('-j', type=int, default=2, metavar='J',
-                    help='fine grid level (default j=2 gives 8 subintervals)')
+parser.add_argument('-jfine', type=int, default=2, metavar='J',
+                    help='fine mesh is jth level (default jfine=2)')
 parser.add_argument('-lowobstacle', action='store_true', default=False,
                     help='use obstacle sufficiently low to have no contact')
+parser.add_argument('-jcoarse', type=int, default=0, metavar='J',
+                    help='coarse mesh is jth level (default jcoarse=0 gives 1 node)')
 parser.add_argument('-mgview', action='store_true', default=False,
                     help='view multigrid cycles by indented print statements')
 parser.add_argument('-monitor', action='store_true', default=False,
@@ -99,10 +101,10 @@ def finalplot(xx,uinitial,ufinal):
     plt.xlabel('x')
 
 # mesh hierarchy = [coarse,...,fine]
-# FIXME allow coarse grid to be of any resolution
-hierarchy = [None] * (args.j+1)  # list [None,...,None] for indices 0,1,...,j
-for k in range(args.j+1):
-   hierarchy[k] = MeshLevel(k=k)
+levels = args.jfine - args.jcoarse + 1
+hierarchy = [None] * (levels)  # list [None,...,None]
+for k in range(args.jcoarse,args.jfine+1):
+   hierarchy[k-args.jcoarse] = MeshLevel(k=k)
 mesh = hierarchy[-1]  # fine mesh
 
 # discrete obstacle on fine level
@@ -129,7 +131,7 @@ else:
     if args.monitor:
         print('  0:  |u-uexact|_2 = %.4e' % (l2err(uinitial)))
     uu = vcycle(uinitial,phifine,fsource,hierarchy,
-                fine=args.j,view=args.mgview,symmetric=args.symmetric,
+                levels=levels,view=args.mgview,symmetric=args.symmetric,
                 downsweeps=args.downsweeps,
                 coarsesweeps=args.coarsesweeps,
                 upsweeps=args.upsweeps)
@@ -137,7 +139,7 @@ else:
         if args.monitor:
             print('  %d:  |u-uexact|_2 = %.4e' % (s+1,l2err(uu)))
         uu = vcycle(uu,phifine,fsource,hierarchy,
-                    fine=args.j,view=args.mgview,symmetric=args.symmetric,
+                    levels=levels,view=args.mgview,symmetric=args.symmetric,
                     downsweeps=args.downsweeps,
                     coarsesweeps=args.coarsesweeps,
                     upsweeps=args.upsweeps)
@@ -145,10 +147,10 @@ else:
 # evaluate numerical error
 if args.pgs:
     print('level %d (m = %d) using with %d sweeps of pGS:  |u-uexact|_2 = %.4e' \
-          % (args.j,mesh.m,args.downsweeps,l2err(uu)))
+          % (args.jfine,mesh.m,args.downsweeps,l2err(uu)))
 else:
     print('level %d (m = %d) using %2d V(%d,%d,%d) cycles:  |u-uexact|_2 = %.4e' \
-          % (args.j,mesh.m,args.cycles,
+          % (args.jfine,mesh.m,args.cycles,
              args.downsweeps,args.coarsesweeps,args.upsweeps,l2err(uu)))
 
 # graphical output if desired

@@ -27,7 +27,7 @@ def pgssweep(m,h,v,r,phi,backward=False):
         v[p] += max(c,phi[p] - v[p])
     return v
 
-def vcycle(u,phi,f,meshes,fine=None,view=False,
+def vcycle(u,phi,f,meshes,levels=None,view=False,
            downsweeps=1,coarsesweeps=1,upsweeps=0,
            symmetric=False):
     '''Apply one V-cycle of Algorithm 4.7 in Graeser & Kornhuber (2009),
@@ -35,16 +35,15 @@ def vcycle(u,phi,f,meshes,fine=None,view=False,
     Updates (in place) the iterate u in K in
         a(u,v-u) >= (f,v-u)  for all v in K
     where K = {v >= phi}.  Vectors u,phi must be defined on the finest
-    mesh meshes[fine] while input f is a function.  Note
-    meshes[0],...,meshes[fine] (coarse to fine) are of type MeshLevel.
+    mesh meshes[levels-1] while input f is a function.  Note
+    meshes[0],...,meshes[levels-1] (coarse to fine) are of type MeshLevel.
     The smoother is downsweeps (or upsweeps) iterations of projected
     Gauss-Seidel (pGS).  The coarse solver is coarsesweeps iterations
     of pGS, and thus not exact.'''
     # FIXME better symmetric smoother application: forward GS on down
     #                                              backward GS on up
-    if not fine:
-        fine = len(meshes) - 1
-    chi = [None] * (fine+1)           # empty list of length fine+1
+    chi = [None] * (levels)           # empty list of length levels
+    fine = levels - 1
     chi[fine] = phi - u               # fine mesh defect obstacle
     r = meshes[fine].residual(u,f)    # fine mesh residual
     # DOWN
