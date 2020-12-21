@@ -6,7 +6,7 @@ This is a stub for a review paper I should write.
 
 ## py/
 
-The code `obstacle1.py` in `py/` solves a 1D obstacle problem on [0,1] for the
+The code `obs1.py` in `py/` solves a 1D obstacle problem on [0,1] for the
 Poisson equation.  For now the available algorithms are
 
   * sweeps of projected Gauss-Seidel (pGS) on the fine grid
@@ -15,7 +15,11 @@ Poisson equation.  For now the available algorithms are
 For detailed information:
 
         $ cd py/
-        $ ./obstacle1.py -obstacle1help
+        $ ./obs1.py -obs1help
+
+A good illustration run is:
+
+        $ ./obs1.py -show -diagnostics -jfine 5 -jcoarse 2 -cycles 20 -random -fvalue -20 -symmetric
 
 Run software tests:
 

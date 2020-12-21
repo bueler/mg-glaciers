@@ -32,6 +32,8 @@ parser.add_argument('-coarsesweeps', type=int, default=1, metavar='N',
                     help='number of sweeps of projected Gauss-Seidel (default=1)')
 parser.add_argument('-cycles', type=int, default=2, metavar='M',
                     help='number of V-cycles (default=2)')
+parser.add_argument('-diagnostics', action='store_true', default=False,
+                    help='add a diagnostics figure to -show or -o output')
 parser.add_argument('-downsweeps', type=int, default=1, metavar='N',
                     help='number of sweeps of projected Gauss-Seidel (default=1)')
 parser.add_argument('-fvalue', type=float, default=-2.0, metavar='X',
@@ -54,8 +56,8 @@ parser.add_argument('-pgs', action='store_true', default=False,
                     help='do projected Gauss-Seidel (instead of multigrid)')
 parser.add_argument('-random', action='store_true', default=False,
                     help='use obstacle which is random perturbation of usual')
-parser.add_argument('-randommag', type=float, default=0.4, metavar='X',
-                    help='magnitude of -random perturbation (default X=0.4)')
+parser.add_argument('-randommag', type=float, default=0.2, metavar='X',
+                    help='magnitude of -random perturbation (default X=0.2)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-symmetric', action='store_true', default=False,
@@ -76,7 +78,7 @@ def phi(x):
     if args.low:
         ph -= 9.0
     if args.random:
-        ph += args.randommag * np.random.rand(len(x))
+        ph += args.randommag * np.random.randn(len(x))
     return ph
 
 def fsource(x):
@@ -100,20 +102,9 @@ def uexact(x):
         u[x > 1.0-a] = upoisson(1.0 - x[x > 1.0-a])
     return u
 
-def finalplot(xx,uinitial,ufinal,phifine):
-    plt.figure(figsize=(15.0,8.0))
-    plt.plot(xx,uinitial,'k--',label='initial iterate',linewidth=2.0)
-    plt.plot(xx,ufinal,'k',label='final iterate',linewidth=4.0)
-    plt.plot(xx,phifine,'r',label='obstacle',linewidth=2.0)
-    if not args.random:
-        plt.plot(xx,uexact(xx),'g',label='exact',linewidth=2.0)
-    plt.axis([0.0,1.0,-0.3,1.1*max(phifine)])
-    plt.legend(fontsize=20.0)
-    plt.xlabel('x')
-
 # mesh hierarchy = [coarse,...,fine]
 levels = args.jfine - args.jcoarse + 1
-hierarchy = [None] * (levels)  # list [None,...,None]
+hierarchy = [None] * (levels)  # list [None,...,None]; indices 0,...,levels-1
 for k in range(args.jcoarse,args.jfine+1):
    hierarchy[k-args.jcoarse] = MeshLevel(k=k)
 mesh = hierarchy[-1]  # fine mesh
@@ -142,11 +133,12 @@ else:
     for s in range(args.cycles):
         if args.monitor:
             print('  %d:  |u-uexact|_2 = %.4e' % (s,l2err(uu)))
-        uu = vcycle(uu,phifine,fsource,hierarchy,
-                    levels=levels,view=args.mgview,symmetric=args.symmetric,
-                    downsweeps=args.downsweeps,
-                    coarsesweeps=args.coarsesweeps,
-                    upsweeps=args.upsweeps)
+        uu, chi = vcycle(uu,phifine,fsource,hierarchy,
+                         levels=levels,view=args.mgview,
+                         symmetric=args.symmetric,
+                         downsweeps=args.downsweeps,
+                         coarsesweeps=args.coarsesweeps,
+                         upsweeps=args.upsweeps)
 
 # report on computation including numerical error
 if args.pgs:
@@ -161,18 +153,55 @@ else:
 print('level %d (m = %d) %s%s' % (args.jfine,mesh.m,method,error))
 
 # graphical output if desired
+import matplotlib
+font = {'size' : 20}
+matplotlib.rc('font', **font)
+lines = {'linewidth': 2}
+matplotlib.rc('lines', **lines)
+
+def finalplot(xx,uinitial,ufinal,phifine):
+    plt.figure(figsize=(15.0,8.0))
+    plt.plot(xx,uinitial,'k--',label='initial iterate')
+    plt.plot(xx,ufinal,'k',label='final iterate',linewidth=4.0)
+    plt.plot(xx,phifine,'r',label='obstacle')
+    if not args.random:
+        plt.plot(xx,uexact(xx),'g',label='exact')
+    plt.axis([0.0,1.0,-0.3 + min(ufinal),1.1*max(ufinal)])
+    plt.legend()
+    plt.xlabel('x')
+
 if args.show or args.o:
     finalplot(mesh.xx(),uinitial,uu,phifine)
-
-    # FIXME put option control on this figure which shows defect hierarchy
-    if False:
-        plt.figure(figsize=(15.0,8.0))
-        for k in range(args.j+1):
-            plt.plot(hierarchy[k].xx(),chi[k],'k.-')  # FIXME chi[] is now inside vcycle()
-        plt.xlabel('x')
-
     if args.o:
         plt.savefig(args.o,bbox_inches='tight')
+    else:
+        plt.show()
+
+if args.diagnostics:
+    plt.figure(figsize=(15.0,15.0))
+    plt.subplot(4,1,1)
+    r = mesh.residual(uu,fsource)
+    osr = mesh.inactiveresidual(uu,fsource,phifine)
+    plt.plot(mesh.xx(),r,'k',label='residual')
+    plt.plot(mesh.xx(),osr,'r',label='inactive residual')
+    plt.legend()
+    plt.gca().set_xticks([],[])
+    plt.subplot(4,1,2)
+    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    plt.plot(mesh.xx(),osr,'r',label='inactive residual')
+    plt.legend()
+    plt.gca().set_xticks([],[])
+    plt.subplot(4,1,(3,4))
+    for k in range(levels-1):
+        plt.plot(hierarchy[k].xx(),chi[k],'k.--',
+                 label='level %d' % k)
+    plt.plot(hierarchy[levels-1].xx(),chi[levels-1],'k.-',
+             label='fine',linewidth=3.0)
+    plt.legend()
+    plt.title('decomposition of defect obstacle')
+    plt.xlabel('x')
+    if args.o:
+        plt.savefig('diags_' + args.o,bbox_inches='tight')
     else:
         plt.show()
 

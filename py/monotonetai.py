@@ -81,5 +81,5 @@ def vcycle(u,phi,f,meshes,levels=None,view=False,
             _levelreport(fine,k,meshes[k].m-1,upsweeps)
         meshes[k].vstate += meshes[k].prolong(meshes[k-1].vstate)
     u += meshes[fine].vstate
-    return u
+    return u, chi
 

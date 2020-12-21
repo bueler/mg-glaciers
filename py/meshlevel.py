@@ -96,3 +96,12 @@ class MeshLevel(object):
                    - (1.0/self.h) * (2.0*u[p] - u[p-1] - u[p+1])
         return r
 
+    def inactiveresidual(self,u,f,phi):
+        '''Compute the values of the residual where the constraint
+        is NOT active.  (Where the constraint is active the residual has
+        significantly negative values.)'''
+        r = self.residual(u,f)
+        osreps = 1.0e-10
+        r[u < phi + osreps] = np.maximum(r[u < phi + osreps],0.0)
+        return r
+
