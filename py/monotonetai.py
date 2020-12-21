@@ -2,7 +2,7 @@
 
 import numpy as np
 
-__all__ = ['vcycle']
+__all__ = ['pgssweep,vcycle']
 
 def _fzero(x):
     return np.zeros(np.shape(x))
@@ -20,22 +20,32 @@ def _coarsereport(fine,N,sweeps):
     _indentprint(fine,'coarse: %d sweeps over %d nodes' \
                       % (sweeps,N))
 
-def vcycle(u,phi,meshes,fine=None,view=False,
+def pgssweep(m,h,v,r,phi):
+    # FIXME option choosing forward, backward, symmetric
+    for p in range(1,m):
+        c = 0.5 * (h*r[p] + v[p-1] + v[p+1]) - v[p]
+        v[p] += max(c,phi[p] - v[p])
+    return v
+
+def vcycle(u,phi,f,meshes,fine=None,view=False,
            downsweeps=1,coarsesweeps=1,upsweeps=0):
     '''Apply one V-cycle of Algorithm 4.7 in Graeser & Kornhuber (2009),
-    namely the monotone multigrid method from Tai (2003).  Updates (in place)
-    iterate u assuming an obstacle phi.  Both must be defined on the finest
-    mesh meshes[fine].  Note meshes[0],...,meshes[fine] (coarse to fine) are
-    of type MeshLevel.  The smoother is downsweeps (or upsweeps) iterations
-    of projected Gauss-Seidel (pGS).  The coarse solver is coarsesweeps
-    iterations of pGS, and thus not exact.'''
+    namely the subset decomposition multigrid method from Tai (2003).
+    Updates (in place) the iterate u in K in
+        a(u,v-u) >= (f,v-u)  for all v in K
+    where K = {v >= phi}.  Vectors u,phi must be defined on the finest
+    mesh meshes[fine] while input f is a function.  Note
+    meshes[0],...,meshes[fine] (coarse to fine) are of type MeshLevel.
+    The smoother is downsweeps (or upsweeps) iterations of projected
+    Gauss-Seidel (pGS).  The coarse solver is coarsesweeps iterations
+    of pGS, and thus not exact.'''
     # FIXME optional symmetric smoother application: forward GS on down
     #                                                backward GS on up
     if not fine:
         fine = len(meshes) - 1
     chi = [None] * (fine+1)           # empty list of length fine+1
     chi[fine] = phi - u               # fine mesh defect obstacle
-    r = meshes[fine].residual(u)      # fine mesh residual
+    r = meshes[fine].residual(u,f)    # fine mesh residual
     # DOWN
     for k in range(fine,0,-1):        # k=fine,fine-1,...,1
         # monotone restriction gives defect obstacle
@@ -47,10 +57,11 @@ def vcycle(u,phi,meshes,fine=None,view=False,
             _levelreport(fine,k,meshes[k].m-1,downsweeps)
         v = meshes[k].zeros()
         for s in range(downsweeps):
-            meshes[k].pgssweep(v,r=r,phi=psi)
+            pgssweep(meshes[k].m,meshes[k].h,v,r,psi)
+            #meshes[k].pgssweep(v,r=r,phi=psi)
         meshes[k].vstate = v.copy()
         # update and canonically-restrict the residual
-        r += meshes[k].residual(v,f=_fzero)
+        r += meshes[k].residual(v,_fzero)
         r = meshes[k].CR(r)
     # COARSE SOLVE
     psi = chi[0]
@@ -58,7 +69,8 @@ def vcycle(u,phi,meshes,fine=None,view=False,
         _coarsereport(fine,meshes[0].m-1,coarsesweeps)
     v = meshes[0].zeros()
     for s in range(coarsesweeps):
-        meshes[0].pgssweep(v,r=r,phi=psi)
+        pgssweep(meshes[0].m,meshes[0].h,v,r,psi)
+        #meshes[0].pgssweep(v,r=r,phi=psi)
     meshes[0].vstate = v.copy()
     # UP
     assert (upsweeps==0), 'up sweeps not implemented yet' # FIXME

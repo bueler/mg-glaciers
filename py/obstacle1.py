@@ -5,7 +5,7 @@ import sys, argparse
 import matplotlib.pyplot as plt
 
 from meshlevel import MeshLevel
-from monotonetai import vcycle
+from monotonetai import pgssweep,vcycle
 
 parser = argparse.ArgumentParser(description='''
 Solve a 1D obstacle problem:
@@ -67,6 +67,9 @@ def fsource(x):
     '''The source term in -u'' = f.'''
     return - 2.0 * np.ones(np.shape(x))
 
+def fzero(x):
+    return np.zeros(np.shape(x))
+
 def uexact(low,x):
     '''A by-hand calculation from -u''=-2, and given the above obstacle, shows
     that u(a)=phi(a), u'(a)=phi'(a) for a<1/2 implies a=1/3.'''
@@ -95,36 +98,38 @@ def finalplot(xx,uinitial,ufinal):
 # FIXME allow coarse grid to be of any resolution
 hierarchy = [None] * (args.j+1)  # list [None,...,None] for indices 0,1,...,j
 for k in range(args.j+1):
-   hierarchy[k] = MeshLevel(k=k,f=fsource)
+   hierarchy[k] = MeshLevel(k=k)
 mesh = hierarchy[-1]  # fine mesh
 
 # discrete obstacle on fine level
-phifine = phi(args.lowobstacle,mesh.xx)
+phifine = phi(args.lowobstacle,mesh.xx())
 
 # feasible initial iterate
-uinitial = np.maximum(phifine,np.zeros(np.shape(mesh.xx)))
+uinitial = np.maximum(phifine,np.zeros(np.shape(mesh.xx())))
 
 # monotone multigrid V-cycles (unless user just wants pGS)
-# FIXME allow more than one
 if args.pgs:
     # sweeps of projected Gauss-Seidel on fine grid
     uu = uinitial.copy()
-    r = mesh.residual(mesh.zeros())
+    r = mesh.residual(mesh.zeros(),fsource)
     for s in range(args.downsweeps):
-        mesh.pgssweep(uu,r=r,phi=phifine)
+        pgssweep(mesh.m,mesh.h,uu,r,phifine)
+        #mesh.pgssweep(uu,r=r,phi=phifine)
 else:
-    uu = vcycle(uinitial,phifine,hierarchy,fine=args.j,view=args.mgview,
+    uu = vcycle(uinitial,phifine,fsource,hierarchy,
+                fine=args.j,view=args.mgview,
                 downsweeps=args.downsweeps,
                 coarsesweeps=args.coarsesweeps,
                 upsweeps=args.upsweeps)
     for s in range(args.cycles-1):
-        uu = vcycle(uu,phifine,hierarchy,fine=args.j,view=args.mgview,
+        uu = vcycle(uu,phifine,fsource,hierarchy,
+                    fine=args.j,view=args.mgview,
                     downsweeps=args.downsweeps,
                     coarsesweeps=args.coarsesweeps,
                     upsweeps=args.upsweeps)
 
 # evaluate numerical error
-udiff = uu - uexact(args.lowobstacle,mesh.xx)
+udiff = uu - uexact(args.lowobstacle,mesh.xx())
 if args.pgs:
     print('level %d (m = %d) using with %d sweeps of pGS:  |u-uexact|_2 = %.4e' \
           % (args.j,mesh.m,args.downsweeps,mesh.l2norm(udiff)))
@@ -136,13 +141,13 @@ else:
 
 # graphical output if desired
 if args.show or args.o:
-    finalplot(mesh.xx,uinitial,uu)
+    finalplot(mesh.xx(),uinitial,uu)
 
     # FIXME put option control on this figure which shows defect hierarchy
     if False:
         plt.figure(figsize=(15.0,8.0))
         for k in range(args.j+1):
-            plt.plot(hierarchy[k].xx,chi[k],'k.-')
+            plt.plot(hierarchy[k].xx(),chi[k],'k.-')  # FIXME chi[] is now inside vcycle()
         plt.xlabel('x')
 
     if args.o:
