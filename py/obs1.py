@@ -5,7 +5,7 @@ import sys, argparse
 import matplotlib.pyplot as plt
 
 from meshlevel import MeshLevel
-from monotonetai import pgssweep,vcycle
+from subsetdecomp import pgssweep,vcycle
 
 parser = argparse.ArgumentParser(description='''
 Solve a 1D obstacle problem:

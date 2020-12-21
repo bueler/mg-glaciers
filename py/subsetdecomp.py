@@ -1,4 +1,5 @@
-# module to implement the V-cycle algorithm for 
+# module to implement the V-cycle algorithm for Tai (2003)
+# multilevel subset decomposition method
 
 import numpy as np
 
@@ -31,8 +32,8 @@ def vcycle(u,phi,f,meshes,levels=None,view=False,
            downsweeps=1,coarsesweeps=1,upsweeps=0,
            symmetric=False):
     '''Apply one V-cycle of Algorithm 4.7 in Graeser & Kornhuber (2009),
-    namely the subset decomposition multigrid method from Tai (2003).
-    Updates (in place) the iterate u in K in
+    namely the multilevel subset decomposition multigrid method from
+    Tai (2003).  Updates (in place) the iterate u in K in
         a(u,v-u) >= (f,v-u)  for all v in K
     where K = {v >= phi}.  Vectors u,phi must be defined on the finest
     mesh meshes[levels-1] while input f is a function.  Note
