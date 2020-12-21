@@ -38,7 +38,9 @@ parser.add_argument('-j', type=int, default=2, metavar='J',
                     help='fine grid level (default j=2 gives 8 subintervals)')
 parser.add_argument('-lowobstacle', action='store_true', default=False,
                     help='use obstacle sufficiently low to have no contact')
-parser.add_argument('-obstacle1help', action='store_true', default=False,
+parser.add_argument('-monitor', action='store_true', default=False,
+                    help='monitor the error at the end of each multigrid cycle')
+parser.add_argument('-obs1help', action='store_true', default=False,
                     help='print help for this program and quit')
 parser.add_argument('-o', metavar='FILE', type=str, default='',
                     help='save plot at end in image file, e.g. PDF or PNG')
@@ -51,7 +53,7 @@ parser.add_argument('-mgview', action='store_true', default=False,
 parser.add_argument('-upsweeps', type=int, default=0, metavar='N',
                     help='number of sweeps of projected Gauss-Seidel (default=1)')
 args, unknown = parser.parse_known_args()
-if args.obstacle1help:
+if args.obs1help:
     parser.print_help()
     sys.exit(0)
 
@@ -107,6 +109,11 @@ phifine = phi(args.lowobstacle,mesh.xx())
 # feasible initial iterate
 uinitial = np.maximum(phifine,np.zeros(np.shape(mesh.xx())))
 
+# ability to evaluate error
+def l2err(u):
+    udiff = u - uexact(args.lowobstacle,mesh.xx())
+    return mesh.l2norm(udiff)
+
 # monotone multigrid V-cycles (unless user just wants pGS)
 if args.pgs:
     # sweeps of projected Gauss-Seidel on fine grid
@@ -116,12 +123,16 @@ if args.pgs:
         pgssweep(mesh.m,mesh.h,uu,r,phifine)
         #mesh.pgssweep(uu,r=r,phi=phifine)
 else:
+    if args.monitor:
+        print('  cycle 0:  |u-uexact|_2 = %.4e' % (l2err(uinitial)))
     uu = vcycle(uinitial,phifine,fsource,hierarchy,
                 fine=args.j,view=args.mgview,
                 downsweeps=args.downsweeps,
                 coarsesweeps=args.coarsesweeps,
                 upsweeps=args.upsweeps)
     for s in range(args.cycles-1):
+        if args.monitor:
+            print('  cycle %d:  |u-uexact|_2 = %.4e' % (s+1,l2err(uu)))
         uu = vcycle(uu,phifine,fsource,hierarchy,
                     fine=args.j,view=args.mgview,
                     downsweeps=args.downsweeps,
@@ -129,15 +140,13 @@ else:
                     upsweeps=args.upsweeps)
 
 # evaluate numerical error
-udiff = uu - uexact(args.lowobstacle,mesh.xx())
 if args.pgs:
     print('level %d (m = %d) using with %d sweeps of pGS:  |u-uexact|_2 = %.4e' \
-          % (args.j,mesh.m,args.downsweeps,mesh.l2norm(udiff)))
+          % (args.j,mesh.m,args.downsweeps,l2err(uu)))
 else:
     print('level %d (m = %d) using %2d V(%d,%d,%d) cycles:  |u-uexact|_2 = %.4e' \
           % (args.j,mesh.m,args.cycles,
-             args.downsweeps,args.coarsesweeps,args.upsweeps,
-             mesh.l2norm(udiff)))
+             args.downsweeps,args.coarsesweeps,args.upsweeps,l2err(uu)))
 
 # graphical output if desired
 if args.show or args.o:
