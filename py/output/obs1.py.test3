@@ -1,4 +1,4 @@
-  cycle 0:  |u-uexact|_2 = 1.8257e-01
-  cycle 1:  |u-uexact|_2 = 1.5563e-02
-  cycle 2:  |u-uexact|_2 = 2.3135e-03
-level 3 (m = 16) using  3 V(1,1,0) cycles:  |u-uexact|_2 = 5.3967e-04
+  0:  |u-uexact|_2 = 1.8257e-01
+  1:  |u-uexact|_2 = 7.5410e-03
+  2:  |u-uexact|_2 = 5.8597e-04
+level 3 (m = 16) using  3 V(1,1,0) cycles:  |u-uexact|_2 = 7.8126e-05

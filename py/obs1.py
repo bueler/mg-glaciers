@@ -38,6 +38,8 @@ parser.add_argument('-j', type=int, default=2, metavar='J',
                     help='fine grid level (default j=2 gives 8 subintervals)')
 parser.add_argument('-lowobstacle', action='store_true', default=False,
                     help='use obstacle sufficiently low to have no contact')
+parser.add_argument('-mgview', action='store_true', default=False,
+                    help='view multigrid cycles by indented print statements')
 parser.add_argument('-monitor', action='store_true', default=False,
                     help='monitor the error at the end of each multigrid cycle')
 parser.add_argument('-obs1help', action='store_true', default=False,
@@ -48,8 +50,8 @@ parser.add_argument('-pgs', action='store_true', default=False,
                     help='do projected Gauss-Seidel (instead of multigrid)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
-parser.add_argument('-mgview', action='store_true', default=False,
-                    help='view multigrid cycles by indented print statements')
+parser.add_argument('-symmetric', action='store_true', default=False,
+                    help='use symmetric projected Gauss-Seidel sweeps (forward then backward)')
 parser.add_argument('-upsweeps', type=int, default=0, metavar='N',
                     help='number of sweeps of projected Gauss-Seidel (default=1)')
 args, unknown = parser.parse_known_args()
@@ -121,20 +123,21 @@ if args.pgs:
     r = mesh.residual(mesh.zeros(),fsource)
     for s in range(args.downsweeps):
         pgssweep(mesh.m,mesh.h,uu,r,phifine)
-        #mesh.pgssweep(uu,r=r,phi=phifine)
+        if args.symmetric:
+            pgssweep(mesh.m,mesh.h,uu,r,phifine,backward=True)
 else:
     if args.monitor:
-        print('  cycle 0:  |u-uexact|_2 = %.4e' % (l2err(uinitial)))
+        print('  0:  |u-uexact|_2 = %.4e' % (l2err(uinitial)))
     uu = vcycle(uinitial,phifine,fsource,hierarchy,
-                fine=args.j,view=args.mgview,
+                fine=args.j,view=args.mgview,symmetric=args.symmetric,
                 downsweeps=args.downsweeps,
                 coarsesweeps=args.coarsesweeps,
                 upsweeps=args.upsweeps)
     for s in range(args.cycles-1):
         if args.monitor:
-            print('  cycle %d:  |u-uexact|_2 = %.4e' % (s+1,l2err(uu)))
+            print('  %d:  |u-uexact|_2 = %.4e' % (s+1,l2err(uu)))
         uu = vcycle(uu,phifine,fsource,hierarchy,
-                    fine=args.j,view=args.mgview,
+                    fine=args.j,view=args.mgview,symmetric=args.symmetric,
                     downsweeps=args.downsweeps,
                     coarsesweeps=args.coarsesweeps,
                     upsweeps=args.upsweeps)

@@ -20,15 +20,16 @@ def _coarsereport(fine,N,sweeps):
     _indentprint(fine,'coarse: %d sweeps over %d nodes' \
                       % (sweeps,N))
 
-def pgssweep(m,h,v,r,phi):
-    # FIXME option choosing forward, backward, symmetric
-    for p in range(1,m):
+def pgssweep(m,h,v,r,phi,backward=False):
+    indices = range(m-1,0,-1) if backward else range(1,m)
+    for p in indices:
         c = 0.5 * (h*r[p] + v[p-1] + v[p+1]) - v[p]
         v[p] += max(c,phi[p] - v[p])
     return v
 
 def vcycle(u,phi,f,meshes,fine=None,view=False,
-           downsweeps=1,coarsesweeps=1,upsweeps=0):
+           downsweeps=1,coarsesweeps=1,upsweeps=0,
+           symmetric=False):
     '''Apply one V-cycle of Algorithm 4.7 in Graeser & Kornhuber (2009),
     namely the subset decomposition multigrid method from Tai (2003).
     Updates (in place) the iterate u in K in
@@ -39,8 +40,8 @@ def vcycle(u,phi,f,meshes,fine=None,view=False,
     The smoother is downsweeps (or upsweeps) iterations of projected
     Gauss-Seidel (pGS).  The coarse solver is coarsesweeps iterations
     of pGS, and thus not exact.'''
-    # FIXME optional symmetric smoother application: forward GS on down
-    #                                                backward GS on up
+    # FIXME better symmetric smoother application: forward GS on down
+    #                                              backward GS on up
     if not fine:
         fine = len(meshes) - 1
     chi = [None] * (fine+1)           # empty list of length fine+1
@@ -58,7 +59,8 @@ def vcycle(u,phi,f,meshes,fine=None,view=False,
         v = meshes[k].zeros()
         for s in range(downsweeps):
             pgssweep(meshes[k].m,meshes[k].h,v,r,psi)
-            #meshes[k].pgssweep(v,r=r,phi=psi)
+            if symmetric:
+                pgssweep(meshes[k].m,meshes[k].h,v,r,psi,backward=True)
         meshes[k].vstate = v.copy()
         # update and canonically-restrict the residual
         r += meshes[k].residual(v,_fzero)
@@ -70,7 +72,8 @@ def vcycle(u,phi,f,meshes,fine=None,view=False,
     v = meshes[0].zeros()
     for s in range(coarsesweeps):
         pgssweep(meshes[0].m,meshes[0].h,v,r,psi)
-        #meshes[0].pgssweep(v,r=r,phi=psi)
+        if symmetric:
+            pgssweep(meshes[0].m,meshes[0].h,v,r,psi,backward=True)
     meshes[0].vstate = v.copy()
     # UP
     assert (upsweeps==0), 'up sweeps not implemented yet' # FIXME
