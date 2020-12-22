@@ -17,9 +17,13 @@ For detailed information:
         $ cd py/
         $ ./obs1.py -obs1help
 
-A good illustration run is:
+A good illustration run using a classical obstacle problem geometry is:
 
-        $ ./obs1.py -show -diagnostics -jfine 5 -jcoarse 2 -cycles 20 -random -fvalue -20 -symmetric
+        $ ./obs1.py -show -diagnostics -jfine 5 -jcoarse 2 -cycles 20 -random -fscale 10 -symmetric
+
+An illustration of the ice-like problem geometry:
+
+        $ ./obs1.py -problem icelike -show -diagnostics -jfine 4 -cycles 10
 
 Run software tests:
 

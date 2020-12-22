@@ -36,12 +36,10 @@ parser.add_argument('-diagnostics', action='store_true', default=False,
                     help='add a diagnostics figure to -show or -o output')
 parser.add_argument('-downsweeps', type=int, default=1, metavar='N',
                     help='number of sweeps of projected Gauss-Seidel (default=1)')
-parser.add_argument('-fvalue', type=float, default=-2.0, metavar='X',
-                    help='in Poisson equation -u"=f this sets the constant f-value (default X=-2)')
+parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
+                    help='in Poisson equation -u"=f this multiplies f (default X=1)')
 parser.add_argument('-jfine', type=int, default=2, metavar='J',
                     help='fine mesh is jth level (default jfine=2)')
-parser.add_argument('-low', action='store_true', default=False,
-                    help='use obstacle sufficiently low to have no contact')
 parser.add_argument('-jcoarse', type=int, default=0, metavar='J',
                     help='coarse mesh is jth level (default jcoarse=0 gives 1 node)')
 parser.add_argument('-mgview', action='store_true', default=False,
@@ -54,8 +52,11 @@ parser.add_argument('-o', metavar='FILE', type=str, default='',
                     help='save plot at end in image file, e.g. PDF or PNG')
 parser.add_argument('-pgs', action='store_true', default=False,
                     help='do projected Gauss-Seidel (instead of multigrid)')
+parser.add_argument('-problem', choices=['parabola', 'low', 'icelike'],
+                    metavar='X', default='parabola',
+                    help='determines obstacle and source function (default: %(default)s)')
 parser.add_argument('-random', action='store_true', default=False,
-                    help='use obstacle which is random perturbation of usual')
+                    help='randomly perturb the obstacle')
 parser.add_argument('-randommag', type=float, default=0.2, metavar='X',
                     help='magnitude of -random perturbation (default X=0.2)')
 parser.add_argument('-show', action='store_true', default=False,
@@ -74,24 +75,42 @@ np.random.seed(1)
 
 def phi(x):
     '''The obstacle:  u >= phi.'''
-    ph = 8.0 * x * (1.0 - x) - 1.0
-    if args.low:
-        ph -= 9.0
+    if args.problem == 'parabola':
+        ph = 8.0 * x * (1.0 - x) - 1.0
+    elif args.problem == 'low':
+        ph = 8.0 * x * (1.0 - x) - 3.0
+    elif args.problem == 'icelike':
+        ph = 4.0 * x * (1.0 - x)
+    else:
+        raise ValueError
     if args.random:
-        ph += args.randommag * np.random.randn(len(x))
+        perturb = args.randommag * np.random.randn(len(x))
+        perturb[0] = 0.0
+        perturb[-1] = 0.0
+        ph += perturb
     return ph
 
 def fsource(x):
-    '''The source term in -u'' = f.'''
-    return args.fvalue * np.ones(np.shape(x))
+    '''The source term in -u'' = f.  Assumes x is scalar.'''
+    if args.problem == 'icelike':
+        if x < 0.3 or x > 0.7:
+            f = -5.0
+        else:
+            f = 20.0
+    else:
+        f = -2.0
+    return args.fscale * f
 
 def fzero(x):
     return np.zeros(np.shape(x))
 
+exactavailable = (args.problem == 'parabola' or args.problem == 'low') \
+                 and (not args.random) and (args.fscale == 1.0)
+
+# FIXME exact solution for icelike
 def uexact(x):
-    '''A by-hand calculation from -u''=-2, and given the above obstacle, shows
-    that u(a)=phi(a), u'(a)=phi'(a) for a<1/2 implies a=1/3.'''
-    if args.low:
+    assert exactavailable, 'exact solution not actually available'
+    if args.problem == 'low':
         u = x * (x - 1.0)   # solution without obstruction
     else:
         a = 1.0/3.0
@@ -120,7 +139,7 @@ def l2err(u):
     udiff = u - uexact(mesh.xx())
     return mesh.l2norm(udiff)
 
-# monotone multigrid V-cycles (unless user just wants pGS)
+# multigrid V-cycles (unless user just wants pGS)
 uu = uinitial.copy()
 if args.pgs:
     # sweeps of projected Gauss-Seidel on fine grid
@@ -131,7 +150,7 @@ if args.pgs:
             pgssweep(mesh.m,mesh.h,uu,r,phifine,backward=True)
 else:
     for s in range(args.cycles):
-        if args.monitor:
+        if args.monitor and exactavailable:
             print('  %d:  |u-uexact|_2 = %.4e' % (s,l2err(uu)))
         uu, chi = vcycle(uu,phifine,fsource,hierarchy,
                          levels=levels,view=args.mgview,
@@ -146,10 +165,10 @@ if args.pgs:
 else:
    method = 'using %d V(%d,%d,%d) cycles' \
             % (args.cycles,args.downsweeps,args.coarsesweeps,args.upsweeps)
-if args.random:
-   error = ''
-else:
+if exactavailable:
    error = ':  |u-uexact|_2 = %.4e' % l2err(uu)
+else:
+   error = ''
 print('level %d (m = %d) %s%s' % (args.jfine,mesh.m,method,error))
 
 # graphical output if desired
@@ -164,7 +183,7 @@ def finalplot(xx,uinitial,ufinal,phifine):
     plt.plot(xx,uinitial,'k--',label='initial iterate')
     plt.plot(xx,ufinal,'k',label='final iterate',linewidth=4.0)
     plt.plot(xx,phifine,'r',label='obstacle')
-    if not args.random:
+    if exactavailable:
         plt.plot(xx,uexact(xx),'g',label='exact')
     plt.axis([0.0,1.0,-0.3 + min(ufinal),1.1*max(ufinal)])
     plt.legend()

@@ -7,7 +7,7 @@ runobs1_2:
 	-@./../testit.sh obs1.py "-mgview -cycles 1 -random" 1 2
 
 runobs1_3:
-	-@./../testit.sh obs1.py "-monitor -low -jfine 3 -cycles 3 -symmetric -diagnostics -o test3.png" 1 3
+	-@./../testit.sh obs1.py "-monitor -problem low -jfine 3 -cycles 3 -symmetric -diagnostics -o test3.png" 1 3
 
 runobs1_4:
 	-@./../testit.sh obs1.py "-monitor -mgview -jfine 4 -jcoarse 3" 1 4
