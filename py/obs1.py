@@ -80,7 +80,7 @@ def phi(x):
     elif args.problem == 'low':
         ph = 8.0 * x * (1.0 - x) - 3.0
     elif args.problem == 'icelike':
-        ph = 4.0 * x * (1.0 - x)
+        ph = x * (1.0 - x)
     else:
         raise ValueError
     if args.random:
@@ -93,10 +93,10 @@ def phi(x):
 def fsource(x):
     '''The source term in -u'' = f.  Assumes x is scalar.'''
     if args.problem == 'icelike':
-        if x < 0.3 or x > 0.7:
-            f = -5.0
+        if x < 0.2 or x > 0.8:
+            f = -16.0
         else:
-            f = 20.0
+            f = 8.0
     else:
         f = -2.0
     return args.fscale * f
@@ -104,15 +104,23 @@ def fsource(x):
 def fzero(x):
     return np.zeros(np.shape(x))
 
-exactavailable = (args.problem == 'parabola' or args.problem == 'low') \
-                 and (not args.random) and (args.fscale == 1.0)
+exactavailable = (not args.random) and (args.fscale == 1.0)
 
-# FIXME exact solution for icelike
 def uexact(x):
-    assert exactavailable, 'exact solution not actually available'
+    '''Assumes x is a numpy array.'''
+    assert exactavailable, 'exact solution not available'
     if args.problem == 'low':
         u = x * (x - 1.0)   # solution without obstruction
-    else:
+    elif args.problem == 'icelike':
+        u = phi(x)
+        a, c0, c1, d0, d1 = 0.1, -0.8, 0.09, 4.0, -0.39  # exact values
+        mid = (x > 0.2) * (x < 0.8) # logical and
+        left = (x > a) * (x < 0.2)
+        right = (x > 0.8) * (x < 1.0-a)
+        u[mid] = -4.0*x[mid]**2 + d0*x[mid] + d1
+        u[left] = 8.0*x[left]**2 + c0*x[left] + c1
+        u[right] = 8.0*(1.0-x[right])**2 + c0*(1.0-x[right]) + c1
+    else:  # problem == 'parabola'
         a = 1.0/3.0
         def upoisson(x):
             return x * (x - 18.0 * a + 8.0)
