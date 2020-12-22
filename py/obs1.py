@@ -164,8 +164,7 @@ else:
                          levels=levels,view=args.mgview,
                          symmetric=args.symmetric,
                          downsweeps=args.downsweeps,
-                         coarsesweeps=args.coarsesweeps,
-                         upsweeps=args.upsweeps)
+                         coarsesweeps=args.coarsesweeps)
 
 # report on computation including numerical error
 if args.pgs:
