@@ -212,12 +212,12 @@ if args.diagnostics:
     plt.gca().set_xticks([],[])
     plt.subplot(4,1,(3,4))
     for k in range(levels-1):
-        plt.plot(hierarchy[k].xx(),chi[k],'k.--',
+        plt.plot(hierarchy[k].xx(),chi[k],'k.--',ms=8.0,
                  label='level %d' % k)
-    plt.plot(hierarchy[levels-1].xx(),chi[levels-1],'k.-',
-             label='fine',linewidth=3.0)
+    plt.plot(hierarchy[levels-1].xx(),chi[levels-1],'k.-',ms=12.0,
+             label='fine mesh',linewidth=3.0)
     plt.legend()
-    plt.title('decomposition of defect obstacle')
+    plt.title('decomposition of final defect obstacle')
     plt.xlabel('x')
     if args.o:
         plt.savefig('diags_' + args.o,bbox_inches='tight')
