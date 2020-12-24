@@ -48,11 +48,11 @@ urlcolor=black    % ...
 
 
 \begin{document}
-\title[Multigrid for glacier modeling]{Multigrid for glacier modeling: \\ A user's guide to principles and practicalities}
+\title[Multigrid for glacier modeling]{Multigrid for glacier modeling: \\ A user's guide}
 
 \author{Ed Bueler}
 
-\begin{abstract} FIXME: two principles: mass conservation complementarity, solver optimality.  two examples: monotone multigrid for implicitly evolving SIA geometry, Schur-complement Newton-multigrid for fixed-geometry Glen-Stokes
+\begin{abstract} FIXME: two principles in introduction: mass conservation complementarity, solver optimality.  four examples in sections \ref{sec:subspace}--\ref{sec:stokes}: poisson equation from subspace decomp point of view, obstacle problem by subset decomposition, monotone multigrid for implicitly-evolving SIA geometry, Schur-complement and Vanka Newton-multigrid for fixed-geometry Glen-Stokes
 \end{abstract}
 
 \maketitle
@@ -67,6 +67,23 @@ The construction of effective numerical glacier and ice sheet models is challeng
 On the other hand, since the 1980s researchers in numerial methods have developed multigrid methods to solve partial differential equations like those which describe the ice fluid in glaciers.   For simpler problems like scalar elliptic equations and the linear Stokes system, these methods are now in routine use \cite{Briggsetal2000,Bueler2021,Trottenbergetal2001}.
 
 FIXME write it
+
+
+\section{The subspace decomposition perspective on multigrid} \label{sec:subspace}
+
+cite for subspace decomp \cite{Xu1992}
+
+\section{Subset decomposition for obstacle problems} \label{sec:obstacle}
+
+cite for multigrid obstacle \cite{BrandtCryer1983,Bueler2021,GraeserKornhuber2009,Jouvetetal2013}; cite for subset decomp \cite{Tai2003}
+
+\section{Multigrid solutions of the shallow-geometry ice sheet problem} \label{sec:sia}
+
+cite for glaciers as obstacle problems \cite{Bueler2016,Bueler2020,Calvoetal2002,JouvetBueler2012}
+
+\section{Multigrid for the Glen-Stokes equations in a glacier flowline} \label{sec:stokes}
+
+multigrid already used for Blatter-Pattyn model \cite{BrownSmithAhmadia2013} and for hybrid \cite{Jouvetetal2013}; one goal of this section is to make these approaches more understandable; use Schur complement \cite{Bueler2021,Elmanetal2014}; compare Vanka monolithic smoother \cite{Farrelletal2019}
 
 \small
 
