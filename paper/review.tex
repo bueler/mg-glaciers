@@ -30,6 +30,8 @@ urlcolor=black    % ...
 
 \newcommand{\hbn}{\hat{\mathbf{n}}}
 
+\newcommand{\bb}{\mathbf{b}}
+\newcommand{\bbf}{\mathbf{f}}
 \newcommand{\bg}{\mathbf{g}}
 \newcommand{\bn}{\mathbf{n}}
 \newcommand{\bu}{\mathbf{u}}
@@ -71,17 +73,58 @@ FIXME write it
 
 \section{The subspace decomposition perspective on multigrid} \label{sec:subspace}
 
+To sketch out our approach to multigrid methods we solve a simple ordinary differential equation (ODE) on an interval, namely the Poisson problem
+\begin{equation}
+- u''(x) = f(x) \quad \text{on} \quad 0 \le x \le 1. \label{eq:poisson}
+\end{equation}
+The unknown solution $u(x)$ also satisfies boundary conditions $u(0)=u(1)=0$.  The numerical representation of this problem might use an unequally-spaced mesh of subintervals, called \emph{elements} from now on, as in Figure \ref{fig:finehats}.
+
+\begin{figure}
+UNEQUALLY SPACED GRID WITH 12 ELEMENTS (11 INTERIOR POINTS) AND ONE HAT FCN PER POINT
+\caption{foo}
+\label{fig:finehats}
+\end{figure}
+
+The solution $u(x)$ will be built as a linear combination of the piecewise-linear hat functions $\lambda_p(x)$ shown in the Figure, over all interior \emph{nodes} (points) in the mesh:
+\begin{equation}
+u(x) = \sum_{p=1}^m u^p \lambda_p(x). \label{eq:trialsolution}
+\end{equation}
+Note that $u(x)$ is continuous and piecewise-linear, and its derivative is defined on the elements, but not generally at the nodes.  Having represented the solution it remains to adjust the coefficients $\{u^p\}$ so as to solve the problem.
+
+Direct use of \eqref{eq:poisson} is possible, thereby generating a finite difference (FD) method, but application to the glacier context will be much clearer if we use a finite element (FE) approach based on re-phrasing \eqref{eq:poisson} in \emph{weak form}.  As most readers will recall, this corresponds to multiplying the equation by a \emph{test function} and integrating by parts so that only first derivatives appear.  Without committing to details we suppose $u$ comes from a vector space of functions $\mathcal{H}$ which are smooth enough for the computations which follow.  Supposing the test function $v$ is in $\mathcal{H}$ also, equation \eqref{eq:poisson} implies
+\begin{equation}
+\int_0^1 u'(x) v'(x)\,dx = \int_0^1 f(x) v(x)\, dx.
+\label{eq:weakpoisson}
+\end{equation}
+Any FE method for this problem is a discretization which leads from \eqref{eq:weakpoisson} to a linear system
+\begin{equation}
+A \bu = \bbf \label{eq:linearsystem}
+\end{equation}
+by substitution of the \emph{trial} formula \eqref{eq:trialsolution} into \eqref{eq:weakpoisson}.  Each hat function is used as a test function, and substitution of $v=\lambda_p$ gives the $p$th equation in system \eqref{eq:linearsystem}.
+
+On this simple basis we can propose a \emph{multilevel} scheme which takes us most of the way to multigrid.  Consider the enlarged set of hat functions in Figure \ref{fig:multilevelhats}
+
+\begin{figure}
+SAME GRID AS \eqref{fig:finehats} WITH ORIGNAL FINE HATS DOTTED, 6 ELEMENT MID DASHED, AND 3 ELEMENT COARSE SOLID
+\caption{foo}
+\label{fig:multilevelhats}
+\end{figure}
+
 cite for subspace decomp \cite{Xu1992}
+
+think of residual as a functional; it is represented as a vector in the fine-grid hats but it can act on the coarse grid ones too
+
 
 \section{Subset decomposition for obstacle problems} \label{sec:obstacle}
 
+
 cite for multigrid obstacle \cite{BrandtCryer1983,Bueler2021,GraeserKornhuber2009,Jouvetetal2013}; cite for subset decomp \cite{Tai2003}
 
-\section{Multigrid solutions of the shallow-geometry ice sheet problem} \label{sec:sia}
+\section{Multigrid solutions of a shallow ice sheet mass conservation problem} \label{sec:sia}
 
 cite for glaciers as obstacle problems \cite{Bueler2016,Bueler2020,Calvoetal2002,JouvetBueler2012}
 
-\section{Multigrid for the Glen-Stokes equations in a glacier flowline} \label{sec:stokes}
+\section{Multigrid solutions of a Glen-Stokes momentum conversation problem for a glacier flowline} \label{sec:stokes}
 
 multigrid already used for Blatter-Pattyn model \cite{BrownSmithAhmadia2013} and for hybrid \cite{Jouvetetal2013}; one goal of this section is to make these approaches more understandable; use Schur complement \cite{Bueler2021,Elmanetal2014}; compare Vanka monolithic smoother \cite{Farrelletal2019}
 
