@@ -80,8 +80,8 @@ To introduce multigrid methods we demonstrate how to solve a simple ordinary dif
 with boundary conditions $u(0)=u(1)=0$.  Our numerical approximation will use an unequally-spaced ``fine'' mesh of subintervals, called \emph{elements} from now on, as in Figure \ref{fig:finehats}.
 
 \begin{figure}
-UNEQUALLY SPACED GRID WITH 12 ELEMENTS (11 INTERIOR POINTS) AND ONE HAT FCN, DOTTED, PER POINT
-\caption{The fine mesh supports a vector space $\mathcal{V}$ of piecewise linear functions.  The hat functions $\lambda_p(x)$ are a basis for $\mathcal{V}$, for indices $p=1,\dots,m$.}
+\includegraphics[width=0.6\textwidth]{figs/finehats.pdf}
+\caption{Hat functions $\lambda_p(x)$, for indices $p=1,\dots,m$, form a basis for the space of piecewise-linear functions $\mathcal{V}$ on the unequally-spaced fine mesh.}
 \label{fig:finehats}
 \end{figure}
 
@@ -104,16 +104,19 @@ A \bu = \bbf, \label{eq:linearsystem}
 \end{equation}
 where $A$ is an invertible $m\times m$ matrix and $\bbf$ is in $\RR^m$, by using each hat function on the fine mesh (Figure \ref{fig:finehats}) as a test function.  That is, substitution of $v=\lambda_p$ into \eqref{eq:weakpoisson} gives the $p$th equation in linear system \eqref{eq:linearsystem}.  For the right side one defines $f^p = \int_0^1 f(x) \lambda_p(x)\,dx$ and then the vector $\bbf = \{f^p\}$ in $\RR^m$.  Having done all these steps it is a simple matter to ask a computer to solve the linear system, for instance by using Gaussian elimination.
 
-On the basis of the above simple scheme we can now build a \emph{multilevel} scheme which takes us most of the way to multigrid.  Consider the enlarged set of hat functions shown in Figure \ref{fig:multilevelhats},
+On the basis of the above simple scheme we can now build a \emph{multilevel} scheme which takes us most of the way to multigrid.  Consider the enlarged set of hat functions shown in Figure \ref{fig:coarsehats},
     $$\lambda_1(x),\lambda_2(x),\dots,\lambda_m(x),\underbrace{\lambda_{m+1}(x),\dots,\lambda_{m+s}}_{\text{coarse-mesh hat functions}}$$
 FIXME DECORATE UNDERBRACE
 
 cite for subspace decomp \cite{Xu1992}
 
 \begin{figure}
-SAME GRID AS \eqref{fig:finehats} WITH ORIGINAL FINE HATS DOTTED, 6 ELEMENT MID DASHED, AND 3 ELEMENT COARSE SOLID
-\caption{A coarse ``mesh'' is really just additional hat functions $\lambda_p(x)$, for $p>m$, which spread over a greater distance.}
-\label{fig:multilevelhats}
+\includegraphics[width=0.56\textwidth]{figs/coarsehats.pdf}
+\medskip
+
+\includegraphics[width=0.56\textwidth]{figs/coarsesthats.pdf}
+\caption{Top: A coarse ``mesh'' is really just a set of additional hat functions $\lambda_p(x)$, for $p>m$, which spread over a greater distance.  Bottom: One may coarsen further.}
+\label{fig:coarsehats}
 \end{figure}
 
 
