@@ -50,7 +50,7 @@ urlcolor=black    % ...
 
 
 \begin{document}
-\title[Multigrid for glacier modeling]{Multigrid for glacier modeling: \\ A user's guide}
+\title[Geometric multigrid for glacier modeling]{Geometric multigrid for glacier modeling: \\ A user's guide}
 
 \author{Ed Bueler}
 
@@ -81,7 +81,7 @@ with boundary conditions $u(0)=u(1)=0$.  Our numerical approximation will use an
 
 \begin{figure}
 UNEQUALLY SPACED GRID WITH 12 ELEMENTS (11 INTERIOR POINTS) AND ONE HAT FCN, DOTTED, PER POINT
-\caption{The fine mesh supports a vector space $\mathcal{V}$ of piecewise linear functions.  The hat functions $\lambda_p(x)$ in $\mathcal{V}_p$ are a basis, for indices $p=1,\dots,m$.}
+\caption{The fine mesh supports a vector space $\mathcal{V}$ of piecewise linear functions.  The hat functions $\lambda_p(x)$ are a basis for $\mathcal{V}$, for indices $p=1,\dots,m$.}
 \label{fig:finehats}
 \end{figure}
 
@@ -91,28 +91,28 @@ u^h(x) = \sum_{p=1}^m u^p \lambda_p(x). \label{eq:trialsolution}
 \end{equation}
 Note that $u^h(x)$ is continuous and piecewise-linear.  Its derivative is defined on the elements, but not generally at the nodes.
 
-Having represented the solution, to actually solve the problem one must adjust the coefficients $u^p$.  These are formed into a column vector, $\bu=\{u^p\}$ in $\RR^m$.  Directly using equation \eqref{eq:poisson} to construct a linear system to determine $\bu$ is a common approach, namely in a finite difference (FD) method.  However, our applications to glacier problems will be clearer if we use a finite element (FE) approach based on re-phrasing \eqref{eq:poisson} in \emph{weak form} using integrals.  (Traditional introductions to FE methods are in \cite{Bueler2021,Elmanetal2014}.  Note that once we state the weak form the original equation \eqref{eq:poisson} will be called the \emph{strong form}.)  As many readers will recall, the weak form arises by multiplying \eqref{eq:poisson} by a \emph{test function} and integrating by parts so that only first derivatives remain.
+Having represented the solution, to actually solve the problem one must adjust the coefficients $u^p$.  These coefficients are formed into a column vector, $\bu=\{u^p\}$ in $\RR^m$.  We may directly use equation \eqref{eq:poisson} to construct a linear system to determine $\bu$ by a finite difference (FD) method \cite{LeVeque2007}.  However, our applications of multigrid ideas to glacier problems will be clearer if we instead use a finite element (FE) approach based on re-phrasing \eqref{eq:poisson} in \emph{weak form} using integrals.  (Accessible introductions to FE methods are in \cite{Bueler2021,Elmanetal2014,Johnson2009}.)  Note that once we state the weak form, next, then the original equation \eqref{eq:poisson} will be called the \emph{strong form}.
 
-Without committing to any mathematical detail, we suppose the exact, continuum solution $u(x)$ comes from a vector space of functions $\mathcal{H}$ which are smooth enough for the computations which follow.  Choosing a test function $v(x)$ from $\mathcal{H}$ also, equation \eqref{eq:poisson} implies
+The weak form of \eqref{eq:poisson} arises by multiplying both sides of the equation by a \emph{test function} and integrating by parts so that only first derivatives remain.  Without committing to any mathematical detail, we suppose the exact, continuum solution $u(x)$ comes from a vector space $\mathcal{H}$ of functions which are smooth enough to allow the computations which follow.  Choosing a test function $v(x)$ from $\mathcal{H}$ also, by multiplying and integrating we find that equation \eqref{eq:poisson} implies
 \begin{equation}
 \int_0^1 u'(x) v'(x)\,dx = \int_0^1 f(x) v(x)\, dx.
 \label{eq:weakpoisson}
 \end{equation}
-In our FE method one substitutes the \emph{trial} formula \eqref{eq:trialsolution} for $u^h$ into \eqref{eq:weakpoisson}.  Specifically in our method, one derives a linear system
+In this FE method one substitutes the \emph{trial} formula \eqref{eq:trialsolution} for $u^h$ into \eqref{eq:weakpoisson} to derive a linear system
 \begin{equation}
-A \bu = \bbf \label{eq:linearsystem}
+A \bu = \bbf, \label{eq:linearsystem}
 \end{equation}
-by using each hat function on the fine mesh (Figure \ref{fig:finehats}) as a test function.  That is, substitution of $v=\lambda_p$ into \eqref{eq:weakpoisson} gives the $p$th equation in linear system \eqref{eq:linearsystem}.  For the right side one defines $f^p = \int_0^1 f(x) \lambda_p(x)\,dx$ and then the vector $\bbf = \{f^p\}$ in $\RR^m$.  Having done all these steps it is a simple matter to ask a computer to solve the linear system, for instance by using Gaussian elimination.
+where $A$ is an invertible $m\times m$ matrix and $\bbf$ is in $\RR^m$, by using each hat function on the fine mesh (Figure \ref{fig:finehats}) as a test function.  That is, substitution of $v=\lambda_p$ into \eqref{eq:weakpoisson} gives the $p$th equation in linear system \eqref{eq:linearsystem}.  For the right side one defines $f^p = \int_0^1 f(x) \lambda_p(x)\,dx$ and then the vector $\bbf = \{f^p\}$ in $\RR^m$.  Having done all these steps it is a simple matter to ask a computer to solve the linear system, for instance by using Gaussian elimination.
 
-On this simple basis we can propose a \emph{multilevel} scheme which takes us most of the way to multigrid.  Consider the enlarged set of hat functions shown in Figure \ref{fig:multilevelhats},
-    $$\lambda_1(x),\lambda_2(x),\dots,\lambda_m(x),\underbrace{\lambda_{m+1}(x),\dots,\lambda_{m+s}}$$
+On the basis of the above simple scheme we can now build a \emph{multilevel} scheme which takes us most of the way to multigrid.  Consider the enlarged set of hat functions shown in Figure \ref{fig:multilevelhats},
+    $$\lambda_1(x),\lambda_2(x),\dots,\lambda_m(x),\underbrace{\lambda_{m+1}(x),\dots,\lambda_{m+s}}_{\text{coarse-mesh hat functions}}$$
 FIXME DECORATE UNDERBRACE
 
 cite for subspace decomp \cite{Xu1992}
 
 \begin{figure}
 SAME GRID AS \eqref{fig:finehats} WITH ORIGINAL FINE HATS DOTTED, 6 ELEMENT MID DASHED, AND 3 ELEMENT COARSE SOLID
-\caption{The coarser meshes are really just additional hat functions $\lambda_p(x)$ in $\mathcal{V}_p$, for $p>m$, which spread over more distance.}
+\caption{A coarse ``mesh'' is really just additional hat functions $\lambda_p(x)$, for $p>m$, which spread over a greater distance.}
 \label{fig:multilevelhats}
 \end{figure}
 
