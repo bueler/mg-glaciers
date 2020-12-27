@@ -40,7 +40,11 @@ m = 12
 plt.figure(figsize=(10,4))
 xdots = finemeshaxes(m)
 hats(xdots)
-plt.text(0.5,-0.3,r'$p$',fontsize=bigfsize)
+plt.text(xdots[9]-0.02,-0.2,r'$x_p$',fontsize=bigfsize)
+plt.annotate(r'$\lambda_p(x)$',
+             xy=(xdots[9]-0.01, 0.9), xytext=(xdots[9]-0.2, 1.15),
+             arrowprops=dict(arrowstyle='-|>',facecolor='black'),
+             fontsize=bigfsize)
 plt.text(-0.05,0.0,'0',fontsize=fsize)
 plt.text(-0.05,0.95,'1',fontsize=fsize)
 plt.axis([-0.2,1.2,-0.4,1.2])
