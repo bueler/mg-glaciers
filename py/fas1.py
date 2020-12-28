@@ -7,10 +7,57 @@ import matplotlib.pyplot as plt
 from meshlevel import MeshLevel1D
 
 parser = argparse.ArgumentParser(description='''
-Two level FAS (full approximation storage) scheme for the Liouville-Bratu
-problem
-  -u'' + nu e^u = 0,  u(0) = u(1) = 0.
-FIXME: FULLY describe FAS here so I don't forget it
+Two level FAS (full approximation storage) scheme for the nonlinear
+(semilinear) Liouville-Bratu problem
+  -u'' + nu e^u = 0,  u(0) = u(1) = 0
+where nu is constant.
+
+Let F be the residual associated to the weak form,
+  F(u)[v] = int_0^1 u'(x) v'(x) + nu e^{u(x)} v(x) dx,
+acting on u and v in H_0^1[0,1].  On the fine mesh which has m intervals
+and p=1,...,m-1 interior points, the residual is denoted F^h.  On the coarse
+mesh it is F^H.  These act on piecewise-linear and continuous functions in
+vector spaces S^h,S^H respectively.  These spaces have hat functions
+{lambda_p(x)} as a basis.  (Function residual() below computes F(w) on the
+given mesh for a given iterate w.  The point values are F(w)[lambda_p].)
+
+For the unknown, exact fine mesh solution
+  u^h(x) = sum_{p=1}^{m-1} u^p lambda_p(x)
+we want to solve
+  F^h(u^h)[v] = 0
+for all hat functions v(x) = lambda_p(x).
+
+Suppose w^h is an iterate on the fine mesh.  The smoother is nonlinear
+Gauss-Seidel, which updates w^h.  (Function ngssweep() below computes one sweep
+by using a fixed number of scalar Newton iterations at each point.)  Sweeps of
+this method accomplish the following on the fine mesh:
+  1. making the residual F^h(w^h) smooth, but not small, and
+  2. making the difference u^h - w^h smooth, but not small.
+
+Noting that F is nonlinear in u, the FAS method now proposes a new equation
+on the coarse mesh.  If the fine-mesh solver has already been applied then
+the new equation relates smooth quantities which should be well-approximated
+on the coarse mesh,
+  F^H(u^H) - F^H(R w^h) = R F^h(w^h),
+where u^H is the exact solution of this equation on the coarse mesh.  Here R
+is the restriction of a vector on the fine mesh to the coarse mesh.  (Note
+that MeshLevel1D.CR() computes this "canonical restriction" by "full-weighting",
+i.e. by averaging onto the coarse mesh.)  Note that if w^h were the exact
+solution to the fine mesh problem then the right side of this coarse mesh
+equation would be zero and the solution would be u^H = R w^h by well-posedness.
+
+Thus on the coarse mesh we need to solve
+  F^H(u^H)[v] = f[v],
+for v a hat function on the coarse mesh, where
+  f[v] = R F^h(w^h)[v] + F^H(R w^h)[v]
+We do this by (perhaps many) sweeps of nonlinear Gauss-Seidel.  (Note that
+ngssweep() below allows a right-hand side function (vector) f.)  After the
+coarse mesh solution we have u^H (assumed exact for presentation).  The final
+step of two-grid FAS is the update
+  w^h <-- w^h + P(u^H - R w^h).
+Here P is prolongation, acting by linear interpolation.  Note the update is
+zero if w^h is already the exact fine mesh solution.
+
 FIXME: implement MMS
 FIXME: make actual V-cycles, i.e. not just two-level
 ''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
