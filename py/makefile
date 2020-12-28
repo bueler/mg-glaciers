@@ -12,16 +12,20 @@ runobs1_3:
 runobs1_4:
 	-@./../testit.sh obs1.py "-monitor -mgview -jfine 4 -jcoarse 3" 1 4
 
+# FIXME currently not generating good results:
 runfas1_1:
-	-@./../testit.sh fas1.py "-j 3 -coarsesweeps 10" 1 1
+	-@./../testit.sh fas1.py "-j 3 -downsweeps 1 -coarsesweeps 10 -upsweeps 0" 1 1
+
+runfas1_2:
+	-@./../testit.sh fas1.py "-monitor -cycles 5 -downsweeps 20 -ngsonly" 1 2
 
 test_obs1: runobs1_1 runobs1_2 runobs1_3 runobs1_4
 
-test_fas1: runfas1_1
+test_fas1: runfas1_1 runfas1_2
 
 test: test_obs1 test_fas1
 
-.PHONY: clean runobs1_1 runobs1_2 runobs1_3 runobs1_4 runfas1_1 test_obs1 test_fas1 test
+.PHONY: clean runobs1_1 runobs1_2 runobs1_3 runobs1_4 runfas1_1 runfas1_2 test_obs1 test_fas1 test
 
 clean:
 	@rm -f maketmp tmp difftmp *test*.png
