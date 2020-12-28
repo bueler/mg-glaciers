@@ -2,9 +2,9 @@
 
 import numpy as np
 
-__all__ = ['MeshLevel']
+__all__ = ['MeshLevel1D']
 
-class MeshLevel(object):
+class MeshLevel1D(object):
     '''Encapsulate a mesh level for the interval [0,1], suitable for
     obstacle problems.  MeshLevel(k=k) has m = 2^{k+1} equal subintervals
     of length h = 1/m.  Indices give nodes 0,1,...,m:

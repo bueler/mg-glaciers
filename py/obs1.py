@@ -4,7 +4,7 @@ import numpy as np
 import sys, argparse
 import matplotlib.pyplot as plt
 
-from meshlevel import MeshLevel
+from meshlevel import MeshLevel1D
 from subsetdecomp import pgssweep,vcycle
 
 parser = argparse.ArgumentParser(description='''
@@ -132,7 +132,7 @@ def uexact(x):
 levels = args.jfine - args.jcoarse + 1
 hierarchy = [None] * (levels)  # list [None,...,None]; indices 0,...,levels-1
 for k in range(args.jcoarse,args.jfine+1):
-   hierarchy[k-args.jcoarse] = MeshLevel(k=k)
+   hierarchy[k-args.jcoarse] = MeshLevel1D(k=k)
 mesh = hierarchy[-1]  # fine mesh
 
 # discrete obstacle on fine level

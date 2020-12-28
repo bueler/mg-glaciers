@@ -4,13 +4,15 @@ import numpy as np
 import sys, argparse
 import matplotlib.pyplot as plt
 
-from meshlevel import MeshLevel
+from meshlevel import MeshLevel1D
 
 parser = argparse.ArgumentParser(description='''
 Two level FAS (full approximation storage) scheme for the Liouville-Bratu
 problem
   -u'' + nu e^u = 0,  u(0) = u(1) = 0.
-
+FIXME: FULLY describe FAS here so I don't forget it
+FIXME: implement MMS
+FIXME: make actual V-cycles, i.e. not just two-level
 ''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-coarsesweeps', type=int, default=1, metavar='N',
                     help='number of Gauss-Seidel sweeps (default=1)')
@@ -77,8 +79,8 @@ def ngssweep(mesh,u,frhs):
     return u
 
 # setup meshes
-finemesh = MeshLevel(k=args.j)
-coarsemesh = MeshLevel(k=args.j-1)
+finemesh = MeshLevel1D(k=args.j)
+coarsemesh = MeshLevel1D(k=args.j-1)
 
 # FAS V-cycles for two levels, fine and coarse
 uu = np.zeros(np.shape(finemesh.xx()))
