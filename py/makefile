@@ -12,11 +12,16 @@ runobs1_3:
 runobs1_4:
 	-@./../testit.sh obs1.py "-monitor -mgview -jfine 4 -jcoarse 3" 1 4
 
+runfas1_1:
+	-@./../testit.sh fas1.py "-j 3 -coarsesweeps 10" 1 1
+
 test_obs1: runobs1_1 runobs1_2 runobs1_3 runobs1_4
 
-test: test_obs1
+test_fas1: runfas1_1
 
-.PHONY: clean runobs1_1 runobs1_2 runobs1_3 runobs1_4 test_obs1 test
+test: test_obs1 test_fas1
+
+.PHONY: clean runobs1_1 runobs1_2 runobs1_3 runobs1_4 runfas1_1 test_obs1 test_fas1 test
 
 clean:
 	@rm -f maketmp tmp difftmp *test*.png
