@@ -10,13 +10,13 @@ parser = argparse.ArgumentParser(description='''
 Two level FAS (full approximation storage) scheme for the nonlinear
 (semilinear) Liouville-Bratu problem
   -u'' + nu e^u = 0,  u(0) = u(1) = 0
-where nu is constant.
-
-Let F be the residual associated to the weak form,
+where nu is constant.  Let F be the residual associated to the weak form,
   F(u)[v] = int_0^1 u'(x) v'(x) + nu e^{u(x)} v(x) dx,
-acting on u and v in H_0^1[0,1].  On the fine mesh which has m intervals
-and p=1,...,m-1 interior points, the residual is denoted F^h.  On the coarse
-mesh it is F^H.  These act on piecewise-linear and continuous functions in
+acting on u and v in H_0^1[0,1].
+
+The fine mesh which has m intervals and p=1,...,m-1 interior points.  On this
+fine mesh the residual is denoted F^h, and on the coarse mesh it is F^H.
+These functions act on piecewise-linear and continuous functions u in
 vector spaces S^h,S^H respectively.  These spaces have hat functions
 {lambda_p(x)} as a basis.  (Function residual() below computes F(w) on the
 given mesh for a given iterate w.  The point values are F(w)[lambda_p].)
