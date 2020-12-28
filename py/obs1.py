@@ -15,11 +15,10 @@ Solve a 1D obstacle problem:
 where phi(x) = 8x(1-x)-1, f(x) = -2, and u is in H_0^1[0,1].
 Interior condition is -u''=-2.
 
-Solution by Alg. 4.7 in Gräser & Kornhuber (2009), monotone multigrid
-V-cycles using the Tai (2003) method.  The smoother and the coarse-mesh
-solver is projected Gauss-Seidel (pGS).  Monotone restrictions decompose
-the defect obstacle.  Option -pgs reverts to single-level pGS (using
--downsweeps).
+Solution is by Alg. 4.7 in Gräser & Kornhuber (2009), namely the subset
+decomposition V-cycle method by Tai (2003).  The smoother and the coarse-mesh
+solver are projected Gauss-Seidel (pGS).  Monotone restrictions decompose
+the defect obstacle.  Option -pgs reverts to single-level pGS.
 
 References:
 * Gräser, C., & Kornhuber, R. (2009). Multigrid methods for

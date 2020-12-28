@@ -6,7 +6,7 @@ __all__ = ['MeshLevel']
 
 class MeshLevel(object):
     '''Encapsulate a mesh level for the interval [0,1], suitable for
-    obstacle problems.  MeshLevel(k=k) has m = 2^{k+1} subintervals
+    obstacle problems.  MeshLevel(k=k) has m = 2^{k+1} equal subintervals
     of length h = 1/m.  Indices give nodes 0,1,...,m:
         *---*---*---*---*---*---*
         0   1   2     ...  m-1  m
