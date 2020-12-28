@@ -62,6 +62,19 @@ class MeshLevel1D(object):
             y[q] = 0.5 * (v[2*q-1] + v[2*q+1]) + v[2*q]
         return y
 
+    def VR(self,v):
+        '''Restrict a vector v in S_k on the current mesh to the next-coarser
+        (k-1) mesh by using full-weighting.  Only the interior points are
+        updated.'''
+        assert len(v) == self.m+1, \
+               'input vector v is of length %d (should be %d)' % (len(v),self.m+1)
+        assert self.k > 0, \
+               'cannot restrict to a mesh coarser than the coarsest mesh'
+        y = np.zeros(self.mcoarser+1)
+        for q in range(1,len(y)-1):
+            y[q] = 0.25 * (v[2*q-1] + v[2*q+1]) + 0.5 * v[2*q]
+        return y
+
     def MR(self,v):
         '''Evaluate the monotone restriction operator on a vector v
         on the current mesh (i.e. v in S_k):

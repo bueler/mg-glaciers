@@ -148,8 +148,8 @@ for s in range(args.cycles):
         continue
     # restrict down: compute frhs = R F^h(u^h) + F^H(R u^h)
     Ffine = residual(finemesh,uu)
-    Ru = finemesh.CR(uu)
-    frhs = finemesh.CR(Ffine) + residual(coarsemesh,Ru)
+    Ru = finemesh.VR(uu)
+    frhs = finemesh.VR(Ffine) + residual(coarsemesh,Ru)
     # coarse solve: do args.coarsesweeps of NGS on coarse mesh
     uuH = Ru.copy()
     for q in range(args.coarsesweeps):
