@@ -129,7 +129,7 @@ def ngssweep(mesh,u,frhs,forward=True):
             df = 2.0/mesh.h + tmp
             c -= f / df
         u[p] += c
-    return u
+    return None
 
 # setup meshes
 finemesh = MeshLevel1D(k=args.j)
@@ -141,27 +141,27 @@ for s in range(args.cycles):
     if args.monitor:
         print('  %d: residual norm %.5e' \
               % (s,finemesh.l2norm(residual(finemesh,uu))))
-    # smooth: do args.downsweeps of NGS on fine grid
+    # smooth: do args.downsweeps of NGS on fine mesh
     for q in range(args.downsweeps):
-        uu = ngssweep(finemesh,uu,finemesh.zeros())
+        ngssweep(finemesh,uu,finemesh.zeros())
     if args.ngsonly:
         continue
     # restrict down: compute frhs = R F^h(u^h) + F^H(R u^h)
-    rfine = residual(finemesh,uu)
+    Ffine = residual(finemesh,uu)
     Ru = finemesh.CR(uu)
-    frhs = finemesh.CR(rfine) + residual(coarsemesh,Ru)
-    # coarse solve: do args.coarsesweeps of NGS on coarse grid
-    uuH = coarsemesh.zeros()
+    frhs = finemesh.CR(Ffine) + residual(coarsemesh,Ru)
+    # coarse solve: do args.coarsesweeps of NGS on coarse mesh
+    uuH = Ru.copy()
     for q in range(args.coarsesweeps):
-        uuH = ngssweep(coarsemesh,uuH,frhs)
+        ngssweep(coarsemesh,uuH,frhs)
+    # prolong up
     if args.monitor:
         print('    coarse update norm %.5e' \
               % coarsemesh.l2norm(uuH - Ru))
-    # prolong up
     uu += finemesh.prolong(uuH - Ru)
-    # smooth: do args.upsweeps of NGS on fine grid using frhs=0
+    # smooth: do args.upsweeps of NGS on fine mesh
     for q in range(args.upsweeps):
-        uu = ngssweep(finemesh,uu,finemesh.zeros(),forward=False)
+        ngssweep(finemesh,uu,finemesh.zeros(),forward=False)
 
 if args.monitor:
     print('  %d: residual norm %.5e' \
