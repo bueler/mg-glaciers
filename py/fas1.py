@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# suggests correctness, i.e. 5 cycles with very accurate coarse-mesh solve
+# give discretization error:
+#   $ for JJ in 1 2 3 4 5 6; do ./fas1.py -j $JJ -cycles 5 -coarsesweeps 1000 -mms; done
+
 import numpy as np
 import sys, argparse
 import matplotlib.pyplot as plt

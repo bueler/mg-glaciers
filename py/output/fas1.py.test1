@@ -1,1 +1,6 @@
-  m=16 mesh using 1 V(1,10,0) cycles: |u|_2=0.055534
+  0: residual norm 1.16927e-01
+    coarse update norm 4.43707e-02
+  1: residual norm 3.79940e-02
+    coarse update norm 1.46425e-02
+  2: residual norm 1.14978e-02
+  m=8 mesh using 2 V(1,20,1) cycles: |u|_2=0.077111

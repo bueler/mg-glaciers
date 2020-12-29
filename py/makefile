@@ -12,9 +12,8 @@ runobs1_3:
 runobs1_4:
 	-@./../testit.sh obs1.py "-monitor -mgview -jfine 4 -jcoarse 3" 1 4
 
-# FIXME currently not generating good results:
 runfas1_1:
-	-@./../testit.sh fas1.py "-j 3 -downsweeps 1 -coarsesweeps 10 -upsweeps 0" 1 1
+	-@./../testit.sh fas1.py "-monitor -cycles 2 -coarsesweeps 20" 1 1
 
 runfas1_2:
 	-@./../testit.sh fas1.py "-monitor -cycles 5 -downsweeps 20 -ngsonly" 1 2
