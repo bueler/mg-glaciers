@@ -4,6 +4,12 @@ import numpy as np
 import sys, argparse
 import matplotlib.pyplot as plt
 
+import matplotlib as mpl
+font = {'size' : 20}
+mpl.rc('font', **font)
+lines = {'linewidth': 2}
+mpl.rc('lines', **lines)
+
 from meshlevel import MeshLevel1D
 
 parser = argparse.ArgumentParser(description='''
@@ -58,7 +64,6 @@ step of two-grid FAS is the update
 Here P is prolongation, acting by linear interpolation.  Note the update is
 zero if w^h is already the exact fine mesh solution.
 
-FIXME: implement MMS
 FIXME: make actual V-cycles, i.e. not just two-level
 FIXME: count work units
 ''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
@@ -72,6 +77,8 @@ parser.add_argument('-fas1help', action='store_true', default=False,
                     help='print help for this program and quit')
 parser.add_argument('-j', type=int, default=2, metavar='J',
                     help='m = 2^{j+1} is subintervals in fine mesh (default j=2 gives m=8)')
+parser.add_argument('-mms', action='store_true', default=False,
+                    help='solve a manufactured problem with known exact solution')
 parser.add_argument('-monitor', action='store_true', default=False,
                     help='print residual and update norms')
 parser.add_argument('-ngsonly', action='store_true', default=False,
@@ -89,6 +96,11 @@ if args.fas1help:
     parser.print_help()
     sys.exit(0)
 
+def mmsevaluate(x):
+    u = np.sin(3.0 * np.pi * x)
+    g = 9.0 * np.pi**2 * u + args.nu * np.exp(u)
+    return u, g
+
 def residual(mesh,u):
     '''Compute the residual for given u,
        F(u)[v] = int_0^1 u'(x) v'(x) + nu e^{u(x)} v(x) dx
@@ -99,9 +111,14 @@ def residual(mesh,u):
     assert len(u) == mesh.m+1, \
            'input vector u is of length %d (should be %d)' % (len(v),mesh.m+1)
     r = mesh.zeros()
+    if args.mms:
+        x = mesh.xx()
     for p in range(1,mesh.m):
         r[p] = (1.0/mesh.h) * (2.0*u[p] - u[p-1] - u[p+1]) \
                + mesh.h * args.nu * np.exp(u[p])
+        if args.mms:
+            _, g = mmsevaluate(x[p])
+            r[p] -= mesh.h * g
     return r
 
 def ngssweep(mesh,u,frhs,forward=True):
@@ -120,12 +137,17 @@ def ngssweep(mesh,u,frhs,forward=True):
         indices = range(1,mesh.m)
     else:
         indices = range(mesh.m-1,0,-1)
+    if args.mms:
+        x = mesh.xx()
     for p in indices:
         c = 0   # because previous iterate u is close to correct
         for n in range(args.niters):
             tmp = mesh.h * args.nu * np.exp(u[p]+c)
             f = (1.0/mesh.h) * (2.0*(u[p]+c) - u[p-1] - u[p+1]) \
                 + tmp - mesh.h * frhs[p]
+            if args.mms:
+                _, g = mmsevaluate(x[p])
+                f -= mesh.h * g
             df = 2.0/mesh.h + tmp
             c -= f / df
         u[p] += c
@@ -141,16 +163,16 @@ for s in range(args.cycles):
     if args.monitor:
         print('  %d: residual norm %.5e' \
               % (s,finemesh.l2norm(residual(finemesh,uu))))
-    # smooth: do args.downsweeps of NGS on fine mesh
+    # smooth: NGS sweeps on fine mesh
     for q in range(args.downsweeps):
         ngssweep(finemesh,uu,finemesh.zeros())
     if args.ngsonly:
         continue
     # restrict down: compute frhs = R F^h(u^h) + F^H(R u^h)
     Ffine = residual(finemesh,uu)
-    Ru = finemesh.VR(uu)
+    Ru = finemesh.VR0(uu)
     frhs = finemesh.VR(Ffine) + residual(coarsemesh,Ru)
-    # coarse solve: do args.coarsesweeps of NGS on coarse mesh
+    # coarse solve: NGS sweeps on coarse mesh
     uuH = Ru.copy()
     for q in range(args.coarsesweeps):
         ngssweep(coarsemesh,uuH,frhs)
@@ -159,7 +181,7 @@ for s in range(args.cycles):
         print('    coarse update norm %.5e' \
               % coarsemesh.l2norm(uuH - Ru))
     uu += finemesh.prolong(uuH - Ru)
-    # smooth: do args.upsweeps of NGS on fine mesh
+    # smooth: NGS sweeps on fine mesh
     for q in range(args.upsweeps):
         ngssweep(finemesh,uu,finemesh.zeros(),forward=False)
 
@@ -176,15 +198,13 @@ else:
           % (finemesh.m,args.cycles,
              args.downsweeps,args.coarsesweeps,args.upsweeps,
              finemesh.l2norm(uu)))
+if args.mms:
+    uexact, _ = mmsevaluate(finemesh.xx())
+    print('  numerical error: |u-u_exact|_2=%.4e' \
+          % (finemesh.l2norm(uu - uexact)))
 
 # graphical output if desired
 if args.show:
-    import matplotlib
-    font = {'size' : 20}
-    matplotlib.rc('font', **font)
-    lines = {'linewidth': 2}
-    matplotlib.rc('lines', **lines)
-
     plt.figure(figsize=(15.0,8.0))
     plt.plot(finemesh.xx(),uu,'k',linewidth=4.0)
     plt.xlabel('x')

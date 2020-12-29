@@ -36,7 +36,8 @@ class MeshLevel1D(object):
 
     def prolong(self,v):
         '''Prolong a vector on the next-coarser (k-1) mesh (i.e.
-        in S_{k-1}) onto the current mesh (in S_k).'''
+        in S_{k-1}) onto the current mesh (in S_k).  Uses linear
+        interpolation.'''
         assert len(v) == self.mcoarser+1, \
                'input vector v is of length %d (should be %d)' \
                % (len(v),self.mcoarser+1)
@@ -62,10 +63,10 @@ class MeshLevel1D(object):
             y[q] = 0.5 * (v[2*q-1] + v[2*q+1]) + v[2*q]
         return y
 
-    def VR(self,v):
+    def VR0(self,v):
         '''Restrict a vector v in S_k on the current mesh to the next-coarser
         (k-1) mesh by using full-weighting.  Only the interior points are
-        updated.'''
+        updated and the returned vector has zero boundary values.'''
         assert len(v) == self.m+1, \
                'input vector v is of length %d (should be %d)' % (len(v),self.m+1)
         assert self.k > 0, \
@@ -73,6 +74,21 @@ class MeshLevel1D(object):
         y = np.zeros(self.mcoarser+1)
         for q in range(1,len(y)-1):
             y[q] = 0.25 * (v[2*q-1] + v[2*q+1]) + 0.5 * v[2*q]
+        return y
+
+    def VR(self,v):
+        '''Restrict a vector v in S_k on the current mesh to the next-coarser
+        (k-1) mesh by using full-weighting.  All points are updated.  For
+        boundary values see equation (6.20) in Bueler (2021).'''
+        assert len(v) == self.m+1, \
+               'input vector v is of length %d (should be %d)' % (len(v),self.m+1)
+        assert self.k > 0, \
+               'cannot restrict to a mesh coarser than the coarsest mesh'
+        y = np.zeros(self.mcoarser+1)
+        y[0] = (2.0/3.0) * v[0] + (1.0/3.0) * v[1]
+        for q in range(1,len(y)-1):
+            y[q] = 0.25 * (v[2*q-1] + v[2*q+1]) + 0.5 * v[2*q]
+        y[-1] = (1.0/3.0) * v[-2] + (2.0/3.0) * v[-1]
         return y
 
     def MR(self,v):
