@@ -2,7 +2,7 @@
 
 # suggests correctness, i.e. 5 cycles with very accurate coarse-mesh solve
 # give discretization error:
-#   $ for JJ in 1 2 3 4 5 6; do ./fas1.py -j $JJ -cycles 5 -coarsesweeps 1000 -mms; done
+#   $ for JJ in 1 2 3 4 5 6; do ./fas1.py -j $JJ -cycles 5 -coarsesweeps 1000 -mms -levels 2; done
 
 import numpy as np
 import sys, argparse
@@ -20,46 +20,57 @@ parser = argparse.ArgumentParser(description='''
 Two level FAS (full approximation storage) scheme for the nonlinear
 (semilinear) Liouville-Bratu problem
   -u'' + nu e^u = 0,  u(0) = u(1) = 0
-where nu is constant.  Let F be the residual associated to the weak form,
+where nu is constant.  Let F be the nonlinear operator for the weak form,
   F(u)[v] = int_0^1 u'(x) v'(x) + nu e^{u(x)} v(x) dx,
-acting on u and v in H_0^1[0,1].
+acting on u and v in H_0^1[0,1], and we want to solve
+  F(u)[v] = 0
+for all v.
 
-The fine mesh which has m intervals and p=1,...,m-1 interior points.  On this
-fine mesh the residual is denoted F^h, and on the coarse mesh it is F^H.
+In the -mms case the equation we want to solve is
+  -u'' + nu e^u = g,  u(0) = u(1) = 0
+for a given function g.  In that case the nonlinear operator is the same,
+and we want to solve
+  F(u)[v] = int_0^1 g(x) v(x) dx = <g,v>
+for all v.
+
+The fine mesh has m intervals and p=1,...,m-1 interior points.  On this
+fine mesh the operator is denoted F^h, and on the coarse mesh it is F^H.
 These functions act on piecewise-linear and continuous functions u in
-vector spaces S^h,S^H respectively.  These spaces have hat functions
-{lambda_p(x)} as a basis.  (Function residual() below computes F(w) on the
-given mesh for a given iterate w.  The point values are F(w)[lambda_p].)
+vector spaces S^h,S^H respectively, which have hat functions
+{lambda_p(x)} as a basis.  The unknown, exact fine mesh solution is
+  u^h(x) = sum_{p=1}^{m-1} u^h[p] lambda_p(x)
+thus u^h is represented as a vector with point values u^h[p].
 
-For the unknown, exact fine mesh solution
-  u^h(x) = sum_{p=1}^{m-1} u^p lambda_p(x)
-we want to solve
-  F^h(u^h)[v] = 0
-for all hat functions v(x) = lambda_p(x).
+Function FF() below computes F(w) on the given mesh for a given iterate w;
+the point values are F(w)[lambda_p].  Function residual() below computes point
+values corresponding to the equation "F(w)[v] = <f,v>" on the given mesh,
+namely
+  r[p] = <f,lambda_p> - F(w)[lambda_p] = h f[p] - F(w)[p];
+the integral <f,v> is done by the trapezoid rule.
 
 Suppose w^h is an iterate on the fine mesh.  The smoother is nonlinear
-Gauss-Seidel, which updates w^h.  (Function ngssweep() below computes one sweep
-by using a fixed number of scalar Newton iterations at each point.)  Sweeps of
-this method accomplish the following on the fine mesh:
-  1. making the residual F^h(w^h) smooth, but not small, and
+Gauss-Seidel, which updates w^h.  Function ngssweep() below computes one sweep
+by using a fixed number niters of scalar Newton iterations at each point.
+Sweeps of this method accomplish the following on the fine mesh:
+  1. making the residual r smooth, but not small, and
   2. making the difference u^h - w^h smooth, but not small.
 
 Noting that F is nonlinear in u, the FAS method now proposes a new equation
 on the coarse mesh.  If the fine-mesh solver has already been applied then
 the new equation relates smooth quantities which should be well-approximated
 on the coarse mesh,
-  F^H(u^H) - F^H(R w^h) = R F^h(w^h),
+  F^H(u^H) - F^H(R w^h) = R (f^h - F^h(w^h)),
 where u^H is the exact solution of this equation on the coarse mesh.  Here R
-is the restriction of a vector on the fine mesh to the coarse mesh.  (Note
-that MeshLevel1D.CR() computes this "canonical restriction" by "full-weighting",
-i.e. by averaging onto the coarse mesh.)  Note that if w^h were the exact
-solution to the fine mesh problem then the right side of this coarse mesh
-equation would be zero and the solution would be u^H = R w^h by well-posedness.
+is the restriction of a vector on the fine mesh to the coarse mesh, computed
+by "full-weighting", i.e. by averaging onto the coarse mesh.  Note that if
+w^h were the exact solution to the fine mesh problem then the right side of
+this coarse mesh equation would be zero and the solution would be u^H = R w^h
+by well-posedness.
 
 Thus on the coarse mesh we need to solve
-  F^H(u^H)[v] = f[v],
+  F^H(u^H)[v] = <f^H,v>,
 for v a hat function on the coarse mesh, where
-  f[v] = R F^h(w^h)[v] + F^H(R w^h)[v]
+  f^H = R (f^h - F^h(w^h)[v]) + F^H(R w^h)[v]
 We do this by (perhaps many) sweeps of nonlinear Gauss-Seidel.  (Note that
 ngssweep() below allows a right-hand side function (vector) f.)  After the
 coarse mesh solution we have u^H (assumed exact for presentation).  The final
@@ -68,7 +79,8 @@ step of two-grid FAS is the update
 Here P is prolongation, acting by linear interpolation.  Note the update is
 zero if w^h is already the exact fine mesh solution.
 
-FIXME: make actual V-cycles, i.e. not just two-level
+FIXME: document V-cycles, i.e. not just two-level
+
 FIXME: count work units
 ''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-coarsesweeps', type=int, default=5, metavar='N',
@@ -81,6 +93,8 @@ parser.add_argument('-fas1help', action='store_true', default=False,
                     help='print help for this program and quit')
 parser.add_argument('-j', type=int, default=2, metavar='J',
                     help='m = 2^{j+1} is subintervals in fine mesh (default j=2 gives m=8)')
+parser.add_argument('-levels', type=int, default=-1, metavar='J',
+                    help='number of levels in V-cycle (default gives levels=j+1)')
 parser.add_argument('-mms', action='store_true', default=False,
                     help='solve a manufactured problem with known exact solution')
 parser.add_argument('-monitor', action='store_true', default=False,
@@ -99,31 +113,36 @@ args, unknown = parser.parse_known_args()
 if args.fas1help:
     parser.print_help()
     sys.exit(0)
+if args.levels < 1:
+    args.levels = args.j+1
 
 def mmsevaluate(x):
     u = np.sin(3.0 * np.pi * x)
     g = 9.0 * np.pi**2 * u + args.nu * np.exp(u)
     return u, g
 
-def residual(mesh,u):
-    '''Compute the residual for given u,
+def FF(mesh,u):
+    '''Compute the nonlinear operator for given u,
        F(u)[v] = int_0^1 u'(x) v'(x) + nu e^{u(x)} v(x) dx
     for v equal to the interior-point hat functions lambda_p at p=1,...,m-1.
-    Evaluates first term exactly.  Last two terms are by the trapezoid rule.
+    Evaluates first term exactly.  Last term is by the trapezoid rule.
     Input mesh is of class MeshLevel.  Input u is a vectors of length m+1.
-    The returned vector r is of length m+1 and has r[0]=r[m]=0.'''
+    The returned vector F is of length m+1 and has F[0]=F[m]=0.'''
     assert len(u) == mesh.m+1, \
-           'input vector u is of length %d (should be %d)' % (len(v),mesh.m+1)
-    r = mesh.zeros()
-    if args.mms:
-        x = mesh.xx()
+           'input vector u is of length %d (should be %d)' % (len(u),mesh.m+1)
+    F = mesh.zeros()
     for p in range(1,mesh.m):
-        r[p] = (1.0/mesh.h) * (2.0*u[p] - u[p-1] - u[p+1]) \
+        F[p] = (1.0/mesh.h) * (2.0*u[p] - u[p-1] - u[p+1]) \
                + mesh.h * args.nu * np.exp(u[p])
-        if args.mms:
-            _, g = mmsevaluate(x[p])
-            r[p] -= mesh.h * g
-    return r
+    return F
+
+def residual(mesh,u,f):
+    '''Compute the residual of "F(u)=f" for given u, namely
+       r(u)[v] = int_0^1 f(x) v(x) dx - F(u)[v]
+    for v equal to the interior-point hat functions lambda_p at p=1,...,m-1.'''
+    assert len(u) == mesh.m+1, \
+           'input vector u is of length %d (should be %d)' % (len(u),mesh.m+1)
+    return mesh.h * f - FF(mesh,u)
 
 def ngssweep(mesh,u,frhs,forward=True):
     '''Do one in-place nonlinear Gauss-Seidel sweep over the interior points
@@ -141,76 +160,99 @@ def ngssweep(mesh,u,frhs,forward=True):
         indices = range(1,mesh.m)
     else:
         indices = range(mesh.m-1,0,-1)
-    if args.mms:
-        x = mesh.xx()
     for p in indices:
         c = 0   # because previous iterate u is close to correct
         for n in range(args.niters):
             tmp = mesh.h * args.nu * np.exp(u[p]+c)
             f = (1.0/mesh.h) * (2.0*(u[p]+c) - u[p-1] - u[p+1]) \
                 + tmp - mesh.h * frhs[p]
-            if args.mms:
-                _, g = mmsevaluate(x[p])
-                f -= mesh.h * g
             df = 2.0/mesh.h + tmp
             c -= f / df
         u[p] += c
     return None
 
-# setup meshes
-finemesh = MeshLevel1D(k=args.j)
-coarsemesh = MeshLevel1D(k=args.j-1)
+# setup mesh hierarchy
+meshes = [None] * (args.j + 1)     # spots for k=0,...,j meshes
+assert (args.levels >= 1) and (args.levels <= args.j + 1)
+kcoarse = args.j-args.levels+1
+for k in range(kcoarse,args.j+1):  # create meshes for the ones we use
+    meshes[k] = MeshLevel1D(k=k)
 
-# FAS V-cycles for two levels, fine and coarse
-uu = np.zeros(np.shape(finemesh.xx()))
+# FAS V-cycle for levels k down to k=kcoarse
+def vcycle(k,u,frhs):
+    uin = u.copy()
+    if k == kcoarse:
+        # coarse solve: NGS sweeps on coarse mesh
+        for q in range(args.coarsesweeps):
+            ngssweep(meshes[k],u,frhs)
+        return u, u - uin
+    else:
+        assert k > kcoarse
+        # smooth: NGS sweeps on fine mesh
+        for q in range(args.downsweeps):
+            ngssweep(meshes[k],u,frhs)
+        # restrict down: compute frhs = R (f^h - F^h(u^h)) + F^H(R u^h)
+        rfine = residual(meshes[k],u,frhs)
+        Ru = meshes[k].VR0(u)
+        coarsefrhs = meshes[k].VR(rfine) + FF(meshes[k-1],Ru)
+        # recurse
+        _, ducoarse = vcycle(k-1,Ru,coarsefrhs)
+        if args.monitor:
+            print('     ' + '  ' * (args.j + 1 - k), end='')
+            print('coarse update norm %.5e' % meshes[k-1].l2norm(ducoarse))
+        # prolong up
+        u += meshes[k].prolong(ducoarse)
+        # smooth: NGS sweeps on fine mesh
+        for q in range(args.upsweeps):
+            ngssweep(meshes[k],u,frhs,forward=False)
+        return u, u - uin
+
+# compute fine mesh right-hand side FIXME this is point wise function?
+if args.mms:
+    _, f = mmsevaluate(meshes[args.j].xx())
+    f[0] = 0.0
+    f[meshes[args.j].m] = 0.0
+else:
+    f = meshes[args.j].zeros()
+
+# SOLVE:  do V-cycles or NGS sweeps, with residual monitoring
+uu = meshes[args.j].zeros()
 for s in range(args.cycles):
     if args.monitor:
-        print('  %d: residual norm %.5e' \
-              % (s,finemesh.l2norm(residual(finemesh,uu))))
-    # smooth: NGS sweeps on fine mesh
-    for q in range(args.downsweeps):
-        ngssweep(finemesh,uu,finemesh.zeros())
+        rnorm = meshes[args.j].l2norm(residual(meshes[args.j],uu,f))
+        print('  %d: residual norm %.5e' % (s,rnorm))
     if args.ngsonly:
+        for q in range(args.downsweeps):
+            ngssweep(meshes[args.j],uu,f)
         continue
-    # restrict down: compute frhs = R F^h(u^h) + F^H(R u^h)
-    Ffine = residual(finemesh,uu)
-    Ru = finemesh.VR0(uu)
-    frhs = finemesh.VR(Ffine) + residual(coarsemesh,Ru)
-    # coarse solve: NGS sweeps on coarse mesh
-    uuH = Ru.copy()
-    for q in range(args.coarsesweeps):
-        ngssweep(coarsemesh,uuH,frhs)
-    # prolong up
-    if args.monitor:
-        print('    coarse update norm %.5e' \
-              % coarsemesh.l2norm(uuH - Ru))
-    uu += finemesh.prolong(uuH - Ru)
-    # smooth: NGS sweeps on fine mesh
-    for q in range(args.upsweeps):
-        ngssweep(finemesh,uu,finemesh.zeros(),forward=False)
-
+    else:
+        uu, _ = vcycle(args.j,uu,f)
 if args.monitor:
-    print('  %d: residual norm %.5e' \
-          % (s+1,finemesh.l2norm(residual(finemesh,uu))))
+    rnorm = meshes[args.j].l2norm(residual(meshes[args.j],uu,f))
+    print('  %d: residual norm %.5e' % (args.cycles,rnorm))
 
 # report on computation
 if args.ngsonly:
     print('  m=%d mesh using %d sweeps of NGS: |u|_2=%.6f' \
-          % (finemesh.m,args.cycles*args.downsweeps,finemesh.l2norm(uu)))
+          % (meshes[args.j].m,args.cycles*args.downsweeps,
+             meshes[args.j].l2norm(uu)))
 else:
     print('  m=%d mesh using %d V(%d,%d,%d) cycles: |u|_2=%.6f' \
-          % (finemesh.m,args.cycles,
+          % (meshes[args.j].m,args.cycles,
              args.downsweeps,args.coarsesweeps,args.upsweeps,
-             finemesh.l2norm(uu)))
+             meshes[args.j].l2norm(uu)))
 if args.mms:
-    uexact, _ = mmsevaluate(finemesh.xx())
+    uexact, _ = mmsevaluate(meshes[args.j].xx())
     print('  numerical error: |u-u_exact|_2=%.4e' \
-          % (finemesh.l2norm(uu - uexact)))
+          % (meshes[args.j].l2norm(uu - uexact)))
 
 # graphical output if desired
 if args.show:
     plt.figure(figsize=(15.0,8.0))
-    plt.plot(finemesh.xx(),uu,'k',linewidth=4.0)
+    plt.plot(meshes[args.j].xx(),uu,'k',linewidth=4.0,label='numerical solution')
+    if args.mms:
+        plt.plot(meshes[args.j].xx(),uexact,'k',linewidth=4.0,label='exact solution')
+        plt.legend()
     plt.xlabel('x')
-
     plt.show()
+
