@@ -1,0 +1,135 @@
+\documentclass[letterpaper,final,12pt,reqno]{amsart}
+
+\usepackage[total={6.3in,9.2in},top=1.1in,left=1.1in]{geometry}
+
+\usepackage{times,bm,bbm,empheq,fancyvrb,graphicx}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing}
+
+% hyperref should be the last package we load
+\usepackage[pdftex,
+colorlinks=true,
+plainpages=false, % only if colorlinks=true
+linkcolor=blue,   % ...
+citecolor=Red,    % ...
+urlcolor=black    % ...
+]{hyperref}
+
+\renewcommand{\baselinestretch}{1.05}
+
+\newtheorem{lemma}{Lemma}
+
+\newcommand{\Matlab}{\textsc{Matlab}\xspace}
+\newcommand{\eps}{\epsilon}
+\newcommand{\RR}{\mathbb{R}}
+
+\newcommand{\grad}{\nabla}
+\newcommand{\Div}{\nabla\cdot}
+\newcommand{\trace}{\operatorname{tr}}
+
+\newcommand{\hbn}{\hat{\mathbf{n}}}
+
+\newcommand{\bb}{\mathbf{b}}
+\newcommand{\bbf}{\mathbf{f}}
+\newcommand{\bg}{\mathbf{g}}
+\newcommand{\bn}{\mathbf{n}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bw}{\mathbf{w}}
+\newcommand{\bx}{\mathbf{x}}
+
+\newcommand{\bV}{\mathbf{V}}
+\newcommand{\bX}{\mathbf{X}}
+
+\newcommand{\bxi}{\bm{\xi}}
+
+\newcommand{\bzero}{\bm{0}}
+
+\newcommand{\rhoi}{\rho_{\text{i}}}
+
+
+\begin{document}
+\title[On the full approximation storage (FAS) scheme]{On the full approximation storage (FAS) scheme: \\ A 1D example}
+
+\author{Ed Bueler}
+
+\begin{abstract}  This short note simply writes out the FAS scheme for a 1D finite element solution of a nonlinear boundary value problem.  An accompanying Python script implements the scheme.
+\end{abstract}
+
+\maketitle
+
+\thispagestyle{empty}
+\bigskip
+
+%\section{Introduction} \label{sec:intro}
+
+Two level FAS (full approximation storage) scheme for the nonlinear
+(semilinear) Liouville-Bratu problem
+  -u'' + nu e^u = 0,  u(0) = u(1) = 0
+where nu is constant.  Let F be the nonlinear operator for the weak form,
+  F(u)[v] = int_0^1 u'(x) v'(x) + nu e^{u(x)} v(x) dx,
+acting on u and v in H_0^1[0,1], and we want to solve
+  F(u)[v] = 0
+for all v.
+
+In the -mms case the equation we want to solve is
+  -u'' + nu e^u = g,  u(0) = u(1) = 0
+for a given function g.  In that case the nonlinear operator is the same,
+and we want to solve
+  F(u)[v] = int_0^1 g(x) v(x) dx = <g,v>
+for all v.
+
+The fine mesh has m intervals and p=1,...,m-1 interior points.  On this
+fine mesh the operator is denoted F^h, and on the coarse mesh it is F^H.
+These functions act on piecewise-linear and continuous functions u in
+vector spaces S^h,S^H respectively, which have hat functions
+{lambda_p(x)} as a basis.  The unknown, exact fine mesh solution is
+  u^h(x) = sum_{p=1}^{m-1} u^h[p] lambda_p(x)
+thus u^h is represented as a vector with point values u^h[p].
+
+Function FF() below computes F(w) on the given mesh for a given iterate w;
+the point values are F(w)[lambda_p].  Function residual() below computes point
+values corresponding to the equation "F(w)[v] = <f,v>" on the given mesh,
+namely
+  r[p] = <f,lambda_p> - F(w)[lambda_p] = h f[p] - F(w)[p];
+the integral <f,v> is done by the trapezoid rule.
+
+Suppose w^h is an iterate on the fine mesh.  The smoother is nonlinear
+Gauss-Seidel, which updates w^h.  Function ngssweep() below computes one sweep
+by using a fixed number niters of scalar Newton iterations at each point.
+Sweeps of this method accomplish the following on the fine mesh:
+  1. making the residual r smooth, but not small, and
+  2. making the difference u^h - w^h smooth, but not small.
+
+Noting that F is nonlinear in u, the FAS method now proposes a new equation
+on the coarse mesh.  If the fine-mesh solver has already been applied then
+the new equation relates smooth quantities which should be well-approximated
+on the coarse mesh,
+  F^H(u^H) - F^H(R w^h) = R (f^h - F^h(w^h)),
+where u^H is the exact solution of this equation on the coarse mesh.  Here R
+is the restriction of a vector on the fine mesh to the coarse mesh, computed
+by "full-weighting", i.e. by averaging onto the coarse mesh.  Note that if
+w^h were the exact solution to the fine mesh problem then the right side of
+this coarse mesh equation would be zero and the solution would be u^H = R w^h
+by well-posedness.
+
+Thus on the coarse mesh we need to solve
+  F^H(u^H)[v] = <f^H,v>,
+for v a hat function on the coarse mesh, where
+  f^H = R (f^h - F^h(w^h)[v]) + F^H(R w^h)[v]
+We do this by (perhaps many) sweeps of nonlinear Gauss-Seidel.  (Note that
+ngssweep() below allows a right-hand side function (vector) f.)  After the
+coarse mesh solution we have u^H (assumed exact for presentation).  The final
+step of two-grid FAS is the update
+  w^h <-- w^h + P(u^H - R w^h).
+Here P is prolongation, acting by linear interpolation.  Note the update is
+zero if w^h is already the exact fine mesh solution.
+
+\small
+
+\bigskip
+\bibliography{fas}
+\bibliographystyle{siam}
+
+\end{document}
