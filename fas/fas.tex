@@ -97,11 +97,17 @@ Function $u^h$ will solve a finite-dimensional nonlinear system, and in fact we 
 \end{equation}
 In a case where the exact solution of the continuum problem is known, namely in the \texttt{-mms} case, we will know how big the error is, but otherwise only our knowledge of the residual (below) will allow us to know the rate at which iterates are approaching $u^h$.
 
-The FE approximation of nonlinear operator $F$ is also defined by formula \eqref{operator}, but now acting on piecewise-linear functions, is denoted $F^h$.  The corresponding approximate right-hand-side is denoted by $g^h$; in practice this is the interpolant of $g(x)$.  Function \texttt{FF()} in \texttt{fas1.py} computes $F^h(w^h)$ on the given mesh for a given iterate $w^h$.  Function \texttt{residual()} computes the residual corresponding to \eqref{weakform} on the given mesh, namely
+The FE approximation of nonlinear operator $F$ is also defined by formula \eqref{operator}, but now acting on piecewise-linear functions, is denoted $F^h$.  The corresponding approximate right-hand-side is denoted by $g^h$; in practice this is the interpolant of $g(x)$.  Function \texttt{FF()} in \texttt{fas1.py} computes $F^h(w^h)$ on the given mesh for a given iterate $w^h$.
+
+FIXME expand $F^h(w^h)[\lambda_p]$
+
+Function \texttt{residual()} computes the residual corresponding to \eqref{weakform} on the given mesh, namely
 \begin{equation}
-  r(w^h)[v] = \ip{g^h}{v} - F^h(w^h)[v]  \label{residual}
+  r^h(w^h)[v] = \ip{g^h}{v} - F^h(w^h)[v]  \label{residual}
 \end{equation}
-the integral $\ip{g^h}{v}$ is done by the trapezoid rule.  Solving \eqref{weakform} is equivalent, of course, to finding $w^h$ so that $r(w^h)[v]=0$ for all $v$ in $\mathcal{H}$.
+the integral $\ip{g^h}{v}$ is done by the trapezoid rule.  Solving \eqref{weakform} is equivalent, of course, to finding $w^h$ so that $r^h(w^h)[v]=0$ for all $v$ in $\mathcal{H}$.
+
+FIXME expand $r^h(w^h)[\lambda_p]$
 
 
 \section{The FAS algorithm}
@@ -146,6 +152,8 @@ After solving the coarse problem \eqref{weakformcoarse} we have $u^H$, assumed e
   w^h \longleftarrow w^h + P(u^H - R w^h) \label{fasupdate}
 \end{equation}
 Here $P=R^\top$ is prolongation, acting by linear interpolation.
+
+FIXME: document V-cycles, not just two-level
 
 \small
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# FIXME count work units
+
 # suggests correctness, i.e. 5 cycles with very accurate coarse-mesh solve
 # give discretization error:
 #   $ for JJ in 1 2 3 4 5 6; do ./fas1.py -j $JJ -cycles 5 -coarsesweeps 1000 -mms -levels 2; done
@@ -17,98 +19,55 @@ mpl.rc('lines', **lines)
 from meshlevel import MeshLevel1D
 
 parser = argparse.ArgumentParser(description='''
-Two level FAS (full approximation storage) scheme for the nonlinear
-(semilinear) Liouville-Bratu problem
+FAS (full approximation storage) scheme for the nonlinear Liouville-Bratu
+problem
   -u'' + nu e^u = 0,  u(0) = u(1) = 0
-where nu is constant.  Let F be the nonlinear operator for the weak form,
-  F(u)[v] = int_0^1 u'(x) v'(x) + nu e^{u(x)} v(x) dx,
-acting on u and v in H_0^1[0,1], and we want to solve
-  F(u)[v] = 0
-for all v.
-
-In the -mms case the equation we want to solve is
+where nu is constant (adjust with -nu).  In the -mms case the equation is
   -u'' + nu e^u = g,  u(0) = u(1) = 0
-for a given function g.  In that case the nonlinear operator is the same,
-and we want to solve
-  F(u)[v] = int_0^1 g(x) v(x) dx = <g,v>
-for all v.
+for a given function g computed so that u(x) = sin(3 pi x) is the exact
+solution.
 
-The fine mesh has m intervals and p=1,...,m-1 interior points.  On this
-fine mesh the operator is denoted F^h, and on the coarse mesh it is F^H.
-These functions act on piecewise-linear and continuous functions u in
-vector spaces S^h,S^H respectively, which have hat functions
-{lambda_p(x)} as a basis.  The unknown, exact fine mesh solution is
-  u^h(x) = sum_{p=1}^{m-1} u^h[p] lambda_p(x)
-thus u^h is represented as a vector with point values u^h[p].
+Solution is by piecewise-linear finite elements on a fine mesh with
+m = 2^{j+1} subintervals, where -j sets the fine mesh, and m-1 nodes.  To
+set up the FAS multigrid solver we create -levels levels of meshes,
+defaulting to j+1 levels meshes[k] for k=0,1,...,j (from coarse to fine).
+The solver uses nonlinear Gauss-Seidel (NGS; uses -niters Newton iterations)
+as a smoother, and NGS is also the coarse mesh solver.  Only V-cycles are
+implemented; set the number of cycles with -cycles.  One can set the number
+of down- and up-smoother NGS sweeps (-downsweeps,-upsweeps) and the number
+of coarsest-mesh NGS sweeps (-coarsesweeps).  One can also revert to NGS
+sweeps only on the fine mesh (-ngsonly; set -downsweeps to a large value).
+Monitor the V-cycles with -monitor and show the solution with -show.
 
-Function FF() below computes F(w) on the given mesh for a given iterate w;
-the point values are F(w)[lambda_p].  Function residual() below computes point
-values corresponding to the equation "F(w)[v] = <f,v>" on the given mesh,
-namely
-  r[p] = <f,lambda_p> - F(w)[lambda_p] = h f[p] - F(w)[p];
-the integral <f,v> is done by the trapezoid rule.
-
-Suppose w^h is an iterate on the fine mesh.  The smoother is nonlinear
-Gauss-Seidel, which updates w^h.  Function ngssweep() below computes one sweep
-by using a fixed number niters of scalar Newton iterations at each point.
-Sweeps of this method accomplish the following on the fine mesh:
-  1. making the residual r smooth, but not small, and
-  2. making the difference u^h - w^h smooth, but not small.
-
-Noting that F is nonlinear in u, the FAS method now proposes a new equation
-on the coarse mesh.  If the fine-mesh solver has already been applied then
-the new equation relates smooth quantities which should be well-approximated
-on the coarse mesh,
-  F^H(u^H) - F^H(R w^h) = R (f^h - F^h(w^h)),
-where u^H is the exact solution of this equation on the coarse mesh.  Here R
-is the restriction of a vector on the fine mesh to the coarse mesh, computed
-by "full-weighting", i.e. by averaging onto the coarse mesh.  Note that if
-w^h were the exact solution to the fine mesh problem then the right side of
-this coarse mesh equation would be zero and the solution would be u^H = R w^h
-by well-posedness.
-
-Thus on the coarse mesh we need to solve
-  F^H(u^H)[v] = <f^H,v>,
-for v a hat function on the coarse mesh, where
-  f^H = R (f^h - F^h(w^h)[v]) + F^H(R w^h)[v]
-We do this by (perhaps many) sweeps of nonlinear Gauss-Seidel.  (Note that
-ngssweep() below allows a right-hand side function (vector) f.)  After the
-coarse mesh solution we have u^H (assumed exact for presentation).  The final
-step of two-grid FAS is the update
-  w^h <-- w^h + P(u^H - R w^h).
-Here P is prolongation, acting by linear interpolation.  Note the update is
-zero if w^h is already the exact fine mesh solution.
-
-FIXME: document V-cycles, i.e. not just two-level
-
-FIXME: count work units
+For more information on runtime options use -fas1help.  For documentation
+see the PDF mg-glaciers/fas/fas.pdf.
 ''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-coarsesweeps', type=int, default=5, metavar='N',
-                    help='number of nonlinear Gauss-Seidel sweeps (default=5)')
+                    help='nonlinear Gauss-Seidel sweeps (default=5)')
 parser.add_argument('-cycles', type=int, default=1, metavar='M',
                     help='number of V-cycles (default=1)')
 parser.add_argument('-downsweeps', type=int, default=1, metavar='N',
-                    help='number of nonlinear Gauss-Seidel sweeps (default=1)')
+                    help='nonlinear Gauss-Seidel sweeps (default=1)')
 parser.add_argument('-fas1help', action='store_true', default=False,
                     help='print help for this program and quit')
 parser.add_argument('-j', type=int, default=2, metavar='J',
-                    help='m = 2^{j+1} is subintervals in fine mesh (default j=2 gives m=8)')
+                    help='m=2^{j+1} intervals in fine mesh (default j=2, m=8)')
 parser.add_argument('-levels', type=int, default=-1, metavar='J',
-                    help='number of levels in V-cycle (default gives levels=j+1)')
+                    help='number of levels in V-cycle (default: levels=j+1)')
 parser.add_argument('-mms', action='store_true', default=False,
-                    help='solve a manufactured problem with known exact solution')
+                    help='manufactured problem with known exact solution')
 parser.add_argument('-monitor', action='store_true', default=False,
                     help='print residual and update norms')
 parser.add_argument('-ngsonly', action='store_true', default=False,
                     help='only do -downsweeps NGS sweeps at each iteration')
 parser.add_argument('-niters', type=int, default=2, metavar='N',
-                    help='number of Newton iterations in NGS smoothers (default=2)')
+                    help='Newton iterations in NGS smoothers (default=2)')
 parser.add_argument('-nu', type=float, default=1.0, metavar='L',
                     help='parameter lambda in Bratu equation (default=1.0)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-upsweeps', type=int, default=1, metavar='N',
-                    help='number of nonlinear Gauss-Seidel sweeps (default=1)')
+                    help='nonlinear Gauss-Seidel sweeps (default=1)')
 args, unknown = parser.parse_known_args()
 if args.fas1help:
     parser.print_help()
