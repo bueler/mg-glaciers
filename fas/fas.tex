@@ -2,7 +2,7 @@
 
 \usepackage[total={6.3in,9.2in},top=1.1in,left=1.1in]{geometry}
 
-\usepackage{times,bm,bbm,empheq,fancyvrb,graphicx}
+\usepackage{times,bm,bbm,empheq,verbatim,fancyvrb,graphicx}
 \usepackage[dvipsnames]{xcolor}
 \usepackage{tikz}
 \usetikzlibrary{decorations.pathreplacing}
@@ -47,10 +47,10 @@ urlcolor=black    % ...
 \newcommand{\bzero}{\bm{0}}
 
 \newcommand{\rhoi}{\rho_{\text{i}}}
-
+\newcommand{\ip}[2]{\left<#1,#2\right>}
 
 \begin{document}
-\title[On the full approximation storage (FAS) scheme]{On the full approximation storage (FAS) scheme: \\ A 1D example}
+\title[Full approximation storage (FAS) scheme]{Full approximation storage (FAS) scheme: A 1D example}
 
 \author{Ed Bueler}
 
@@ -62,69 +62,90 @@ urlcolor=black    % ...
 \thispagestyle{empty}
 \bigskip
 
-%\section{Introduction} \label{sec:intro}
+\section{The main components}
 
-Two level FAS (full approximation storage) scheme for the nonlinear
-(semilinear) Liouville-Bratu problem
-  -u'' + nu e^u = 0,  u(0) = u(1) = 0
-where nu is constant.  Let F be the nonlinear operator for the weak form,
-  F(u)[v] = int_0^1 u'(x) v'(x) + nu e^{u(x)} v(x) dx,
-acting on u and v in H_0^1[0,1], and we want to solve
-  F(u)[v] = 0
-for all v.
+In this note we consider Brandt's FAS (full approximation storage) scheme \cite{Brandt1977}---see also Chapter 6 in \cite{Briggsetal2000}---for a one-dimensional nonlinear equation, an ordinary differential equation (ODE) boundary value problem.  We solve the nonlinear (semilinear) Liouville-Bratu problem \cite[for example]{Bueler2021}
+% FIXME should be "- nu e^u"
+\begin{equation}
+  -u'' + \nu e^u = 0,  \qquad u(0) = u(1) = 0  \label{liouvillebratu}
+\end{equation}
+where $\nu$ is constant.  This problem is solved in optimal time by a Python program \texttt{fas1.py}, and this note serves as its documentation.
 
-In the -mms case the equation we want to solve is
-  -u'' + nu e^u = g,  u(0) = u(1) = 0
-for a given function g.  In that case the nonlinear operator is the same,
-and we want to solve
-  F(u)[v] = int_0^1 g(x) v(x) dx = <g,v>
-for all v.
+We solve problem \eqref{liouvillebratu} using the finite element (FE) method \cite{Bueler2021,Elmanetal2014}, thus we rewrite it in weak form.  Let $F$ be the nonlinear operator for the weak form,
+\begin{equation}
+  F(u)[v] = \int_0^1 u'(x) v'(x) + \nu e^{u(x)} v(x)\, dx,  \label{operator}
+\end{equation}
+acting on $u$ and $v$ in the space of functions $\mathcal{H}=H_0^1[0,1]$, namely functions which have zero boundary values and one square-integrable derivative.  (Derive \eqref{operator} by multiplying \eqref{liouvillebratu} by $v$ and integrating by parts.)  We want to find $u$ in $\mathcal{H}$ so that $F(u)[v] = 0$ for all such $v$ in $\mathcal{H}$.
 
-The fine mesh has m intervals and p=1,...,m-1 interior points.  On this
-fine mesh the operator is denoted F^h, and on the coarse mesh it is F^H.
-These functions act on piecewise-linear and continuous functions u in
-vector spaces S^h,S^H respectively, which have hat functions
-{lambda_p(x)} as a basis.  The unknown, exact fine mesh solution is
-  u^h(x) = sum_{p=1}^{m-1} u^h[p] lambda_p(x)
-thus u^h is represented as a vector with point values u^h[p].
+Actually, a we also solve in an optional case (\texttt{fas1.py} runtime option \texttt{-mms} for ``method of manufactured solutions'') the more general equation
+  $$-u'' + \nu e^u = g$$
+for a given function $g(x)$, with the same boundary conditions.  In this case the nonlinear operator is the same but the weak form is
+\begin{equation}
+  F(u)[v] = \ip{g}{v} \label{weakform}
+\end{equation}
+for all $v$, where $\ip{g}{v} = \int_0^1 g(x) v(x) dx$.  Equation \eqref{liouvillebratu} is the case where $g=0$.  Observe that $F(u)[\cdot]$ and $\ip{g}{\cdot}$ are (continuous) linear functionals, acting on functions in $\mathcal{H}$.
 
-Function FF() below computes F(w) on the given mesh for a given iterate w;
-the point values are F(w)[lambda_p].  Function residual() below computes point
-values corresponding to the equation "F(w)[v] = <f,v>" on the given mesh,
-namely
-  r[p] = <f,lambda_p> - F(w)[lambda_p] = h f[p] - F(w)[p];
-the integral <f,v> is done by the trapezoid rule.
+As this example uses the simplest possible FE setup, we define equally-spaced meshes on $[0,1]$.  Such a mesh has $m$ subintervals of length $h=1/m$, and $p=1,\dots,m-1$ interior nodes (points) $x_p=ph$.  On this mesh there is a finite-dimensional space $\mathcal{S}^h$ of piecewise-linear and continuous functions with zero boundary values; note $\mathcal{S}^h$ is a subset of $\mathcal{H}$.  The vector space $\mathcal{S}^h$ has a basis of hat functions $\{\lambda_p(x)\}$, for $p=0,\dots,m-1$, where each hat function is defined by the two properties that $\lambda_p$ is in $\mathcal{S}^h$ and that $\lambda_p(x_q)=\delta_{pq}$.  In terms of this basis, the numerical solution is
+\begin{equation}
+  u^h(x) = \sum_{p=1}^{m-1} u^h[p] \lambda_p(x).  \label{fesolution}
+\end{equation}
+Note $u^h(x)$ is a function but, because the set of hat functions is a nodal basis, it is also represented as a (coefficient) vector with point values: $\bu^h =\{u^h[p]\}$.
 
-Suppose w^h is an iterate on the fine mesh.  The smoother is nonlinear
-Gauss-Seidel, which updates w^h.  Function ngssweep() below computes one sweep
-by using a fixed number niters of scalar Newton iterations at each point.
-Sweeps of this method accomplish the following on the fine mesh:
-  1. making the residual r smooth, but not small, and
-  2. making the difference u^h - w^h smooth, but not small.
+Function $u^h$ will solve a finite-dimensional nonlinear system, and in fact we will not be able to compute it exactly.  We will have an iterate $w^h(x)$ instead, for which the error is
+\begin{equation}
+  e^h = w^h - u^h.  \label{error}
+\end{equation}
+In a case where the exact solution of the continuum problem is known, namely in the \texttt{-mms} case, we will know how big the error is, but otherwise only our knowledge of the residual (below) will allow us to know the rate at which iterates are approaching $u^h$.
 
-Noting that F is nonlinear in u, the FAS method now proposes a new equation
-on the coarse mesh.  If the fine-mesh solver has already been applied then
-the new equation relates smooth quantities which should be well-approximated
-on the coarse mesh,
-  F^H(u^H) - F^H(R w^h) = R (f^h - F^h(w^h)),
-where u^H is the exact solution of this equation on the coarse mesh.  Here R
-is the restriction of a vector on the fine mesh to the coarse mesh, computed
-by "full-weighting", i.e. by averaging onto the coarse mesh.  Note that if
-w^h were the exact solution to the fine mesh problem then the right side of
-this coarse mesh equation would be zero and the solution would be u^H = R w^h
-by well-posedness.
+The FE approximation of nonlinear operator $F$ is also defined by formula \eqref{operator}, but now acting on piecewise-linear functions, is denoted $F^h$.  The corresponding approximate right-hand-side is denoted by $g^h$; in practice this is the interpolant of $g(x)$.  Function \texttt{FF()} in \texttt{fas1.py} computes $F^h(w^h)$ on the given mesh for a given iterate $w^h$.  Function \texttt{residual()} computes the residual corresponding to \eqref{weakform} on the given mesh, namely
+\begin{equation}
+  r(w^h)[v] = \ip{g^h}{v} - F^h(w^h)[v]  \label{residual}
+\end{equation}
+the integral $\ip{g^h}{v}$ is done by the trapezoid rule.  Solving \eqref{weakform} is equivalent, of course, to finding $w^h$ so that $r(w^h)[v]=0$ for all $v$ in $\mathcal{H}$.
+
+
+\section{The FAS algorithm}
+
+FAS is a multigrid scheme, and thus it includes a hierarchy of meshes and also choices of a ``smoother'' on each level and a coarse-mesh solution method \cite{Briggsetal2000}.  We describe only two levels at first, with the coarser mesh having a larger spacing $H>h$ corresponding to fewer subintervals.  The program \texttt{fas1.py} assumes refinement only by a factor of two, so the coarse mesh has $m/2$ subintervals of length $H=2H$.  An iterate on the coarse mesh will be denoted $w^H$.
+
+Our smoother is a nonlinear form of the Gauss-Seidel iteration \cite{Briggsetal2000}, called ``NGS''.  The smoother updates the iterate $w^h$ by changing its point value at $x_p$ to make the residual at $x_p$ zero.  That is, it solves the problem
+\begin{equation}
+r(w^h + c \lambda_p)[\lambda_p] = 0  \label{pointproblem}
+\end{equation}
+for a real value $c$, that is, a scalar problem ``$f(c)=0$''.  Then we update $w^h \longleftarrow w^h + c \lambda_p$.  Following the idea of the linear Gauss-Seidel iteration \cite{Bueler2021}, as each point value of $w^h$ is updated we use that value, and all already-updated values, in zeroing the residual at the next point.  However, as soon as the residual is made zero at the next point it is no longer zero at the previous.  In any case, function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}) of scalar Newton iterations to solve \eqref{pointproblem} at each point.
+
+A few sweeps of NGS accomplishes two actions on the current iterate $w^h$ on the fine mesh:
+\renewcommand{\labelenumi}{\emph{\roman{enumi})}}
+\begin{enumerate}
+\item making the residual $r(w^h)$ smooth, but not necessarily small, and
+\item making the error (difference) $e^h = w^h - u^h$ smooth, but not necessarily small.
+\end{enumerate}
+Using more sweeps of NGS would eventually make the residual $r(w^h)$ small and thus solve problem \eqref{weakform}.  However, as a multigrid method, FAS instead transfers the problem to a coarser mesh where the same residual function is, essentially, less smooth; more of the magnitude of the coarse-mesh interpolant of the fine mesh iterate can be eliminated by smoothing.  Thus NGS sweeps on the coarser mesh are effective at reducing the magnitude of the residual.  Descending further, to yet coarser meshes, eventually leads to a residual which can be eliminated entirely at the few interior points of the coarsest mesh.
+
+Noting that the operator $F$ in \eqref{operator} is nonlinear in $u$, the FAS method  proposes a \emph{new} equation on the coarse mesh.  Because the fine-mesh smoother has already been applied, the new equation relates smooth quantities which should be well-approximated on the coarse mesh.  The FAS equation is
+\begin{equation}
+  F^H(u^H) - F^H(R w^h) = R r^h(w^h). \label{fasequation}
+\end{equation}
+Here $u^H$ is the solution of this equation on the coarse mesh, a function in the space of piecewise-linear and continuous functions $S^H$ on this mesh.  The linear restriction operation $R:S^h \to S^H$ maps a vector on the fine mesh to the coarse mesh by ``full-weighting'', i.e.~by averaging onto the coarse mesh.
+
+FIXME where does the FAS equation come from
+
+Note that if $w^h$ were the exact solution to the fine mesh problem then the right side of \eqref{fasequation} would be zero and the solution would be $u^H = R w^h$ by well-posedness.
 
 Thus on the coarse mesh we need to solve
-  F^H(u^H)[v] = <f^H,v>,
-for v a hat function on the coarse mesh, where
-  f^H = R (f^h - F^h(w^h)[v]) + F^H(R w^h)[v]
-We do this by (perhaps many) sweeps of nonlinear Gauss-Seidel.  (Note that
-ngssweep() below allows a right-hand side function (vector) f.)  After the
-coarse mesh solution we have u^H (assumed exact for presentation).  The final
-step of two-grid FAS is the update
-  w^h <-- w^h + P(u^H - R w^h).
-Here P is prolongation, acting by linear interpolation.  Note the update is
-zero if w^h is already the exact fine mesh solution.
+\begin{equation}
+  F^H(u^H)[v] = \ip{g^H}{v},  \label{weakformcoarse}
+\end{equation}
+for $v$ any test function on the coarse mesh, where
+  $$g^H = R (g^h - F^h(w^h)[v]) + F^H(R w^h)[v]$$
+
+If the coarse grid is in fact the coarsest grid then we propose to solve the problem by sufficiently many sweeps of nonlinear Gauss-Seidel so that the residual $r(u^H)[v] = \ip{g^H}{v} - F^H(u^H)[v]$ is essentially zero.  However, if the coarse grid consists of only one interior point, which it will have with default settings, then this could involve a single NGS update as long as the Newton iteration is very accurate.
+
+After solving the coarse problem \eqref{weakformcoarse} we have $u^H$, assumed exact for the rest of the presentation.  The final step of FAS at a given level is the update on the finer mesh,
+\begin{equation}
+  w^h \longleftarrow w^h + P(u^H - R w^h) \label{fasupdate}
+\end{equation}
+Here $P=R^\top$ is prolongation, acting by linear interpolation.
 
 \small
 
