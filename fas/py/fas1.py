@@ -38,9 +38,9 @@ from meshlevel import MeshLevel1D
 parser = argparse.ArgumentParser(description='''
 FAS (full approximation storage) scheme for the nonlinear Liouville-Bratu
 problem
-  -u'' - nu e^u = 0,  u(0) = u(1) = 0
+  -u'' - mu e^u = 0,  u(0) = u(1) = 0
 where nu is constant (adjust with -nu).  In the -mms case the equation is
-  -u'' - nu e^u = g,  u(0) = u(1) = 0
+  -u'' - mu e^u = g,  u(0) = u(1) = 0
 for a given function g computed so that u(x) = sin(3 pi x) is the exact
 solution.
 
@@ -75,12 +75,12 @@ parser.add_argument('-mms', action='store_true', default=False,
                     help='manufactured problem with known exact solution')
 parser.add_argument('-monitor', action='store_true', default=False,
                     help='print residual and update norms')
+parser.add_argument('-mu', type=float, default=1.0, metavar='L',
+                    help='parameter lambda in Bratu equation (default=1.0)')
 parser.add_argument('-ngsonly', action='store_true', default=False,
                     help='only do -downsweeps NGS sweeps at each iteration')
 parser.add_argument('-niters', type=int, default=2, metavar='N',
                     help='Newton iterations in NGS smoothers (default=2)')
-parser.add_argument('-nu', type=float, default=1.0, metavar='L',
-                    help='parameter lambda in Bratu equation (default=1.0)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-upsweeps', type=int, default=1, metavar='N',
@@ -94,7 +94,7 @@ if args.levels < 1:
 
 def mmsevaluate(x):
     u = np.sin(3.0 * np.pi * x)
-    g = 9.0 * np.pi**2 * u - args.nu * np.exp(u)
+    g = 9.0 * np.pi**2 * u - args.mu * np.exp(u)
     return u, g
 
 def FF(mesh,u):
@@ -109,7 +109,7 @@ def FF(mesh,u):
     F = mesh.zeros()
     for p in range(1,mesh.m):
         F[p] = (1.0/mesh.h) * (2.0*u[p] - u[p-1] - u[p+1]) \
-               - mesh.h * args.nu * np.exp(u[p])
+               - mesh.h * args.mu * np.exp(u[p])
     return F
 
 def residual(mesh,u,f):
@@ -139,7 +139,7 @@ def ngssweep(mesh,u,frhs,forward=True):
     for p in indices:
         c = 0   # because previous iterate u is close to correct
         for n in range(args.niters):
-            tmp = mesh.h * args.nu * np.exp(u[p]+c)
+            tmp = mesh.h * args.mu * np.exp(u[p]+c)
             f = (1.0/mesh.h) * (2.0*(u[p]+c) - u[p-1] - u[p+1]) \
                 - tmp - mesh.h * frhs[p]
             df = 2.0/mesh.h - tmp

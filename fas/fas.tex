@@ -62,49 +62,54 @@ urlcolor=black    % ...
 \thispagestyle{empty}
 \bigskip
 
+We consider Brandt's FAS (full approximation storage) scheme \cite{Brandt1977} for an easy nonlinear elliptic equation.  A helpful write-up of the scheme can already be found in a well-known textbook \cite[Chapter 6]{Briggsetal2000}, but we want to describe the scheme from a finite element point of view which is compatible with our other codes, related to the approach in \cite{GraeserKornhuber2009}, and furthermore we provide a Python implementation.
+
+The problem is an ordinary differential equation (ODE) boundary value problem, namely the nonlinear (semilinear) Liouville-Bratu problem \cite[for example]{Bueler2021}
+\begin{equation}
+  -u'' - \mu e^u = 0,  \qquad u(0) = u(1) = 0  \label{liouvillebratu}
+\end{equation}
+where $\mu$ is constant.  Our goal is to solve this problem in optimal time by a Python implementation (\texttt{py/fas1.py}) of the FAS.  This note serves as documentation for the program.
+
+
 \section{The main components}
 
-We consider Brandt's FAS (full approximation storage) scheme \cite{Brandt1977}---see also Chapter 6 in \cite{Briggsetal2000}---for an easy nonlinear elliptic equation.  In fact the problem is an ordinary differential equation (ODE) boundary value problem, namely the nonlinear (semilinear) Liouville-Bratu problem \cite[for example]{Bueler2021}
+We solve problem \eqref{liouvillebratu} using the finite element (FE) method \cite{Bueler2021,Elmanetal2014}, so first we rewrite it in weak form.  Let $F$ be the nonlinear operator
 \begin{equation}
-  -u'' - \nu e^u = 0,  \qquad u(0) = u(1) = 0  \label{liouvillebratu}
+  F(u)[v] = \int_0^1 u'(x) v'(x) - \mu e^{u(x)} v(x)\, dx,  \label{operator}
 \end{equation}
-where $\nu$ is constant.  This problem is solved in optimal time by a Python program \texttt{fas1.py}, and this note serves as its documentation.
+acting on $u$ and $v$ in the space of functions $\mathcal{H}=H_0^1[0,1]$.  These are functions which have zero boundary values and a square-integrable derivative.  We want to find $u$ in $\mathcal{H}$ so that $F(u)[v] = 0$ for all such $v$ in $\mathcal{H}$.  One derives this equation, and thus the operator \eqref{operator}, by multiplying \eqref{liouvillebratu} by $v$ and integrating by parts.
 
-FIXME
-
-We solve problem \eqref{liouvillebratu} using the finite element (FE) method \cite{Bueler2021,Elmanetal2014}, thus we rewrite it in weak form.  Let $F$ be the nonlinear operator for the weak form,
-\begin{equation}
-  F(u)[v] = \int_0^1 u'(x) v'(x) - \nu e^{u(x)} v(x)\, dx,  \label{operator}
-\end{equation}
-acting on $u$ and $v$ in the space of functions $\mathcal{H}=H_0^1[0,1]$, namely functions which have zero boundary values and one square-integrable derivative.  (Derive \eqref{operator} by multiplying \eqref{liouvillebratu} by $v$ and integrating by parts.)  We want to find $u$ in $\mathcal{H}$ so that $F(u)[v] = 0$ for all such $v$ in $\mathcal{H}$.
-
-Actually, a we also solve in an optional case (\texttt{fas1.py} runtime option \texttt{-mms} for ``method of manufactured solutions'') the more general equation
-  $$-u'' - \nu e^u = g$$
-for a given function $g(x)$, with the same boundary conditions.  In this case the nonlinear operator is the same but the weak form is
+Actually, we solve the more general equation
+  $$-u'' - \mu e^u = g$$
+for a given function $g(x)$, with the same boundary conditions.  This is in the optional case for runtime option \texttt{-mms}, the ``method of manufactured solutions''.  (In detail, the exact solution is $u(x)=\sin(3\pi x)$ and thus $g(x)=9\pi^2 u(x)-\mu e^{u(x)}$.)  The nonlinear operator is the same but the weak form is
 \begin{equation}
   F(u)[v] = \ip{g}{v} \label{weakform}
 \end{equation}
-for all $v$, where $\ip{g}{v} = \int_0^1 g(x) v(x) dx$.  Equation \eqref{liouvillebratu} is the case where $g=0$.  Observe that $F(u)[\cdot]$ and $\ip{g}{\cdot}$ are (continuous) linear functionals, acting on functions in $\mathcal{H}$.
+for all $v$, where $\ip{g}{v} = \int_0^1 g(x) v(x) dx$.  Equation \eqref{liouvillebratu} is the case where $g=0$.  Observe that $F(u)[\cdot]$ and $\ip{g}{\cdot}$ are (continuous) linear functionals, acting on functions in $\mathcal{H}$.  From now on, \eqref{weakform} is the official weak form of our problem.
 
-As this example uses the simplest possible FE setup, we define equally-spaced meshes on $[0,1]$.  Such a mesh has $m$ subintervals of length $h=1/m$, and $p=1,\dots,m-1$ interior nodes (points) $x_p=ph$.  On this mesh there is a finite-dimensional space $\mathcal{S}^h$ of piecewise-linear and continuous functions with zero boundary values; note $\mathcal{S}^h$ is a subset of $\mathcal{H}$.  The vector space $\mathcal{S}^h$ has a basis of hat functions $\{\lambda_p(x)\}$, for $p=0,\dots,m-1$, where each hat function is defined by the two properties that $\lambda_p$ is in $\mathcal{S}^h$ and that $\lambda_p(x_q)=\delta_{pq}$.  In terms of this basis, the numerical solution is
+As this example uses the simplest possible FE setup, we define equally-spaced meshes on $[0,1]$ with $m$ subintervals, of length $h=1/m$, and $p=1,\dots,m-1$ interior nodes (points) $x_p=ph$.  On this mesh there is a finite-dimensional space $\mathcal{S}^h$ of piecewise-linear and continuous functions with zero boundary values; note $\mathcal{S}^h$ is a subset of $\mathcal{H}$.  The vector space $\mathcal{S}^h$ has a basis of hat functions $\{\lambda_p(x)\}$, for the interior nodes, defined by the two properties that $\lambda_p$ is in $\mathcal{S}^h$ and that $\lambda_p(x_q)=\delta_{pq}$.
+
+In terms of the hat function basis, the numerical solution is
 \begin{equation}
-  u^h(x) = \sum_{p=1}^{m-1} u^h[p] \lambda_p(x).  \label{fesolution}
+  u^h(x) = \sum_{p=1}^{m-1} u[p] \lambda_p(x).  \label{fesolution}
 \end{equation}
-Note $u^h(x)$ is a function but, because the set of hat functions is a nodal basis, it is also represented as a (coefficient) vector with point values: $\bu^h =\{u^h[p]\}$.
+Note $u^h(x)$ is a function but, because the hat functions form a ``nodal basis'', the solution is also represented as a (coefficient) vector with point values: $\bu^h =\{u[p]\}$.
 
-Function $u^h$ will solve a finite-dimensional nonlinear system, and in fact we will not be able to compute it exactly.  We will have an iterate $w^h(x)$ instead, for which the error is
+Function $u^h$ will solve a finite-dimensional nonlinear system, and in fact we will not compute it exactly.  (At best, to within rounding errors.)  We will, at any stage, possess an iterate $w^h(x)$ instead, for which the error is
 \begin{equation}
-  e^h = w^h - u^h.  \label{error}
+  e^h = w^h - u^h,  \label{error}
 \end{equation}
-In a case where the exact solution of the continuum problem is known, namely in the \texttt{-mms} case, we will know how big the error is, but otherwise only our knowledge of the residual (below) will allow us to know the rate at which iterates are approaching $u^h$.
+and we want the norm $\|e^h\|$ to be small.  In the \texttt{-mms} case where the exact solution of the continuum problem is known, $e^h$ will be computable, but otherwise only our knowledge of the residual (below) will allow us to know the rate at which $\|e^h\|$ goes to zero, i.e.~the rate at which iterates $w^h$ are approaching $u^h$.
 
-The FE approximation of nonlinear operator $F$ is also defined by formula \eqref{operator}, but now acting on piecewise-linear functions, is denoted $F^h$.  The corresponding approximate right-hand-side is denoted by $g^h$; in practice this is the interpolant of $g(x)$.  Function \texttt{FF()} in \texttt{fas1.py} computes $F^h(w^h)$ on the given mesh for a given iterate $w^h$.
-
-FIXME expand $F^h(w^h)[\lambda_p]$
-
-Function \texttt{residual()} computes the residual corresponding to \eqref{weakform} on the given mesh, namely
+The FE approximation of nonlinear operator $F$, also defined by formula \eqref{operator}, but now acting on piecewise-linear functions, is denoted $F^h$.  Function \texttt{FF()} in \texttt{fas1.py} computes $F^h(w^h)$ on the given mesh for a given iterate $w^h$, that is, it computes a value $F^h(w^h)[\lambda_p]$ for each interior point:
 \begin{equation}
-  r^h(w^h)[v] = \ip{g^h}{v} - F^h(w^h)[v]  \label{residual}
+  F^h(w^h)[\lambda_p] =   \label{feoperator}
+\end{equation}
+FIXME expand
+
+FIXME The approximate right-hand-side function in \eqref{weakform} is denoted by $g^h$; in practice this is the interpolant of $g(x)$.  Function \texttt{residual()} computes the residual corresponding to \eqref{weakform} on the given mesh, namely
+\begin{equation}
+  r^h(w^h)[v] = \ip{g^h}{v} - F^h(w^h)[v]  \label{feresidual}
 \end{equation}
 the integral $\ip{g^h}{v}$ is done by the trapezoid rule.  Solving \eqref{weakform} is equivalent, of course, to finding $w^h$ so that $r^h(w^h)[v]=0$ for all $v$ in $\mathcal{H}$.
 
