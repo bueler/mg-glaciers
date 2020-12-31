@@ -112,25 +112,24 @@ def FF(mesh,u):
                - mesh.h * args.mu * np.exp(u[p])
     return F
 
-def residual(mesh,u,f):
+def residual(mesh,w,frhs):
     '''Compute the residual of "F(u)=f" for given u, namely
-       r(u)[v] = int_0^1 f(x) v(x) dx - F(u)[v]
+       r(w)[v] = int_0^1 f(x) v(x) dx - F(w)[v]
     for v equal to the interior-point hat functions lambda_p at p=1,...,m-1.'''
-    assert len(u) == mesh.m+1, \
-           'input vector u is of length %d (should be %d)' % (len(u),mesh.m+1)
-    return mesh.h * f - FF(mesh,u)
+    assert len(w) == mesh.m+1, \
+           'input vector w is of length %d (should be %d)' % (len(w),mesh.m+1)
+    return mesh.h * frhs - FF(mesh,w)
 
-def ngssweep(mesh,u,frhs,forward=True):
+def ngssweep(mesh,w,frhs,forward=True):
     '''Do one in-place nonlinear Gauss-Seidel sweep over the interior points
     p=1,...,m-1.  At each point use a fixed number of Newton iterations on
       f(c) = 0
     where
-      f(c) = F(u+c lambda_p)[lambda_p] - frhs[lambda_p]
-    where v = lambda_p is the pth hat function and F(u)[v] is computed by
+      f(c) = r(w+c lambda_p)[lambda_p]
+    where v = lambda_p is the pth hat function and r(w)[v] is computed by
     residual().  The integrals are computed by trapezoid rule.  A Newton step
     is applied without line search:
-      f'(c_k) s_k = - f(c_k)
-      c_{k+1} = c_k + s_k.
+      f'(c_k) s_k = - f(c_k),   c_{k+1} = c_k + s_k.
     '''
     if forward:
         indices = range(1,mesh.m)
@@ -139,12 +138,12 @@ def ngssweep(mesh,u,frhs,forward=True):
     for p in indices:
         c = 0   # because previous iterate u is close to correct
         for n in range(args.niters):
-            tmp = mesh.h * args.mu * np.exp(u[p]+c)
-            f = (1.0/mesh.h) * (2.0*(u[p]+c) - u[p-1] - u[p+1]) \
-                - tmp - mesh.h * frhs[p]
-            df = 2.0/mesh.h - tmp
+            tmp = mesh.h * args.mu * np.exp(w[p]+c)
+            f = - (1.0/mesh.h) * (2.0*(w[p]+c) - w[p-1] - w[p+1]) \
+                + tmp + mesh.h * frhs[p]
+            df = - 2.0/mesh.h + tmp
             c -= f / df
-        u[p] += c
+        w[p] += c
     return None
 
 # setup mesh hierarchy
