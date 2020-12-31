@@ -101,30 +101,55 @@ Function $u^h$ will solve a finite-dimensional nonlinear system, and in fact we 
 \end{equation}
 and we want the norm $\|e^h\|$ to be small.  In the \texttt{-mms} case where the exact solution of the continuum problem is known, $e^h$ will be computable, but otherwise only our knowledge of the residual (below) will allow us to know the rate at which $\|e^h\|$ goes to zero, i.e.~the rate at which iterates $w^h$ are approaching $u^h$.
 
-The FE approximation of nonlinear operator $F$, also defined by formula \eqref{operator}, but now acting on piecewise-linear functions, is denoted $F^h$.  Function \texttt{FF()} in \texttt{fas1.py} computes $F^h(w^h)$ on the given mesh for a given iterate $w^h$, that is, it computes a value $F^h(w^h)[\lambda_p]$ for each interior point:
-\begin{equation}
-  F^h(w^h)[\lambda_p] =   \label{feoperator}
-\end{equation}
-FIXME expand
+The FE approximation of nonlinear operator $F$, also defined by formula \eqref{operator}, but now acting on piecewise-linear functions, is denoted $F^h$.  Function \texttt{FF()} in \texttt{fas1.py} computes $F^h(w^h)$ on the given mesh for a given iterate $w^h$ with point values $w[p]$, that is, it computes a value $F^h(w^h)[\lambda_p]$ for each interior point:
+\begin{align}
+  F^h(w^h)[\lambda_p] &= \int_0^1 (w^h)'(x) \lambda_p'(x) - \mu e^{w^h(x)} \lambda_p(x)\, dx  \label{feoperator} \\
+    &= \int_{x_{p-1}}^{x_{p+1}} (w^h)'(x) \Big(\pm \frac{1}{h}\Big)\,dx - \mu \int_{x_{p-1}}^{x_{p+1}} e^{w^h(x)} \lambda_p(x)\, dx \notag \\
+    &\approx h \left(\frac{w[p]-w[p-1]}{h} - \frac{w[p+1]-w[p]}{h}\right) - h \mu e^{w[p]}  \notag \\
+    &= \frac{1}{h}\left(2w[p]-w[p-1]-w[p+1]\right) - h \mu e^{w[p]} \notag
+\end{align}
+Notice that the support of $\lambda_p(x)$ is $[x_{p-1},x_{p+1}]$ and that the derivative of $\lambda_p$ is $\pm 1/h$, depending on the side of $x_p$.  The first integral is computed exactly while the second uses the trapezoid rule.  In fact we define $F^h$ as the final expression, which is a differently-scaled form of the obvious $O(h^2)$ finite difference scheme.
 
-FIXME The approximate right-hand-side function in \eqref{weakform} is denoted by $g^h$; in practice this is the interpolant of $g(x)$.  Function \texttt{residual()} computes the residual corresponding to \eqref{weakform} on the given mesh, namely
+Recall that equation \eqref{weakform}, with a nonzero right-hand side, is our weak form, and thus in general we are not seeking a zero of $F^h$ itself.  Denote the approximate right-hand-side function by $g^h$; in practice this is the interpolant of $g(x)$.  To solve \eqref{weakform} we seek an iterate $w^h$ so that the residual
 \begin{equation}
   r^h(w^h)[v] = \ip{g^h}{v} - F^h(w^h)[v]  \label{feresidual}
 \end{equation}
-the integral $\ip{g^h}{v}$ is done by the trapezoid rule.  Solving \eqref{weakform} is equivalent, of course, to finding $w^h$ so that $r^h(w^h)[v]=0$ for all $v$ in $\mathcal{H}$.
+is small.  The integral $\ip{g^h}{v}$ is done by the trapezoid rule; again we actually define $r^h(w^h)$ by the resulting expression.
 
-FIXME expand $r^h(w^h)[\lambda_p]$
+Solving \eqref{weakform} is equivalent, of course, to finding $w^h$ so that $r^h(w^h)[v]=0$ for all $v$ in $\mathcal{H}$.  The object $r^h(w^h)$ might be regarded as a vector with point values, but we prefer to regard it, and likewise $F^h(w^h)$, as a linear functional acting on functions in $\mathcal{S}_h$.
+
+In the next section we actually describe the multigrid FAS algorithm, but here we finish our description of elementary components by describing an iteration which will, if carried far enough, also solve the problem.  The method is a nonlinear form of the Gauss-Seidel iteration \cite{Briggsetal2000}, called ``NGS''.  It updates the iterate $w^h$ by changing its point value at $x_p$ to make the residual at that point zero.  That is, it solves the problem
+\begin{equation}
+r^h(w^h + c \lambda_p)[\lambda_p] = 0  \label{ngspointproblem}
+\end{equation}
+for a scalar $c$.  That is, at each point NGS solves a scalar problem $f(c)=0$ where
+\begin{equation}
+  f(c) = r^h(w^h + c \lambda_p)[\lambda_p], \label{ngspointresidual}
+\end{equation}
+and then it updates
+\begin{equation}
+  w^h \leftarrow w^h + c \lambda_p  \label{ngspointupdate}
+\end{equation}
+or equivalently $w[p] \leftarrow w[p] + c$.  Following the idea of the linear Gauss-Seidel iteration \cite{Greenbaum1997}, each point value is updated using the already-updated values, i.e.~including the latest values of the neighbors $w[p-1]$ and $w[p+1]$ when evaluating the residual in \eqref{ngspointproblem}.  Gauss-Seidel-type methods are sometimes called ``multiplicative'' or ``successive'' corrections, in contrast to ``additive'' or ``parallel'' corrections, of which the Jacobi iteration is the best known \cite{Bueler2021}.
+
+Even solving the scalar problem $f(c)=0$ cannot be done exactly when considering a transcendental problem like \eqref{liouvillebratu}.  Thus we will use a fixed number (\texttt{-niters}; defaults to 2) of Newton iterations to generate a (scalar) sequence $\{c_k\}$.  We start from initial iterate $c_0=0$, thus assuming that the current iterate $w^h$ for the whole problem is reasonably close
+\begin{equation}
+f'(c_k)\, s_k = -f(c_k),  \qquad  c_{k+1} = c_k + s_k. \label{ngsnewton}
+\end{equation}
+Because the vast majority of the FAS algorithm work is in evaluating these NGS expressions, we record the following details which follow from \eqref{feoperator} and \eqref{feresidual}:
+\begin{align}
+   f(c) &= -\frac{1}{h} \left(2(w[p]+c) - w[p-1] - w[p+1]) + h \left(\mu e^{w[p]+c} + g[p]\right)\right), \label{ngsnewtondetails} \\
+   f'(c) &= -\frac{2}{h} + h \mu e^{w[p]+c}. \notag
+\end{align}
+
+The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual at successive points in some order.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}) of scalar Newton iterations \eqref{ngsnewton} to solve \eqref{ngspointproblem} at each point.  Note that as soon as the residual is made zero at one point it is no longer zero at the previous points (which were just zeroed).  In a linear case the iteration is known to converge based on structural properties of the matrices \cite[for example]{Greenbaum1997} which correspond to ellipticity of the original problem, and we expect that at least for weak nonlinearities (e.g.~small $\mu$ in \eqref{liouvillebratu}) our method will converge as solution method for \eqref{weakform}.  However, one observes immediately that, after distinct progress in the first few sweeps, soon NGS stagnates.  Following Brandt \cite{Brandt1977}, who asserts that any such ``stalling'' scheme must be ``wrong'', we adopt a multilevel approach next.
 
 
 \section{The FAS algorithm}
 
-FAS is a multigrid scheme, and thus it includes a hierarchy of meshes and also choices of a ``smoother'' on each level and a coarse-mesh solution method \cite{Briggsetal2000}.  We describe only two levels at first, with the coarser mesh having a larger spacing $H>h$ corresponding to fewer subintervals.  The program \texttt{fas1.py} assumes refinement only by a factor of two, so the coarse mesh has $m/2$ subintervals of length $H=2H$.  An iterate on the coarse mesh will be denoted $w^H$.
+FIXME FAS is a multigrid scheme, and thus it includes a hierarchy of meshes and also choices of a ``smoother'' on each level and a coarse-mesh solution method \cite{Briggsetal2000}.  We describe only two levels at first, with the coarser mesh having a larger spacing $H>h$ corresponding to fewer subintervals.  The program \texttt{fas1.py} assumes refinement only by a factor of two, so the coarse mesh has $m/2$ subintervals of length $H=2H$.  An iterate on the coarse mesh will be denoted $w^H$.
 
-Our smoother is a nonlinear form of the Gauss-Seidel iteration \cite{Briggsetal2000}, called ``NGS''.  The smoother updates the iterate $w^h$ by changing its point value at $x_p$ to make the residual at $x_p$ zero.  That is, it solves the problem
-\begin{equation}
-r(w^h + c \lambda_p)[\lambda_p] = 0  \label{pointproblem}
-\end{equation}
-for a real value $c$, that is, a scalar problem ``$f(c)=0$''.  Then we update $w^h \longleftarrow w^h + c \lambda_p$.  Following the idea of the linear Gauss-Seidel iteration \cite{Bueler2021}, as each point value of $w^h$ is updated we use that value, and all already-updated values, in zeroing the residual at the next point.  However, as soon as the residual is made zero at the next point it is no longer zero at the previous.  In any case, function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}) of scalar Newton iterations to solve \eqref{pointproblem} at each point.
+FIXME NGS is smoother
 
 A few sweeps of NGS accomplishes two actions on the current iterate $w^h$ on the fine mesh:
 \renewcommand{\labelenumi}{\emph{\roman{enumi})}}
@@ -159,7 +184,7 @@ After solving the coarse problem \eqref{weakformcoarse} we have $u^H$, assumed e
 \end{equation}
 Here $P=R^\top$ is prolongation, acting by linear interpolation.
 
-FIXME: document V-cycles, not just two-level
+FIXME V-cycles
 
 \small
 
