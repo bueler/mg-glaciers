@@ -2,8 +2,25 @@
 
 # FIXME count work units
 
-# suggests correctness, i.e. 5 cycles with very accurate coarse-mesh solve
-# give discretization error:
+# convergence in -mms case by brutal NGS sweeps:
+#$ for JJ in 1 2 3 4 5 6; do ./fas1.py -downsweeps 10000 -ngsonly -mms -j $JJ; done
+#  m=4 mesh using 10000 sweeps of NGS: |u|_2=1.165660
+#  numerical error: |u-u_exact|_2=4.6169e-01
+#  m=8 mesh using 10000 sweeps of NGS: |u|_2=0.797087
+#  numerical error: |u-u_exact|_2=9.0323e-02
+#  m=16 mesh using 10000 sweeps of NGS: |u|_2=0.728361
+#  numerical error: |u-u_exact|_2=2.1331e-02
+#  m=32 mesh using 10000 sweeps of NGS: |u|_2=0.712347
+#  numerical error: |u-u_exact|_2=5.2591e-03
+#  m=64 mesh using 10000 sweeps of NGS: |u|_2=0.708412
+#  numerical error: |u-u_exact|_2=1.3102e-03
+#  m=128 mesh using 10000 sweeps of NGS: |u|_2=0.707433
+#  numerical error: |u-u_exact|_2=3.2592e-04
+
+# FIXME these runs show there is a scaling problem
+# $ for JJ in 2 3 4 5; do ./fas1.py -mms -cycles 3 -j $JJ -monitor -show; done
+
+# 5 cycles of 2-level with very accurate coarse-mesh solve:  FAILS
 #   $ for JJ in 1 2 3 4 5 6; do ./fas1.py -j $JJ -cycles 5 -coarsesweeps 1000 -mms -levels 2; done
 
 import numpy as np
@@ -21,9 +38,9 @@ from meshlevel import MeshLevel1D
 parser = argparse.ArgumentParser(description='''
 FAS (full approximation storage) scheme for the nonlinear Liouville-Bratu
 problem
-  -u'' + nu e^u = 0,  u(0) = u(1) = 0
+  -u'' - nu e^u = 0,  u(0) = u(1) = 0
 where nu is constant (adjust with -nu).  In the -mms case the equation is
-  -u'' + nu e^u = g,  u(0) = u(1) = 0
+  -u'' - nu e^u = g,  u(0) = u(1) = 0
 for a given function g computed so that u(x) = sin(3 pi x) is the exact
 solution.
 
@@ -77,7 +94,7 @@ if args.levels < 1:
 
 def mmsevaluate(x):
     u = np.sin(3.0 * np.pi * x)
-    g = 9.0 * np.pi**2 * u + args.nu * np.exp(u)
+    g = 9.0 * np.pi**2 * u - args.nu * np.exp(u)
     return u, g
 
 def FF(mesh,u):
@@ -92,7 +109,7 @@ def FF(mesh,u):
     F = mesh.zeros()
     for p in range(1,mesh.m):
         F[p] = (1.0/mesh.h) * (2.0*u[p] - u[p-1] - u[p+1]) \
-               + mesh.h * args.nu * np.exp(u[p])
+               - mesh.h * args.nu * np.exp(u[p])
     return F
 
 def residual(mesh,u,f):
@@ -124,8 +141,8 @@ def ngssweep(mesh,u,frhs,forward=True):
         for n in range(args.niters):
             tmp = mesh.h * args.nu * np.exp(u[p]+c)
             f = (1.0/mesh.h) * (2.0*(u[p]+c) - u[p-1] - u[p+1]) \
-                + tmp - mesh.h * frhs[p]
-            df = 2.0/mesh.h + tmp
+                - tmp - mesh.h * frhs[p]
+            df = 2.0/mesh.h - tmp
             c -= f / df
         u[p] += c
     return None
@@ -210,7 +227,7 @@ if args.show:
     plt.figure(figsize=(15.0,8.0))
     plt.plot(meshes[args.j].xx(),uu,'k',linewidth=4.0,label='numerical solution')
     if args.mms:
-        plt.plot(meshes[args.j].xx(),uexact,'k',linewidth=4.0,label='exact solution')
+        plt.plot(meshes[args.j].xx(),uexact,'k--',linewidth=4.0,label='exact solution')
         plt.legend()
     plt.xlabel('x')
     plt.show()

@@ -64,21 +64,22 @@ urlcolor=black    % ...
 
 \section{The main components}
 
-In this note we consider Brandt's FAS (full approximation storage) scheme \cite{Brandt1977}---see also Chapter 6 in \cite{Briggsetal2000}---for a one-dimensional nonlinear equation, an ordinary differential equation (ODE) boundary value problem.  We solve the nonlinear (semilinear) Liouville-Bratu problem \cite[for example]{Bueler2021}
-% FIXME should be "- nu e^u"
+We consider Brandt's FAS (full approximation storage) scheme \cite{Brandt1977}---see also Chapter 6 in \cite{Briggsetal2000}---for an easy nonlinear elliptic equation.  In fact the problem is an ordinary differential equation (ODE) boundary value problem, namely the nonlinear (semilinear) Liouville-Bratu problem \cite[for example]{Bueler2021}
 \begin{equation}
-  -u'' + \nu e^u = 0,  \qquad u(0) = u(1) = 0  \label{liouvillebratu}
+  -u'' - \nu e^u = 0,  \qquad u(0) = u(1) = 0  \label{liouvillebratu}
 \end{equation}
 where $\nu$ is constant.  This problem is solved in optimal time by a Python program \texttt{fas1.py}, and this note serves as its documentation.
 
+FIXME
+
 We solve problem \eqref{liouvillebratu} using the finite element (FE) method \cite{Bueler2021,Elmanetal2014}, thus we rewrite it in weak form.  Let $F$ be the nonlinear operator for the weak form,
 \begin{equation}
-  F(u)[v] = \int_0^1 u'(x) v'(x) + \nu e^{u(x)} v(x)\, dx,  \label{operator}
+  F(u)[v] = \int_0^1 u'(x) v'(x) - \nu e^{u(x)} v(x)\, dx,  \label{operator}
 \end{equation}
 acting on $u$ and $v$ in the space of functions $\mathcal{H}=H_0^1[0,1]$, namely functions which have zero boundary values and one square-integrable derivative.  (Derive \eqref{operator} by multiplying \eqref{liouvillebratu} by $v$ and integrating by parts.)  We want to find $u$ in $\mathcal{H}$ so that $F(u)[v] = 0$ for all such $v$ in $\mathcal{H}$.
 
 Actually, a we also solve in an optional case (\texttt{fas1.py} runtime option \texttt{-mms} for ``method of manufactured solutions'') the more general equation
-  $$-u'' + \nu e^u = g$$
+  $$-u'' - \nu e^u = g$$
 for a given function $g(x)$, with the same boundary conditions.  In this case the nonlinear operator is the same but the weak form is
 \begin{equation}
   F(u)[v] = \ip{g}{v} \label{weakform}
