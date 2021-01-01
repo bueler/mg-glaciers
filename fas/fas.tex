@@ -83,13 +83,13 @@ acting on $u$ and $v$ in the space of functions $\mathcal{H}=H_0^1[0,1]$.  These
 
 Actually, we solve the more general equation
   $$-u'' - \mu e^u = g$$
-for a given function $g(x)$, with the same boundary conditions.  This is in the optional case for runtime option \texttt{-mms}, the ``method of manufactured solutions''.  (In detail, the exact solution is $u(x)=\sin(3\pi x)$ and thus $g(x)=9\pi^2 u(x)-\mu e^{u(x)}$.)  The nonlinear operator is the same but the weak form is
+for a given function $g(x)$, with the same boundary conditions.  This is in the optional case for runtime option \texttt{-mms}, the ``method of manufactured solutions''.  (In detail, the exact solution is $u(x)=\sin(3\pi x)$ and thus $g(x)=9\pi^2 u(x)-\mu e^{u(x)}$.  Note $g(0)$ and $g(1)$ are nonzero.)  The nonlinear operator is the same but the weak form is
 \begin{equation}
   F(u)[v] = \ip{g}{v} \label{weakform}
 \end{equation}
 for all $v$, where $\ip{g}{v} = \int_0^1 g(x) v(x) dx$.  Equation \eqref{liouvillebratu} is the case where $g=0$.  Observe that $F(u)[\cdot]$ and $\ip{g}{\cdot}$ are (continuous) linear functionals, acting on functions in $\mathcal{H}$.  From now on, \eqref{weakform} is the official weak form of our problem.
 
-As this example uses the simplest possible FE setup, we define equally-spaced meshes on $[0,1]$ with $m$ subintervals, of length $h=1/m$, and $p=1,\dots,m-1$ interior nodes (points) $x_p=ph$.  On this mesh there is a finite-dimensional space $\mathcal{S}^h$ of piecewise-linear and continuous functions with zero boundary values; note $\mathcal{S}^h$ is a subset of $\mathcal{H}$.  The vector space $\mathcal{S}^h$ has a basis of hat functions $\{\lambda_p(x)\}$, for the interior nodes, defined by the two properties that $\lambda_p$ is in $\mathcal{S}^h$ and that $\lambda_p(x_q)=\delta_{pq}$.
+As this example uses the simplest possible FE setup, we define equally-spaced meshes on $[0,1]$ with $m$ subintervals, of length $h=1/m$, and $p=1,\dots,m-1$ interior nodes (points) $x_p=ph$.  On this mesh there is a finite-dimensional space $\mathcal{S}^h$ of piecewise-linear and continuous functions with zero boundary values; note $\mathcal{S}^h$ is a subset of $\mathcal{H}$.  The vector space $\mathcal{S}^h$ has a basis of hat functions $\{\lambda_p(x)\}$, for the interior nodes, defined by the two properties that $\lambda_p$ is in $\mathcal{S}^h$ and that $\lambda_p(x_q)=\delta_{pq}$.  Note that the $L^2$ norm of a hat function depends on the mesh resolution (), and $\ip{\lambda_p}{\lambda_q}\ne 0$ for $q=p\pm1$, thus the basis $\{\lambda_p\}$, while well-conditioned basis, is not close to orthonormal.
 
 In terms of the hat function basis, the numerical solution is
 \begin{equation}
@@ -124,9 +124,9 @@ In the next section we actually describe the multigrid FAS algorithm, but here w
 \begin{equation}
 r^h(w^h + c \lambda_p)[\lambda_p] = 0  \label{ngspointproblem}
 \end{equation}
-for a scalar $c$.  That is, at each point NGS solves a scalar problem $f(c)=0$ where
+for a scalar $c$.  That is, at each point NGS solves a scalar problem $\phi(c)=0$ where
 \begin{equation}
-  f(c) = r^h(w^h + c \lambda_p)[\lambda_p], \label{ngspointresidual}
+  \phi(c) = r^h(w^h + c \lambda_p)[\lambda_p], \label{ngspointresidual}
 \end{equation}
 and then it updates
 \begin{equation}
@@ -134,14 +134,14 @@ and then it updates
 \end{equation}
 or equivalently $w[p] \leftarrow w[p] + c$.  Following the idea of the linear Gauss-Seidel iteration \cite{Greenbaum1997}, each point value is updated using the already-updated values, i.e.~including the latest values of the neighbors $w[p-1]$ and $w[p+1]$ when evaluating the residual in \eqref{ngspointproblem}.  Gauss-Seidel-type methods are sometimes called ``multiplicative'' or ``successive'' corrections, in contrast to ``additive'' or ``parallel'' corrections, of which the Jacobi iteration is the best known \cite{Bueler2021}.
 
-Even solving the scalar problem $f(c)=0$ cannot be done exactly when considering a transcendental problem like \eqref{liouvillebratu}.  Thus we will use a fixed number (\texttt{-niters}; defaults to 2) of Newton iterations to generate a (scalar) sequence $\{c_k\}$.  We start from initial iterate $c_0=0$, thus assuming that the current iterate $w^h$ for the whole problem is reasonably close
+Even solving the scalar problem $\phi(c)=0$ cannot be done exactly when considering a transcendental problem like \eqref{liouvillebratu}.  Thus we will use a fixed number (\texttt{-niters}; defaults to 2) of Newton iterations to generate a (scalar) sequence $\{c_k\}$.  We start from initial iterate $c_0=0$, thus assuming that the current iterate $w^h$ for the whole problem is reasonably close
 \begin{equation}
-f'(c_k)\, s_k = -f(c_k),  \qquad  c_{k+1} = c_k + s_k. \label{ngsnewton}
+\phi'(c_k)\, s_k = -\phi(c_k),  \qquad  c_{k+1} = c_k + s_k. \label{ngsnewton}
 \end{equation}
 Because the vast majority of the FAS algorithm work is in evaluating these NGS expressions, we record the following details which follow from \eqref{feoperator} and \eqref{feresidual}:
 \begin{align}
-   f(c) &= -\frac{1}{h} \left(2(w[p]+c) - w[p-1] - w[p+1]) + h \left(\mu e^{w[p]+c} + g[p]\right)\right), \label{ngsnewtondetails} \\
-   f'(c) &= -\frac{2}{h} + h \mu e^{w[p]+c}. \notag
+   \phi(c) &= -\frac{1}{h} \left(2(w[p]+c) - w[p-1] - w[p+1]) + h \left(\mu e^{w[p]+c} + g[p]\right)\right), \label{ngsnewtondetails} \\
+   \phi'(c) &= -\frac{2}{h} + h \mu e^{w[p]+c}. \notag
 \end{align}
 
 The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual at successive points in some order.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}) of scalar Newton iterations \eqref{ngsnewton} to solve \eqref{ngspointproblem} at each point.  Note that as soon as the residual is made zero at one point it is no longer zero at the previous points (which were just zeroed).  In a linear case the iteration is known to converge based on structural properties of the matrices \cite[for example]{Greenbaum1997} which correspond to ellipticity of the original problem, and we expect that at least for weak nonlinearities (e.g.~small $\mu$ in \eqref{liouvillebratu}) our method will converge as solution method for \eqref{weakform}.  However, one observes immediately that, after distinct progress in the first few sweeps, soon NGS stagnates.  Following Brandt \cite{Brandt1977}, who asserts that any such ``stalling'' scheme must be ``wrong'', we adopt the multigrid approach next.
@@ -182,7 +182,8 @@ and essentially this equation would be the linear error equation $A\be=-\br$.
 \item As already noted, if NGS sweeps have been applied (to iterate $w^h$) then $e^h$ and $r^h(w^h)[v]$ are smooth, though we do not know $e^h$ or $u^h$.
 \item Both $F^h(w^h)[v]$ and $r^h(w^h)[v]$ are known, i.e.~they are computable, and thus they can be transferred to the right.
 \end{itemize}
-Note that vectors like $w^h$ are different from linear functionals like $r^h(w^h)[v]$, but both are representable by Python vectors.  In the first case one stores the coefficients $w[p]$, i.e.~with respect to the hat function basis $\{\lambda_p\}$ as in \eqref{fesolution}, and in the second case by values $r^h(w^h)[\lambda_p]$ on the same hat functions.  Also observe that an iterate $w^h$ for problem \eqref{liouvillebratu} has zero boundary values as it is in $\mathcal{S}^h$, and that the residual $r^h(w^h)[v]$ acts on $\mathcal{S}^h$, and thus only interior-point hat functions are needed.
+
+Functions like $w^h(x)$ are distinct objects from things like the residual $r^h(w^h)[v]$, which is a linear functional on $v$ in $\mathcal{S}^h$, but both are representable by Python vectors.  For the function $w^h$ one stores the coefficients $w[p]$ with respect to an expansion in the hat function basis $\{\lambda_p\}$, as in \eqref{fesolution} for example, while one stores a functional by its values $r^h(w^h)[\lambda_p]$.  As a result both are concrete vectors in $\RR^{m-1}$.  (It would make sense to represent $w^h$ by a column vector and $r^h(w^h)$ as a row vector in a language which supports that, but in Python/NumPy it is easiest to just use ``flat'' one-dimensional NumPy arrays for both purposes.)   Also observe that an iterate $w^h$ for problem \eqref{liouvillebratu} has zero boundary values as it is in $\mathcal{S}^h$, and that the residual $r^h(w^h)[v]$ acts on $\mathcal{S}^h$, and thus only interior-point hat functions are needed.
 
 FIXME Noting that the operator $F^h$ in \eqref{feoperator} is nonlinear in $u$, the FAS method  proposes a \emph{new} equation on the coarse mesh.  Because the fine-mesh smoother has already been applied, the new equation relates smooth quantities which should be well-approximated on the coarse mesh.  
 
