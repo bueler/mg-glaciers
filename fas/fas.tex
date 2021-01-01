@@ -31,9 +31,11 @@ urlcolor=black    % ...
 \newcommand{\hbn}{\hat{\mathbf{n}}}
 
 \newcommand{\bb}{\mathbf{b}}
+\newcommand{\be}{\mathbf{e}}
 \newcommand{\bbf}{\mathbf{f}}
 \newcommand{\bg}{\mathbf{g}}
 \newcommand{\bn}{\mathbf{n}}
+\newcommand{\br}{\mathbf{r}}
 \newcommand{\bu}{\mathbf{u}}
 \newcommand{\bv}{\mathbf{v}}
 \newcommand{\bw}{\mathbf{w}}
@@ -97,7 +99,7 @@ Note $u^h(x)$ is a function but, because the hat functions form a ``nodal basis'
 
 Function $u^h$ will solve a finite-dimensional nonlinear system, and in fact we will not compute it exactly.  (At best, to within rounding errors.)  We will, at any stage, possess an iterate $w^h(x)$ instead, for which the error is
 \begin{equation}
-  e^h = w^h - u^h,  \label{error}
+  e^h = w^h - u^h,  \label{feerror}
 \end{equation}
 and we want the norm $\|e^h\|$ to be small.  In the \texttt{-mms} case where the exact solution of the continuum problem is known, $e^h$ will be computable, but otherwise only our knowledge of the residual (below) will allow us to know the rate at which $\|e^h\|$ goes to zero, i.e.~the rate at which iterates $w^h$ are approaching $u^h$.
 
@@ -142,24 +144,49 @@ Because the vast majority of the FAS algorithm work is in evaluating these NGS e
    f'(c) &= -\frac{2}{h} + h \mu e^{w[p]+c}. \notag
 \end{align}
 
-The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual at successive points in some order.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}) of scalar Newton iterations \eqref{ngsnewton} to solve \eqref{ngspointproblem} at each point.  Note that as soon as the residual is made zero at one point it is no longer zero at the previous points (which were just zeroed).  In a linear case the iteration is known to converge based on structural properties of the matrices \cite[for example]{Greenbaum1997} which correspond to ellipticity of the original problem, and we expect that at least for weak nonlinearities (e.g.~small $\mu$ in \eqref{liouvillebratu}) our method will converge as solution method for \eqref{weakform}.  However, one observes immediately that, after distinct progress in the first few sweeps, soon NGS stagnates.  Following Brandt \cite{Brandt1977}, who asserts that any such ``stalling'' scheme must be ``wrong'', we adopt a multilevel approach next.
+The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual at successive points in some order.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}) of scalar Newton iterations \eqref{ngsnewton} to solve \eqref{ngspointproblem} at each point.  Note that as soon as the residual is made zero at one point it is no longer zero at the previous points (which were just zeroed).  In a linear case the iteration is known to converge based on structural properties of the matrices \cite[for example]{Greenbaum1997} which correspond to ellipticity of the original problem, and we expect that at least for weak nonlinearities (e.g.~small $\mu$ in \eqref{liouvillebratu}) our method will converge as solution method for \eqref{weakform}.  However, one observes immediately that, after distinct progress in the first few sweeps, soon NGS stagnates.  Following Brandt \cite{Brandt1977}, who asserts that any such ``stalling'' scheme must be ``wrong'', we adopt the multigrid approach next.
 
 
 \section{The FAS algorithm}
 
-FIXME FAS is a multigrid scheme, and thus it includes a hierarchy of meshes and also choices of a ``smoother'' on each level and a coarse-mesh solution method \cite{Briggsetal2000}.  We describe only two levels at first, with the coarser mesh having a larger spacing $H>h$ corresponding to fewer subintervals.  The program \texttt{fas1.py} assumes refinement only by a factor of two, so the coarse mesh has $m/2$ subintervals of length $H=2H$.  An iterate on the coarse mesh will be denoted $w^H$.
+Full approximation storage (FAS) \cite{Brandt1977,Briggsetal2000} is a multigrid scheme, and thus it includes a hierarchy of meshes, a choice of a ``smoother'' on each level, and a coarse-mesh solution method.  The fundamental goal of any multigrid scheme is to do a minimal amount of work (smoothing) on a given ``fine'' mesh, so that by transferring (restricting) a version of the problem to the coarser mesh one nearly solves for the remaining error, which is then added-back (prolonging) to correct the solution on the fine mesh.
 
-FIXME NGS is smoother
+We describe only two levels at first, with a coarser mesh having a spacing $2h$ corresponding to fewer $M=m/2$ subintervals.  Notationally, quantities on the coarse mesh will have superscript ``$2h$'', for example an iterate is $w^{2h}$.  The program \texttt{fas1.py} only refines by such factors of two, but the ideas generalize to other refinement factors.
 
-A few sweeps of NGS accomplishes two actions on the current iterate $w^h$ on the fine mesh:
-\renewcommand{\labelenumi}{\emph{\roman{enumi})}}
-\begin{enumerate}
-\item making the residual $r(w^h)$ smooth, but not necessarily small, and
-\item making the error (difference) $e^h = w^h - u^h$ smooth, but not necessarily small.
-\end{enumerate}
-Using more sweeps of NGS would eventually make the residual $r(w^h)$ small and thus solve problem \eqref{weakform}.  However, as a multigrid method, FAS instead transfers the problem to a coarser mesh where the same residual function is, essentially, less smooth; more of the magnitude of the coarse-mesh interpolant of the fine mesh iterate can be eliminated by smoothing.  Thus NGS sweeps on the coarser mesh are effective at reducing the magnitude of the residual.  Descending further, to yet coarser meshes, eventually leads to a residual which can be eliminated entirely at the few interior points of the coarsest mesh.
+A small fixed number (option \texttt{-downsweeps}; the default is 1) of NGS sweeps is our smoother on the fine mesh.  One NGS sweep, solving \eqref{ngspointproblem} and doing update \eqref{ngspointupdate} at each point $x_p$, is an $O(m)$ operation with a small constant.  (The constant is related to both the number of Newton iterations used and the expense of evaluating nonlinearities at each point, e.g.~the exponential in \eqref{liouvillebratu}.)
 
-Noting that the operator $F$ in \eqref{operator} is nonlinear in $u$, the FAS method  proposes a \emph{new} equation on the coarse mesh.  Because the fine-mesh smoother has already been applied, the new equation relates smooth quantities which should be well-approximated on the coarse mesh.  The FAS equation is
+A few sweeps of NGS on the fine mesh produces two results on the current iterate $w^h$:
+\begin{itemize}
+\item the residual $r^h(w^h)$ \eqref{feresidual} becomes smooth, but not necessarily small, and
+\item the error $e^h = w^h - u^h$ \eqref{feerror} becomes smooth, but not necessarily small.
+\end{itemize}
+Using more sweeps of NGS would eventually make the residual and error small and thus solve problem \eqref{weakform}, but this is inefficient in the sense that $O(m)$ or more sweeps may be needed, giving an $O(m^2)$ method.
+
+FAS instead transfers the problem to a coarser mesh where the ``same'' residual function is, essentially, less smooth.  Thus more of the magnitude of the coarse-mesh interpolant of the fine mesh residual can be eliminated by smoothing; NGS sweeps on the coarser mesh are again effective at reducing the magnitude of the residual.  Descending to yet coarser meshes, in a V-cycle as described below, eventually leads to a residual which can be eliminated entirely by applying NGS at a few interior points of the coarsest mesh.  (In the default settings for \texttt{fas1.py}, the coarsest mesh has $m=2$ and thus one interior point.)
+
+The question is, what is the coarse mesh version of the problem?  We start from the weak form \eqref{weakform} on a given (fine) mesh, i.e.
+\begin{equation}
+  F^h(u^h)[v] = \ip{g^h}{v} \qquad \text{for all } v \text{ in } \mathcal{S}^h.  \label{feweakform}
+\end{equation}
+The solution $u^h$ is generally unknown; instead we have a current iterate $w^h$.  Subtracting $F^h(w^h)[v]$ from both sides of \eqref{feweakform} gives the residual \eqref{feresidual} on the right:
+\begin{align}
+  F^h(u^h)[v] - F^h(w^h)[v] &= \ip{g^h}{v} - F^h(w^h)[v] \notag \\
+  F^h(u^h)[v] - F^h(w^h)[v] &= r^h(w^h)[v] \label{fasproto}
+\end{align}
+
+Three key observations apply to equation \eqref{fasproto}:
+\begin{itemize}
+\item If $F^h$ were linear then we could rewrite it in terms of the error $e^h=w^h-u^h$:
+    $$F^h(e^h)[v] = -r^h(w^h)[v], \qquad (\text{\emph{linear cases only}})$$
+and essentially this equation would be the linear error equation $A\be=-\br$.
+\item As already noted, if NGS sweeps have been applied (to iterate $w^h$) then $e^h$ and $r^h(w^h)[v]$ are smooth, though we do not know $e^h$ or $u^h$.
+\item Both $F^h(w^h)[v]$ and $r^h(w^h)[v]$ are known, i.e.~they are computable, and thus they can be transferred to the right.
+\end{itemize}
+Note that vectors like $w^h$ are different from linear functionals like $r^h(w^h)[v]$, but both are representable by Python vectors.  In the first case one stores the coefficients $w[p]$, i.e.~with respect to the hat function basis $\{\lambda_p\}$ as in \eqref{fesolution}, and in the second case by values $r^h(w^h)[\lambda_p]$ on the same hat functions.  Also observe that an iterate $w^h$ for problem \eqref{liouvillebratu} has zero boundary values as it is in $\mathcal{S}^h$, and that the residual $r^h(w^h)[v]$ acts on $\mathcal{S}^h$, and thus only interior-point hat functions are needed.
+
+FIXME Noting that the operator $F^h$ in \eqref{feoperator} is nonlinear in $u$, the FAS method  proposes a \emph{new} equation on the coarse mesh.  Because the fine-mesh smoother has already been applied, the new equation relates smooth quantities which should be well-approximated on the coarse mesh.  
+
+FIXME Thus the FAS equation is
 \begin{equation}
   F^H(u^H) - F^H(R w^h) = R r^h(w^h). \label{fasequation}
 \end{equation}
