@@ -243,7 +243,7 @@ Thus we use \eqref{hatrelation} to compute $P w^{2h}$ in terms of fine-mesh hat 
               &\qquad + w[2] \lambda_4^h(x) + \left(\frac{1}{2} w[2] + \frac{1}{2} w[3]\right) \lambda_5^h(x) \notag \\
               &\qquad + \dots + w[M-1] \lambda_{m-2}^h(x) + \frac{1}{2} w[M-1] \lambda_{m-1}^h(x) \notag
 \end{align}
-It is clearest to give $P$ as a matrix acting on representation vectors, i.e.~for $P:\RR^{M-1} \to \RR^{m-1}$:
+As a matrix, $P$ acts on the representation vectors, i.e.~$P:\RR^{M-1} \to \RR^{m-1}$ has $M-1$ columns and $m-1$ rows:
 \begin{equation}
 P = \begin{bmatrix}
 1/2 & & & \\
@@ -256,7 +256,26 @@ P = \begin{bmatrix}
 \end{equation}
 The column sums of $P$ are all two, because from \eqref{hatrelation} each column has a nonzero block $[1/2,1,1/2]^\top$, and the columns are linearly-independent.  Except for the first and last rows, the row sums are all one.
 
-FIXME consequences for formulas for $R'$ and $R$
+The restriction $R'$ acts on fine-mesh linear functionals $\ell:\mathcal{S}^h \to \RR$.  It is sometimes called ``canonical restriction'' \cite{GraeserKornhuber2009} because the output functional $R'\ell:\mathcal{S}^{2h}\to \RR$ acts on coarse-mesh functions the same way $\ell$ itself acts on those functions.  Thus we may define it using $P$:
+\begin{equation}
+  (R'\ell)[v] = \ell[Pv]  \label{rprimedefinition}
+\end{equation}
+for $v$ in $\mathcal{S}^{2h}$.  As noted earlier, $\ell$ is represented by a vector $\bm{\ell}$ in $\RR^{m-1}$, of values $\ell[p] = \ell[\lambda_p^h]$, so one computes the values of $R'\ell$ using \eqref{hatrelation}:
+\begin{align}
+  (R'\ell)[q] &= (R'\ell)[\lambda_q^{2h}] = \ell[P\lambda_q^{2h}] = \ell\left[\frac{1}{2} \lambda_{2q-1}^h + \lambda_{2q}^h + \frac{1}{2} \lambda_{2q+1}^h\right]  \label{rprimeformula} \\
+      &= \frac{1}{2} \ell[\lambda_{2q-1}^h] + \ell[\lambda_{2q}^h] + \frac{1}{2} \ell[\lambda_{2q+1}^h] = \frac{1}{2} \ell[2q-1] + \ell[2q] + \frac{1}{2} \ell[2q+1]  \notag
+\end{align}
+for $q=1,2,\dots,M-1$.  In other words, as a matrix $R'$ is the transpose of $P$, with $M-1$ rows and $m-1$ columns:
+\begin{equation}
+R' = \begin{bmatrix}
+1/2 & 1 & 1/2 &   &     & \\
+    &   & 1/2 & 1 & 1/2 & \\
+    &   &     &   & 1/2 & \\
+    &   &     &   &     & \ddots
+\end{bmatrix} \label{rprimematrix}
+\end{equation}
+
+FIXME formula for $R$
 
 
 
