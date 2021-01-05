@@ -159,7 +159,7 @@ The vast majority of the FAS algorithm work is in evaluating these NGS expressio
 The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual at successive points in order.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}; defaults to 2) of scalar Newton iterations \eqref{ngsnewton} to solve \eqref{ngspointproblem} at each point.  Note that as soon as the residual is made zero at one point it is no longer zero at the previous points (which were just zeroed).  In a linear case the iteration is known to converge based on structural properties of the matrices \cite[for example]{Greenbaum1997} which correspond to ellipticity of the original problem.  We expect that at least for weak nonlinearities (e.g.~small $\mu$ in \eqref{liouvillebratu}) our method will converge as solution method for \eqref{weakform}.  However, one observes in practice that, after substantial progress in the first few sweeps, soon NGS stagnates.  Following Brandt \cite{Brandt1977}, who asserts that such a ``stalling'' scheme must be ``wrong'', we adopt the multigrid approach next.
 
 
-\section{The FAS algorithm on two levels}
+\section{The FAS equation for two levels}
 
 Full approximation storage (FAS) \cite{Brandt1977,Briggsetal2000} is a multigrid scheme, and thus it includes a hierarchy of meshes, a choice of a ``smoother'' on each level, and a coarse-mesh solution method.  The fundamental goal of any multigrid scheme is to do a minimal amount of work (smoothing) on a given mesh and then switch to an inexpensive coarser mesh to do the rest of the work.  That is, by transferring (restricting) a version of the problem to the coarser mesh one nearly solves for the remaining error.  This coarse-mesh approximation of the error is added-back (prolonged) to correct the solution on the finer mesh.
 
@@ -192,28 +192,49 @@ the linear error equation $A\be=-\br$ \cite[Chapter 2]{Bueler2021}.
 \item Both $w^h$ and $r^h(w^h)$ are known and/or computable.
 \end{itemize}
 
-Noting that our operator $F^h$ is in fact nonlinear (in $w^h$), the FAS method  proposes a \emph{new} equation on the coarse mesh based on the above considerations.  In the linear case the new equation could be phrased directly in terms of the error.  However, in general the coarse-mesh version of \eqref{fasproto} uses linear restriction operations $R$ and $R'$ on the computable quantities and it re-discretizes the nonlinear operator to $F^{2h}$ acting on $\mathcal{S}^{2h}$:
+Noting that our operator $F^h$ is in fact nonlinear (in $w^h$), the FAS method  proposes a \emph{new} equation on the coarse mesh based on the above considerations.  In the linear case the new equation could be phrased directly in terms of the error.  However, in general the coarse-mesh version of \eqref{fasproto} uses linear restriction operators $R$ and $\mathcal{R}$ on the computable quantities, and it also re-discretizes the nonlinear operator to $F^{2h}$ acting on $\mathcal{S}^{2h}$:
 \begin{equation}
-  F^{2h}(u^{2h})[v] = R' (r^h(w^h))[v] + F^{2h}(R w^h)[v] \label{fasequation}
+  F^{2h}(u^{2h})[v] = \mathcal{R} (r^h(w^h))[v] + F^{2h}(R w^h)[v] \label{fasequation}
 \end{equation}
 for all $v$ in $\mathcal{S}^{2h}$.  Here $u^{2h}$ in $\mathcal{S}^{2h}$ is the solution on the coarse mesh.
 
 Note that if $w^h=u^h$, that is, if $w^h$ were the exact solution to the fine mesh problem \eqref{feweakform}, then $r^h(w^h)=0$ and the right side of \eqref{fasequation} would simplify to $F^{2h}(R w^h)[v]$.  In this case the solution of \eqref{fasequation} would be $u^{2h} = R w^h$ by well-posedness, and we would simply produce the restriction of the solution onto the coarser mesh.
 
-To explain the two different restriction operators in \eqref{fasequation}, note that functions like $w^h$ are distinct objects from linear functionals like the residual $r^h(w^h)$ because the later acts on $v$ in $\mathcal{S}^h$.  We denote the space of such linear functionals by $(\mathcal{S}^h)'$.  The two restrictions are thereby distinguished by their domain and range spaces:
-\begin{equation}
-  R : \mathcal{S}^h \to \mathcal{S}^{2h}, \qquad  R' : (\mathcal{S}^h)' \to (\mathcal{S}^{2h})'. \label{restrictions}
-\end{equation}
+If the coarse mesh is in fact the coarsest one in the hierarchy then we propose to solve \eqref{fasequation} by sufficient NGS sweeps so that $u^{2h}$ is computed almost exactly.  Specifically, if the coarse mesh consists of only one interior point, which it will under the default settings in \texttt{fas1.py}, then this requires a single NGS update if the Newton iteration is sufficiently-accurate.
 
-But how do these restrictions act?  Note that both functions in $\mathcal{S}^h$ and linear functionals in $(\mathcal{S}^h)'$ are representable by Python vectors.  For a function $w^h$ one stores the coefficients $w[p]$ with respect to an expansion in the hat function basis $\{\lambda_p\}$, as in \eqref{fesolution} for example.  By contrast one stores a functional $\ell=r^h(w^h)$ by its values $\ell[\lambda_p]$.  Both are concrete vectors in $\RR^{m-1}$, though it make sense to represent $w^h$ as a column vector and $r^h(w^h)$ as a row vector \cite{TrefethenBau1997}.  (In Python it is easiest to just use ``flat'' one-dimensional NumPy arrays for both.)   Observe that an iterate $w^h$ has zero boundary values, and likewise the residual $r^h(w^h)$ acts on $v$ with zero boundary values, thus only interior-point hat functions are needed in these representations.  FIXME
-
-If the coarse grid is in fact the coarsest grid then we propose to solve the problem by sufficient sweeps of NGS so that $u^{2h}$ is computed almost exactly.  If the coarse grid consists of only one interior point, which it will have with default settings in \texttt{fas1.py}, then this requires a single NGS update if the Newton iteration is sufficiently accurate.
-
-After solving the FAS coarse-mesh equation \eqref{fasequation} we have $u^{2h}$, assumed exact for the rest of the presentation.  The final step of FAS is the update on the finer mesh,
+After solving the FAS coarse-mesh equation \eqref{fasequation} we have $u^{2h}$, assumed exact for the next formula.  Two-level FAS updates the iterate on the finer mesh,
 \begin{equation}
   w^h \longleftarrow w^h + P(u^{2h} - R w^h) \label{fasupdate}
 \end{equation}
-FIXME Here $P=R^\top$ is prolongation, acting by linear interpolation.
+Here $P$ is the prolongation operation which extends a function in $\mathcal{S}^{2h}$ to a function in $\mathcal{S}^h$.
+
+Formulas \eqref{fasequation} and \eqref{fasupdate} specify the FAS algorithm.  However, in order to understand and implement it, we must clarify the action of operators $R$, $\mathcal{R}$, and $P$.  This is the purpose of the next section.
+
+
+\section{Restriction and prolongation operators for FE methods}
+
+To explain the two different restriction operators in \eqref{fasequation}, plus the prolongation in \eqref{fasupdate}, first note that functions $w^h$ in $\mathcal{S}^h$ are distinct objects from linear functionals like the residual $r^h(w^h)$, which act on $v$ in $\mathcal{S}^h$.  We denote the space of such linear functionals by $(\mathcal{S}^h)'$.  The operators are thereby distinguished by their domain and range spaces:
+\begin{align}
+  R           &: \mathcal{S}^h \to \mathcal{S}^{2h}, \label{rpoperators} \\
+  \mathcal{R} &: (\mathcal{S}^h)' \to (\mathcal{S}^{2h})', \notag \\
+  P           &: \mathcal{S}^{2h} \to \mathcal{S}^h. \notag
+\end{align}
+
+Next note that both functions in $\mathcal{S}^h$ and linear functionals in $(\mathcal{S}^h)'$ are representable by vectors in $\RR^{m-1}$.  For a function $w^h$ one stores the coefficients $w[p]$ with respect to an expansion in the hat function basis $\{\lambda_p\}$, as in \eqref{fesolution} for example, while one stores a functional $\ell=r^h(w^h)$ by its values $\ell[\lambda_p]$.  Both representations are thus vectors in $\RR^{m-1}$, and though it might make sense to represent $w^h$ as a column vector and $\ell$ as a row vector \cite{TrefethenBau1997}, in Python it is easiest to use ``flat'' one-dimensional NumPy arrays for both.  Observe that within the FAS algorithm an iterate $w^h$ has zero boundary values, and likewise $\ell$ acts on $v$ with zero boundary values, thus only interior-point hat functions are needed in these representations.
+
+But how do $R$, $\mathcal{R}$, and $P$ actually operate in the finite element (FE) case?  A key calculation relates the coarse-mesh hat functions $\lambda_q^{2h}(x)$ to the fine mesh hats $\lambda_p^h(x)$:
+\begin{equation}
+  \lambda_q^{2h}(x) = \frac{1}{2} \lambda_{2q-1}^h(x) + \lambda_{2q}^h(x) + \frac{1}{2} \lambda_{2q+1}^h(x), \qquad q=1,2,\dots,M-1. \label{hatrelation}
+\end{equation}
+(Recall that $M=m/2$, and we assume $m$ is even.)  See Figure \ref{fig:hatcombination}.
+
+\begin{figure}
+\includegraphics[width=0.6\textwidth]{figs/hatcombination.pdf}
+\caption{Formula \eqref{hatrelation} writes a coarse-mesh hat function $\lambda_q^{2h}(x)$ (solid) as a linear combination of three fine-mesh hat functions $\lambda_p^h(x)$ (dotted) for $p=2q-1,2q,2q+1$.}
+\label{fig:hatcombination}
+\end{figure}
+
+FIXME consequences for formulas for $P$, $\mathcal{R}$, and $R$
 
 
 
