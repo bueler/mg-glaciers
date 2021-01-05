@@ -192,9 +192,9 @@ the linear error equation $A\be=-\br$ \cite[Chapter 2]{Bueler2021}.
 \item Both $w^h$ and $r^h(w^h)$ are known and/or computable.
 \end{itemize}
 
-Noting that our operator $F^h$ is in fact nonlinear (in $w^h$), the FAS method  proposes a \emph{new} equation on the coarse mesh based on the above considerations.  In the linear case the new equation could be phrased directly in terms of the error.  However, in general the coarse-mesh version of \eqref{fasproto} uses linear restriction operators $R$ and $\mathcal{R}$ on the computable quantities, and it also re-discretizes the nonlinear operator to $F^{2h}$ acting on $\mathcal{S}^{2h}$:
+Noting that our operator $F^h$ is in fact nonlinear (in $w^h$), the FAS method  proposes a \emph{new} equation on the coarse mesh based on the above considerations.  In the linear case the new equation could be phrased directly in terms of the error.  However, in general the coarse-mesh version of \eqref{fasproto} uses linear restriction operators on the computable quantities, and it also re-discretizes the nonlinear operator to $F^{2h}$ acting on $\mathcal{S}^{2h}$.  We denote the restriction operators by $R'$ and $R$:
 \begin{equation}
-  F^{2h}(u^{2h})[v] = \mathcal{R} (r^h(w^h))[v] + F^{2h}(R w^h)[v] \label{fasequation}
+  F^{2h}(u^{2h})[v] = R' (r^h(w^h))[v] + F^{2h}(R w^h)[v] \label{fasequation}
 \end{equation}
 for all $v$ in $\mathcal{S}^{2h}$.  Here $u^{2h}$ in $\mathcal{S}^{2h}$ is the solution on the coarse mesh.
 
@@ -208,21 +208,21 @@ After solving the FAS coarse-mesh equation \eqref{fasequation} we have $u^{2h}$,
 \end{equation}
 Here $P$ is the prolongation operation which extends a function in $\mathcal{S}^{2h}$ to a function in $\mathcal{S}^h$.
 
-Formulas \eqref{fasequation} and \eqref{fasupdate} specify the FAS algorithm.  However, in order to understand and implement it, we must clarify the action of operators $R$, $\mathcal{R}$, and $P$.  This is the purpose of the next section.
+Formulas \eqref{fasequation} and \eqref{fasupdate} specify the FAS algorithm.  However, in order to understand and implement it, we must clarify the action of operators $R'$, $R$, and $P$.  This is the purpose of the next section.
 
 
 \section{Restriction and prolongation operators for FE methods}
 
 To explain the two different restriction operators in \eqref{fasequation}, plus the prolongation in \eqref{fasupdate}, first note that functions $w^h$ in $\mathcal{S}^h$ are distinct objects from linear functionals like the residual $r^h(w^h)$, which act on $v$ in $\mathcal{S}^h$.  We denote the space of such linear functionals by $(\mathcal{S}^h)'$.  The operators are thereby distinguished by their domain and range spaces:
 \begin{align}
-  R           &: \mathcal{S}^h \to \mathcal{S}^{2h}, \label{rpoperators} \\
-  \mathcal{R} &: (\mathcal{S}^h)' \to (\mathcal{S}^{2h})', \notag \\
-  P           &: \mathcal{S}^{2h} \to \mathcal{S}^h. \notag
+  R' &: (\mathcal{S}^h)' \to (\mathcal{S}^{2h})', \label{rpoperators} \\
+  R  &: \mathcal{S}^h \to \mathcal{S}^{2h}, \notag \\
+  P  &: \mathcal{S}^{2h} \to \mathcal{S}^h. \notag
 \end{align}
 
 Next note that both functions in $\mathcal{S}^h$ and linear functionals in $(\mathcal{S}^h)'$ are representable by vectors in $\RR^{m-1}$.  For a function $w^h$ one stores the coefficients $w[p]$ with respect to an expansion in the hat function basis $\{\lambda_p\}$, as in \eqref{fesolution} for example, while one stores a functional $\ell=r^h(w^h)$ by its values $\ell[\lambda_p]$.  Both representations are thus vectors in $\RR^{m-1}$, and though it might make sense to represent $w^h$ as a column vector and $\ell$ as a row vector \cite{TrefethenBau1997}, in Python it is easiest to use ``flat'' one-dimensional NumPy arrays for both.  Observe that within the FAS algorithm an iterate $w^h$ has zero boundary values, and likewise $\ell$ acts on $v$ with zero boundary values, thus only interior-point hat functions are needed in these representations.
 
-But how do $R$, $\mathcal{R}$, and $P$ actually operate in the finite element (FE) case?  A key calculation relates the coarse-mesh hat functions $\lambda_q^{2h}(x)$ to the fine mesh hats $\lambda_p^h(x)$:
+But how do $R'$, $R$, and $P$ actually operate in the finite element (FE) case?  A key calculation relates the coarse-mesh hat functions $\lambda_q^{2h}(x)$ to the fine mesh hats $\lambda_p^h(x)$:
 \begin{equation}
   \lambda_q^{2h}(x) = \frac{1}{2} \lambda_{2q-1}^h(x) + \lambda_{2q}^h(x) + \frac{1}{2} \lambda_{2q+1}^h(x), \qquad q=1,2,\dots,M-1. \label{hatrelation}
 \end{equation}
@@ -234,7 +234,29 @@ But how do $R$, $\mathcal{R}$, and $P$ actually operate in the finite element (F
 \label{fig:hatcombination}
 \end{figure}
 
-FIXME consequences for formulas for $P$, $\mathcal{R}$, and $R$
+First consider the prolongation $P$.  It is defined as the injection of $\mathcal{S}^{2h}$ into $\mathcal{S}^h$, without changing the function.  Indeed, a piecewise-linear function on the coarse mesh is also a piecewise-linear function on the fine mesh.  Suppose $w^{2h}(x)$ is in $\mathcal{S}^{2h}$, so
+    $$w^{2h}(x) = \sum_{q=1}^{M-1} w[q] \lambda_q^{2h}(x).$$
+Thus we use \eqref{hatrelation} to compute $P w^{2h}$ in terms of fine-mesh hat functions:
+\begin{align}
+(P w^{2h})(x) &= \sum_{q=1}^{M-1} w[q] \left(\frac{1}{2} \lambda_{2q-1}^h(x) + \lambda_{2q}^h(x) + \frac{1}{2} \lambda_{2q+1}^h(x)\right) \label{pformula} \\
+              &= \frac{1}{2} w[1] \lambda_1^h(x) + w[1] \lambda_2^h(x) + \left(\frac{1}{2} w[1] + \frac{1}{2} w[2]\right) \lambda_3^h(x) \notag \\
+              &\qquad + w[2] \lambda_4^h(x) + \left(\frac{1}{2} w[2] + \frac{1}{2} w[3]\right) \lambda_5^h(x) \notag \\
+              &\qquad + \dots + w[M-1] \lambda_{m-2}^h(x) + \frac{1}{2} w[M-1] \lambda_{m-1}^h(x) \notag
+\end{align}
+It is clearest to give $P$ as a matrix acting on representation vectors, i.e.~for $P:\RR^{M-1} \to \RR^{m-1}$:
+\begin{equation}
+P = \begin{bmatrix}
+1/2 & & & \\
+1 & & & \\
+1/2 & 1/2 & & \\
+ & 1 & & \\
+ & 1/2 & 1/2 & \\
+ & & & \ddots
+\end{bmatrix} \label{pmatrix}
+\end{equation}
+The column sums of $P$ are all two, because from \eqref{hatrelation} each column has a nonzero block $[1/2,1,1/2]^\top$, and the columns are linearly-independent.  Except for the first and last rows, the row sums are all one.
+
+FIXME consequences for formulas for $R'$ and $R$
 
 
 
