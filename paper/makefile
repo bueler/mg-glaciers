@@ -1,7 +1,6 @@
 all: review.pdf
 
 _figures := finehats coarsehats coarsesthats
-#figures := $(addprefix figs/, $(_figures))
 figures := $(addprefix figs/, $(addsuffix .pdf, $(_figures)))
 
 review.pdf: review.tex review.bib $(figures)
