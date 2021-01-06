@@ -1,6 +1,6 @@
 all: fas.pdf
 
-_figures := hatcombination
+_figures := onehat hatcombination
 figures := $(addprefix figs/, $(addsuffix .pdf, $(_figures)))
 
 fas.pdf: fas.tex fas.bib $(figures)
