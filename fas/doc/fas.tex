@@ -275,16 +275,39 @@ R' = \begin{bmatrix}
 \end{bmatrix} \label{rprimematrix}
 \end{equation}
 
-The restriction $R:\mathcal{S}^h\to\mathcal{S}^{2h}$ which acts on functions requires an additional choice.  There are two possibilities which we give the temporary names $R_1$ and $R_2$:
+Finally we consider the restriction $R:\mathcal{S}^h\to\mathcal{S}^{2h}$ which acts on functions.  This is more interesting because the map $R$ causes a loss of information as the ``jerkier'' piecewise-linear function in $\mathcal{S}^h$ becomes linear across those fine mesh nodes which are not in the coarse mesh.  By contrast, for prolongation $P$ and canonical restriction $R'$ we essentially keep the input object but reinterpret it as acting on the finer or coarser mesh.
+
+\newcommand{\Rpr}{R_{\text{pr}}}
+\newcommand{\Rin}{R_{\text{in}}}
+\newcommand{\Rfw}{R_{\text{fw}}}
+
+There are actually three well-known versions of the restriction:
 \begin{itemize}
-\item $R_1$ is defined by \emph{projection}, namely the property
-    $$\ip{R_1 w^h}{v} = \ip{w^h}{v}$$
-for all $v\in \mathcal{S}^{2h}$.  Unfortunately this requires solving a nontrivial linear system.  In particular, one must form the \emph{mass matrix} for the coarse mesh, i.e.~$Q_{st}^{2h} = \ip{\lambda_s^{2h}}{\lambda_t^{2h}}$, and then solve an equation
-    $$FIXME R_1 Q^{2h} = Q^{2h}$$
-\item $R_2$ FIXME
+\item $\Rpr$ is defined by \emph{projection}, namely the property
+\begin{equation}
+  \ip{\Rpr w^h}{v} = \ip{w^h}{v} \label{rprdefinition}
+\end{equation}
+for all $v\in \mathcal{S}^{2h}$.  However, computing the entries of $\Rpr$ requires solving a linear system.  In particular, one must first form the sparse, symmetric \emph{mass matrices} for the meshes \cite{Elmanetal2014}, i.e.~$Q_{jk}^{h} = \ip{\lambda_j^{h}}{\lambda_k^{h}}$ for the fine mesh and $Q_{jk}^{2h} = \ip{\lambda_j^{2h}}{\lambda_k^{2h}}$ for the coarse.  Then one solves the following matrix equation for $\Rpr$:
+\begin{equation}
+  Q^{2h} \Rpr = P^\top Q^{h}  \label{rprequation}
+\end{equation}
+where $P$ is the above prolongation, thus $\Rpr = (Q^{2h})^{-1} P^\top Q^{h}$.
+
+In the 1D case the mass matrices are, in fact, tridiagonal.  Equation \eqref{rprequation} can thus be solved for each column of $\Rpr$ by the tridiagonal algorithm \cite{TrefethenBau1997}.  Forming $\Rpr$ by columns is an $O(M)$ operation for each of $M-1$ columns, thus a total of $O(M^2)$ work.  While this is indeed possible, and could even be done by hand in this case, the next two restriction alternatives are simpler.
+\item $\Rin$ FIXME
+\item $\Rfw$ FIXME
 \end{itemize}
 
-FIXME formula for $R$
+Before proceeding, note that equation \eqref{rprequation} for $\Rpr$ is justified by using $v=\lambda_s^{2h}$ in definition \eqref{rprdefinition} and then applying \eqref{hatrelation}.  In fact, write $z = \Rpr w^h = \sum_{q=1}^{M-1} z[q] \lambda_q^{2h}$ and $w^h = \sum_{p=1}^{m-1} w[p] \lambda_p^{h}$.  We have this computation:
+\begin{align*}
+\ip{z}{\lambda_s^{2h}} &= \ip{w^h}{\lambda_s^{2h}} \\
+\sum_{q=1}^{M-1} z[q] \ip{\lambda_q^{2h}}{\lambda_s^{2h}} &= \sum_{p=1}^{m-1} w[p] \ip{\lambda_p^{h}}{\frac{1}{2} \lambda_{2s-1}^{h} + \lambda_{2s}^{h} + \frac{1}{2} \lambda_{2s+1}^{h}} \\
+\sum_{q=1}^{M-1} Q_{sq}^{2h} z[q] &= \sum_{p=1}^{m-1} \left(\frac{1}{2} Q_{2s-1,p} + Q_{2s,p} + \frac{1}{2} Q_{2s+1,p}\right) w[p] \\
+(Q^{2h} \Rpr w^h)[s] &= (P^\top Q^h w^h)[s]
+\end{align*}
+Hence $Q^{2h} \Rpr = P^\top Q^h$.
+
+FIXME $R=\Rfw$
 
 
 
