@@ -97,6 +97,12 @@ As this example uses the simplest possible FE setup, we define equally-spaced me
 \end{equation}
 Note $\mathcal{S}^h$ is a subset of $\mathcal{H}$, and it has a basis of ``hat'' functions $\{\lambda_p(x)\}$ for the interior nodes.  These hat functions are defined by the two properties that $\lambda_p$ is in $\mathcal{S}^h$ and that $\lambda_p(x_q)=\delta_{pq}$.  Note that the $L^2$ norm of a hat function depends on the mesh resolution, and $\ip{\lambda_p}{\lambda_q}\ne 0$ for $q=p\pm1$, thus the basis $\{\lambda_p\}$, while well-conditioned, is not close to orthonormal.
 
+\begin{figure}
+\includegraphics[width=0.6\textwidth]{figs/onehat.pdf}
+\caption{A piecewise-linear hat function $\lambda_p(x)$ at each interior node $x_p$.}
+\label{fig:onehat}
+\end{figure}
+
 In terms of the hat function basis, the numerical solution is
 \begin{equation}
   u^h(x) = \sum_{p=1}^{m-1} u[p] \lambda_p(x).  \label{fesolution}
@@ -208,10 +214,10 @@ After solving the FAS coarse-mesh equation \eqref{fasequation} we have $u^{2h}$,
 \end{equation}
 Here $P$ is the prolongation operation which extends a function in $\mathcal{S}^{2h}$ to a function in $\mathcal{S}^h$.
 
-Formulas \eqref{fasequation} and \eqref{fasupdate} specify the FAS algorithm.  However, in order to understand and implement it, we must clarify the action of operators $R'$, $R$, and $P$.  This is the purpose of the next section.
+Formulas \eqref{fasequation} and \eqref{fasupdate} specify the FAS algorithm.  However, in order to understand and implement it, we must clarify the action of operators $R'$, $R$, and $P$ in the context of FE methods.  This is the purpose of the next section.
 
 
-\section{Restriction and prolongation operators for FE methods}
+\section{Restriction and prolongation operators}
 
 To explain the two different restriction operators in \eqref{fasequation}, plus the prolongation in \eqref{fasupdate}, first note that functions $w^h$ in $\mathcal{S}^h$ are distinct objects from linear functionals like the residual $r^h(w^h)$, which act on $v$ in $\mathcal{S}^h$.  We denote the space of such linear functionals by $(\mathcal{S}^h)'$.  The operators are thereby distinguished by their domain and range spaces:
 \begin{align}
@@ -230,7 +236,7 @@ But how do $R'$, $R$, and $P$ actually operate in the finite element (FE) case? 
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{figs/hatcombination.pdf}
-\caption{Formula \eqref{hatrelation} writes a coarse-mesh hat function $\lambda_q^{2h}(x)$ (solid) as a linear combination of three fine-mesh hat functions $\lambda_p^h(x)$ (dotted) for $p=2q-1,2q,2q+1$.}
+\caption{Formula \eqref{hatrelation} writes a coarse-mesh hat $\lambda_q^{2h}(x)$ (solid) as a linear combination of three fine-mesh hats $\lambda_p^h(x)$ (dotted) for $p=2q-1,2q,2q+1$.}
 \label{fig:hatcombination}
 \end{figure}
 
@@ -275,45 +281,79 @@ R' = \begin{bmatrix}
 \end{bmatrix} \label{rprimematrix}
 \end{equation}
 
-Finally we consider the restriction $R:\mathcal{S}^h\to\mathcal{S}^{2h}$ which acts on functions.  This is more interesting because the map $R$ causes a loss of information as the ``jerkier'' piecewise-linear function in $\mathcal{S}^h$ becomes linear across those fine mesh nodes which are not in the coarse mesh.  By contrast, for prolongation $P$ and canonical restriction $R'$ we essentially keep the input object but reinterpret it as acting on the finer or coarser mesh.
+Finally we consider the restriction $R:\mathcal{S}^h\to\mathcal{S}^{2h}$ acting on functions.  This is a more interesting map as it loses information present in the piecewise-linear fine-mesh function.  The result is linear across some fine-mesh nodes (those which are not in the coarse mesh).  By contrast, prolongation $P$ and canonical restriction $R'$ essentially preserve the input object, without loss, but with a reinterpretation on the other mesh.
 
 \newcommand{\Rpr}{R_{\text{pr}}}
 \newcommand{\Rin}{R_{\text{in}}}
 \newcommand{\Rfw}{R_{\text{fw}}}
 
-There are actually three well-known versions of the restriction:
+Let
+\begin{equation}
+  w^h = \sum_{p=1}^{m-1} w[p] \lambda_p^{h} \label{wfine}
+\end{equation}
+be a $\mathcal{S}^h$ function on the fine mesh.  There are three well-known versions of restriction which send $w^h$ to a coarse-mesh function in $\mathcal{S}^{2h}$:
 \begin{itemize}
-\item $\Rpr$ is defined by \emph{projection}, namely the property
+\item $\Rpr$ is defined as projection, by the property
 \begin{equation}
   \ip{\Rpr w^h}{v} = \ip{w^h}{v} \label{rprdefinition}
 \end{equation}
-for all $v\in \mathcal{S}^{2h}$.  However, computing the entries of $\Rpr$ requires solving a linear system.  In particular, one must first form the sparse, symmetric \emph{mass matrices} for the meshes \cite{Elmanetal2014}, i.e.~$Q_{jk}^{h} = \ip{\lambda_j^{h}}{\lambda_k^{h}}$ for the fine mesh and $Q_{jk}^{2h} = \ip{\lambda_j^{2h}}{\lambda_k^{2h}}$ for the coarse.  Then one solves the following matrix equation for $\Rpr$:
+for all $v\in \mathcal{S}^{2h}$.  However, computing the entries of $\Rpr$ requires solving a linear system.  In particular, one must first form the invertible, sparse, symmetric mass matrices \cite{Elmanetal2014}, namely $Q_{jk}^{h} = \ip{\lambda_j^{h}}{\lambda_k^{h}}$ for the fine mesh and $Q_{jk}^{2h} = \ip{\lambda_j^{2h}}{\lambda_k^{2h}}$ for the coarse.  Then one solves a matrix equation for $\Rpr$:
 \begin{equation}
-  Q^{2h} \Rpr = P^\top Q^{h}  \label{rprequation}
+  Q^{2h} \Rpr = P^\top Q^{h}.  \label{rprequation}
 \end{equation}
-where $P$ is the above prolongation, thus $\Rpr = (Q^{2h})^{-1} P^\top Q^{h}$.
+Here $P$ is the prolongation in \eqref{pformula} and \eqref{pmatrix}; clearly $\Rpr = (Q^{2h})^{-1} P^\top Q^{h}$.
 
-In the 1D case the mass matrices are, in fact, tridiagonal.  Equation \eqref{rprequation} can thus be solved for each column of $\Rpr$ by the tridiagonal algorithm \cite{TrefethenBau1997}.  Forming $\Rpr$ by columns is an $O(M)$ operation for each of $M-1$ columns, thus a total of $O(M^2)$ work.  While this is indeed possible, and could even be done by hand in this case, the next two restriction alternatives are simpler.
-\item $\Rin$ FIXME
-\item $\Rfw$ FIXME
-\end{itemize}
-
-Before proceeding, note that equation \eqref{rprequation} for $\Rpr$ is justified by using $v=\lambda_s^{2h}$ in definition \eqref{rprdefinition} and then applying \eqref{hatrelation}.  In fact, write $z = \Rpr w^h = \sum_{q=1}^{M-1} z[q] \lambda_q^{2h}$ and $w^h = \sum_{p=1}^{m-1} w[p] \lambda_p^{h}$.  We have this computation:
+Equation \eqref{rprequation} is justified by using $v=\lambda_s^{2h}$ in definition \eqref{rprdefinition}, and then applying \eqref{hatrelation}, as follows.  Write $z = \Rpr w^h = \sum_{q=1}^{M-1} z[q] \lambda_q^{2h}$ and expand both sides:
 \begin{align*}
 \ip{z}{\lambda_s^{2h}} &= \ip{w^h}{\lambda_s^{2h}} \\
 \sum_{q=1}^{M-1} z[q] \ip{\lambda_q^{2h}}{\lambda_s^{2h}} &= \sum_{p=1}^{m-1} w[p] \ip{\lambda_p^{h}}{\frac{1}{2} \lambda_{2s-1}^{h} + \lambda_{2s}^{h} + \frac{1}{2} \lambda_{2s+1}^{h}} \\
 \sum_{q=1}^{M-1} Q_{sq}^{2h} z[q] &= \sum_{p=1}^{m-1} \left(\frac{1}{2} Q_{2s-1,p} + Q_{2s,p} + \frac{1}{2} Q_{2s+1,p}\right) w[p] \\
 (Q^{2h} \Rpr w^h)[s] &= (P^\top Q^h w^h)[s]
 \end{align*}
-Hence $Q^{2h} \Rpr = P^\top Q^h$.
+Hence $Q^{2h} \Rpr = P^\top Q^h$ because $w^h$ in $\mathcal{S}^h$ and index $s$ were arbitrary.
 
-FIXME $R=\Rfw$
+In 1D the mass matrices $Q^{2h},Q^h$ are tridiagonal, thus each column of $\Rpr$ can be found by solving equation \eqref{rprequation} using an $O(M)$ algorithm \cite{TrefethenBau1997}, and forming $\Rpr$ by computing its $M-1$ columns implies $O(M^2)$ work.  While this is possible, and the result can even be found by hand in this case, the alternatives below are simpler.
+\item $\Rin$ is defined as another kind of injection,
+\begin{equation}
+  \Rfw w^h = \sum_{q=1}^{M-1} w[2q] \lambda_q^{2h}. \label{rindefinition}
+\end{equation}
+Observe that $(\Rin w^h)(x_q) = w^h(x_q) = w[2q]$ for each $q$.  In other words, to compute $\Rin w^h$ in $\mathcal{S}^{2h}$ we drop the nodal values at those fine-mesh nodes which are not in the coarse mesh.  As a matrix---compare \eqref{rprimematrix}---this is
+\begin{equation}
+\Rin = \begin{bmatrix}
+0 & 1 &   &   &   &   &\\
+  &   & 0 & 1 &   &   & \\
+  &   &   &   & 0 & 1 & \\
+  &   &   &   &   &   & \ddots
+\end{bmatrix}. \label{rinmatrix}
+\end{equation}
+This restriction is very simple but it may lose track of the magnitude of $w^h$.  For example, sampling a sawtooth function at the coarse-mesh nodes would capture only the peaks or only the troughs.
+\item $\Rfw$, the ``full-weighting'' restriction \cite{Briggsetal2000}, averages nodal values onto the coarse mesh:
+\begin{equation}
+  \Rfw w^h = \sum_{q=1}^{M-1} \left(\frac{1}{4} w[2q-1] + \frac{1}{2} w[2q] + \frac{1}{4} w[2q+1]\right) \lambda_q^{2h}. \label{rfwdefinition}
+\end{equation}
+This computes each coarse-mesh nodal value of $z=\Rfw w^h$ as a weighted average of the value of $w^h$ at that same node plus multiples of the coefficients at the two neighboring fine-mesh nodes.  The latter two nodes are not in the coarse mesh.  The matrix is a multiple of the canonical restriction matrix in \eqref{rprimematrix}:
+\begin{equation}
+\Rfw = \begin{bmatrix}
+1/4 & 1/2 & 1/4 &     &     &  \\
+    &     & 1/4 & 1/2 & 1/4 &  \\
+    &     &     &     & 1/4 &  \\
+    &     &     &     &     & \ddots
+\end{bmatrix} = \frac{1}{2} R'. \label{rfwmatrix}
+\end{equation}
+\end{itemize}
+
+Because of its relative simplicity, and its ability to filter-out high-frequency information while approximately preserving norms, we will choose $R=\Rfw$ as the restriction operator in the implementation.
 
 
-
-\section{FAS V-cycles}
+\section{Multigrid V-cycles}
 
 FIXME V-cycles
+
+
+\section{Results: A demonstration of optimality}
+
+FIXME
+
 
 \small
 
