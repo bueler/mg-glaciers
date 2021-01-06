@@ -275,6 +275,15 @@ R' = \begin{bmatrix}
 \end{bmatrix} \label{rprimematrix}
 \end{equation}
 
+The restriction $R:\mathcal{S}^h\to\mathcal{S}^{2h}$ which acts on functions requires an additional choice.  There are two possibilities which we give the temporary names $R_1$ and $R_2$:
+\begin{itemize}
+\item $R_1$ is defined by \emph{projection}, namely the property
+    $$\ip{R_1 w^h}{v} = \ip{w^h}{v}$$
+for all $v\in \mathcal{S}^{2h}$.  Unfortunately this requires solving a nontrivial linear system.  In particular, one must form the \emph{mass matrix} for the coarse mesh, i.e.~$Q_{st}^{2h} = \ip{\lambda_s^{2h}}{\lambda_t^{2h}}$, and then solve an equation
+    $$FIXME R_1 Q^{2h} = Q^{2h}$$
+\item $R_2$ FIXME
+\end{itemize}
+
 FIXME formula for $R$
 
 
