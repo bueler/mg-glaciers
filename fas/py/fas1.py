@@ -2,26 +2,14 @@
 
 # FIXME count work units
 
+# convergence for V-cycles with extra down/up-sweeps (evidently optimal):
+# $ for JJ in 3 5 7 9 11 13; do timer ./fas1.py -mms -cycles 6 -downsweeps 2 -upsweeps 2 -j $JJ; done
+
+# show convergence for V-cycles:
+# $ for JJ in 1 2 3 4 5; do ./fas1.py -mms -cycles 5 -j $JJ -monitor -show; done
+
 # convergence in -mms case by brutal NGS sweeps:
 #$ for JJ in 1 2 3 4 5 6; do ./fas1.py -downsweeps 10000 -ngsonly -mms -j $JJ; done
-#  m=4 mesh using 10000 sweeps of NGS: |u|_2=1.165660
-#  numerical error: |u-u_exact|_2=4.6169e-01
-#  m=8 mesh using 10000 sweeps of NGS: |u|_2=0.797087
-#  numerical error: |u-u_exact|_2=9.0323e-02
-#  m=16 mesh using 10000 sweeps of NGS: |u|_2=0.728361
-#  numerical error: |u-u_exact|_2=2.1331e-02
-#  m=32 mesh using 10000 sweeps of NGS: |u|_2=0.712347
-#  numerical error: |u-u_exact|_2=5.2591e-03
-#  m=64 mesh using 10000 sweeps of NGS: |u|_2=0.708412
-#  numerical error: |u-u_exact|_2=1.3102e-03
-#  m=128 mesh using 10000 sweeps of NGS: |u|_2=0.707433
-#  numerical error: |u-u_exact|_2=3.2592e-04
-
-# FIXME these runs show there is a scaling problem
-# $ for JJ in 2 3 4 5; do ./fas1.py -mms -cycles 3 -j $JJ -monitor -show; done
-
-# 5 cycles of 2-level with very accurate coarse-mesh solve:  FAILS
-#   $ for JJ in 1 2 3 4 5 6; do ./fas1.py -j $JJ -cycles 5 -coarsesweeps 1000 -mms -levels 2; done
 
 import numpy as np
 import sys, argparse
@@ -74,7 +62,9 @@ parser.add_argument('-levels', type=int, default=-1, metavar='J',
 parser.add_argument('-mms', action='store_true', default=False,
                     help='manufactured problem with known exact solution')
 parser.add_argument('-monitor', action='store_true', default=False,
-                    help='print residual and update norms')
+                    help='print residual norms')
+parser.add_argument('-monitorcoarseupdate', action='store_true', default=False,
+                    help='print norms for the coarse-mesh update vector')
 parser.add_argument('-mu', type=float, default=1.0, metavar='L',
                     help='parameter lambda in Bratu equation (default=1.0)')
 parser.add_argument('-ngsonly', action='store_true', default=False,
@@ -172,7 +162,7 @@ def vcycle(k,u,frhs):
         coarsefrhs = meshes[k].CR(rfine) + FF(meshes[k-1],Ru)
         # recurse
         _, ducoarse = vcycle(k-1,Ru,coarsefrhs)
-        if args.monitor:
+        if args.monitorcoarseupdate:
             print('     ' + '  ' * (args.j + 1 - k), end='')
             print('coarse update norm %.5e' % meshes[k-1].l2norm(ducoarse))
         # prolong up
