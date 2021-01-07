@@ -118,7 +118,7 @@ def residual(mesh,w,frhs):
     for v equal to the interior-point hat functions lambda_p at p=1,...,m-1.'''
     assert len(w) == mesh.m+1, \
            'input vector w is of length %d (should be %d)' % (len(w),mesh.m+1)
-    return mesh.h * frhs - FF(mesh,w)
+    return frhs - FF(mesh,w)
 
 def ngssweep(mesh,w,frhs,forward=True):
     '''Do one in-place nonlinear Gauss-Seidel sweep over the interior points
@@ -140,7 +140,7 @@ def ngssweep(mesh,w,frhs,forward=True):
         for n in range(args.niters):
             tmp = mesh.h * args.mu * np.exp(w[p]+c)
             f = - (1.0/mesh.h) * (2.0*(w[p]+c) - w[p-1] - w[p+1]) \
-                + tmp + mesh.h * frhs[p]
+                + tmp + frhs[p]
             df = - 2.0/mesh.h + tmp
             c -= f / df
         w[p] += c
@@ -187,6 +187,7 @@ if args.mms:
     _, f = mmsevaluate(meshes[args.j].xx())
     f[0] = 0.0
     f[meshes[args.j].m] = 0.0
+    f *= meshes[args.j].h
 else:
     f = meshes[args.j].zeros()
 
