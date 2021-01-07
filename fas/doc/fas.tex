@@ -4,6 +4,9 @@
 
 \usepackage{times,bm,bbm,empheq,verbatim,fancyvrb,graphicx}
 \usepackage[dvipsnames]{xcolor}
+
+\usepackage[kw]{pseudo}
+
 \usepackage{tikz}
 \usetikzlibrary{decorations.pathreplacing}
 
@@ -56,7 +59,7 @@ urlcolor=black    % ...
 
 \author{Ed Bueler}
 
-\begin{abstract}  This short note describes the FAS scheme for an easy 1D finite element solution of a nonlinear boundary value problem.  An accompanying Python script implements the scheme.
+\begin{abstract}  This note describes the FAS scheme for an easy 1D finite element solution of a nonlinear boundary value problem.  An accompanying Python script implements the scheme.
 \end{abstract}
 
 \maketitle
@@ -64,90 +67,91 @@ urlcolor=black    % ...
 \thispagestyle{empty}
 \bigskip
 
-We consider the FAS (full approximation storage) scheme for an easy nonlinear elliptic equation.  A helpful write-up of the scheme, originally described by Brandt in  \cite{Brandt1977}, can be found in well-known textbooks like \cite[Chapter 6]{Briggsetal2000} and \cite{Trottenbergetal2001}.  However, we want to describe the scheme from a finite element point of view, thus compatible with our other codes which relate to the approach in \cite{GraeserKornhuber2009}, and furthermore we provide a Python implementation.
+We consider the FAS (full approximation storage) scheme, originally described by Brandt in \cite{Brandt1977}, for an easy nonlinear elliptic equation.  Like other multigrid schemes it can exhibit optimal solver complexity \cite{Bueler2021}.  Helpful write-ups of FAS can be found in well-known textbooks like \cite[Chapter 6]{Briggsetal2000} and \cite{Trottenbergetal2001}, but here we will describe the scheme from a finite element point of view, compatible with our other codes and following \cite{GraeserKornhuber2009}.
 
-The problem is an ordinary differential equation (ODE) boundary value problem, namely the nonlinear (semilinear) Liouville-Bratu problem \cite{Bueler2021}
+Our problem is an ordinary differential equation (ODE) boundary value problem, namely the nonlinear (semilinear) Liouville-Bratu equation \cite{Bratu1914,Liouville1853}:
 \begin{equation}
-  -u'' - \mu e^u = 0,  \qquad u(0) = u(1) = 0  \label{liouvillebratu}
+  -u'' - \lambda\, e^u = g,  \qquad u(0) = u(1) = 0.  \label{liouvillebratu}
 \end{equation}
-where $\mu$ is constant.  Our goal is to solve this problem in optimal time by a Python implementation of FAS, namely \texttt{fas1.py} in directory \texttt{py/}.  This note serves as its documentation.
+In this problem $\lambda$ is a real constant, $g(x)$ is given, and we seek $u(x)$.
+
+Our goal is to solve \eqref{liouvillebratu} in optimal $O(m)$ time on a mesh of $m$ elements via a Python implementation of FAS, namely \texttt{fas1.py} in directory \texttt{py/}.  This note serves as the documentation for \texttt{fas1.py}.  The classic Liouville-Bratu equation has $g=0$, but \texttt{fas1.py} has a runtime option \texttt{-mms}, for the ``method of manufactured solutions'' \cite{Bueler2021}, specifying a problem with a known exact solution which allows testing.  In this case $u_{\text{ex}}(x)=\sin(3\pi x)$, and thus by differentiation we have $g(x)=9\pi^2 u_{\text{ex}}(x)-\lambda e^{u_{\text{ex}}(x)}$.
 
 
-\section{The main components}
+\section{The finite element method}
 
-We solve the problem using the finite element (FE) method \cite{Bueler2021,Elmanetal2014}, so first we plan to rewrite \eqref{liouvillebratu} in weak form.  However, we will actually solve the more general equation
+We solve the problem using the finite element (FE) method \cite{Bueler2021,Elmanetal2014}, so first we rewrite \eqref{liouvillebratu} in weak form.  Let $F$ be the nonlinear operator
 \begin{equation}
-  -u'' - \mu e^u = g  \label{stronggeneral}
+  F(u)[v] = \int_0^1 u'(x) v'(x) - \lambda e^{u(x)} v(x)\, dx,  \label{operator}
 \end{equation}
-for a given function $g(x)$, with the same boundary conditions $u(0)=u(1)=0$.  Equation \eqref{liouvillebratu} is the case where $g=0$.  In \texttt{fas1.py} there is a runtime option \texttt{-mms}, the ``method of manufactured solutions'', for such a generalized problem.  For this case the exact solution is $u(x)=\sin(3\pi x)$, and thus $g(x)=9\pi^2 u(x)-\mu e^{u(x)}$.
-
-Let $F$ be the nonlinear operator
+acting on $u$ and $v$ in the space of functions $\mathcal{H}=H_0^1[0,1]$, namely functions which have zero boundary values and one square-integrable derivative.  One derives \eqref{operator} by multiplying \eqref{liouvillebratu} by $v$ and integrating by parts.  Then the weak form of \eqref{liouvillebratu} is
 \begin{equation}
-  F(u)[v] = \int_0^1 u'(x) v'(x) - \mu e^{u(x)} v(x)\, dx,  \label{operator}
+  F(u)[v] = f[v] \label{weakform}
 \end{equation}
-acting on $u$ and $v$ in the space of functions $\mathcal{H}=H_0^1[0,1]$, namely functions which have zero boundary values and a square-integrable derivative.  One derives operator \eqref{operator} by multiplying \eqref{stronggeneral} by $v$ and integrating by parts.  Then the weak form of \eqref{stronggeneral} is
+for all $v$, where
 \begin{equation}
-  F(u)[v] = \ip{g}{v} \label{weakform}
+  f[v] = \ip{g}{v} = \int_0^1 g(x) v(x) dx.  \label{rhsfunctional}
 \end{equation}
-for all $v$, where $\ip{g}{v} = \int_0^1 g(x) v(x) dx$.  Observe that $F(u)[\cdot]$ and $\ip{g}{\cdot}$ are (continuous) linear functionals, acting on functions in $\mathcal{H}$.  From now on we address problem \eqref{weakform}.
+Observe that $F(u)[\cdot]$ and $f[\cdot]$ are (continuous) linear functionals, acting on functions in $\mathcal{H}$.  From now on we address problem \eqref{weakform}.
 
-As this example uses the simplest possible FE setup, we define equally-spaced meshes on $[0,1]$ with $m$ subintervals (elements), of length $h=1/m$, and $p=1,\dots,m-1$ interior nodes (points) $x_p=ph$.  On this mesh lives a finite-dimensional vector space
+We apply the simplest possible FE setup, namely an equally-spaced mesh on $[0,1]$ of $m$ subintervals (elements) of lengths $h=1/m$.  The interior nodes (points) are $x_p=ph$ for $p=1,\dots,m-1$.  On this mesh lives a finite-dimensional vector space
 \begin{equation}
 \mathcal{S}^h = \left\{v(x)\,\big|\,v \text{ is continuous, linear on each subinterval, and } v(0)=v(1)=0\right\}.  \label{fespace}
 \end{equation}
-Note $\mathcal{S}^h$ is a subset of $\mathcal{H}$, and it has a basis of ``hat'' functions $\{\lambda_p(x)\}$ for the interior nodes.  These hat functions are defined by the two properties that $\lambda_p$ is in $\mathcal{S}^h$ and that $\lambda_p(x_q)=\delta_{pq}$.  Note that the $L^2$ norm of a hat function depends on the mesh resolution, and $\ip{\lambda_p}{\lambda_q}\ne 0$ for $q=p\pm1$, thus the basis $\{\lambda_p\}$, while well-conditioned, is not close to orthonormal.
+
+The FE space $\mathcal{S}^h$, a subset of $\mathcal{H}$, has a basis of ``hat'' functions $\{\psi_p(x)\}$ for the interior nodes (Figure \ref{fig:onehat}).  They are defined by the two properties that $\psi_p$ is in $\mathcal{S}^h$ and $\psi_p(x_q)=\delta_{pq}$.  Note that the $L^2$ norm of a hat function depends on the mesh resolution, and $\ip{\psi_p}{\psi_q}\ne 0$ for $q=p\pm1$, thus the basis $\{\psi_p\}$, while well-conditioned, is not orthonormal.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{figs/onehat.pdf}
-\caption{A piecewise-linear hat function $\lambda_p(x)$ at each interior node $x_p$.}
+\caption{A piecewise-linear hat function $\psi_p(x)$ at each interior node $x_p$.}
 \label{fig:onehat}
 \end{figure}
 
-In terms of the hat function basis, the numerical solution is
+In terms of this basis the numerical solution is
 \begin{equation}
-  u^h(x) = \sum_{p=1}^{m-1} u[p] \lambda_p(x).  \label{fesolution}
+  u^h(x) = \sum_{p=1}^{m-1} u[p] \psi_p(x),  \label{fesolution}
 \end{equation}
-Because the hat functions form a ``nodal basis'', the function $u^h$ may be represented as a vector in $\RR^{m-1}$ by its coefficients or equivalently by its point values:
+We seek the coefficients $u[p]$.  In fact, because the hat functions form a ``nodal basis'' \cite{Elmanetal2014}, the function $u^h$ may be represented as a vector in $\RR^{m-1}$ either by its coefficients or its point values:
 \begin{equation}
 \bu =\{u[p]\} = \{u^h(x_p)\}.  \label{fevector}
 \end{equation}
 
-Function $u^h$ will solve a finite-dimensional nonlinear system.  However, we will not compute it exactly, and at best it will be known within rounding error.  Instead we will, at any stage, possess an iterate $w^h(x)$, for which the error is
+The vector $\bu$, equivalently the function $u^h(x)$, will solve a finite-dimensional nonlinear system.  We will not compute it exactly, but we seek it within a smaller error than the discretization error of the FE method \cite{Elmanetal2014}.  At each stage of the method we will possess an iterate $w^h(x)$ in $\mathcal{S}^h$, for which the error (function) is
 \begin{equation}
   e^h = w^h - u^h.  \label{feerror}
 \end{equation}
-We want the norm $\|e^h\|$ to be small, but generally only the residual norm (below) will be computable.  The rate at which iterates $w^h$ approach $u^h$ will be controlled by measurable residual norms because, at least in the linear case, these quantities are bounded to within a condition number \cite[Chapter 2]{Bueler2021}.  In the \texttt{-mms} case, where the exact solution of the continuum problem is actually known, $\|e^h\|$ will be directly computable.
+While we want the norm $\|e^h\|$ to be small, generally only the residual norm (below) is computable.  The rate at which $\|e^h\|$ goes to zero as $h\to 0$ will be controlled by measurable residual norms $\|r^h\|$ because, at least in the linear case, $\|e^h\|$ is bounded to within a condition number by $\|r^h\|$ \cite[Chapter 2]{Bueler2021}.  In the \texttt{-mms} case, where the exact solution of the continuum problem is actually known, $\|e^h\|$ will also be directly computable.
 
-The FE approximation $F^h$ of the nonlinear operator $F$ acts on piecewise-linear functions in $\mathcal{S}^h$.  Its interior-point values $F^h(w^h)[\lambda_p]$ are easily computable if the transcendental part is approximated using the trapezoid rule:
+The FE approximation $F^h$ of the nonlinear operator $F$ acts on piecewise-linear functions in $\mathcal{S}^h$.  Its values $F^h(w^h)[\psi_p]$ are easily computable if the transcendental part is approximated using the trapezoid rule:
 \begin{align}
-  F^h(w^h)[\lambda_p] &= \int_0^1 (w^h)'(x) \lambda_p'(x) - \mu e^{w^h(x)} \lambda_p(x)\, dx  \label{feoperator} \\
-    &= \int_{x_{p-1}}^{x_{p+1}} (w^h)'(x) (\pm 1/h)\,dx - \mu \int_{x_{p-1}}^{x_{p+1}} e^{w^h(x)} \lambda_p(x)\, dx \notag \\
-    &\approx h \left(\frac{w[p]-w[p-1]}{h} - \frac{w[p+1]-w[p]}{h}\right) - h \mu e^{w[p]}  \notag \\
-    &= \frac{1}{h}\left(2w[p]-w[p-1]-w[p+1]\right) - h \mu e^{w[p]} \notag
+  F^h(w^h)[\psi_p] &= \int_0^1 (w^h)'(x) \psi_p'(x) - \lambda e^{w^h(x)} \psi_p(x)\, dx  \label{feoperator} \\
+    &= \int_{x_{p-1}}^{x_{p+1}} (w^h)'(x) (\pm 1/h)\,dx - \lambda \int_{x_{p-1}}^{x_{p+1}} e^{w^h(x)} \psi_p(x)\, dx \notag \\
+    &\approx h \left(\frac{w[p]-w[p-1]}{h} - \frac{w[p+1]-w[p]}{h}\right) - h \lambda e^{w[p]}  \notag \\
+    &= \frac{1}{h}\left(2w[p]-w[p-1]-w[p+1]\right) - h \lambda e^{w[p]} \notag
 \end{align}
-Notice that the support of $\lambda_p(x)$ is $[x_{p-1},x_{p+1}]$ and that the derivative of $\lambda_p$ is $\pm 1/h$, depending on the side of $x_p$.  The final formula is a rescaled version of an $O(h^2)$ finite difference scheme \cite[Chapter 3]{Bueler2021}.  Function \texttt{FF()} in \texttt{fas1.py} computes this formula on the given mesh for a given iterate $w^h$ with point values $w[p]$.
+Notice that the support of $\psi_p(x)$ is $[x_{p-1},x_{p+1}]$ and that the derivative of $\psi_p$ is $\pm 1/h$, depending on the side of $x_p$.  The final formula in \eqref{feoperator} is a rescaled version of a well-known $O(h^2)$ finite difference scheme \cite[Chapter 3]{Bueler2021}.  Function \texttt{FF()} in \texttt{fas1.py} computes this formula on the given mesh for an iterate $w^h$.
 
-Denote the approximate right-hand-side function in \eqref{weakform} by $g^h$.  In practice this is the interpolant of $g(x)$, or equivalently we compute $\ip{g}{\lambda_p}\approx h g[p]$ by the trapezoid rule.   To solve \eqref{weakform} we seek an iterate $w^h$ so that the \emph{residual}
+FIXME $g^h$ IS THE FUNCTION AND $f^h[v]$ IS THE FUNCTIONAL Denote the approximate right-hand-side function in \eqref{weakform} by $g^h$.  In practice this is the interpolant of $g(x)$, or equivalently we compute $\ip{g}{\psi_p}\approx h g[p]$ by the trapezoid rule.   To solve \eqref{weakform} we seek an iterate $w^h$ so that the \emph{residual}
 \begin{equation}
   r^h(w^h)[v] = \ip{g^h}{v} - F^h(w^h)[v]  \label{feresidual}
 \end{equation}
-is small for all $v\in \mathcal{S}^h$.  The object $r^h(w^h)$, likewise $F^h(w^h)$, is a linear functional acting on functions in $\mathcal{S}_h$.  If $v=\lambda_p$ is a hat function then
+is small for all $v\in \mathcal{S}^h$.  The object $r^h(w^h)$, likewise $F^h(w^h)$, is a linear functional acting on functions in $\mathcal{S}_h$.  If $v=\psi_p$ is a hat function then
 \begin{equation}
-  r^h(w^h)[\lambda_p] = h g[p] - \frac{1}{h}\left(2w[p]-w[p-1]-w[p+1]\right) + h \mu e^{w[p]}.  \label{feresidualdetail}
+  r^h(w^h)[\psi_p] = h g[p] - \frac{1}{h}\left(2w[p]-w[p-1]-w[p+1]\right) + h \lambda e^{w[p]}.  \label{feresidualdetail}
 \end{equation}
-Function \texttt{residual()} in \texttt{fas1.py} computes this formula.  Solving \eqref{weakform} is equivalent to finding $w^h$ so that $r^h(w^h)[\lambda_p]=0$ for $p=1,\dots,m-1$.
+Function \texttt{residual()} in \texttt{fas1.py} computes this formula.  Solving \eqref{weakform} is equivalent to finding $w^h$ so that $r^h(w^h)[\psi_p]=0$ for $p=1,\dots,m-1$.
 
 In the next section we actually describe the multigrid FAS algorithm, but here we conclude the elementary components by describing an iteration which will, if carried far enough, also solve the problem.  The method is a nonlinear form of the Gauss-Seidel iteration \cite{Briggsetal2000}, called NGS.  It updates the iterate $w^h$ by changing its point value at $x_p$ to make the residual at that point zero.  That is, NGS solves the problem
 \begin{equation}
-r^h(w^h + c \lambda_p)[\lambda_p] = 0  \label{ngspointproblem}
+r^h(w^h + c \psi_p)[\psi_p] = 0  \label{ngspointproblem}
 \end{equation}
 for a scalar $c$ at each point.  That is, it solves $\phi(c)=0$ where
 \begin{equation}
-  \phi(c) = r^h(w^h + c \lambda_p)[\lambda_p], \label{ngspointresidual}
+  \phi(c) = r^h(w^h + c \psi_p)[\psi_p], \label{ngspointresidual}
 \end{equation}
 and then it updates
 \begin{equation}
-  w^h \leftarrow w^h + c \lambda_p  \label{ngspointupdate}
+  w^h \leftarrow w^h + c \psi_p  \label{ngspointupdate}
 \end{equation}
 or equivalently $w[p] \leftarrow w[p] + c$.  Following the idea of the linear Gauss-Seidel iteration \cite{Greenbaum1997}, $w[p]$ is updated in some nodal ordering using all known values when evaluating the residual in \eqref{ngspointproblem}.  (By default in \texttt{fas1.py} this is in increasing $p$.)  Gauss-Seidel-type methods are called ``multiplicative'' or ``successive'' corrections, in contrast to ``additive'' or ``parallel'' corrections, of which the Jacobi iteration is the best known example.
 
@@ -157,12 +161,28 @@ Even solving the scalar problem $\phi(c)=0$ cannot be done exactly when consider
 \end{equation}
 for $k=0,1,\dots$  In detail, following \eqref{feresidualdetail} we have
 \begin{align}
-   \phi(c) &= -\frac{1}{h} \left(2(w[p]+c) - w[p-1] - w[p+1]) + h \left(\mu e^{w[p]+c} + g[p]\right)\right), \label{ngsnewtondetails} \\
-   \phi'(c) &= -\frac{2}{h} + h \mu e^{w[p]+c}. \notag
+   \phi(c) &= -\frac{1}{h} \left(2(w[p]+c) - w[p-1] - w[p+1]) + h \left(\lambda e^{w[p]+c} + g[p]\right)\right), \label{ngsnewtondetails} \\
+   \phi'(c) &= -\frac{2}{h} + h \lambda e^{w[p]+c}. \notag
 \end{align}
 The vast majority of the FAS algorithm work is in evaluating these NGS expressions.
 
-The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual at successive points in order.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}; defaults to 2) of scalar Newton iterations \eqref{ngsnewton} to solve \eqref{ngspointproblem} at each point.  Note that as soon as the residual is made zero at one point it is no longer zero at the previous points (which were just zeroed).  In a linear case the iteration is known to converge based on structural properties of the matrices \cite[for example]{Greenbaum1997} which correspond to ellipticity of the original problem.  We expect that at least for weak nonlinearities (e.g.~small $\mu$ in \eqref{liouvillebratu}) our method will converge as solution method for \eqref{weakform}.  However, one observes in practice that, after substantial progress in the first few sweeps, soon NGS stagnates.  Following Brandt \cite{Brandt1977}, who asserts that such a ``stalling'' scheme must be ``wrong'', we adopt the multigrid approach next.
+The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual at successive nodes $x_p$ in order.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}; defaults to 2) of scalar Newton iterations \eqref{ngsnewton} to solve \eqref{ngspointproblem} at each point.  In the \texttt{forward} order it is the following pseudocode.
+
+\pseudoset{idfont=\texttt}
+
+\begin{pseudo*}[left-margin=15mm]
+\pr{ngssweep}(w,F,g)\text{:} \\+
+    $r(w)[v] := \ip{g}{v} - F(w)[v]$ \\
+    for $p=1,\dots,m-1$ \\+
+        $\phi(c) := r(w + c \psi_p)[\psi_p]$ \\
+        $c=0$ \\
+        for $k=1,\dots,$\id{niters} \\+
+            $c \gets c - \phi(c) / \phi'(c)$ \\-
+        $w[p] \gets w[p] + c$ \\-
+    return $w$
+\end{pseudo*}
+
+Note that as soon as the residual is made zero at one point it is no longer zero at the previous points.  In a linear case the iteration is known to converge subject to assumptions on the matrices which correspond to ellipticity of the original problem \cite[for example]{Greenbaum1997}.  We expect that, at least for weak nonlinearities, e.g.~small $\lambda$ in \eqref{liouvillebratu}, our method will converge as solution method for \eqref{weakform}.  However, one observes in practice that, after substantial progress in the first few sweeps, soon NGS stagnates.  Following Brandt \cite{Brandt1977}, who asserts that such a ``stalling'' scheme must be ``wrong'', we adopt the multigrid approach next.
 
 
 \section{The FAS equation for two levels}
@@ -171,7 +191,7 @@ Full approximation storage (FAS) \cite{Brandt1977,Briggsetal2000} is a multigrid
 
 We describe only two levels at first, with a coarser mesh having $2h$ spacing and $M=m/2$ subintervals.  Notationally, quantities on the coarse mesh will have superscript ``$2h$'', for example an iterate is $w^{2h}$.  The program \texttt{fas1.py} only refines by such factors of two, but the ideas generalize to other refinement factors.
 
-A small fixed number of NGS sweeps is our smoother on the fine mesh.  (For \texttt{fas1.py}, option \texttt{-downsweeps} defaults to $1$.)  Each sweep, solving \eqref{ngspointproblem} and doing update \eqref{ngspointupdate} at every point $x_p$, is an $O(m)$ operation with a small constant.  The constant relates to the number of Newton iterations and the expense of evaluating nonlinearities at each point, e.g.~$\mu e^u$ in \eqref{liouvillebratu}.
+A small fixed number of NGS sweeps is our smoother on the fine mesh.  (For \texttt{fas1.py}, option \texttt{-downsweeps} defaults to $1$.)  Each sweep, solving \eqref{ngspointproblem} and doing update \eqref{ngspointupdate} at every point $x_p$, is an $O(m)$ operation with a small constant.  The constant relates to the number of Newton iterations and the expense of evaluating nonlinearities at each point, e.g.~$\lambda e^u$ in \eqref{liouvillebratu}.
 
 A few sweeps of NGS on the fine mesh produces two results on the current iterate $w^h$:
 \begin{itemize}
@@ -210,11 +230,24 @@ If the coarse mesh is in fact the coarsest one in the hierarchy then we propose 
 
 After solving the FAS coarse-mesh equation \eqref{fasequation} we have $u^{2h}$, assumed exact for the next formula.  Two-level FAS updates the iterate on the finer mesh,
 \begin{equation}
-  w^h \longleftarrow w^h + P(u^{2h} - R w^h) \label{fasupdate}
+  w^h \gets w^h + P(u^{2h} - R w^h) \label{fasupdate}
 \end{equation}
 Here $P$ is the prolongation operation which extends a function in $\mathcal{S}^{2h}$ to a function in $\mathcal{S}^h$.
 
-Formulas \eqref{fasequation} and \eqref{fasupdate} specify the FAS algorithm.  However, in order to understand and implement it, we must clarify the action of operators $R'$, $R$, and $P$ in the context of FE methods.  This is the purpose of the next section.
+Formulas \eqref{fasequation} and \eqref{fasupdate} complete the two-level FAS algorithm for a given smoother.  Using the NGS smoother, including as a coarse-mesh solver, it is the following pseudocode.
+
+\begin{pseudo*}[left-margin=15mm]
+\pr{fas2level}(w)\text{:} \\+
+    for $j=1,\dots,$\id{downsweeps} \\+
+        \pr{ngssweep}(w,F^h,g^h) \\-
+    $g^{2h}[v] := R' (r^h(w))[v] + F^{2h}(R w^h)[v]$  FIXME \\
+    for $j=1,\dots,$\id{coarsesweeps} \\+
+        \pr{ngssweep}(w) \\
+    $w^h \gets w^h + P(u^{2h} - R w^h)$ \\
+    return $a$
+\end{pseudo*}
+
+However, in order to understand and implement it, we must clarify the action of operators $R'$, $R$, and $P$ in the context of FE methods.  This is the purpose of the next section.
 
 
 \section{Restriction and prolongation operators}
@@ -226,28 +259,28 @@ To explain the two different restriction operators in \eqref{fasequation}, plus 
   P  &: \mathcal{S}^{2h} \to \mathcal{S}^h. \notag
 \end{align}
 
-Next note that both functions in $\mathcal{S}^h$ and linear functionals in $(\mathcal{S}^h)'$ are representable by vectors in $\RR^{m-1}$.  For a function $w^h$ one stores the coefficients $w[p]$ with respect to an expansion in the hat function basis $\{\lambda_p\}$, as in \eqref{fesolution} for example, while one stores a functional $\ell=r^h(w^h)$ by its values $\ell[\lambda_p]$.  Both representations are thus vectors in $\RR^{m-1}$, and though it might make sense to represent $w^h$ as a column vector and $\ell$ as a row vector \cite{TrefethenBau1997}, in Python it is easiest to use ``flat'' one-dimensional NumPy arrays for both.  Observe that within the FAS algorithm an iterate $w^h$ has zero boundary values, and likewise $\ell$ acts on $v$ with zero boundary values, thus only interior-point hat functions are needed in these representations.
+Next note that both functions in $\mathcal{S}^h$ and linear functionals in $(\mathcal{S}^h)'$ are representable by vectors in $\RR^{m-1}$.  For a function $w^h$ one stores the coefficients $w[p]$ with respect to an expansion in the hat function basis $\{\psi_p\}$, as in \eqref{fesolution} for example, while one stores a functional $\ell=r^h(w^h)$ by its values $\ell[\psi_p]$.  Both representations are thus vectors in $\RR^{m-1}$, and though it might make sense to represent $w^h$ as a column vector and $\ell$ as a row vector \cite{TrefethenBau1997}, in Python it is easiest to use ``flat'' one-dimensional NumPy arrays for both.  Observe that within the FAS algorithm an iterate $w^h$ has zero boundary values, and likewise $\ell$ acts on $v$ with zero boundary values, thus only interior-point hat functions are needed in these representations.
 
-But how do $R'$, $R$, and $P$ actually operate in the finite element (FE) case?  A key calculation relates the coarse-mesh hat functions $\lambda_q^{2h}(x)$ to the fine mesh hats $\lambda_p^h(x)$:
+But how do $R'$, $R$, and $P$ actually operate in the finite element (FE) case?  A key calculation relates the coarse-mesh hat functions $\psi_q^{2h}(x)$ to the fine mesh hats $\psi_p^h(x)$:
 \begin{equation}
-  \lambda_q^{2h}(x) = \frac{1}{2} \lambda_{2q-1}^h(x) + \lambda_{2q}^h(x) + \frac{1}{2} \lambda_{2q+1}^h(x), \qquad q=1,2,\dots,M-1. \label{hatrelation}
+  \psi_q^{2h}(x) = \frac{1}{2} \psi_{2q-1}^h(x) + \psi_{2q}^h(x) + \frac{1}{2} \psi_{2q+1}^h(x), \qquad q=1,2,\dots,M-1. \label{hatrelation}
 \end{equation}
 (Recall that $M=m/2$, and we assume $m$ is even.)  See Figure \ref{fig:hatcombination}.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{figs/hatcombination.pdf}
-\caption{Formula \eqref{hatrelation} writes a coarse-mesh hat $\lambda_q^{2h}(x)$ (solid) as a linear combination of three fine-mesh hats $\lambda_p^h(x)$ (dotted) for $p=2q-1,2q,2q+1$.}
+\caption{Formula \eqref{hatrelation} writes a coarse-mesh hat $\psi_q^{2h}(x)$ (solid) as a linear combination of three fine-mesh hats $\psi_p^h(x)$ (dotted) for $p=2q-1,2q,2q+1$.}
 \label{fig:hatcombination}
 \end{figure}
 
 First consider the prolongation $P$.  It is defined as the injection of $\mathcal{S}^{2h}$ into $\mathcal{S}^h$, without changing the function.  Indeed, a piecewise-linear function on the coarse mesh is also a piecewise-linear function on the fine mesh.  Suppose $w^{2h}(x)$ is in $\mathcal{S}^{2h}$, so
-    $$w^{2h}(x) = \sum_{q=1}^{M-1} w[q] \lambda_q^{2h}(x).$$
+    $$w^{2h}(x) = \sum_{q=1}^{M-1} w[q] \psi_q^{2h}(x).$$
 Thus we use \eqref{hatrelation} to compute $P w^{2h}$ in terms of fine-mesh hat functions:
 \begin{align}
-(P w^{2h})(x) &= \sum_{q=1}^{M-1} w[q] \left(\frac{1}{2} \lambda_{2q-1}^h(x) + \lambda_{2q}^h(x) + \frac{1}{2} \lambda_{2q+1}^h(x)\right) \label{pformula} \\
-              &= \frac{1}{2} w[1] \lambda_1^h(x) + w[1] \lambda_2^h(x) + \left(\frac{1}{2} w[1] + \frac{1}{2} w[2]\right) \lambda_3^h(x) \notag \\
-              &\qquad + w[2] \lambda_4^h(x) + \left(\frac{1}{2} w[2] + \frac{1}{2} w[3]\right) \lambda_5^h(x) \notag \\
-              &\qquad + \dots + w[M-1] \lambda_{m-2}^h(x) + \frac{1}{2} w[M-1] \lambda_{m-1}^h(x) \notag
+(P w^{2h})(x) &= \sum_{q=1}^{M-1} w[q] \left(\frac{1}{2} \psi_{2q-1}^h(x) + \psi_{2q}^h(x) + \frac{1}{2} \psi_{2q+1}^h(x)\right) \label{pformula} \\
+              &= \frac{1}{2} w[1] \psi_1^h(x) + w[1] \psi_2^h(x) + \left(\frac{1}{2} w[1] + \frac{1}{2} w[2]\right) \psi_3^h(x) \notag \\
+              &\qquad + w[2] \psi_4^h(x) + \left(\frac{1}{2} w[2] + \frac{1}{2} w[3]\right) \psi_5^h(x) \notag \\
+              &\qquad + \dots + w[M-1] \psi_{m-2}^h(x) + \frac{1}{2} w[M-1] \psi_{m-1}^h(x) \notag
 \end{align}
 As a matrix, $P$ acts on the representation vectors, i.e.~$P:\RR^{M-1} \to \RR^{m-1}$ has $M-1$ columns and $m-1$ rows:
 \begin{equation}
@@ -266,10 +299,10 @@ The restriction $R'$ acts on fine-mesh linear functionals $\ell:\mathcal{S}^h \t
 \begin{equation}
   (R'\ell)[v] = \ell[Pv]  \label{rprimedefinition}
 \end{equation}
-for $v$ in $\mathcal{S}^{2h}$.  As noted earlier, $\ell$ is represented by a vector $\bm{\ell}$ in $\RR^{m-1}$, of values $\ell[p] = \ell[\lambda_p^h]$, so one computes the values of $R'\ell$ using \eqref{hatrelation}:
+for $v$ in $\mathcal{S}^{2h}$.  As noted earlier, $\ell$ is represented by a vector $\bm{\ell}$ in $\RR^{m-1}$, of values $\ell[p] = \ell[\psi_p^h]$, so one computes the values of $R'\ell$ using \eqref{hatrelation}:
 \begin{align}
-  (R'\ell)[q] &= (R'\ell)[\lambda_q^{2h}] = \ell[P\lambda_q^{2h}] = \ell\left[\frac{1}{2} \lambda_{2q-1}^h + \lambda_{2q}^h + \frac{1}{2} \lambda_{2q+1}^h\right]  \label{rprimeformula} \\
-      &= \frac{1}{2} \ell[\lambda_{2q-1}^h] + \ell[\lambda_{2q}^h] + \frac{1}{2} \ell[\lambda_{2q+1}^h] = \frac{1}{2} \ell[2q-1] + \ell[2q] + \frac{1}{2} \ell[2q+1]  \notag
+  (R'\ell)[q] &= (R'\ell)[\psi_q^{2h}] = \ell[P\psi_q^{2h}] = \ell\left[\frac{1}{2} \psi_{2q-1}^h + \psi_{2q}^h + \frac{1}{2} \psi_{2q+1}^h\right]  \label{rprimeformula} \\
+      &= \frac{1}{2} \ell[\psi_{2q-1}^h] + \ell[\psi_{2q}^h] + \frac{1}{2} \ell[\psi_{2q+1}^h] = \frac{1}{2} \ell[2q-1] + \ell[2q] + \frac{1}{2} \ell[2q+1]  \notag
 \end{align}
 for $q=1,2,\dots,M-1$.  In other words, as a matrix $R'$ is the transpose of $P$, with $M-1$ rows and $m-1$ columns:
 \begin{equation}
@@ -289,7 +322,7 @@ Finally we consider the restriction $R:\mathcal{S}^h\to\mathcal{S}^{2h}$ acting 
 
 Let
 \begin{equation}
-  w^h = \sum_{p=1}^{m-1} w[p] \lambda_p^{h} \label{wfine}
+  w^h = \sum_{p=1}^{m-1} w[p] \psi_p^{h} \label{wfine}
 \end{equation}
 be a $\mathcal{S}^h$ function on the fine mesh.  There are three well-known versions of restriction which send $w^h$ to a coarse-mesh function in $\mathcal{S}^{2h}$:
 \begin{itemize}
@@ -297,16 +330,16 @@ be a $\mathcal{S}^h$ function on the fine mesh.  There are three well-known vers
 \begin{equation}
   \ip{\Rpr w^h}{v} = \ip{w^h}{v} \label{rprdefinition}
 \end{equation}
-for all $v\in \mathcal{S}^{2h}$.  However, computing the entries of $\Rpr$ requires solving a linear system.  In particular, one must first form the invertible, sparse, symmetric mass matrices \cite{Elmanetal2014}, namely $Q_{jk}^{h} = \ip{\lambda_j^{h}}{\lambda_k^{h}}$ for the fine mesh and $Q_{jk}^{2h} = \ip{\lambda_j^{2h}}{\lambda_k^{2h}}$ for the coarse.  Then one solves a matrix equation for $\Rpr$:
+for all $v\in \mathcal{S}^{2h}$.  However, computing the entries of $\Rpr$ requires solving a linear system.  In particular, one must first form the invertible, sparse, symmetric mass matrices \cite{Elmanetal2014}, namely $Q_{jk}^{h} = \ip{\psi_j^{h}}{\psi_k^{h}}$ for the fine mesh and $Q_{jk}^{2h} = \ip{\psi_j^{2h}}{\psi_k^{2h}}$ for the coarse.  Then one solves a matrix equation for $\Rpr$:
 \begin{equation}
   Q^{2h} \Rpr = P^\top Q^{h}.  \label{rprequation}
 \end{equation}
 Here $P$ is the prolongation in \eqref{pformula} and \eqref{pmatrix}; clearly $\Rpr = (Q^{2h})^{-1} P^\top Q^{h}$.
 
-Equation \eqref{rprequation} is justified by using $v=\lambda_s^{2h}$ in definition \eqref{rprdefinition}, and then applying \eqref{hatrelation}, as follows.  Write $z = \Rpr w^h = \sum_{q=1}^{M-1} z[q] \lambda_q^{2h}$ and expand both sides:
+Equation \eqref{rprequation} is justified by using $v=\psi_s^{2h}$ in definition \eqref{rprdefinition}, and then applying \eqref{hatrelation}, as follows.  Write $z = \Rpr w^h = \sum_{q=1}^{M-1} z[q] \psi_q^{2h}$ and expand both sides:
 \begin{align*}
-\ip{z}{\lambda_s^{2h}} &= \ip{w^h}{\lambda_s^{2h}} \\
-\sum_{q=1}^{M-1} z[q] \ip{\lambda_q^{2h}}{\lambda_s^{2h}} &= \sum_{p=1}^{m-1} w[p] \ip{\lambda_p^{h}}{\frac{1}{2} \lambda_{2s-1}^{h} + \lambda_{2s}^{h} + \frac{1}{2} \lambda_{2s+1}^{h}} \\
+\ip{z}{\psi_s^{2h}} &= \ip{w^h}{\psi_s^{2h}} \\
+\sum_{q=1}^{M-1} z[q] \ip{\psi_q^{2h}}{\psi_s^{2h}} &= \sum_{p=1}^{m-1} w[p] \ip{\psi_p^{h}}{\frac{1}{2} \psi_{2s-1}^{h} + \psi_{2s}^{h} + \frac{1}{2} \psi_{2s+1}^{h}} \\
 \sum_{q=1}^{M-1} Q_{sq}^{2h} z[q] &= \sum_{p=1}^{m-1} \left(\frac{1}{2} Q_{2s-1,p} + Q_{2s,p} + \frac{1}{2} Q_{2s+1,p}\right) w[p] \\
 (Q^{2h} \Rpr w^h)[s] &= (P^\top Q^h w^h)[s]
 \end{align*}
@@ -315,7 +348,7 @@ Hence $Q^{2h} \Rpr = P^\top Q^h$ because $w^h$ in $\mathcal{S}^h$ and index $s$ 
 In 1D the mass matrices $Q^{2h},Q^h$ are tridiagonal, thus each column of $\Rpr$ can be found by solving equation \eqref{rprequation} using an $O(M)$ algorithm \cite{TrefethenBau1997}, and forming $\Rpr$ by computing its $M-1$ columns implies $O(M^2)$ work.  While this is possible, and the result can even be found by hand in this case, the alternatives below are simpler.
 \item $\Rin$ is defined as another kind of injection,
 \begin{equation}
-  \Rfw w^h = \sum_{q=1}^{M-1} w[2q] \lambda_q^{2h}. \label{rindefinition}
+  \Rfw w^h = \sum_{q=1}^{M-1} w[2q] \psi_q^{2h}. \label{rindefinition}
 \end{equation}
 Observe that $(\Rin w^h)(x_q) = w^h(x_q) = w[2q]$ for each $q$.  In other words, to compute $\Rin w^h$ in $\mathcal{S}^{2h}$ we drop the nodal values at those fine-mesh nodes which are not in the coarse mesh.  As a matrix---compare \eqref{rprimematrix}---this is
 \begin{equation}
@@ -329,7 +362,7 @@ Observe that $(\Rin w^h)(x_q) = w^h(x_q) = w[2q]$ for each $q$.  In other words,
 This restriction is very simple but it may lose track of the magnitude of $w^h$.  For example, sampling a sawtooth function at the coarse-mesh nodes would capture only the peaks or only the troughs.
 \item $\Rfw$, the ``full-weighting'' restriction \cite{Briggsetal2000}, averages nodal values onto the coarse mesh:
 \begin{equation}
-  \Rfw w^h = \sum_{q=1}^{M-1} \left(\frac{1}{4} w[2q-1] + \frac{1}{2} w[2q] + \frac{1}{4} w[2q+1]\right) \lambda_q^{2h}. \label{rfwdefinition}
+  \Rfw w^h = \sum_{q=1}^{M-1} \left(\frac{1}{4} w[2q-1] + \frac{1}{2} w[2q] + \frac{1}{4} w[2q+1]\right) \psi_q^{2h}. \label{rfwdefinition}
 \end{equation}
 This computes each coarse-mesh nodal value of $z=\Rfw w^h$ as a weighted average of the value of $w^h$ at that same node plus multiples of the coefficients at the two neighboring fine-mesh nodes.  The latter two nodes are not in the coarse mesh.  The matrix is a multiple of the canonical restriction matrix in \eqref{rprimematrix}:
 \begin{equation}
@@ -350,7 +383,7 @@ Because of its relative simplicity, and its ability to filter-out high-frequency
 FIXME V-cycles
 
 
-\section{Results: A demonstration of optimality}
+\section{Results: convergence and optimality}
 
 FIXME
 
