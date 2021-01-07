@@ -166,10 +166,10 @@ def vcycle(k,u,frhs):
         # smooth: NGS sweeps on fine mesh
         for q in range(args.downsweeps):
             ngssweep(meshes[k],u,frhs)
-        # restrict down: compute frhs = R (f^h - F^h(u^h)) + F^H(R u^h)
+        # restrict down: compute frhs = R' (f^h - F^h(u^h)) + F^{2h}(R u^h)
         rfine = residual(meshes[k],u,frhs)
-        Ru = meshes[k].VR0(u)
-        coarsefrhs = meshes[k].VR(rfine) + FF(meshes[k-1],Ru)
+        Ru = meshes[k].Rfw(u)
+        coarsefrhs = meshes[k].CR(rfine) + FF(meshes[k-1],Ru)
         # recurse
         _, ducoarse = vcycle(k-1,Ru,coarsefrhs)
         if args.monitor:
