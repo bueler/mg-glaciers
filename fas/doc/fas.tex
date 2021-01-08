@@ -67,7 +67,9 @@ urlcolor=black    % ...
 \thispagestyle{empty}
 \bigskip
 
-We consider the FAS (full approximation storage) scheme, originally described by Brandt in \cite{Brandt1977}, for an easy nonlinear elliptic equation.  Like other multigrid schemes it can exhibit optimal solver complexity \cite{Bueler2021}.  Helpful write-ups of FAS can be found in well-known textbooks like \cite[Chapter 6]{Briggsetal2000} and \cite{Trottenbergetal2001}, but here we will describe the scheme from a finite element point of view, compatible with our other codes and following \cite{GraeserKornhuber2009}.
+\section{Introduction}
+
+We consider the FAS (full approximation storage) scheme, originally described by Brandt in \cite{Brandt1977}, for an easy nonlinear elliptic equation.  Like other multigrid schemes it can exhibit optimal solver complexity \cite{Bueler2021}.  While helpful write-ups of FAS can be found in well-known textbooks like \cite[Chapter 6]{Briggsetal2000} and \cite{Trottenbergetal2001}, we describe the scheme from a finite element point of view, compatible with other codes in the current repository\footnote{\href{https://github.com/bueler/mg-glaciers}{\texttt{github.com/bueler/mg-glaciers}}}, and following the approaches in \cite{GraeserKornhuber2009} for obstacle problems.
 
 Our problem is an ordinary differential equation (ODE) boundary value problem, namely the nonlinear (semilinear) Liouville-Bratu equation \cite{Bratu1914,Liouville1853}:
 \begin{equation}
@@ -75,7 +77,7 @@ Our problem is an ordinary differential equation (ODE) boundary value problem, n
 \end{equation}
 In this problem $\lambda$ is a real constant, $g(x)$ is given, and we seek $u(x)$.
 
-Our goal is to solve \eqref{liouvillebratu} in optimal $O(m)$ time on a mesh of $m$ elements via a Python implementation of FAS, namely \texttt{fas1.py} in directory \texttt{py/}.  This note serves as the documentation for \texttt{fas1.py}.  The classic Liouville-Bratu equation has $g=0$, but \texttt{fas1.py} has a runtime option \texttt{-mms}, for the ``method of manufactured solutions'' \cite{Bueler2021}, specifying a problem with a known exact solution which allows testing.  In this case $u_{\text{ex}}(x)=\sin(3\pi x)$, and thus by differentiation we have $g(x)=9\pi^2 u_{\text{ex}}(x)-\lambda e^{u_{\text{ex}}(x)}$.
+Our goal is to solve \eqref{liouvillebratu} in optimal $O(m)$ time on a mesh of $m$ elements.  A Python implementation of FAS, namely \texttt{fas1.py} in directory \texttt{py/}, accomplishes this, and this note serves as its documentation.  The program defaults to solving the classic Liouville-Bratu equation with $g=0$, but the runtime option \texttt{-mms}, for the ``method of manufactured solutions'' \cite{Bueler2021}, specifies a problem with known exact solution, facilitating testing.  In this case $u_{\text{ex}}(x)=\sin(3\pi x)$, and thus by differentiation we have $g(x)=9\pi^2 \sin(3\pi x) - \lambda e^{\sin(3\pi x)}$.
 
 
 \section{The finite element method}
@@ -84,26 +86,28 @@ We solve the problem using the finite element (FE) method \cite{Bueler2021,Elman
 \begin{equation}
   F(u)[v] = \int_0^1 u'(x) v'(x) - \lambda e^{u(x)} v(x)\, dx,  \label{operator}
 \end{equation}
-acting on $u$ and $v$ in the space of functions $\mathcal{H}=H_0^1[0,1]$, namely functions which have zero boundary values and one square-integrable derivative.  One derives \eqref{operator} by multiplying \eqref{liouvillebratu} by $v$ and integrating by parts.  Then the weak form of \eqref{liouvillebratu} is
+acting on $u$ and $v$ from the space of functions $\mathcal{H}=H_0^1[0,1]$, namely functions which have zero boundary values and one square-integrable derivative.  One derives \eqref{operator} by multiplying \eqref{liouvillebratu} by a test function $v$ and integrating by parts.  Then the weak form of \eqref{liouvillebratu} is
 \begin{equation}
-  F(u)[v] = f[v] \label{weakform}
+  F(u)[v] = \ell[v] \label{weakform}
 \end{equation}
 for all $v$, where
 \begin{equation}
-  f[v] = \ip{g}{v} = \int_0^1 g(x) v(x) dx.  \label{rhsfunctional}
+  \ell[v] = \ip{g}{v} = \int_0^1 g(x) v(x) dx.  \label{rhsfunctional}
 \end{equation}
-Observe that $F(u)[\cdot]$ and $f[\cdot]$ are (continuous) linear functionals, acting on functions in $\mathcal{H}$.  From now on we address problem \eqref{weakform}.
+Observe that $F(u)[\cdot]$ and $\ell[\cdot]$ are (continuous) linear functionals, acting on functions in $\mathcal{H}$.
 
-We apply the simplest possible FE setup, namely an equally-spaced mesh on $[0,1]$ of $m$ subintervals (elements) of lengths $h=1/m$.  The interior nodes (points) are $x_p=ph$ for $p=1,\dots,m-1$.  On this mesh lives a finite-dimensional vector space
+From now on we address seemingly-abstract problem \eqref{weakform}.  This level of abstraction is useful because in an FE context a clear separation can be made between functions like the solution $u(x)$, on the one hand, and the equations we are solving on the other.  Both functions and equations will be indexed, similarly to how in linear algebra one has both column indices for unknowns and row indices for equations.  In our continuum problem the ``$v$th equation'', i.e.~indexed by the test function $v$, is exactly \eqref{weakform}.  For the FE discrete problem we will reduce to a finite number of unknowns by writing $u(x)$ in a basis of a finite-dimensional subspace of $\mathcal{H}$.  We will reduce to finitely-many equations by only choosing test functions $v$ from the same subspace.
+
+We apply the simplest possible FE setup, namely an equally-spaced mesh on $[0,1]$ of $m$ subintervals (elements) of lengths $h=1/m$.  The interior nodes (points) are $x_p=ph$ for $p=1,\dots,m-1$.  As promised, this mesh supports a finite-dimensional vector subspace of $\mathcal{H}$:
 \begin{equation}
 \mathcal{S}^h = \left\{v(x)\,\big|\,v \text{ is continuous, linear on each subinterval, and } v(0)=v(1)=0\right\}.  \label{fespace}
 \end{equation}
 
-The FE space $\mathcal{S}^h$, a subset of $\mathcal{H}$, has a basis of ``hat'' functions $\{\psi_p(x)\}$ for the interior nodes (Figure \ref{fig:onehat}).  They are defined by the two properties that $\psi_p$ is in $\mathcal{S}^h$ and $\psi_p(x_q)=\delta_{pq}$.  Note that the $L^2$ norm of a hat function depends on the mesh resolution, and $\ip{\psi_p}{\psi_q}\ne 0$ for $q=p\pm1$, thus the basis $\{\psi_p\}$, while well-conditioned, is not orthonormal.
+The FE space $\mathcal{S}^h$ has a basis of ``hat'' functions $\{\psi_p(x)\}$, one for each interior node (Figure \ref{fig:onehat}).  A hat function $\psi_p$ is defined by two properties: $\psi_p$ is in $\mathcal{S}^h$ and $\psi_p(x_q)=\delta_{pq}$ for all $q$.  Note that the $L^2$ norm of $\psi_p$ depends on the mesh resolution $h$, and that $\ip{\psi_p}{\psi_q}\ne 0$ for three indices $q=p-1,p,p+1$.  It follows that this basis, while well-conditioned, is not orthonormal.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{figs/onehat.pdf}
-\caption{A piecewise-linear hat function $\psi_p(x)$ at each interior node $x_p$.}
+\caption{A piecewise-linear hat function $\psi_p(x)$ lives at each interior node $x_p$.}
 \label{fig:onehat}
 \end{figure}
 
@@ -116,36 +120,42 @@ We seek the coefficients $u[p]$.  In fact, because the hat functions form a ``no
 \bu =\{u[p]\} = \{u^h(x_p)\}.  \label{fevector}
 \end{equation}
 
-The vector $\bu$, equivalently the function $u^h(x)$, will solve a finite-dimensional nonlinear system.  We will not compute it exactly, but we seek it within a smaller error than the discretization error of the FE method \cite{Elmanetal2014}.  At each stage of the method we will possess an iterate $w^h(x)$ in $\mathcal{S}^h$, for which the error (function) is
+The function $u^h(x)$, equivalently the vector $\bu$, will solve a finite-dimensional nonlinear system.  We will not compute it exactly, but we seek to find it within a smaller error than the discretization error of the FE method \cite{Elmanetal2014}.  However, at each stage of the method we will possess exact knowledge of an iterate $w^h(x)$ in $\mathcal{S}^h$, for which the numerical error (function) is
 \begin{equation}
   e^h = w^h - u^h.  \label{feerror}
 \end{equation}
-While we want the norm $\|e^h\|$ to be small, generally only the residual norm (below) is computable.  The rate at which $\|e^h\|$ goes to zero as $h\to 0$ will be controlled by measurable residual norms $\|r^h\|$ because, at least in the linear case, $\|e^h\|$ is bounded to within a condition number by $\|r^h\|$ \cite[Chapter 2]{Bueler2021}.  In the \texttt{-mms} case, where the exact solution of the continuum problem is actually known, $\|e^h\|$ will also be directly computable.
+While we want the norm $\|e^h\|$ to be small, generally only the residual norm (below) is computable.  The rate at which $\|e^h\|$ goes to zero as $h\to 0$ will be controlled by measurable residual norms $\|r^h\|$ because, at least in the linear case, $\|e^h\|$ is bounded to within a condition number by $\|r^h\|$ \cite[Chapter 2]{Bueler2021}.  In the \texttt{-mms} case of our program \texttt{fas1.py}, where the exact solution of the continuum problem is known, $\|e^h\|$ will also be directly computable.
 
-The FE approximation $F^h$ of the nonlinear operator $F$ acts on piecewise-linear functions in $\mathcal{S}^h$.  Its values $F^h(w^h)[\psi_p]$ are easily computable if the transcendental part is approximated using the trapezoid rule:
+The FE approximation $F^h$ of the nonlinear operator $F$ in \eqref{operator} acts on piecewise-linear functions in $\mathcal{S}^h$.  Its values $F^h(w^h)[\psi_p]$ are easily computable if the transcendental part is approximated using the trapezoid rule:
 \begin{align}
   F^h(w^h)[\psi_p] &= \int_0^1 (w^h)'(x) \psi_p'(x) - \lambda e^{w^h(x)} \psi_p(x)\, dx  \label{feoperator} \\
     &= \int_{x_{p-1}}^{x_{p+1}} (w^h)'(x) (\pm 1/h)\,dx - \lambda \int_{x_{p-1}}^{x_{p+1}} e^{w^h(x)} \psi_p(x)\, dx \notag \\
     &\approx h \left(\frac{w[p]-w[p-1]}{h} - \frac{w[p+1]-w[p]}{h}\right) - h \lambda e^{w[p]}  \notag \\
     &= \frac{1}{h}\left(2w[p]-w[p-1]-w[p+1]\right) - h \lambda e^{w[p]} \notag
 \end{align}
-Notice that the support of $\psi_p(x)$ is $[x_{p-1},x_{p+1}]$ and that the derivative of $\psi_p$ is $\pm 1/h$, depending on the side of $x_p$.  The final formula in \eqref{feoperator} is a rescaled version of a well-known $O(h^2)$ finite difference scheme \cite[Chapter 3]{Bueler2021}.  Function \texttt{FF()} in \texttt{fas1.py} computes this formula on the given mesh for an iterate $w^h$.
+Notice that the support of $\psi_p(x)$ is $[x_{p-1},x_{p+1}]$, and note that the derivative of $\psi_p$ is $\pm 1/h$ depending on the side of $x_p$.  The final formula in \eqref{feoperator} is a rescaled version of a well-known $O(h^2)$ finite difference scheme \cite[Chapter 3]{Bueler2021}.  Function \texttt{FF()} in \texttt{fas1.py} computes this formula on the given mesh for an iterate $w^h$.
 
-FIXME $g^h$ IS THE FUNCTION AND $f^h[v]$ IS THE FUNCTIONAL Denote the approximate right-hand-side function in \eqref{weakform} by $g^h$.  In practice this is the interpolant of $g(x)$, or equivalently we compute $\ip{g}{\psi_p}\approx h g[p]$ by the trapezoid rule.   To solve \eqref{weakform} we seek an iterate $w^h$ so that the \emph{residual}
+Now consider the right-hand-side functional $\ell[v]$ in \eqref{weakform}, which we approximate by $\ell^h[v]$ acting on $\mathcal{S}^h$.  We again apply the trapezoid rule to compute the integral $\ip{g}{\psi_p}$ and thus we get the very simple formula
 \begin{equation}
-  r^h(w^h)[v] = \ip{g^h}{v} - F^h(w^h)[v]  \label{feresidual}
+  \ell^h[\psi_p] = h\, g(x_p). \label{ferhs}
 \end{equation}
-is small for all $v\in \mathcal{S}^h$.  The object $r^h(w^h)$, likewise $F^h(w^h)$, is a linear functional acting on functions in $\mathcal{S}_h$.  If $v=\psi_p$ is a hat function then
-\begin{equation}
-  r^h(w^h)[\psi_p] = h g[p] - \frac{1}{h}\left(2w[p]-w[p-1]-w[p+1]\right) + h \lambda e^{w[p]}.  \label{feresidualdetail}
-\end{equation}
-Function \texttt{residual()} in \texttt{fas1.py} computes this formula.  Solving \eqref{weakform} is equivalent to finding $w^h$ so that $r^h(w^h)[\psi_p]=0$ for $p=1,\dots,m-1$.
+Note we will continue to distinguish between the linear functional $\ell^h$ and the function $g$ even though their values only differ by a factor of the mesh size $h$.
 
-In the next section we actually describe the multigrid FAS algorithm, but here we conclude the elementary components by describing an iteration which will, if carried far enough, also solve the problem.  The method is a nonlinear form of the Gauss-Seidel iteration \cite{Briggsetal2000}, called NGS.  It updates the iterate $w^h$ by changing its point value at $x_p$ to make the residual at that point zero.  That is, NGS solves the problem
+To solve \eqref{weakform} we seek an iterate $w^h$ so that the \emph{residual}
+\begin{equation}
+  r^h(w^h)[v] = \ell^h[v] - F^h(w^h)[v]  \label{feresidual}
+\end{equation}
+is small for all $v$ in $\mathcal{S}^h$.  Like $F^h(w^h)$, the object $r^h(w^h)$ is a linear functional acting on functions in $\mathcal{S}_h$, so it suffices to choose only from a basis of test functions, i.e.~$v=\psi_p$, so computationally we will have this formula for the residual:
+\begin{equation}
+  r^h(w^h)[\psi_p] = \ell^h[\psi_p] - \frac{1}{h}\left(2w[p]-w[p-1]-w[p+1]\right) + h \lambda e^{w[p]}.  \label{feresidualdetail}
+\end{equation}
+Function \texttt{residual()} in \texttt{fas1.py} computes \eqref{feresidualdetail}.  On the original mesh, which will soon be called the ``fine mesh'', we will insert formula \eqref{ferhs}, but the FAS algorithm is fundamentally a systematic way to introduce new right-hand sides $\ell^h$ on coarser meshes (see below).  In any case, exactly solving the finite-dimensional nonlinear system, i.e.~the FE approximation of \eqref{weakform}, is equivalent to finding $w^h$ in $\mathcal{S}^h$ so that $r^h(w^h)[\psi_p]=0$ for $p=1,\dots,m-1$.
+
+Next we describe an iteration which will, if carried far enough, solve the problem.  The method is a nonlinear form of the Gauss-Seidel iteration \cite{Briggsetal2000}, called NGS.  It updates the iterate $w^h$ by changing its point value at $x_p$ to make the residual at that point zero.  That is, NGS solves the problem
 \begin{equation}
 r^h(w^h + c \psi_p)[\psi_p] = 0  \label{ngspointproblem}
 \end{equation}
-for a scalar $c$ at each point.  That is, it solves $\phi(c)=0$ where
+for a scalar $c$ at each point, so it solves $\phi(c)=0$ where
 \begin{equation}
   \phi(c) = r^h(w^h + c \psi_p)[\psi_p], \label{ngspointresidual}
 \end{equation}
@@ -153,26 +163,26 @@ and then it updates
 \begin{equation}
   w^h \leftarrow w^h + c \psi_p  \label{ngspointupdate}
 \end{equation}
-or equivalently $w[p] \leftarrow w[p] + c$.  Following the idea of the linear Gauss-Seidel iteration \cite{Greenbaum1997}, $w[p]$ is updated in some nodal ordering using all known values when evaluating the residual in \eqref{ngspointproblem}.  (By default in \texttt{fas1.py} this is in increasing $p$.)  Gauss-Seidel-type methods are called ``multiplicative'' or ``successive'' corrections, in contrast to ``additive'' or ``parallel'' corrections, of which the Jacobi iteration is the best known example.
+or equivalently $w[p] \leftarrow w[p] + c$.  Following the idea behind the linear Gauss-Seidel iteration \cite{Greenbaum1997}, $w[p]$ is updated in some nodal ordering using all known values when evaluating the residual in \eqref{ngspointproblem}.  (By default in \texttt{fas1.py}, in increasing order on $p$.)  Gauss-Seidel-type methods are called ``multiplicative'' \cite{Bueler2021} or ``successive'' \cite{GraeserKornhuber2009} corrections, in contrast to ``additive'' or ``parallel'' corrections, of which the Jacobi iteration \cite{Bueler2021} is the best known example.
 
-Even solving the scalar problem $\phi(c)=0$ cannot be done exactly when considering a transcendental problem like \eqref{liouvillebratu}.  Thus we will use a fixed number of Newton iterations to generate a (scalar) sequence $\{c_k\}$.  Starting from initial iterate $c_0=0$ we compute
+Solving the scalar problem $\phi(c)=0$ cannot be done exactly when considering a transcendental problem like \eqref{liouvillebratu}.  Thus we will use a fixed number of Newton iterations \cite[Chapter 4]{Bueler2021} to generate a (scalar) sequence $\{c_k\}$ converging to $c$.  Starting from $c_0=0$ we compute
 \begin{equation}
 \phi'(c_k)\, s_k = -\phi(c_k),  \qquad  c_{k+1} = c_k + s_k, \label{ngsnewton}
 \end{equation}
 for $k=0,1,\dots$  In detail, following \eqref{feresidualdetail} we have
 \begin{align}
-   \phi(c) &= -\frac{1}{h} \left(2(w[p]+c) - w[p-1] - w[p+1]) + h \left(\lambda e^{w[p]+c} + g[p]\right)\right), \label{ngsnewtondetails} \\
+   \phi(c) &= \ell^h[\psi_p] - \frac{1}{h} \left(2(w[p]+c) - w[p-1] - w[p+1]\right) + h \lambda e^{w[p]+c}, \label{ngsnewtondetails} \\
    \phi'(c) &= -\frac{2}{h} + h \lambda e^{w[p]+c}. \notag
 \end{align}
-The vast majority of the FAS algorithm work is in evaluating these NGS expressions.
+The vast majority of the computational work of our FAS algorithm will be in evaluating these NGS expressions.
 
-The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual at successive nodes $x_p$ in order.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}; defaults to 2) of scalar Newton iterations \eqref{ngsnewton} to solve \eqref{ngspointproblem} at each point.  In the \texttt{forward} order it is the following pseudocode.
+The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual at successive nodes $x_p$ in some order.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}; defaults to 2) of scalar Newton iterations \eqref{ngsnewton} to solve \eqref{ngspointproblem} at each point, as in the following pseudocode.
 
-\pseudoset{idfont=\texttt}
+\pseudoset{left-margin=15mm,topsep=5mm,idfont=\texttt}
 
-\begin{pseudo*}[left-margin=15mm]
-\pr{ngssweep}(w,F,g)\text{:} \\+
-    $r(w)[v] := \ip{g}{v} - F(w)[v]$ \\
+\begin{pseudo*}
+\pr{ngssweep}(w,F,\ell)\text{:} \\+
+    $r(w)[v] := \ell[v] - F(w)[v]$ \\
     for $p=1,\dots,m-1$ \\+
         $\phi(c) := r(w + c \psi_p)[\psi_p]$ \\
         $c=0$ \\
@@ -182,7 +192,7 @@ The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual
     return $w$
 \end{pseudo*}
 
-Note that as soon as the residual is made zero at one point it is no longer zero at the previous points.  In a linear case the iteration is known to converge subject to assumptions on the matrices which correspond to ellipticity of the original problem \cite[for example]{Greenbaum1997}.  We expect that, at least for weak nonlinearities, e.g.~small $\lambda$ in \eqref{liouvillebratu}, our method will converge as solution method for \eqref{weakform}.  However, one observes in practice that, after substantial progress in the first few sweeps, soon NGS stagnates.  Following Brandt \cite{Brandt1977}, who asserts that such a ``stalling'' scheme must be ``wrong'', we adopt the multigrid approach next.
+During an NGS sweep, as soon as the residual is made zero at one point it is no longer zero at the previous points.  In a linear case the iteration is known to converge subject to matrix assumptions which correspond to ellipticity of the original problem \cite[for example]{Greenbaum1997}.  We expect that, at least for weak nonlinearities, e.g.~small $\lambda$ in \eqref{liouvillebratu}, our method will converge as solution method for \eqref{weakform}.  However, one observes in practice that, after substantial progress in the first few sweeps, soon NGS stagnates.  Following Brandt \cite{Brandt1977}, who asserts that such a ``stalling'' scheme must be ``wrong'', we adopt the multigrid approach next.
 
 
 \section{The FAS equation for two levels}
