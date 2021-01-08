@@ -47,12 +47,12 @@ Monitor the V-cycles with -monitor and show the solution with -show.
 For more information on runtime options use -fas1help.  For documentation
 see the PDF mg-glaciers/fas/fas.pdf.
 ''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument('-coarsesweeps', type=int, default=5, metavar='N',
-                    help='nonlinear Gauss-Seidel sweeps (default=5)')
+parser.add_argument('-coarsesweeps', type=int, default=1, metavar='N',
+                    help='NGS sweeps on coarsest mesh (default=1)')
 parser.add_argument('-cycles', type=int, default=1, metavar='M',
                     help='number of V-cycles (default=1)')
 parser.add_argument('-downsweeps', type=int, default=1, metavar='N',
-                    help='nonlinear Gauss-Seidel sweeps (default=1)')
+                    help='NGS sweeps before coarse-mesh correction (default=1)')
 parser.add_argument('-fas1help', action='store_true', default=False,
                     help='print help for this program and quit')
 parser.add_argument('-j', type=int, default=2, metavar='J',
@@ -74,7 +74,7 @@ parser.add_argument('-niters', type=int, default=2, metavar='N',
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-upsweeps', type=int, default=1, metavar='N',
-                    help='nonlinear Gauss-Seidel sweeps (default=1)')
+                    help='NGS sweeps after coarse-mesh correction (default=1)')
 args, unknown = parser.parse_known_args()
 if args.fas1help:
     parser.print_help()

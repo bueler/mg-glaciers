@@ -7,7 +7,7 @@ runfas1_2:
 	-@./../../testit.sh fas1.py "-monitor -cycles 5 -downsweeps 20 -ngsonly -mms" 1 2
 
 runfas1_3:
-	-@./../../testit.sh fas1.py "-monitor -cycles 3 -j 4 -downsweeps 2 -upsweeps 2 -mms" 1 3
+	-@./../../testit.sh fas1.py "-monitor -cycles 3 -j 4 -downsweeps 2 -upsweeps 2 -mms -coarsesweeps 5" 1 3
 
 test_fas1: runfas1_1 runfas1_2 runfas1_3
 
