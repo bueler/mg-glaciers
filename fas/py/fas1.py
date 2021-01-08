@@ -102,23 +102,17 @@ def FF(mesh,u):
                - mesh.h * args.mu * np.exp(u[p])
     return F
 
-def residual(mesh,w,frhs):
-    '''Compute the residual of "F(u)=f" for given u, namely
-       r(w)[v] = int_0^1 f(x) v(x) dx - F(w)[v]
-    for v equal to the interior-point hat functions lambda_p at p=1,...,m-1.'''
-    assert len(w) == mesh.m+1, \
-           'input vector w is of length %d (should be %d)' % (len(w),mesh.m+1)
-    return frhs - FF(mesh,w)
-
-def ngssweep(mesh,w,frhs,forward=True):
+def ngssweep(mesh,w,ell,forward=True):
     '''Do one in-place nonlinear Gauss-Seidel sweep over the interior points
     p=1,...,m-1.  At each point use a fixed number of Newton iterations on
       f(c) = 0
     where
       f(c) = r(w+c lambda_p)[lambda_p]
-    where v = lambda_p is the pth hat function and r(w)[v] is computed by
-    residual().  The integrals are computed by trapezoid rule.  A Newton step
-    is applied without line search:
+    where v = lambda_p is the pth hat function and
+      r(w)[v] = ell[v] - F(w)[v]
+    is the residual for w.  The implied integrals in ell[.] and F(w)[.] are
+    computed by the trapezoid rule.  A Newton step is computed without line
+    search:
       f'(c_k) s_k = - f(c_k),   c_{k+1} = c_k + s_k.
     '''
     if forward:
@@ -130,7 +124,7 @@ def ngssweep(mesh,w,frhs,forward=True):
         for n in range(args.niters):
             tmp = mesh.h * args.mu * np.exp(w[p]+c)
             f = - (1.0/mesh.h) * (2.0*(w[p]+c) - w[p-1] - w[p+1]) \
-                + tmp + frhs[p]
+                + tmp + ell[p]
             df = - 2.0/mesh.h + tmp
             c -= f / df
         w[p] += c
@@ -144,24 +138,24 @@ for k in range(kcoarse,args.j+1):  # create meshes for the ones we use
     meshes[k] = MeshLevel1D(k=k)
 
 # FAS V-cycle for levels k down to k=kcoarse
-def vcycle(k,u,frhs):
+def vcycle(k,u,ell):
     uin = u.copy()
     if k == kcoarse:
         # coarse solve: NGS sweeps on coarse mesh
         for q in range(args.coarsesweeps):
-            ngssweep(meshes[k],u,frhs)
+            ngssweep(meshes[k],u,ell)
         return u, u - uin
     else:
         assert k > kcoarse
         # smooth: NGS sweeps on fine mesh
         for q in range(args.downsweeps):
-            ngssweep(meshes[k],u,frhs)
-        # restrict down: compute frhs = R' (f^h - F^h(u^h)) + F^{2h}(R u^h)
-        rfine = residual(meshes[k],u,frhs)
+            ngssweep(meshes[k],u,ell)
+        # restrict down: compute ell = R' (f^h - F^h(u^h)) + F^{2h}(R u^h)
+        rfine = ell - FF(meshes[k],u)  # residual on the fine mesh
         Ru = meshes[k].Rfw(u)
-        coarsefrhs = meshes[k].CR(rfine) + FF(meshes[k-1],Ru)
+        coarseell = meshes[k].CR(rfine) + FF(meshes[k-1],Ru)
         # recurse
-        _, ducoarse = vcycle(k-1,Ru,coarsefrhs)
+        _, ducoarse = vcycle(k-1,Ru,coarseell)
         if args.monitorcoarseupdate:
             print('     ' + '  ' * (args.j + 1 - k), end='')
             print('coarse update norm %.5e' % meshes[k-1].l2norm(ducoarse))
@@ -169,7 +163,7 @@ def vcycle(k,u,frhs):
         u += meshes[k].prolong(ducoarse)
         # smooth: NGS sweeps on fine mesh
         for q in range(args.upsweeps):
-            ngssweep(meshes[k],u,frhs,forward=False)
+            ngssweep(meshes[k],u,ell,forward=False)
         return u, u - uin
 
 # compute fine mesh right-hand side FIXME this is point wise function?
@@ -185,7 +179,8 @@ else:
 uu = meshes[args.j].zeros()
 for s in range(args.cycles):
     if args.monitor:
-        rnorm = meshes[args.j].l2norm(residual(meshes[args.j],uu,f))
+        r = f - FF(meshes[args.j],uu)
+        rnorm = meshes[args.j].l2norm(r)
         print('  %d: residual norm %.5e' % (s,rnorm))
     if args.ngsonly:
         for q in range(args.downsweeps):
@@ -194,7 +189,8 @@ for s in range(args.cycles):
     else:
         uu, _ = vcycle(args.j,uu,f)
 if args.monitor:
-    rnorm = meshes[args.j].l2norm(residual(meshes[args.j],uu,f))
+    r = f - FF(meshes[args.j],uu)
+    rnorm = meshes[args.j].l2norm(r)
     print('  %d: residual norm %.5e' % (args.cycles,rnorm))
 
 # report on computation
