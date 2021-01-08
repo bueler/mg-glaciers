@@ -1,51 +1,40 @@
 #!/usr/bin/env python3
 
-# FIXME count work units
-
-# convergence for V-cycles with extra down/up-sweeps (evidently optimal):
-# $ for JJ in 3 5 7 9 11 13; do timer ./fas1.py -mms -cycles 6 -downsweeps 2 -upsweeps 2 -j $JJ; done
-
-# show convergence for V-cycles:
-# $ for JJ in 1 2 3 4 5; do ./fas1.py -mms -cycles 5 -j $JJ -monitor -show; done
-
-# convergence in -mms case by brutal NGS sweeps:
-#$ for JJ in 1 2 3 4 5 6; do ./fas1.py -downsweeps 10000 -ngsonly -mms -j $JJ; done
+# TODO:
+#   count work units
+#   implement F-cycle
+#   implement quasilinear example like p-laplacian
 
 import numpy as np
 import sys, argparse
-import matplotlib.pyplot as plt
-
-import matplotlib as mpl
-font = {'size' : 20}
-mpl.rc('font', **font)
-lines = {'linewidth': 2}
-mpl.rc('lines', **lines)
 
 from meshlevel import MeshLevel1D
 
 parser = argparse.ArgumentParser(description='''
 FAS (full approximation storage) scheme for the nonlinear Liouville-Bratu
 problem
-  -u'' - mu e^u = 0,  u(0) = u(1) = 0
-where nu is constant (adjust with -nu).  In the -mms case the equation is
-  -u'' - mu e^u = g,  u(0) = u(1) = 0
-for a given function g computed so that u(x) = sin(3 pi x) is the exact
-solution.
+  -u'' - lambda e^u = g,  u(0) = u(1) = 0
+where lambda is constant (adjust with -lam) and g(x) is given.  The
+default case has g(x)=0.  In the -mms case g(x) is computed so that
+u(x) = sin(3 pi x) is the exact solution.
 
 Solution is by piecewise-linear finite elements on a fine mesh with
-m = 2^{j+1} subintervals, where -j sets the fine mesh, and m-1 nodes.  To
+m = 2^{j+1} subintervals and m-1 nodes.  Note -j sets the fine mesh.  To
 set up the FAS multigrid solver we create -levels levels of meshes,
-defaulting to j+1 levels meshes[k] for k=0,1,...,j (from coarse to fine).
-The solver uses nonlinear Gauss-Seidel (NGS; uses -niters Newton iterations)
-as a smoother, and NGS is also the coarse mesh solver.  Only V-cycles are
-implemented; set the number of cycles with -cycles.  One can set the number
-of down- and up-smoother NGS sweeps (-downsweeps,-upsweeps) and the number
-of coarsest-mesh NGS sweeps (-coarsesweeps).  One can also revert to NGS
-sweeps only on the fine mesh (-ngsonly; set -downsweeps to a large value).
-Monitor the V-cycles with -monitor and show the solution with -show.
+defaulting to j+1 levels.  The hierarchy is meshes[k] for k=0,1,...,j,
+listed from coarse to fine.
 
-For more information on runtime options use -fas1help.  For documentation
-see the PDF mg-glaciers/fas/fas.pdf.
+The solver uses nonlinear Gauss-Seidel (NGS), which uses -niters scalar
+Newton iterations, as a smoother.  Note NGS is also the coarse mesh solver.
+
+Only V-cycles are implemented; set the number of cycles with -cycles.
+Monitor the residual between V-cycles with -monitor.  Set the number of
+down- and up-smoother NGS sweeps (-downsweeps,-upsweeps) and coarsest-mesh
+NGS sweeps (-coarsesweeps).  One can revert to NGS sweeps only on the fine
+mesh (-ngsonly), but then set -downsweeps to a large value.
+
+Show the solution in Matplotlib graphics with -show.  For more information
+on runtime options use -fas1help.  For documentation see ../doc/fas.pdf.
 ''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-coarsesweeps', type=int, default=1, metavar='N',
                     help='NGS sweeps on coarsest mesh (default=1)')
@@ -57,6 +46,8 @@ parser.add_argument('-fas1help', action='store_true', default=False,
                     help='print help for this program and quit')
 parser.add_argument('-j', type=int, default=2, metavar='J',
                     help='m=2^{j+1} intervals in fine mesh (default j=2, m=8)')
+parser.add_argument('-lam', type=float, default=1.0, metavar='L',
+                    help='parameter lambda in Bratu equation (default=1.0)')
 parser.add_argument('-levels', type=int, default=-1, metavar='J',
                     help='number of levels in V-cycle (default: levels=j+1)')
 parser.add_argument('-mms', action='store_true', default=False,
@@ -65,8 +56,6 @@ parser.add_argument('-monitor', action='store_true', default=False,
                     help='print residual norms')
 parser.add_argument('-monitorcoarseupdate', action='store_true', default=False,
                     help='print norms for the coarse-mesh update vector')
-parser.add_argument('-mu', type=float, default=1.0, metavar='L',
-                    help='parameter lambda in Bratu equation (default=1.0)')
 parser.add_argument('-ngsonly', action='store_true', default=False,
                     help='only do -downsweeps NGS sweeps at each iteration')
 parser.add_argument('-niters', type=int, default=2, metavar='N',
@@ -76,6 +65,7 @@ parser.add_argument('-show', action='store_true', default=False,
 parser.add_argument('-upsweeps', type=int, default=1, metavar='N',
                     help='NGS sweeps after coarse-mesh correction (default=1)')
 args, unknown = parser.parse_known_args()
+
 if args.fas1help:
     parser.print_help()
     sys.exit(0)
@@ -84,7 +74,7 @@ if args.levels < 1:
 
 def mmsevaluate(x):
     u = np.sin(3.0 * np.pi * x)
-    g = 9.0 * np.pi**2 * u - args.mu * np.exp(u)
+    g = 9.0 * np.pi**2 * u - args.lam * np.exp(u)
     return u, g
 
 def FF(mesh,u):
@@ -99,7 +89,7 @@ def FF(mesh,u):
     F = mesh.zeros()
     for p in range(1,mesh.m):
         F[p] = (1.0/mesh.h) * (2.0*u[p] - u[p-1] - u[p+1]) \
-               - mesh.h * args.mu * np.exp(u[p])
+               - mesh.h * args.lam * np.exp(u[p])
     return F
 
 def ngssweep(mesh,w,ell,forward=True):
@@ -122,7 +112,7 @@ def ngssweep(mesh,w,ell,forward=True):
     for p in indices:
         c = 0   # because previous iterate u is close to correct
         for n in range(args.niters):
-            tmp = mesh.h * args.mu * np.exp(w[p]+c)
+            tmp = mesh.h * args.lam * np.exp(w[p]+c)
             f = - (1.0/mesh.h) * (2.0*(w[p]+c) - w[p-1] - w[p+1]) \
                 + tmp + ell[p]
             df = - 2.0/mesh.h + tmp
@@ -166,36 +156,34 @@ def vcycle(k,u,ell):
             ngssweep(meshes[k],u,ell,forward=False)
         return u, u - uin
 
-# compute fine mesh right-hand side FIXME this is point wise function?
+# compute fine mesh right-hand side, a linear functional
+ellg = meshes[args.j].zeros()
 if args.mms:
-    _, f = mmsevaluate(meshes[args.j].xx())
-    f[0] = 0.0
-    f[meshes[args.j].m] = 0.0
-    f *= meshes[args.j].h
-else:
-    f = meshes[args.j].zeros()
+    _, g = mmsevaluate(meshes[args.j].xx())
+    g *= meshes[args.j].h
+    ellg[1:-1] = g[1:-1]
+
+def printresidualnorm(s,mesh,u,ell):
+    rnorm = mesh.l2norm(ell - FF(mesh,u))
+    print('  %d: residual norm %.5e' % (s,rnorm))
 
 # SOLVE:  do V-cycles or NGS sweeps, with residual monitoring
 uu = meshes[args.j].zeros()
 for s in range(args.cycles):
     if args.monitor:
-        r = f - FF(meshes[args.j],uu)
-        rnorm = meshes[args.j].l2norm(r)
-        print('  %d: residual norm %.5e' % (s,rnorm))
+        printresidualnorm(s,meshes[args.j],uu,ellg)
     if args.ngsonly:
         for q in range(args.downsweeps):
-            ngssweep(meshes[args.j],uu,f)
+            ngssweep(meshes[args.j],uu,ellg)
         continue
     else:
-        uu, _ = vcycle(args.j,uu,f)
+        uu, _ = vcycle(args.j,uu,ellg)
 if args.monitor:
-    r = f - FF(meshes[args.j],uu)
-    rnorm = meshes[args.j].l2norm(r)
-    print('  %d: residual norm %.5e' % (args.cycles,rnorm))
+    printresidualnorm(args.cycles,meshes[args.j],uu,ellg)
 
 # report on computation
 if args.ngsonly:
-    print('  m=%d mesh using %d sweeps of NGS: |u|_2=%.6f' \
+    print('  m=%d mesh using %d sweeps of NGS only: |u|_2=%.6f' \
           % (meshes[args.j].m,args.cycles*args.downsweeps,
              meshes[args.j].l2norm(uu)))
 else:
@@ -210,6 +198,12 @@ if args.mms:
 
 # graphical output if desired
 if args.show:
+    import matplotlib.pyplot as plt
+    import matplotlib as mpl
+    font = {'size' : 20}
+    mpl.rc('font', **font)
+    lines = {'linewidth': 2}
+    mpl.rc('lines', **lines)
     plt.figure(figsize=(15.0,8.0))
     plt.plot(meshes[args.j].xx(),uu,'k',linewidth=4.0,label='numerical solution')
     if args.mms:
