@@ -176,7 +176,7 @@ for $k=0,1,\dots$  In detail, following \eqref{feresidualdetail} we have
 \end{align}
 The vast majority of the computational work of our FAS algorithm will be in evaluating these NGS expressions.
 
-The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual at successive nodes $x_p$ in some order.  Of course, as the residual is made zero at one point it is no longer zero at the previous points.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}; defaults to 2) of scalar Newton iterations \eqref{ngsnewton} to solve \eqref{ngspointproblem} at each point, as in the following pseudocode.
+The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual at successive nodes $x_p$ in some order.  Of course, as the residual is made zero at one point it is no longer zero at the previous points.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes one sweep of NGS by using a fixed number (\texttt{-niters}; defaults to 2) of scalar Newton iterations \eqref{ngsnewton} to solve \eqref{ngspointproblem} at each point, as in the following pseudocode which modifies $w$ in-place.
 
 \pseudoset{left-margin=15mm,topsep=5mm,idfont=\texttt}
 
@@ -188,9 +188,10 @@ The NGS method is applied by ``sweeping'' through the mesh, zeroing the residual
         $c=0$ \\
         for $k=1,\dots,$\id{niters} \\+
             $c \gets c - \phi(c) / \phi'(c)$ \\-
-        $w[p] \gets w[p] + c$ \\-
-    return $w$
+        $w[p] \gets w[p] + c$
 \end{pseudo*}
+
+Note that \textsc{ngssweep} modifies the values $w[p]$ in increasing $p$ order.  For use in FAS below we also define \textsc{ngssweep-back} as the identical procedure except with outer loop ``\textbf{for} $p=m-1,\dots,1$''.
 
 For a linear differential equation the iteration is known to converge subject to matrix assumptions which correspond to ellipticity of the original problem \cite[for example]{Greenbaum1997}.  We expect that, at least for weak nonlinearities, e.g.~small $\lambda$ in \eqref{liouvillebratu}, our method will converge as solution method for \eqref{weakform}.  However, one observes in practice that, after substantial progress in the first few sweeps, soon NGS stagnates.  Following Brandt \cite{Brandt1977}, who asserts that such a ``stalling'' scheme must be ``wrong'', we adopt the multigrid approach next.
 
@@ -256,28 +257,27 @@ After solving the FAS coarse-mesh equation \eqref{fasequation} we have $u^{2h}$,
 \end{equation}
 Here $P$ is a prolongation operation, about which we say more in the next section, which extends a function in $\mathcal{S}^{2h}$ to a function in $\mathcal{S}^h$.
 
-Formulas \eqref{fasequation} and \eqref{fasupdate} fully-describe the two-level FAS algorithm, assuming NGS sweeps as a smoother, and supposing restriction/prolongation operators $R',R,P$ are all determined.  We have the following pseudocode:
+Formulas \eqref{fasequation} and \eqref{fasupdate} fully-describe the two-level FAS algorithm, assuming NGS sweeps as a smoother, and supposing restriction/prolongation operators $R',R,P$ are all determined.  One improvement, giving greater symmetry in the error after each cycle, up-smooths in reverse order.  We have the following pseudocode which modifies $w^h$ in place using \texttt{down} NGS forward sweeps before the coarse-mesh correction and \texttt{up} backward sweeps after.  Note that a vector copy must be made before the in-place solution of the coarse-mesh problem.
 
 \begin{pseudo*}
 \pr{fas-twolevel}(w^h,F^h,\ell^h)\text{:} \\+
-    for $j=1,\dots,$\id{downsweeps} \\+
+    for $j=1,\dots,$\id{down} \\+
         \pr{ngssweep}(w^h,F^h,\ell^h) \\-
     $F^{2h} :=$ \ct{discretization of $F$ on the $2h$ mesh} \\
     $\ell^{2h}[v] := R' (\ell^h-F^h(w^h))[v] + F^{2h}(R w^h)[v]$ \\
-    $u^{2h} =$ \pr{coarsesolve}(R w^h,F^{2h},\ell^{2h}) \\
+    $u^{2h} = \pr{copy}(R w^h)$ \\
+    \pr{coarsesolve}(u^{2h},F^{2h},\ell^{2h}) \\
     $w^h \gets w^h + P(u^{2h} - R w^h)$ \\
-    for $j=1,\dots,$\id{upsweeps} \\+
-        \pr{ngssweep}(w^h,F^h,\ell^h) \\-
-    return $w$
+    for $j=1,\dots,$\id{up} \\+
+        \pr{ngssweep-back}(w^h,F^h,\ell^h)
 \end{pseudo*}
 
-It is common in linear multigrid \cite{Briggsetal2000,Bueler2021,Trottenbergetal2001} to apply a direct solver like LU decomposition to define the \textsc{coarsesolve}.  However, here our problem is nonlinear.  We simply plan to do enough inexpensive sweeps of NGS to solve the problem accurately on the coarsest mesh.
+It is common in linear multigrid \cite{Briggsetal2000,Bueler2021,Trottenbergetal2001} to apply a direct solver like LU decomposition as the coarse-mesh solution.  However, our problem is nonlinear so we simply plan to do enough inexpensive sweeps of NGS to solve the problem accurately on the coarsest mesh, via the following in-place pseudocode.
 
 \begin{pseudo*}
 \pr{coarsesolve}(w,F,\ell)\text{:} \\+
-    for $j=1,\dots,$\id{coarsesweeps} \\+
-        \pr{ngssweep}(w,F,\ell) \\-
-    return $w$
+    for $j=1,\dots,$\id{coarse} \\+
+        \pr{ngssweep}(w,F,\ell)
 \end{pseudo*}
 
 However, in order to understand and implement FAS, we must first clarify the action of operators $R'$, $R$, and $P$ in the context of FE methods, as in the next section.  In the section after that we will define an FAS V-cycle by the presumably-obvious idea that the \textsc{coarsesolve} should be replaced on intermediate meshes by recursive application of the FAS two-level solver itself.
@@ -403,7 +403,45 @@ Which doe we choose?  Because of its relative simplicity and ability to filter-o
 
 \section{FAS V-cycles and F-cycles}
 
-FIXME
+FIXME assume mesh hierarchy $k=0,1,...,K$; in-place V-cycle
+
+\begin{pseudo*}
+\pr{fas-vcycle}(k,w^k,F^k,\ell^k)\text{:} \\+
+    if $k=0$ \\+
+        \pr{coarsesolve}(w^k,F^k,\ell^k) \\-
+    for $j=1,\dots,$\id{down} \\+
+        \pr{ngssweep}(w^k,F^k,\ell^k) \\-
+    $F^{k-1} :=$ \ct{discretization of $F$ on the $k-1$ mesh level} \\
+    $\ell^{k-1}[v] := R' (\ell^k-F^k(w^k))[v] + F^{k-1}(R w^k)[v]$ \\
+    $w^{k-1} = \pr{copy}(R w^k)$ \\
+    \pr{fas-vcycle}(k-1,w^{k-1},F^{k-1},\ell^{k-1}) \\
+    $w^k \gets w^k + P(w^{k-1} - R w^k)$ \\
+    for $j=1,\dots,$\id{up} \\+
+        \pr{ngssweep-back}(w^k,F^k,\ell^k) \\-
+\end{pseudo*}
+
+\begin{figure}
+\input{tikz/cycles.tex}
+\caption{An FAS V-cycle (left) and F-cycle (right) for a mesh hierarchy with four levels.  Solid dots correspond to \texttt{down} sweeps of NGS, open circles to \texttt{up} sweeps, and squares to \textsc{coarsesolve}(). Thick grey edges represent $\tilde P$.}
+\label{fig:cycles}
+\end{figure}
+
+FIXME F-cycle
+
+\begin{pseudo*}
+\pr{fas-fcycle}(F,\ell)\text{:} \\+
+    for $k=0,\dots,K$ \\+
+        $F^k :=$ \ct{discretization of $F$ on $k$ mesh level} \\
+        $\ell^k[v] :=$ \ct{discretization of $\ell[v]$ on $k$ mesh level} \\
+        if $k=0$ \\+
+            $w^k = 0$ \\
+            \pr{coarsesolve}(w^k,F^k,\ell^k) \\-
+        else \\+
+            $w^k = \tilde{P} w^{k-1}$ \\
+            \pr{fas-vcycle}(k,w^k,F^k,\ell^k) \\--
+    return $w^K$
+\end{pseudo*}
+
 
 \section{Results: convergence}
 
