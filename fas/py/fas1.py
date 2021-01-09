@@ -31,19 +31,19 @@ Newton iterations, as a smoother.  Note NGS is also the coarse mesh solver.
 
 Only V-cycles are implemented; set the number of cycles with -cycles.
 Monitor the residual between V-cycles with -monitor.  Set the number of
-down- and up-smoother NGS sweeps (-downsweeps,-upsweeps) and coarsest-mesh
-NGS sweeps (-coarsesweeps).  One can revert to NGS sweeps only on the fine
-mesh (-ngsonly), but then set -downsweeps to a large value.
+down- and up-smoother NGS sweeps (-down,-up) and coarsest-mesh NGS sweeps
+(-coarse).  One can revert to only using NGS sweeps on the fine mesh
+(-ngsonly), but the user should set -down to a large value in that case.
 
 Show the solution in Matplotlib graphics with -show.  For more information
 on runtime options use -fas1help.  For documentation see ../doc/fas.pdf.
 ''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
-prs.add_argument('-coarsesweeps', type=int, default=1, metavar='N',
-                 help='NGS sweeps on coarsest mesh (default=1)')
+prs.add_argument('-coarse', type=int, default=1, metavar='N',
+                 help='number of NGS sweeps on coarsest mesh (default=1)')
 prs.add_argument('-cycles', type=int, default=1, metavar='M',
                  help='number of V-cycles (default=1)')
-prs.add_argument('-downsweeps', type=int, default=1, metavar='N',
-                 help='NGS sweeps before coarse-mesh correction (default=1)')
+prs.add_argument('-down', type=int, default=1, metavar='N',
+                 help='number of NGS sweeps before coarse correction (default=1)')
 prs.add_argument('-fas1help', action='store_true', default=False,
                  help='print help for this program and quit')
 prs.add_argument('-j', type=int, default=2, metavar='J',
@@ -64,8 +64,8 @@ prs.add_argument('-niters', type=int, default=2, metavar='N',
                  help='Newton iterations in NGS smoothers (default=2)')
 prs.add_argument('-show', action='store_true', default=False,
                  help='show plot at end')
-prs.add_argument('-upsweeps', type=int, default=1, metavar='N',
-                 help='NGS sweeps after coarse-mesh correction (default=1)')
+prs.add_argument('-up', type=int, default=1, metavar='N',
+                 help='number of NGS sweeps after coarse correction (default=1)')
 args, unknown = prs.parse_known_args()
 
 if unknown:
@@ -84,34 +84,35 @@ kcoarse = args.j-args.levels+1
 for k in range(kcoarse,args.j+1):  # create meshes for the ones we use
     meshes[k] = MeshLevel1D(k=k)
 
+# solve coarsest problem by NGS sweeps
+def coarsesolve(u,ell):
+    for q in range(args.coarse):
+        prob.ngssweep(meshes[kcoarse],u,ell,niters=args.niters)
+
 # FAS V-cycle for levels k down to k=kcoarse
 def vcycle(k,u,ell):
-    uin = u.copy()
     if k == kcoarse:
-        # coarse solve: NGS sweeps on coarse mesh
-        for q in range(args.coarsesweeps):
-            prob.ngssweep(meshes[k],u,ell,niters=args.niters)
-        return u, u - uin
+        coarsesolve(u,ell)
     else:
         assert k > kcoarse
         # smooth: NGS sweeps on fine mesh
-        for q in range(args.downsweeps):
+        for q in range(args.down):
             prob.ngssweep(meshes[k],u,ell,niters=args.niters)
-        # restrict down: compute ell = R' (f^h - F^h(u^h)) + F^{2h}(R u^h)
+        # restrict down using  ell = R' (f^h - F^h(u^h)) + F^{2h}(R u^h)
         rfine = ell - prob.F(meshes[k],u)  # residual on the fine mesh
         Ru = meshes[k].Rfw(u)
         coarseell = meshes[k].CR(rfine) + prob.F(meshes[k-1],Ru)
         # recurse
-        _, ducoarse = vcycle(k-1,Ru,coarseell)
+        ucoarse = Ru.copy()
+        vcycle(k-1,ucoarse,coarseell)
         if args.monitorcoarseupdate:
             print('     ' + '  ' * (args.j + 1 - k), end='')
-            print('coarse update norm %.5e' % meshes[k-1].l2norm(ducoarse))
+            print('coarse update norm %.5e' % meshes[k-1].l2norm(ucoarse - Ru))
         # prolong up
-        u += meshes[k].prolong(ducoarse)
+        u += meshes[k].prolong(ucoarse - Ru)
         # smooth: NGS sweeps on fine mesh
-        for q in range(args.upsweeps):
+        for q in range(args.up):
             prob.ngssweep(meshes[k],u,ell,forward=False,niters=args.niters)
-        return u, u - uin
 
 # initialize problem
 prob = LiouvilleBratu1D(lam=args.lam)
@@ -133,23 +134,21 @@ for s in range(args.cycles):
     if args.monitor:
         printresidualnorm(s,meshes[args.j],uu,ellg)
     if args.ngsonly:
-        for q in range(args.downsweeps):
+        for q in range(args.down):
             prob.ngssweep(meshes[args.j],uu,ellg,niters=args.niters)
-        continue
     else:
-        uu, _ = vcycle(args.j,uu,ellg)
+        vcycle(args.j,uu,ellg)
 if args.monitor:
     printresidualnorm(args.cycles,meshes[args.j],uu,ellg)
 
 # report on computation
 if args.ngsonly:
     print('  m=%d mesh using %d sweeps of NGS only: |u|_2=%.6f' \
-          % (meshes[args.j].m,args.cycles*args.downsweeps,
+          % (meshes[args.j].m,args.cycles*args.down,
              meshes[args.j].l2norm(uu)))
 else:
     print('  m=%d mesh using %d V(%d,%d,%d) cycles: |u|_2=%.6f' \
-          % (meshes[args.j].m,args.cycles,
-             args.downsweeps,args.coarsesweeps,args.upsweeps,
+          % (meshes[args.j].m,args.cycles,args.down,args.coarse,args.up,
              meshes[args.j].l2norm(uu)))
 if args.mms:
     uexact, _ = prob.mms(meshes[args.j].xx())
