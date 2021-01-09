@@ -16,7 +16,7 @@ class MeshLevel1D(object):
     (k to k-1), and ordinary restriction of functions (k to k-1) by
     full-weighting.'''
 
-    def __init__(self, k=None):
+    def __init__(self, k):
         self.k = k
         self.m = 2**(self.k+1)
         self.mcoarser = 2**self.k
