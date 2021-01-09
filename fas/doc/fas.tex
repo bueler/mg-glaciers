@@ -259,6 +259,7 @@ Here $P$ is a prolongation operation, about which we say more in the next sectio
 
 Formulas \eqref{fasequation} and \eqref{fasupdate} fully-describe the two-level FAS algorithm, assuming NGS sweeps as a smoother, and supposing restriction/prolongation operators $R',R,P$ are all determined.  One improvement, giving greater symmetry in the error after each cycle, up-smooths in reverse order.  We have the following pseudocode which modifies $w^h$ in place using \texttt{down} NGS forward sweeps before the coarse-mesh correction and \texttt{up} backward sweeps after.  Note that a vector copy must be made before the in-place solution of the coarse-mesh problem.
 
+\label{fastwolevel}
 \begin{pseudo*}
 \pr{fas-twolevel}(w^h,F^h,\ell^h)\text{:} \\+
     for $j=1,\dots,$\id{down} \\+
@@ -280,7 +281,7 @@ It is common in linear multigrid \cite{Briggsetal2000,Bueler2021,Trottenbergetal
         \pr{ngssweep}(w,F,\ell)
 \end{pseudo*}
 
-However, in order to understand and implement FAS, we must first clarify the action of operators $R'$, $R$, and $P$ in the context of FE methods, as in the next section.  In the section after that we will define an FAS V-cycle by the presumably-obvious idea that the \textsc{coarsesolve} should be replaced on intermediate meshes by recursive application of the FAS two-level solver itself.
+However, in order to understand and implement FAS, we must first clarify the action of operators $R'$, $R$, and $P$ in the context of FE methods, as in the next section.  In the section after that we will define an FAS V-cycle by the presumably-obvious idea that \textsc{coarsesolve} could be replaced by recursive application of the FAS solver itself.
 
 
 \section{Restriction and prolongation operators}
@@ -398,12 +399,14 @@ This computes each coarse-mesh nodal value of $z=\Rfw w^h$ as a weighted average
 \end{itemize}
 
 \medskip
-Which doe we choose?  Because of its relative simplicity and ability to filter-out high-frequency information while approximately preserving norms, we use $R=\Rfw$ in the implementation \texttt{fas1.py}.  That is, we choose $\Rfw$ over $\Rpr$ because it is simpler to compute, and we $\Rfw$ over $\Rin$ to avoid unnecessary additional loss of information from the fine-mesh iterate.
+Which restriction do we choose?  Because of its relative simplicity, and its ability to filter-out high-frequency information while approximately preserving norms, we use the full-weighting restriction $R=\Rfw$ in the implementation \texttt{fas1.py}.  That is, we choose $\Rfw$ over $\Rpr$ because it is simpler to compute, and we $\Rfw$ over $\Rin$ to avoid unnecessary information loss from the fine-mesh iterate.
 
 
 \section{FAS V-cycles and F-cycles}
 
-FIXME assume mesh hierarchy $k=0,1,...,K$; in-place V-cycle
+The main principle of FAS is contained in the pseudocode \textsc{fas-twolevel} on page \pageref{fastwolevel}.  As already noted, from such a two-level scheme it is an obvious, small step to solve the coarser-mesh problem by the same scheme, and thus to generate a so-called ``V-cycle''.
+
+To define a V-cycle we need not just two meshes but a hierarchy.  Start with a coarsest mesh with $m_0$ elements (subintervals) of length (node spacing) $h_0=1/m_0$.  (By default in \texttt{fas1.py} we have $m_0=2$.)  For $k=1,\dots,K$ we refine by factors of two so that the $k$th mesh has $m_k=2^k m_0$ elements of length $h_k=h_0/2^k$.  Note that the $K$th mesh is called the ``fine mesh''.  On such a hierarchy an FAS V-cycle is the following pseudocode which can be started at any level $k$.
 
 \begin{pseudo*}
 \pr{fas-vcycle}(k,w^k,F^k,\ell^k)\text{:} \\+
@@ -420,13 +423,17 @@ FIXME assume mesh hierarchy $k=0,1,...,K$; in-place V-cycle
         \pr{ngssweep-back}(w^k,F^k,\ell^k) \\-
 \end{pseudo*}
 
+Note that \textsc{fas-vcycle} does in-place modification of an iterate $w^k$ on the $k$th mesh.  This procedure can be called repeatedly, just as one might repeatedly call \textsc{ngssweeps} itself.  In \texttt{fas1.py} the option \texttt{-cycles} specifies the number of cycles, defaulting to one.  As we will see in practice, five to ten V-cycles using the default settings including \texttt{down} $=1$ and \texttt{up} $=1$ make a very effective solver on any mesh.
+
+A V-cycle with $K=3$ is shown in Figure \ref{fig:cycles}.  FIXME work units
+
 \begin{figure}
 \input{tikz/cycles.tex}
-\caption{An FAS V-cycle (left) and F-cycle (right) for a mesh hierarchy with four levels.  Solid dots correspond to \texttt{down} sweeps of NGS, open circles to \texttt{up} sweeps, and squares to \textsc{coarsesolve}(). Thick grey edges represent $\tilde P$.}
+\caption{An FAS V-cycle (left) and F-cycle (right) on a mesh hierarchy with four levels ($K=3$).  Solid dots correspond to \texttt{down} sweeps of NGS, open circles to \texttt{up} sweeps, and squares to \textsc{coarsesolve}(). Thick grey edges represent $\tilde P$.}
 \label{fig:cycles}
 \end{figure}
 
-FIXME F-cycle
+FIXME F-cycle uses a possibly better prolongation $\tilde P$
 
 \begin{pseudo*}
 \pr{fas-fcycle}(F,\ell)\text{:} \\+
