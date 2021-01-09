@@ -83,11 +83,13 @@ assert (args.levels >= 1) and (args.levels <= args.j + 1)
 kcoarse = args.j-args.levels+1
 for k in range(kcoarse,args.j+1):  # create meshes for the ones we use
     meshes[k] = MeshLevel1D(k=k)
+wu = np.zeros(args.j+1)
 
 # solve coarsest problem by NGS sweeps
 def coarsesolve(u,ell):
     for q in range(args.coarse):
         prob.ngssweep(meshes[kcoarse],u,ell,niters=args.niters)
+    wu[kcoarse] += args.coarse
 
 # FAS V-cycle for levels k down to k=kcoarse
 def vcycle(k,u,ell):
@@ -98,6 +100,7 @@ def vcycle(k,u,ell):
         # smooth: NGS sweeps on fine mesh
         for q in range(args.down):
             prob.ngssweep(meshes[k],u,ell,niters=args.niters)
+        wu[k] += args.down
         # restrict down using  ell = R' (f^h - F^h(u^h)) + F^{2h}(R u^h)
         rfine = ell - prob.F(meshes[k],u)  # residual on the fine mesh
         Ru = meshes[k].Rfw(u)
@@ -113,16 +116,32 @@ def vcycle(k,u,ell):
         # smooth: NGS sweeps on fine mesh
         for q in range(args.up):
             prob.ngssweep(meshes[k],u,ell,forward=False,niters=args.niters)
+        wu[k] += args.up
+
+# compute fine mesh right-hand side, a linear functional
+def rhs(mesh,prob):
+    ellg = mesh.zeros()
+    if args.mms:
+        _, g = prob.mms(mesh.xx())
+        g *= mesh.h
+        ellg[1:-1] = g[1:-1]
+    return ellg
+
+def fcycle(K,meshes,prob):
+    ulist = [None] * (K+1)
+    for k in range(K+1):
+        ellg = rhs(meshes[k],prob)
+        if k == 0:
+            ulist[0] = meshes[0].zeros()
+            coarsesolve(ulist[0],ellg)
+        else:
+            ulist[k] = meshes[k].prolong(ulist[k-1])
+            vcycle(k,ulist[k],ellg)
+    return ulist[K]
 
 # initialize problem
 prob = LiouvilleBratu1D(lam=args.lam)
-
-# compute fine mesh right-hand side, a linear functional
-ellg = meshes[args.j].zeros()
-if args.mms:
-    _, g = prob.mms(meshes[args.j].xx())
-    g *= meshes[args.j].h
-    ellg[1:-1] = g[1:-1]
+ellg = rhs(meshes[args.j],prob)
 
 def printresidualnorm(s,mesh,u,ell):
     rnorm = mesh.l2norm(ell - prob.F(mesh,u))
@@ -136,19 +155,23 @@ for s in range(args.cycles):
     if args.ngsonly:
         for q in range(args.down):
             prob.ngssweep(meshes[args.j],uu,ellg,niters=args.niters)
+        wu[args.j] += args.down
     else:
         vcycle(args.j,uu,ellg)
 if args.monitor:
     printresidualnorm(args.cycles,meshes[args.j],uu,ellg)
 
 # report on computation
+wutotal = 0
+for k in range(args.j+1):
+    wutotal += wu[args.j - k] / 2**k
 if args.ngsonly:
-    print('  m=%d mesh using %d sweeps of NGS only: |u|_2=%.6f' \
-          % (meshes[args.j].m,args.cycles*args.down,
+    print('  m=%d mesh using %d sweeps of NGS only (%d work units): |u|_2=%.6f' \
+          % (meshes[args.j].m,args.cycles*args.down,wutotal,
              meshes[args.j].l2norm(uu)))
 else:
-    print('  m=%d mesh using %d V(%d,%d,%d) cycles: |u|_2=%.6f' \
-          % (meshes[args.j].m,args.cycles,args.down,args.coarse,args.up,
+    print('  m=%d mesh using %d V(%d,%d,%d) cycles (%d work units): |u|_2=%.6f' \
+          % (meshes[args.j].m,args.cycles,args.down,args.coarse,args.up,wutotal,
              meshes[args.j].l2norm(uu)))
 if args.mms:
     uexact, _ = prob.mms(meshes[args.j].xx())

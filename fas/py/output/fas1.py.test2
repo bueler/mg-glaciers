@@ -4,5 +4,5 @@
   3: residual norm 1.39547e-05
   4: residual norm 8.40955e-07
   5: residual norm 5.06788e-08
-  m=8 mesh using 100 sweeps of NGS only: |u|_2=0.797087
+  m=8 mesh using 100 sweeps of NGS only (100 work units): |u|_2=0.797087
   numerical error: |u-u_exact|_2=9.0323e-02
