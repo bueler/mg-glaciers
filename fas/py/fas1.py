@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   smoother prolongation for F-cycle
 #   implement quasilinear example like p-laplacian
 
 import numpy as np
@@ -48,6 +47,8 @@ prs.add_argument('-fas1help', action='store_true', default=False,
                  help='print help for this program and quit')
 prs.add_argument('-fcycle', action='store_true', default=False,
                  help='apply the FAS F-cycle')
+prs.add_argument('-fcyclelowp', action='store_true', default=False,
+                 help='in the F-cycle, use lower-order prolongation')
 prs.add_argument('-j', type=int, default=2, metavar='J',
                  help='m=2^{j+1} intervals in fine mesh (default j=2, m=8)')
 prs.add_argument('-lam', type=float, default=1.0, metavar='L',
@@ -101,8 +102,11 @@ if args.fcycle:
     if args.ngsonly:
         print('ERROR: -fcycle and -ngsonly cannot be used together')
         sys.exit(2)
-    uu = fas.fcycle(cycles=args.cycles)
+    uu = fas.fcycle(cycles=args.cycles,ep=not args.fcyclelowp)
 else:
+    if args.fcyclelowp:
+        print('ERROR: option -fcycleoldp only makes sense with -fcycle')
+        sys.exit(3)
     # do V-cycles or NGS sweeps, with residual monitoring
     uu = meshes[args.j].zeros()
     ellg = fas.rhs(args.j)

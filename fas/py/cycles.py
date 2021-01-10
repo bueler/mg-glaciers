@@ -58,6 +58,24 @@ class FAS(object):
             tot += self.wu[self.kfine - k] / 2.0**k
         return tot
 
+    # enhanced prolongation for F-cycle
+    #     input w is on k-1 mesh; output is on k mesh
+    # FIXME specific to LiouvilleBratu1D
+    def Phat(self,k,w,ell):
+        mesh = self.meshes[k]
+        lam = self.prob.lam  # FIXME specific to LiouvilleBratu1D
+        w = mesh.P(w)  # use linear interpolation
+        for p in range(1,mesh.m,2):  # fix odd points only
+            c = 0
+            for n in range(self.niters):
+                tmp = mesh.h * lam * np.exp(w[p]+c)
+                f = - (1.0/mesh.h) * (2.0*(w[p]+c) - w[p-1] - w[p+1]) \
+                    + tmp + ell[p]
+                df = - 2.0/mesh.h + tmp
+                c -= f / df
+            w[p] += c
+        return w
+
     # compute right-hand side, a linear functional, from function g(x)
     def rhs(self,k):
         ellg = self.meshes[k].zeros()
@@ -103,15 +121,19 @@ class FAS(object):
             self.wu[k] += self.up
 
     # FAS F-cycle for levels kcoarse up to kfine; returns u
-    def fcycle(self,cycles=1):
+    def fcycle(self,cycles=1,ep=True):
         u = self.meshes[self.kcoarse].zeros()
         ellg = self.rhs(self.kcoarse)
         self.printresidualnorm(0,self.kcoarse,u,ellg)
         self.coarsesolve(u,ellg)
         self.printresidualnorm(1,self.kcoarse,u,ellg)
         for k in range(self.kcoarse+1,self.kfine+1):
-            u = self.meshes[k].P(u)  # use same prolong
             ellg = self.rhs(k)
+            if ep:  # enhanced prolongation
+                u = self.Phat(k,u,ellg)
+                self.wu[k] += 0.5
+            else:
+                u = self.meshes[k].P(u)
             Z = cycles if k == self.kfine else 1
             for s in range(Z):
                 self.printresidualnorm(s,k,u,ellg)
