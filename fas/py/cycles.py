@@ -37,7 +37,7 @@ class FAS(object):
     # return L^2 norm of residual r = ell - F(w) on k level mesh
     def residualnorm(self,k,w,ell):
         mesh = self.meshes[k]
-        return mesh.l2norm(ell - self.prob.F(mesh,w))
+        return mesh.l2norm(ell - self.prob.F(mesh.h,w))
 
     # on monitor flag, indented-print residual norm
     def printresidualnorm(self,s,k,w,ell):
@@ -60,20 +60,10 @@ class FAS(object):
 
     # enhanced prolongation for F-cycle
     #     input w is on k-1 mesh; output is on k mesh
-    # FIXME specific to LiouvilleBratu1D
     def Phat(self,k,w,ell):
-        mesh = self.meshes[k]
-        lam = self.prob.lam  # FIXME specific to LiouvilleBratu1D
-        w = mesh.P(w)  # use linear interpolation
-        for p in range(1,mesh.m,2):  # fix odd points only
-            c = 0
-            for n in range(self.niters):
-                tmp = mesh.h * lam * np.exp(w[p]+c)
-                f = - (1.0/mesh.h) * (2.0*(w[p]+c) - w[p-1] - w[p+1]) \
-                    + tmp + ell[p]
-                df = - 2.0/mesh.h + tmp
-                c -= f / df
-            w[p] += c
+        w = self.meshes[k].P(w)  # use linear interpolation
+        for p in range(1,self.meshes[k].m,2):  # fix odd points only
+            self.prob.ngspoint(self.meshes[k].h,w,ell,p,niters=self.niters)
         return w
 
     # compute right-hand side, a linear functional, from function g(x)
@@ -85,11 +75,22 @@ class FAS(object):
             ellg[1:-1] = g[1:-1]
         return ellg
 
+    # sweep through mesh applying NGS at each point
+    def ngssweep(self,k,w,ell,forward=True):
+        '''Do one in-place nonlinear Gauss-Seidel (NGS) sweep on vector w
+        over the interior points p=1,...,m-1 in either forward order (default)
+        or backward order.'''
+        if forward:
+            indices = range(1,self.meshes[k].m)
+        else:
+            indices = range(self.meshes[k].m-1,0,-1)
+        for p in indices:
+            self.prob.ngspoint(self.meshes[k].h,w,ell,p,niters=self.niters)
+
     # solve coarsest problem by NGS sweeps; acts in-place on u
     def coarsesolve(self,u,ell):
         for q in range(self.coarse):
-            self.prob.ngssweep(self.meshes[self.kcoarse],u,ell,
-                               niters=self.niters)
+            self.ngssweep(self.kcoarse,u,ell)
         self.wu[self.kcoarse] += self.coarse
 
     # FAS V-cycle for levels k down to k=kcoarse; acts in-place on u
@@ -100,13 +101,12 @@ class FAS(object):
             assert k > self.kcoarse
             # smooth: NGS sweeps on fine mesh
             for q in range(self.down):
-                self.prob.ngssweep(self.meshes[k],u,ell,
-                                   niters=self.niters)
+                self.ngssweep(k,u,ell)
             self.wu[k] += self.down
             # restrict down using  ell = R' (f^h - F^h(u^h)) + F^{2h}(R u^h)
-            rfine = ell - self.prob.F(self.meshes[k],u)  # residual on the fine mesh
+            rfine = ell - self.prob.F(self.meshes[k].h,u)  # residual on the fine mesh
             Ru = self.meshes[k].Rfw(u)
-            coarseell = self.meshes[k].CR(rfine) + self.prob.F(self.meshes[k-1],Ru)
+            coarseell = self.meshes[k].CR(rfine) + self.prob.F(self.meshes[k-1].h,Ru)
             # recurse
             ucoarse = Ru.copy()
             self.vcycle(k-1,ucoarse,coarseell)
@@ -116,8 +116,7 @@ class FAS(object):
             u += self.meshes[k].P(du)
             # smooth: NGS sweeps on fine mesh
             for q in range(self.up):
-                self.prob.ngssweep(self.meshes[k],u,ell,
-                                   forward=False,niters=self.niters)
+                self.ngssweep(k,u,ell,forward=False)
             self.wu[k] += self.up
 
     # FAS F-cycle for levels kcoarse up to kfine; returns u

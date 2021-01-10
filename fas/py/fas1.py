@@ -114,7 +114,7 @@ else:
         fas.printresidualnorm(s,args.j,uu,ellg)
         if args.ngsonly:
             for q in range(args.down):
-                prob.ngssweep(meshes[args.j],uu,ellg,niters=args.niters)
+                fas.ngssweep(args.j,uu,ellg)
             fas.wu[args.j] += args.down  # add count into FAS work units array
         else:
             fas.vcycle(args.j,uu,ellg)
@@ -139,6 +139,7 @@ if args.mms:
           % (meshes[args.j].l2norm(uu - uexact)))
 else:
     print('')
+
 # graphical output if desired
 if args.show:
     import matplotlib.pyplot as plt
