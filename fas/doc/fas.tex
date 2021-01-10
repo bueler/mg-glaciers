@@ -496,13 +496,13 @@ In the next section we will compare three algorithms to solve the original probl
 \item \textsc{fas-f}$(Z)$ defined above.
 \end{itemize}
 
-The main conclusion of the current document can be summarized as follows:
+The main conclusion of the current document can be summarized as follows, in terms of these three solvers:
 
 \begin{quotation}
-\emph{On any mesh of practical effective resolution, say with $m>100$ elements, the Liouville-Bratu problem \eqref{liouvillebratu} can be solved to within the discretization error of the finite element method by using \textsc{fas-f}$(2)$ or \textsc{fas-vcycles}$(10)$, regardless of $m$, up to the memory limits of the computer.  By contrast, a $Z$-value which grows rapidly with $m$ must be used with \textsc{ngsonly}$(Z)$, and $Z > 1000$ is required.  If $m>1000$ then discretization error cannot be achieved by \textsc{ngsonly}$(Z)$ in reasonable time.}
+\emph{On any mesh of practical effective resolution, say with $m>100$ elements, the Liouville-Bratu problem \eqref{liouvillebratu} can be solved to within the discretization error of our piecewise-liner finite element method by using \textsc{fas-f}$(2)$ or \textsc{fas-vcycles}$(12)$.  This holds for all $m$, up to values where rounding error overwhelms the discretization error at around $m=10^6$.  By contrast, a $Z$-value which grows rapidly with $m$ must be used with \textsc{ngsonly}$(Z)$, and $Z > 1000$ is required.  If $m>1000$ then discretization error cannot be achieved by \textsc{ngsonly}$(Z)$ in reasonable time.}
 \end{quotation}
 
-In section \ref{sec:optimal} we will carefully measure the computational work required for the three algorithms.  The work is, indeed, comparable to the quoted $Z$ values.
+In section \ref{sec:optimal} we will carefully measure the computational work required for the three algorithms and show that it is, indeed, comparable to the quoted $Z$ values.
 
 
 \section{Results: convergence}  \label{sec:convergence}
