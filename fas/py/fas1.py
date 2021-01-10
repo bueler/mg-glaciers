@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # TODO:
+#   smoother prolongation for F-cycle
 #   implement quasilinear example like p-laplacian
 
 import numpy as np
