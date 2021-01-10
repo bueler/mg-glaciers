@@ -33,7 +33,7 @@ class MeshLevel1D(object):
         return np.sqrt(self.h * (0.5*u[0]*u[0] + np.sum(u[1:-1]*u[1:-1]) \
                                  + 0.5*u[-1]*u[-1]))
 
-    def prolong(self,v):
+    def P(self,v):
         '''Prolong a function on the next-coarser (k-1) mesh (i.e.
         in S_{k-1}) onto the current mesh (in S_k).  Uses linear
         interpolation.  Ignores the values v[0] and v[mcoarser]

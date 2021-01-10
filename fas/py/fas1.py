@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   implement F-cycle
 #   implement quasilinear example like p-laplacian
 
 import numpy as np
@@ -41,11 +40,13 @@ on runtime options use -fas1help.  For documentation see ../doc/fas.pdf.
 prs.add_argument('-coarse', type=int, default=1, metavar='N',
                  help='number of NGS sweeps on coarsest mesh (default=1)')
 prs.add_argument('-cycles', type=int, default=1, metavar='M',
-                 help='number of V-cycles (default=1)')
+                 help='number of FAS V-cycles (default=1)')
 prs.add_argument('-down', type=int, default=1, metavar='N',
                  help='number of NGS sweeps before coarse correction (default=1)')
 prs.add_argument('-fas1help', action='store_true', default=False,
                  help='print help for this program and quit')
+prs.add_argument('-fcycle', action='store_true', default=False,
+                 help='apply the FAS F-cycle')
 prs.add_argument('-j', type=int, default=2, metavar='J',
                  help='m=2^{j+1} intervals in fine mesh (default j=2, m=8)')
 prs.add_argument('-lam', type=float, default=1.0, metavar='L',
@@ -56,7 +57,7 @@ prs.add_argument('-mms', action='store_true', default=False,
                  help='manufactured problem with known exact solution')
 prs.add_argument('-monitor', action='store_true', default=False,
                  help='print residual norms')
-prs.add_argument('-monitorcoarseupdate', action='store_true', default=False,
+prs.add_argument('-monitorupdate', action='store_true', default=False,
                  help='print norms for the coarse-mesh update vector')
 prs.add_argument('-ngsonly', action='store_true', default=False,
                  help='only do -downsweeps NGS sweeps at each iteration')
@@ -89,41 +90,50 @@ for k in range(kcoarse,args.j+1):  # create meshes for the ones we use
 prob = LiouvilleBratu1D(lam=args.lam)
 
 # initialize FAS and its parameters
-fas = FAS(meshes,prob,kcoarse=kcoarse,kfine=args.j,
-          mms=args.mms,coarse=args.coarse,down=args.down,up=args.up,
-          niters=args.niters,monitorupdate=args.monitorcoarseupdate)
+fas = FAS(meshes,prob,kcoarse=kcoarse,kfine=args.j,mms=args.mms,
+          coarse=args.coarse,down=args.down,up=args.up,
+          niters=args.niters,
+          monitor=args.monitor,monitorupdate=args.monitorupdate)
 
-def printresidualnorm(s,w,ell):
-    if args.monitor:
-        print('  %d: residual norm %.5e' % (s,fas.residualnorm(w,ell)))
-
-# SOLVE:  do V-cycles or NGS sweeps, with residual monitoring
-uu = meshes[args.j].zeros()
-ellg = fas.rhs(args.j)
-for s in range(args.cycles):
-    printresidualnorm(s,uu,ellg)
+# SOLVE
+if args.fcycle:
     if args.ngsonly:
-        for q in range(args.down):
-            prob.ngssweep(meshes[args.j],uu,ellg,niters=args.niters)
-        fas.wu[args.j] += args.down  # add count into FAS work units array
-    else:
-        fas.vcycle(args.j,uu,ellg)
-printresidualnorm(args.cycles,uu,ellg)
+        print('ERROR: -fcycle and -ngsonly cannot be used together')
+        sys.exit(2)
+    uu = fas.fcycle(cycles=args.cycles)
+else:
+    # do V-cycles or NGS sweeps, with residual monitoring
+    uu = meshes[args.j].zeros()
+    ellg = fas.rhs(args.j)
+    for s in range(args.cycles):
+        fas.printresidualnorm(s,args.j,uu,ellg)
+        if args.ngsonly:
+            for q in range(args.down):
+                prob.ngssweep(meshes[args.j],uu,ellg,niters=args.niters)
+            fas.wu[args.j] += args.down  # add count into FAS work units array
+        else:
+            fas.vcycle(args.j,uu,ellg)
+    fas.printresidualnorm(args.cycles,args.j,uu,ellg)
 
 # report on computation
 if args.ngsonly:
-    print('  m=%d mesh using %d sweeps of NGS only (%d work units): |u|_2=%.6f' \
+    print('  m=%d mesh using %d sweeps of NGS only (%.2f WU): |u|_2=%.6f' \
           % (meshes[args.j].m,args.cycles*args.down,
-             fas.wutotal(),meshes[args.j].l2norm(uu)))
+             fas.wutotal(),meshes[args.j].l2norm(uu)), end='')
+elif args.fcycle:
+    print('  m=%d mesh using F-cycle, V(%d,%d,%d), %d Vs (%.2f WU): |u|_2=%.6f' \
+          % (meshes[args.j].m,args.down,args.coarse,args.up,args.cycles,
+             fas.wutotal(),meshes[args.j].l2norm(uu)), end='')
 else:
-    print('  m=%d mesh using %d V(%d,%d,%d) cycles (%d work units): |u|_2=%.6f' \
+    print('  m=%d mesh using %d V(%d,%d,%d) cycles (%.2f WU): |u|_2=%.6f' \
           % (meshes[args.j].m,args.cycles,args.down,args.coarse,args.up,
-             fas.wutotal(),meshes[args.j].l2norm(uu)))
+             fas.wutotal(),meshes[args.j].l2norm(uu)), end='')
 if args.mms:
     uexact, _ = prob.mms(meshes[args.j].xx())
-    print('  numerical error: |u-u_exact|_2=%.4e' \
+    print(', |u-u_ex|_2=%.4e' \
           % (meshes[args.j].l2norm(uu - uexact)))
-
+else:
+    print('')
 # graphical output if desired
 if args.show:
     import matplotlib.pyplot as plt
