@@ -427,8 +427,8 @@ On this mesh hierarchy an FAS V-cycle is the following recursive algorithm, in w
     else \\+
         for $j=1,\dots,$\id{down} \\+
             \pr{ngssweep}(w^k,\ell^k) \\-
-        $\ell^{k-1}[v] := R' (\ell^k-F^k(w^k))[v] + F^{k-1}(R w^k)[v]$ \\
         $w^{k-1} = \pr{copy}(R w^k)$ \\
+        $\ell^{k-1}[v] := R' (\ell^k-F^k(w^k))[v] + F^{k-1}(R w^k)[v]$ \\
         \pr{fas-v}(k-1,w^{k-1},\ell^{k-1}) \\
         $w^k \gets w^k + P(w^{k-1} - R w^k)$ \\
         for $j=1,\dots,$\id{up} \\+
@@ -447,8 +447,7 @@ V-cycles can be done repeatedly, using the whole mesh hierarchy, to solve the or
 
 \begin{pseudo*}
 \pr{fas-vcycles}(Z)\text{:} \\+
-    $\ell^K[v] = \ip{g}{v}$ \\
-    $w^K = 0$ \\
+    $w^K = 0$, \, $\ell^K[v] = \ip{g}{v}$ \\
     for $s=1,\dots,Z$ \\+
         \pr{fas-v}(K,w^K,\ell^K) \\-
     return $w^K$
@@ -456,18 +455,16 @@ V-cycles can be done repeatedly, using the whole mesh hierarchy, to solve the or
 
 In \texttt{fas1.py} the option \texttt{-cycles} specifies $Z$, defaulting to $Z=1$.  As we will see in practice, five to ten V-cycles, using the default settings in \textsc{fas-vcycle} including \texttt{down} $=1$ and \texttt{up} $=1$ smoother applications, make a very effective solver on any mesh.
 
-Next we can add a different multilevel idea.  It is based on the observation that the performance of a nonlinear equation solver usually depends critically on the quality of the initial iterate.  Indeed, choosing initial iterate $w=0$ as in \textsc{fas-vcycles} may not yield a convergent method.  However, it is easy to see in practice that coarse meshes are more forgiving with respect to the initial iterate than are finer meshes.  The additional idea is to start on the coarsest mesh in the hierarchy, where a blind guess like $w=0$ is most likely to succeed, and then work upward through the levels.  At each mesh level one computes an initial iterate by prolongation of the already-converged iterate on the next-coarser level.
+Next we can add a different multilevel idea.  It is based on the observation that the performance of a nonlinear equation solver usually depends critically on the quality of the initial iterate.  Indeed, choosing initial iterate $w=0$ as in \textsc{fas-vcycles} may not yield a convergent method.  However, it is easy to see in practice that coarse meshes are more forgiving with respect to the initial iterate than are finer meshes.  The additional idea is to start on the coarsest mesh in the hierarchy, where a blind guess like $w=0$ is most likely to succeed, and then work upward through the levels.  At each mesh level one computes an initial iterate by prolongation of the already-converged iterate on the next-coarser level, and then one does a V-cycle.  At the finest mesh level we may do repeated V-cycles.
 
-The resulting algorithm is called an FAS multigrid ``F-cycle'', or, confusingly, a ``full multigrid'' (FMG) cycle \cite{BrandtLivne2011,Briggsetal2000}.  (The meaning of ``full'' is fundamentally different in ``FAS'' versus ``FMG'' terminology.)  It is shown on the right in Figure \ref{fig:cycles}.  Once the finest mesh level is reached we may do repeated V-cycles, as in the following algorithm:
+The resulting algorithm is called an FAS multigrid ``F-cycle'' because of a vague typographical sense that the pattern in Figure \ref{fig:cycles} (right) looks like an ``F'' on its back.  (Confusingly, it is also called a ``full multigrid'' (FMG) cycle \cite{BrandtLivne2011,Briggsetal2000}.  The meaning of ``full'' is fundamentally different in FAS versus FMG terminology.)  It is the following algorithm:
 
 \begin{pseudo*}
 \pr{fas-f}(Z)\text{:} \\+
-    $\ell^0[v] = \ip{g}{v}$ \\
-    $w^0 = 0$ \\
+    $w^0 = 0$, \, $\ell^0[v] = \ip{g}{v}$ \\
     \pr{coarsesolve}(w^0,\ell^0) \\
     for $k=0,\dots,K$ \\+
-        $\ell^k[v] = \ip{g}{v}$ \\
-        $w^k = \hat P w^{k-1}$ \\
+        $w^k = \hat P w^{k-1}$, \, $\ell^k[v] = \ip{g}{v}$ \\
         if $k=K$ \\+
             for $s=1,\dots,Z$ \\+
                 \pr{fas-v}(K,w^K,\ell^K) \\--
@@ -476,17 +473,16 @@ The resulting algorithm is called an FAS multigrid ``F-cycle'', or, confusingly,
     return $w^K$
 \end{pseudo*}
 
-FIXME F-cycle uses a better prolongation $\hat P$
+An important detail in the algorithm is in the initial prolongation onto the next level, namely $w^k = \hat P w^{k-1}$.  It is particularly important to avoid the introduction of high frequencies here, so we use an enhanced prolongation $\hat P$.  It first applies $P$ to generate a fine-mesh function, but then we sweep through the \emph{new} fine-mesh nodes and apply NGS there without altering values at the nodes already present in the coarse mesh.
 
-In the next section we will compare three algorithms to solve the original problem \eqref{liouvillebratu} or \eqref{weakform}.  Note that each returns an iterate $w^K$ on the finest mesh:
+In the next section we will compare three algorithms to solve the original problem \eqref{weakform}.  Note that each returns an approximate solution $w^K$ on the finest mesh after iterating the solver $Z$ times:
 
 \begin{itemize}
 \item Sweeps of NGS only, defined by the following pseudocode:
 
 \begin{pseudo*}
 \pr{ngsonly}(Z)\text{:} \\+
-    $\ell^K[v] = \ip{g}{v}$ \\
-    $w^K = 0$ \\
+    $w^K = 0$, \, $\ell^K[v] = \ip{g}{v}$ \\
     for $s=1,\dots,Z$ \\+
         \pr{ngssweep}(w^K,\ell^K) \\-
     return $w^K$
@@ -496,13 +492,13 @@ In the next section we will compare three algorithms to solve the original probl
 \item \textsc{fas-f}$(Z)$ defined above.
 \end{itemize}
 
-The main conclusion of the current document can be summarized as follows, in terms of these three solvers:
+Our main conclusion regarding these three solvers can be summarized as follows:
 
 \begin{quotation}
-\emph{On any mesh of practical effective resolution, say with $m>100$ elements, the Liouville-Bratu problem \eqref{liouvillebratu} can be solved to within the discretization error of our piecewise-liner finite element method by using \textsc{fas-f}$(2)$ or \textsc{fas-vcycles}$(12)$.  This holds for all $m$, up to values where rounding error overwhelms the discretization error at around $m=10^6$.  By contrast, a $Z$-value which grows rapidly with $m$ must be used with \textsc{ngsonly}$(Z)$, and $Z > 1000$ is required.  If $m>1000$ then discretization error cannot be achieved by \textsc{ngsonly}$(Z)$ in reasonable time.}
+\emph{On any mesh of practical effective resolution, say with $m>10^2$ elements, the problem can be solved to within the discretization error of our piecewise-linear FE method by using \textsc{fas-f}$(3)$ or \textsc{fas-vcycles}$(12)$.  This holds for all $m$, up to values where rounding error overwhelms the discretization error, at around $m=10^6$.  By contrast, for \textsc{ngsonly}$(Z)$ to solve the problem $Z$ must grow rapidly with $m$, and $Z > 10^3$ is required if $m>10^2$.  If $m>10^3$ then discretization error cannot be achieved by \textsc{ngsonly}$(Z)$ in reasonable time.}
 \end{quotation}
 
-In section \ref{sec:optimal} we will carefully measure the computational work required for the three algorithms and show that it is, indeed, comparable to the quoted $Z$ values.
+In other words, the two FAS methods require a small $Z$ which is independent of the mesh.  In section \ref{sec:optimal} we will carefully measure the computational work required for the three algorithms.  The amount of work is comparable to $mZ$ in all cases, so both FAS methods are optimal algorithms which require only $O(m)$ work.  The FAS F-cycle is the fastest.
 
 
 \section{Results: convergence}  \label{sec:convergence}
