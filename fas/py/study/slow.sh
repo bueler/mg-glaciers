@@ -11,9 +11,9 @@ set +x
 
 # NGS only; number of cycles determined using trial and error so that numerical
 #   error was within a factor of two of error from F-cycles (see optimal.sh)
-/usr/bin/time -f "\t%e real" ../fas1.py -mms -ngsonly -j 3 -cycles 20
-/usr/bin/time -f "\t%e real" ../fas1.py -mms -ngsonly -j 4 -cycles 100
-/usr/bin/time -f "\t%e real" ../fas1.py -mms -ngsonly -j 5 -cycles 800
-/usr/bin/time -f "\t%e real" ../fas1.py -mms -ngsonly -j 6 -cycles 6400
-/usr/bin/time -f "\t%e real" ../fas1.py -mms -ngsonly -j 7 -cycles 51200
+/usr/bin/time -f "\t%e real" ../fas1.py -mms -ngsonly -K 3 -cycles 20
+/usr/bin/time -f "\t%e real" ../fas1.py -mms -ngsonly -K 4 -cycles 100
+/usr/bin/time -f "\t%e real" ../fas1.py -mms -ngsonly -K 5 -cycles 800
+/usr/bin/time -f "\t%e real" ../fas1.py -mms -ngsonly -K 6 -cycles 6400
+/usr/bin/time -f "\t%e real" ../fas1.py -mms -ngsonly -K 7 -cycles 51200
 

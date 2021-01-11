@@ -49,8 +49,8 @@ prs.add_argument('-fcycle', action='store_true', default=False,
                  help='apply the FAS F-cycle')
 prs.add_argument('-fcyclelowp', action='store_true', default=False,
                  help='in the F-cycle, use lower-order prolongation')
-prs.add_argument('-j', type=int, default=2, metavar='J',
-                 help='m=2^{j+1} intervals in fine mesh (default j=2, m=8)')
+prs.add_argument('-K', type=int, default=2, metavar='K',
+                 help='m=2^{K+1} intervals in fine mesh (default K=2, m=8)')
 prs.add_argument('-lam', type=float, default=1.0, metavar='L',
                  help='parameter lambda in Bratu equation (default=1.0)')
 prs.add_argument('-levels', type=int, default=-1, metavar='J',
@@ -81,18 +81,18 @@ if args.fas1help:
 
 # setup mesh hierarchy
 if args.levels < 1:
-    args.levels = args.j+1
-meshes = [None] * (args.j + 1)     # spots for k=0,...,j meshes
-assert (args.levels >= 1) and (args.levels <= args.j + 1)
-kcoarse = args.j-args.levels+1
-for k in range(kcoarse,args.j+1):  # create meshes for the ones we use
+    args.levels = args.K+1
+meshes = [None] * (args.K + 1)     # spots for k=0,...,K meshes
+assert (args.levels >= 1) and (args.levels <= args.K + 1)
+kcoarse = args.K-args.levels+1
+for k in range(kcoarse,args.K+1):  # create meshes for the ones we use
     meshes[k] = MeshLevel1D(k=k)
 
 # initialize problem
 prob = LiouvilleBratu1D(lam=args.lam)
 
 # initialize FAS and its parameters
-fas = FAS(meshes,prob,kcoarse=kcoarse,kfine=args.j,mms=args.mms,
+fas = FAS(meshes,prob,kcoarse=kcoarse,kfine=args.K,mms=args.mms,
           coarse=args.coarse,down=args.down,up=args.up,
           niters=args.niters,
           monitor=args.monitor,monitorupdate=args.monitorupdate)
@@ -108,35 +108,35 @@ else:
         print('ERROR: option -fcycleoldp only makes sense with -fcycle')
         sys.exit(3)
     # do V-cycles or NGS sweeps, with residual monitoring
-    uu = meshes[args.j].zeros()
-    ellg = fas.rhs(args.j)
+    uu = meshes[args.K].zeros()
+    ellg = fas.rhs(args.K)
     for s in range(args.cycles):
-        fas.printresidualnorm(s,args.j,uu,ellg)
+        fas.printresidualnorm(s,args.K,uu,ellg)
         if args.ngsonly:
             for q in range(args.down):
-                fas.ngssweep(args.j,uu,ellg)
-            fas.wu[args.j] += args.down  # add count into FAS work units array
+                fas.ngssweep(args.K,uu,ellg)
+            fas.wu[args.K] += args.down  # add count into FAS work units array
         else:
-            fas.vcycle(args.j,uu,ellg)
-    fas.printresidualnorm(args.cycles,args.j,uu,ellg)
+            fas.vcycle(args.K,uu,ellg)
+    fas.printresidualnorm(args.cycles,args.K,uu,ellg)
 
 # report on computation
 if args.ngsonly:
     print('  m=%d mesh using %d sweeps of NGS only (%.2f WU): |u|_2=%.6f' \
-          % (meshes[args.j].m,args.cycles*args.down,
-             fas.wutotal(),meshes[args.j].l2norm(uu)), end='')
+          % (meshes[args.K].m,args.cycles*args.down,
+             fas.wutotal(),meshes[args.K].l2norm(uu)), end='')
 elif args.fcycle:
-    print('  m=%d mesh using F-cycle, V(%d,%d,%d), %d Vs (%.2f WU): |u|_2=%.6f' \
-          % (meshes[args.j].m,args.down,args.coarse,args.up,args.cycles,
-             fas.wutotal(),meshes[args.j].l2norm(uu)), end='')
+    print('  m=%d mesh using F-cycle, V(%d,%d), %d Vs (%.2f WU): |u|_2=%.6f' \
+          % (meshes[args.K].m,args.down,args.up,args.cycles,
+             fas.wutotal(),meshes[args.K].l2norm(uu)), end='')
 else:
-    print('  m=%d mesh using %d V(%d,%d,%d) cycles (%.2f WU): |u|_2=%.6f' \
-          % (meshes[args.j].m,args.cycles,args.down,args.coarse,args.up,
-             fas.wutotal(),meshes[args.j].l2norm(uu)), end='')
+    print('  m=%d mesh using %d V(%d,%d) cycles (%.2f WU): |u|_2=%.6f' \
+          % (meshes[args.K].m,args.cycles,args.down,args.up,
+             fas.wutotal(),meshes[args.K].l2norm(uu)), end='')
 if args.mms:
-    uexact, _ = prob.mms(meshes[args.j].xx())
+    uexact, _ = prob.mms(meshes[args.K].xx())
     print(', |u-u_ex|_2=%.4e' \
-          % (meshes[args.j].l2norm(uu - uexact)))
+          % (meshes[args.K].l2norm(uu - uexact)))
 else:
     print('')
 
@@ -149,10 +149,10 @@ if args.show:
     lines = {'linewidth': 2}
     mpl.rc('lines', **lines)
     plt.figure(figsize=(15.0,8.0))
-    plt.plot(meshes[args.j].xx(),uu,'k',linewidth=4.0,
+    plt.plot(meshes[args.K].xx(),uu,'k',linewidth=4.0,
              label='numerical solution')
     if args.mms:
-        plt.plot(meshes[args.j].xx(),uexact,'k--',linewidth=4.0,
+        plt.plot(meshes[args.K].xx(),uexact,'k--',linewidth=4.0,
                  label='exact solution')
         plt.legend()
     plt.xlabel('x')

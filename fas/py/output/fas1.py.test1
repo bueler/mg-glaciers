@@ -3,4 +3,4 @@
   1: residual norm 3.60583e-02
        coarse update norm 1.84255e-03
   2: residual norm 5.14505e-03
-  m=8 mesh using 2 V(1,20,1) cycles (24.00 WU): |u|_2=0.101977
+  m=8 mesh using 2 V(1,1) cycles (24.00 WU): |u|_2=0.101977
