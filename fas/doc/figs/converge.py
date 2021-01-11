@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
+# generate a convergence figure based on results from fas/py/study/converge.sh
+
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
 INFILE = 'results-converge.txt'
-LABELS = ['NGS only', 'V(1,1) cycles']
+LABELS = ['10^4 NGS sweeps', '12 V(1,1) cycles']
 SYMBOLS = ['o','.']
 MFC = ['w','k']
 MSIZE = [12.0,12.0]
