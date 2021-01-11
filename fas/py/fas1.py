@@ -36,15 +36,13 @@ down- and up-smoother NGS sweeps (-down,-up) and coarsest-mesh NGS sweeps
 
 Show the solution in Matplotlib graphics with -show.  For more information
 on runtime options use -fas1help.  For documentation see ../doc/fas.pdf.
-''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
+''',formatter_class=argparse.RawTextHelpFormatter)
 prs.add_argument('-coarse', type=int, default=1, metavar='N',
                  help='number of NGS sweeps on coarsest mesh (default=1)')
 prs.add_argument('-cycles', type=int, default=1, metavar='M',
                  help='number of FAS V-cycles (default=1)')
 prs.add_argument('-down', type=int, default=1, metavar='N',
                  help='number of NGS sweeps before coarse correction (default=1)')
-prs.add_argument('-fas1help', action='store_true', default=False,
-                 help='print help for this program and quit')
 prs.add_argument('-fcycle', action='store_true', default=False,
                  help='apply the FAS F-cycle')
 prs.add_argument('-fcyclelowp', action='store_true', default=False,
@@ -73,11 +71,8 @@ args, unknown = prs.parse_known_args()
 
 # provide usage help
 if unknown:
-    print('ERROR: unknown arguments ... try -fas1help for usage')
+    print('ERROR: unknown arguments ... try -help for usage')
     sys.exit(1)
-if args.fas1help:
-    prs.print_help()
-    sys.exit(0)
 
 # setup mesh hierarchy
 if args.levels < 1:
