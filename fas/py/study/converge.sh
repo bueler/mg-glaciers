@@ -4,7 +4,7 @@ set +x
 
 # convergence results in -mms case
 
-# run to generate convergence results shown in ../../doc/fas.pdf:
+# run to generate results shown in ../../doc/fas.pdf:
 #   $ ./converge.sh &> converge.txt
 
 # brutal NGS sweeps

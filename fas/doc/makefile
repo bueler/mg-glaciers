@@ -1,6 +1,6 @@
 all: fas.pdf
 
-_figures := onehat hatcombination
+_figures := onehat hatcombination converge
 figures := $(addprefix figs/, $(addsuffix .pdf, $(_figures)))
 
 fas.pdf: fas.tex fas.bib $(figures)
@@ -9,8 +9,8 @@ fas.pdf: fas.tex fas.bib $(figures)
 	pdflatex fas
 	pdflatex fas
 
-$(figures): figs/hatfig.py
-	(cd figs/ && python3 hatfig.py)
+$(figures): figs/hatfig.py figs/converge.py
+	(cd figs/ && python3 hatfig.py && python3 converge.py)
 	for X in $(figures); do \
 	     (pdfcrop $$X $$X); \
 	done
