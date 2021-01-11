@@ -43,9 +43,9 @@ for k in range(3):
                mfc=MFC[k],label=LABELS[k],ms=MSIZE[k])
     if k < 2:
         mm = m[method==k]
-        mbig = mm[mm>3.0e3]
         ttime = time[method==k]
-        tbig = ttime[mm>3.0e3]
+        tbig = ttime[ttime>2.0]
+        mbig = mm[ttime>2.0]
         p = np.polyfit(np.log(mbig),np.log(tbig),1)
         plt.loglog(mbig,np.exp(p[0]*np.log(mbig)+p[1]),'k:')
         if k == 0:
@@ -58,7 +58,7 @@ ax.set_xlim([10.0,1.0e6])
 ax.set_ylim([0.1,140.0])
 plt.xticks([10,100,1.0e3,1.0e4,1.0e5,1.0e6],fontsize=14.0)
 plt.yticks([0.1,1.0,10.0,100.0],fontsize=12.0)
-plt.gca().set_yticklabels(['0.1','1','10','100'],fontsize=12.0)
+plt.gca().set_yticklabels(['0.1','1','10','100'],fontsize=14.0)
 plt.xlabel('$m$',fontsize=16.0)
 plt.ylabel('time (seconds)',fontsize=16.0)
 plt.legend(loc='best',fontsize=14.0)

@@ -498,17 +498,31 @@ Our main conclusion regarding these three solvers can be summarized as follows:
 \emph{On any mesh of practical effective resolution, say with $m>10^2$ elements, the problem can be solved to within the discretization error of our piecewise-linear FE method by using \textsc{fas-f}$(3)$ or \textsc{fas-vcycles}$(12)$.  This holds for all $m$, up to values where rounding error overwhelms the discretization error, at around $m=10^6$.  By contrast, for \textsc{ngsonly}$(Z)$ to solve the problem $Z$ must grow rapidly with $m$, and $Z > 10^3$ is required if $m>10^2$.  If $m>10^3$ then discretization error cannot be achieved by \textsc{ngsonly}$(Z)$ in reasonable time.}
 \end{quotation}
 
-In other words, the two FAS methods require a small $Z$ which is independent of the mesh.  In section \ref{sec:optimal} we will carefully measure the computational work required for the three algorithms.  The amount of work is comparable to $mZ$ in all cases, so both FAS methods are optimal algorithms which require only $O(m)$ work.  The FAS F-cycle is the fastest.
+In other words, the two FAS methods require a small $Z$ which is independent of the mesh.  In the next section we will carefully measure the computational work required for the three algorithms.  The amount of work is comparable to $mZ$ in all cases, so both FAS methods are optimal algorithms which require only $O(m)$ work.  The FAS F-cycle is the fastest.
 
 
-\section{Results: convergence}  \label{sec:convergence}
+\section{Results}  \label{sec:results}
 
-FIXME
+FIXME show how to run \texttt{fas/py/fas1.py}
+
+FIXME convergence fig
+
+\begin{figure}
+\includegraphics[width=0.7\textwidth]{figs/converge.pdf}
+\caption{For a fixed number of V-cycles the numerical error $\|u-u_{\text{ex}}\|_2$ converges to zero at the expected rate $O(h^2)$, but even a large (fixed) number of NGS sweeps fails to converge at higher resolutions.}
+\label{fig:converge}
+\end{figure}
+
+FIXME time fig; compare \texttt{-ngsonly}
 
 
-\section{Results: optimality}  \label{sec:optimal}
+\begin{figure}
+\includegraphics[width=0.7\textwidth]{figs/optimal.pdf}
+\caption{Run time is optimal $O(m)$ for both V-cycles and F-cycles, but explodes for (convergent) NGS sweeps.}
+\label{fig:optimal}
+\end{figure}
 
-FIXME; discuss work units; compare \texttt{-ngsonly}
+FIXME discuss work units; F-cycles give textbook
 
 
 \section{Conclusion}  \label{sec:conclusion}

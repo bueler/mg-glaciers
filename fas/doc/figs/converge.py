@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 import sys
 
 INFILE = 'results-converge.txt'
-LABELS = ['10^4 NGS sweeps', '12 V(1,1) cycles']
+LABELS = [r'$10^4$ NGS sweeps', '12 V(1,1) cycles']
 SYMBOLS = ['o','.']
 MFC = ['w','k']
-MSIZE = [12.0,12.0]
+MSIZE = [14.0,14.0]
 
 SHOW = False
 
@@ -36,18 +36,22 @@ for k in range(2):
     plt.loglog(h[method==k],err[method==k],'k' + SYMBOLS[k],
                mfc=MFC[k],label=LABELS[k],ms=MSIZE[k])
 p = np.polyfit(np.log(h[method==1]),np.log(err[method==1]),1)
-plt.loglog(h[method==1],np.exp(p[0]*np.log(h[method==1])+p[1]),'k:',
-           label='$O(h^{%.2f})$' % p[0])
+plt.loglog(h[method==1],np.exp(p[0]*np.log(h[method==1])+p[1]),'k:')
+plt.text(4.0e-4,2.0e-7,'$O(h^{%.2f})$' % p[0],fontsize=16.0)
 
 ax = plt.gca()
 ax.set_xlim([1.0e-5,1.0e-1])
 ax.set_ylim([1.0e-9,1.0e-1])
-#plt.xticks([1.0,0.1,0.01,0.001,0.0001,0.00001],fontsize=12.0)
+plt.xticks([1.0e-5,1.0e-4,1.0e-3,1.0e-2,1.0e-1],fontsize=14.0)
 plt.xlabel('$h$',fontsize=16.0)
-plt.ylabel('$|u-u_{ex}|_2$',fontsize=16.0)
-plt.legend(loc='best',fontsize=14.0)
+plt.yticks([1.0e-9,1.0e-7,1.0e-5,1.0e-3,1.0e-1],fontsize=14.0)
+plt.ylabel('numerical error',fontsize=16.0)
 plt.minorticks_off()
 plt.grid(True)
+
+handles, labels = ax.get_legend_handles_labels()
+ax.legend(handles[::-1], labels[::-1], loc='best',fontsize=14.0)
+
 
 writeout('converge.pdf')
 
