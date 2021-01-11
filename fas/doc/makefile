@@ -19,5 +19,5 @@ $(figures): figs/hatfig.py figs/converge.py figs/optimal.py
 
 clean:
 	@rm -f *~ *.out *.aux *.log *.blg *.snm *.toc *.nav *.vrb *.bbl *.synctex.gz
-	@rm -f figs/*.pdf
+	@rm -f $(figures)
 
