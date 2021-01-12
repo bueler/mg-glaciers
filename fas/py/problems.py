@@ -2,6 +2,11 @@
 
 import numpy as np
 
+# note we catch overflow in exp (and other RuntimeWarning) as error and stop
+import warnings
+warnings.simplefilter("error")
+import sys
+
 __all__ = ['LiouvilleBratu1D']
 
 class Problem1D(object):
@@ -45,8 +50,12 @@ class LiouvilleBratu1D(Problem1D):
         m = len(w) - 1
         FF = np.zeros(m+1)
         for p in range(1,m):
-            FF[p] = (1.0/h) * (2.0*w[p] - w[p-1] - w[p+1]) \
-                    - h * self.lam * np.exp(w[p])
+            try:
+                tmp = h * self.lam * np.exp(w[p])
+            except RuntimeWarning as err:
+                print("stopping on RuntimeWarning: {0}".format(err))
+                sys.exit(1)
+            FF[p] = (1.0/h) * (2.0*w[p] - w[p-1] - w[p+1]) - tmp
         return FF
 
     def ngspoint(self,h,w,ell,p,niters=2):
@@ -59,7 +68,11 @@ class LiouvilleBratu1D(Problem1D):
             c_{k+1} = c_k - f(c_k) / f'(c_k).'''
         c = 0
         for n in range(niters):
-            tmp = h * self.lam * np.exp(w[p]+c)
+            try:
+                tmp = h * self.lam * np.exp(w[p]+c)
+            except RuntimeWarning as err:
+                print("stopping on RuntimeWarning: {0}".format(err))
+                sys.exit(1)
             f = - (1.0/h) * (2.0*(w[p]+c) - w[p-1] - w[p+1]) + tmp + ell[p]
             df = - 2.0/h + tmp
             c -= f / df
@@ -69,6 +82,10 @@ class LiouvilleBratu1D(Problem1D):
         '''Return exact solution u(x) and right-hand-side g(x) for the
         method of manufactured solutions (MMS) case.'''
         u = np.sin(3.0 * np.pi * x)
-        g = 9.0 * np.pi**2 * u - self.lam * np.exp(u)
+        try:
+            g = 9.0 * np.pi**2 * u - self.lam * np.exp(u)
+        except RuntimeWarning as err:
+            print("stopping on RuntimeWarning: {0}".format(err))
+            sys.exit(1)
         return u, g
 
