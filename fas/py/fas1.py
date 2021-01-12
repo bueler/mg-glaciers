@@ -52,7 +52,7 @@ prs.add_argument('-K', type=int, default=2, metavar='K',
 prs.add_argument('-lam', type=float, default=1.0, metavar='L',
                  help='parameter lambda in Bratu equation (default=1.0)')
 prs.add_argument('-levels', type=int, default=-1, metavar='J',
-                 help='number of levels in V-cycle (default: levels=j+1)')
+                 help='number of levels in V-cycle (default: levels=K+1)')
 prs.add_argument('-mms', action='store_true', default=False,
                  help='manufactured problem with known exact solution')
 prs.add_argument('-monitor', action='store_true', default=False,
