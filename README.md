@@ -31,5 +31,5 @@ Run software tests:
 
 ## fas/
 
-This is a paper and Python program which I wrote to make the full approximation storage (FAS) scheme blindingly clear to me.  See `fas/README` for details.
+This is a paper and Python program which I wrote to make the full approximation storage (FAS) scheme blindingly clear to me.  See `fas/README.md` for details.
 
