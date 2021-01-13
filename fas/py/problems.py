@@ -26,13 +26,13 @@ class Problem1D(object):
         return None
 
 class LiouvilleBratu1D(Problem1D):
-    '''Evaluate the weak-form operator F() and NGS sweeps ngssweeps() for
-    the nonlinear Liouville-Bratu problem
+    '''Evaluate the weak-form operator F() and nonlinear Gauss-Seidel
+    ngspoint() for the nonlinear Liouville-Bratu problem
         -u'' - lambda e^u = g,  u(0) = u(1) = 0
     where lambda is constant.  In fact g(x) on the right is replaced by
-    a linear functional, so the problem is
+    a linear functional, so the problem is the weak form version
         F(w)[v] = ell[v]
-    for all test functions v.'''
+    for test functions v.  Thus "ell" is an argument to ngspoint().'''
 
     def __init__(self,lam):
         self.lam = lam
@@ -42,11 +42,10 @@ class LiouvilleBratu1D(Problem1D):
             F(w) = -w'' - lambda e^w,
         i.e.
             F(w)[v] = int_0^1 w'(x) v'(x) + lam e^{w(x)} v(x) dx
-        for v equal to the interior-point hat functions psi_p at
-        p=1,...,m-1.  Evaluates first integral exactly.  Last integral
-        is by the trapezoid rule.  Input mesh is of class MeshLevel1D.
-        Input w is a vector of length m+1.  The returned vector F is
-        the same length as w and satisfies F[0]=F[m]=0.'''
+        for v equal to the interior-point hat functions psi_p at p=1,...,m-1.
+        The first integral is evaluated exactly.  The second integral is by
+        the trapezoid rule.  Input w is a vector of length m+1 and the
+        returned vector F is the same length and satisfies F[0]=F[m]=0.'''
         m = len(w) - 1
         FF = np.zeros(m+1)
         for p in range(1,m):
@@ -61,9 +60,9 @@ class LiouvilleBratu1D(Problem1D):
     def ngspoint(self,h,w,ell,p,niters=2):
         '''Do in-place nonlinear Gauss-Seidel (NGS) on vector w at an
         interior point p.  Uses a fixed number of Newton iterations on
-            f(c) = r(w+c psi_p)[psi_p] = 0
+            phi(c) = r(w+c psi_p)[psi_p] = 0
         at point p, where  r(w)[v] = ell[v] - F(w)[v]  is the residual for w.
-        The integral in F is computed by the trapezoid rule.  Newton steps
+        See F() for how the weak form is approximated.  niters Newton steps
         are done without line search:
             c_{k+1} = c_k - f(c_k) / f'(c_k).'''
         c = 0

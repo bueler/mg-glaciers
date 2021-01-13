@@ -6,15 +6,15 @@ __all__ = ['MeshLevel1D']
 
 class MeshLevel1D(object):
     '''Encapsulate a mesh level for the interval [0,1], suitable for
-    FAS.  MeshLevel(k=k) has m = 2^{k+1} equal subintervals
-    of length h = 1/m.  Indices give nodes 0,1,...,m:
-        *---*---*---*---*---*---*
-        0   1   2     ...  m-1  m
+    piecewise-linear (P_1) finite elements.  MeshLevel(k=k) has m = 2^{k+1}
+    equal subintervals of length h = 1/m with node indices 0,1,...,m:
+        *---*---*---*---*---*---*---*
+        0   1   2      ...     m-1  m
     Note p=1,...,m-1 are interior nodes.  MeshLevel1D(k=0) is the coarse mesh
-    with one interior node.  This object knows about zero vectors, L_2 norms,
-    prolongation (k-1 to k), canonical restriction of linear functionals
-    (k to k-1), and ordinary restriction of functions (k to k-1) by
-    full-weighting.'''
+    with one interior node.  The MeshLevel1D object knows about zero vectors,
+    L_2 norms, prolongation (k-1 to k), canonical restriction of linear
+    functionals (k to k-1), and ordinary restriction of functions (k to k-1)
+    by full-weighting.'''
 
     def __init__(self, k):
         self.k = k
@@ -34,9 +34,9 @@ class MeshLevel1D(object):
                                  + 0.5*u[-1]*u[-1]))
 
     def P(self,v):
-        '''Prolong a function on the next-coarser (k-1) mesh (i.e.
-        in S_{k-1}) onto the current mesh (in S_k).  Uses linear
-        interpolation.  Ignores the values v[0] and v[mcoarser]
+        '''Prolong a function from S_{k-1}, i.e. on the next-coarser
+        (k-1) mesh to a function in S_k, i.e. on the current mesh.
+        Uses linear interpolation.  Ignores the values v[0] and v[mcoarser]
         because we only prolong functions for which they are zero.'''
         assert len(v) == self.mcoarser+1, \
                'input vector v is of length %d (should be %d)' \
@@ -53,9 +53,9 @@ class MeshLevel1D(object):
         return y
 
     def CR(self,v):
-        '''Restrict a linear functional (i.e. v in S_k') on the current mesh
-        to the next-coarser (k-1) mesh using "canonical restriction".
-        Only the interior points are updated.'''
+        '''Restrict a linear functional v in S_k' on the current mesh to the
+        next-coarser (k-1) mesh using "canonical restriction".  Only the
+        interior points are updated.'''
         assert len(v) == self.m+1, \
                'input vector v is of length %d (should be %d)' % (len(v),self.m+1)
         assert self.k > 0, \
@@ -68,12 +68,5 @@ class MeshLevel1D(object):
     def Rfw(self,v):
         '''Restrict a vector (function) v in S_k on the current mesh to the
         next-coarser (k-1) mesh by using full-weighting.'''
-        assert len(v) == self.m+1, \
-               'input vector v is of length %d (should be %d)' % (len(v),self.m+1)
-        assert self.k > 0, \
-               'cannot restrict to a mesh coarser than the coarsest mesh'
-        y = np.zeros(self.mcoarser+1)  # y[0]=y[mcoarser]=0
-        for q in range(1,self.mcoarser):
-            y[q] = 0.25 * v[2*q-1] + 0.5 * v[2*q] + 0.25 * v[2*q+1]
-        return y
+        return 0.5 * self.CR(v)
 

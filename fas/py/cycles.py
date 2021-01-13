@@ -1,4 +1,4 @@
-# module for FAS cycles: V and F
+# module for the FAS class
 
 import numpy as np
 
@@ -9,12 +9,35 @@ class FAS(object):
     V-cycles and F-cycles.  At initialization:
       meshes[k]: type MeshLevel1D from meshlevel.py
       prob:      type Problem1D from problems.py
-    Note meshes[kcoarse],...,meshes[kfine] are the mesh levels.  The key
-    smoother and coarse-level solver component is the NGS method
-    prob.ngssweep().  The coarse correction uses prob.F() for the nonlinear
-    operator, meshes[k].Rfw() for full-weighting restriction of vectors,
-    meshes[k].CR() for canonical restriction of linear functionals,
-    and meshes[k].P() for prolongation.'''
+    Note meshes[kcoarse],...,meshes[kfine] are the mesh levels.
+
+    The key problem-specific solver components are the nonlinear operator
+    prob.F() and the NGS method prob.ngspoint().  The coarse correction uses
+    prob.F() to build the right-hand side linear functional.  The NGS method
+    is used for both the smoother and the coarse-level solver.  Key
+    MeshLevel1D components are meshes[k].Rfw() for full-weighting
+    restriction of vectors, meshes[k].CR() for canonical restriction of
+    linear functionals, and meshes[k].P() for prolongation.
+
+    This class implements three main solver methods:
+      ngssweep():  repeatedly call prob.ngspoint()
+      vcycle():    do FAS V-cycle, calling ngssweep() for down- and up-
+                   smoother, and coarsesolve() at bottom
+      fcycle():    do FAS F-cycle with one V-cycle per level on the
+                   way up, and more V-cycles on the finest level
+    The first two act in-place because they work from the finest level.
+    By contrast, fcycle() essentially has no inputs and returns the
+    solution on the finest level.
+
+    The cycle methods use the P(), CR(), and Rfw() restriction
+    and prolongation methods of MeshLevel1D.
+
+    The class also does monitoring of residual norms and work units.
+
+    The following helper functions are implemented: residualnorm(),
+    printresidualnorm(), printupdatenorm(), wutotal(), Phat(), rhs(),
+    and coarsesolve().
+    '''
 
     def __init__(self,meshes,prob,kcoarse,kfine,
                  mms=False,coarse=1,down=1,up=1,niters=2,
