@@ -58,6 +58,11 @@ urlcolor=black    % ...
 \newcommand{\rhoi}{\rho_{\text{i}}}
 \newcommand{\ip}[2]{\left<#1,#2\right>}
 
+\newcommand{\Rpr}{R_{\text{pr}}}
+\newcommand{\Rin}{R_{\text{in}}}
+\newcommand{\Rfw}{R_{\text{fw}}}
+
+
 \begin{document}
 \title[The FAS multigrid scheme]{The full approximation storage multigrid scheme: \\ A 1D finite element example}
 
@@ -161,114 +166,106 @@ The function $u^h(x)$ in $\mathcal{S}^h$, equivalently $\bu$ in $\RR^{m-1}$ give
 \end{equation}
 The ``numerical'' error of $w^h$ is the difference $w^h-u$ where $u$ is the exact solution of the continuum problem \eqref{weakform}.  The numerical error of $u^h$ is the ``discretization'' error $u^h-u$, and this is also nonzero (in general).  Noting that $\|w^h-u\|\le \|w^h-u^h\|+\|u^h-u\|$, the numerical error of an iterate is bounded by its algebraic error plus the discretization error.  The theory of an FE method will show that its discretization error goes to zero as $h\to 0$, at a particular rate determined by the finite element space and the smoothness of the continuum problem \cite{Elmanetal2014}.  However, such a theory assumes that we have exactly-solved the finite-dimensional system, i.e.~that we possess $u^h$ itself, which is unrealistic in practice.
 
-While we want the norm $\|e^h\|$ to be small, generally only the residual norm $\|r^h(w^h)\|$ is computable, because $u^h$ is unknown.  The rate at which $\|e^h\|$ goes to zero as $h\to 0$ will be controlled, within a condition number \cite{Greenbaum1997}, by measurable residual norms $\|r^h(w^h)\|$.  However, in the \texttt{-mms} case of \texttt{fas1.py}, where the exact solution $u$ of the continuum problem is known, $\|e^h\|$ is also computable.
+Generally only the residual norm $\|r^h(w^h)\|$ is computable.  In the \texttt{-mms} case of \texttt{fas1.py}, where the exact solution $u$ of the continuum problem is known, $\|e^h\|$ is also computable.  In general the rate at which $\|e^h\|$ goes to zero as $h\to 0$ is controlled to within a condition number \cite{Greenbaum1997} by measurable residual norms $\|r^h(w^h)\|$.
 
 
 \section{The nonlinear Gauss-Seidel iteration}  \label{sec:ngs}
 
-Next we describe an iteration which will, if carried far enough, solve the finite-dimensional nonlinear system.  The method is the nonlinear Gauss-Seidel (NGS) iteration \cite{Briggsetal2000}, also called Gauss-Seidel-Newton \cite{BrandtLivne2011}.  It updates the iterate $w^h$ by changing its point value at $x_p$ to make the residual at that point zero.  That is, NGS solves the problem
+Next we describe an iteration which will, if carried far enough, solve the finite-dimensional nonlinear system.  The method is the nonlinear Gauss-Seidel (NGS) iteration \cite{Briggsetal2000}, also called Gauss-Seidel-Newton \cite{BrandtLivne2011}.  It updates the iterate $w^h$ by changing each point value at $x_p$ to make the residual at that point zero.  That is, NGS solves the problem
 \begin{equation}
-r^h(w^h + c \psi_p)[\psi_p] = 0  \label{ngspointproblem}
+\phi(c) = r^h(w^h + c \psi_p)[\psi_p] = 0  \label{ngspointproblem}
 \end{equation}
-for a scalar $c$ at each point, so it solves $\phi(c)=0$ where we define
-\begin{equation}
-  \phi(c) = r^h(w^h + c \psi_p)[\psi_p]. \label{ngspointresidual}
-\end{equation}
-Once $c$ is found we update the point value (coefficient):
+for a scalar $c$.  Once $c$ is found we update the point value (coefficient):
 \begin{equation}
   w^h \leftarrow w^h + c \psi_p,  \label{ngspointupdate}
 \end{equation}
-equivalently $w[p] \leftarrow w[p] + c$.  Following the idea behind the linear Gauss-Seidel iteration \cite{Greenbaum1997}, $w[p]$ is updated in a certain nodal ordering, and we are using all other known values $w[q]=w^h(x_q)$ when evaluating the residual in \eqref{ngspointproblem}.  In \texttt{fas1.py} the default order is increasing in $p$.  Note that Gauss-Seidel-type methods are called ``multiplicative'' or ``successive'' \cite{GraeserKornhuber2009} corrections, in contrast to ``additive'' or ``parallel'' corrections, of which the Jacobi iteration is the best known example \cite{Greenbaum1997}, but choosing additive corrections would reduce performance since our program runs in serial.
+equivalently $w[p] \leftarrow w[p] + c$.
 
-Solving the scalar problem $\phi(c)=0$ cannot be done exactly when considering a transcendental problem like \eqref{liouvillebratu}.  Thus we will use a fixed number of Newton iterations \cite[Chapter 4]{Bueler2021} to generate a (scalar) sequence $\{c_k\}$ converging to $c$.  Starting from $c_0=0$ we compute
+As in the linear Gauss-Seidel iteration \cite{Greenbaum1997}, $w[p]$ is updated in a certain nodal ordering, using all other known values $w[q]$ when evaluating the residual in \eqref{ngspointproblem}, but note that as the residual is made zero at one point it is no longer zero at the previous points.  Gauss-Seidel-type methods are called ``multiplicative'' \cite{Bueler2021} or ``successive'' \cite{GraeserKornhuber2009} corrections.  ``Additive'' or ``parallel'' corrections, of which the Jacobi iteration \cite{Greenbaum1997} is the best known, are also possible, but they are somewhat less efficient, and there is no disadvantage here because our program only runs in serial.
+
+Solving the scalar problem $\phi(c)=0$ cannot be done exactly when considering a transcendental problem like \eqref{liouvillebratu}.  Instead we will use a fixed number of Newton iterations \cite[Chapter 4]{Bueler2021} to generate a (scalar) sequence $\{c_k\}$ converging to $c$.  Starting from $c_0=0$ we compute
 \begin{equation}
 \phi'(c_k)\, s_k = -\phi(c_k),  \qquad  c_{k+1} = c_k + s_k, \label{ngsnewton}
 \end{equation}
-for $k=0,1,\dots$  In detail, following \eqref{feresidualdetail} we have
-\begin{align}
-   \phi(c) &= \ell^h[\psi_p] - \frac{1}{h} \left(2(w[p]+c) - w[p-1] - w[p+1]\right) + h \lambda e^{w[p]+c}, \label{ngsnewtondetails} \\
-   \phi'(c) &= -\frac{2}{h} + h \lambda e^{w[p]+c}. \notag
-\end{align}
-The vast majority of the work of our FAS algorithm will be in evaluating these expressions.
+for $k=0,1,\dots$.  From \eqref{feresidualdetail} we have
+  $$\phi(c) = \ell^h[\psi_p] - \frac{1}{h} \left(2(w[p]+c) - w[p-1] - w[p+1]\right) + h \lambda e^{w[p]+c}, \quad \phi'(c) = -\frac{2}{h} + h \lambda e^{w[p]+c}.$$
+The vast majority of the work of our FAS algorithms will be in evaluating these expressions.
 
 The method ``sweeps'' through the mesh, zeroing $\phi(c)$ at successive nodes $x_p$, as in the following pseudocode which modifies $w$ in-place:
 
 \begin{pseudo*}
-\pr{ngssweep}(w,\ell)\text{:} \\+
-    $r(w)[v] := \ell[v] - F(w)[v]$ \\
+\pr{ngssweep}(w^h,\ell^h)\text{:} \\+
+    $r(w^h)[v] := \ell^h[v] - F^h(w^h)[v]$ \\
     for $p=1,\dots,m-1$ \\+
-        $\phi(c) := r(w + c \psi_p)[\psi_p]$ \\
+        $\phi(c) := r^h(w^h + c \psi_p)[\psi_p]$ \\
         $c=0$ \\
         for $k=1,\dots,$\id{niters} \\+
             $c \gets c - \phi(c) / \phi'(c)$ \\-
         $w[p] \gets w[p] + c$
 \end{pseudo*}
 
-Note that \textsc{ngssweep} modifies the values $w[p]$ in increasing $p$ order, but for use in FAS below we also define \textsc{ngssweep-back} as the identical procedure except with outer loop ``\textbf{for} $p=m-1,\dots,1$''.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes one such foward or backward sweep of NGS by using a fixed number (\texttt{-niters}; defaults to 2) of scalar Newton iterations \eqref{ngsnewton} to solve \eqref{ngspointproblem} at each point.
+This method modifies the values $w[p]$ in increasing $p$ order.  For FAS algorithms (next section) we also define \textsc{ngssweep-back} as the same procedure except with ``\textbf{for} $p=m-1,\dots,1$''.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes either order, and the \texttt{niters} default is two.
 
-For a linear differential equation the NGS iteration is known to converge subject to matrix assumptions which correspond to ellipticity of the original problem \cite[for example]{Greenbaum1997}.  We expect that, at least for weak nonlinearities, e.g.~small $\lambda$ in \eqref{liouvillebratu}, our method will therefore eventually converge as a solution method for \eqref{weakform}, and we show this occurs on sufficiently coarse meshes.  However, as the residual is made zero at one point it is no longer zero at the previous points.  One observes in practice that, after substantial progress in the first few sweeps during which the residual becomes very smooth, soon NGS stagnates.  Following Brandt \cite{Brandt1977,BrandtLivne2011}, who asserts that such a ``stalling'' scheme must be ``wrong'', we adopt the multigrid approach next.
+For a linear differential equation the Gauss-Seidel iteration is known to converge subject to matrix assumptions which correspond to ellipticity of the original problem \cite[for example]{Greenbaum1997}.  We expect that for weak nonlinearities, e.g.~small $\lambda$ in \eqref{liouvillebratu}, our method will therefore eventually converge as a solution method for \eqref{feweakform}, and we demonstrate that this occurs in practice (section \ref{sec:results}).  One observes in practice that, after substantial progress in the first few sweeps during which the residual becomes very smooth, soon NGS stagnates.  Following Brandt \cite{Brandt1977,BrandtLivne2011}, who asserts that such a ``stalling'' scheme must be ``wrong'', we adopt the multigrid approach next.
 
 
 \section{The FAS equation for two levels}  \label{sec:fastwolevel}
 
-Full approximation storage (FAS) \cite{Brandt1977,Briggsetal2000} is a multigrid scheme, and thus it includes the following elements:
+Full approximation storage (FAS) \cite{Brandt1977,Briggsetal2000} is a multigrid scheme, so it includes the following elements:
 \begin{itemize}
 \item a hierarchy of meshes, with restriction and prolongation operators between levels,
 \item a ``smoother'' for each level, and
 \item a coarse-mesh solution method.
 \end{itemize}
-The fundamental goal of any multigrid scheme is to do a minimal amount of work (smoothing) on a given mesh and then to switch to a less expensive coarser mesh to do the rest of the work.  By transferring (restricting) a version of the problem to a coarser mesh one can nearly solve for the remaining error.  The coarse-mesh approximation of the error is added-back (prolonged) to correct the solution on the finer mesh.
+The fundamental goal of any multigrid scheme is to do a minimal amount of work (smoothing) on a given mesh and then to switch to an inexpensive coarser mesh to do the rest of the work.  By transferring (restricting) a version of the problem to the coarser mesh one can nearly solve for the remaining error.  The coarse-mesh approximation of the error is then added-back (prolonged) to correct the solution on the finer mesh.
 
-We describe only two levels at first, with a coarser, nested mesh having spacing $2h$ and $M=m/2$ elements (subintervals).  (The program \texttt{fas1.py} only refines by factors of two, but the ideas generalize to other refinement factors.)  All quantities on the coarse mesh have superscript ``$2h$'', for example an iterate is ``$w^{2h}$''.
+We describe only two levels at first.  The coarser, nested mesh has spacing $2h$ and $m/2$ elements (subintervals).  (The program \texttt{fas1.py} only refines by factors of two, but the ideas generalize to other refinement factors.)  All quantities on the coarse mesh have superscript ``$2h$''.
 
-A small fixed number of NGS sweeps is our smoother on the fine mesh.  Each sweep, given by algorithm \textsc{ngssweep} in the last section, is an $O(m)$ time operation with a small constant.\footnote{The constant relates to the number of Newton iterations, and to the expense of evaluating nonlinearities at each point, e.g.~$\lambda e^u$ in \eqref{liouvillebratu}.}  A few NGS sweeps produces two results on the current fine mesh iterate $w^h$:
+A small fixed number of NGS sweeps is our smoother on the fine mesh.  Each sweep, given by algorithm \textsc{ngssweep} in the last section, is an $O(m)$ operation with a small constant.\footnote{The constant relates to the number of Newton iterations, and to the expense of evaluating nonlinearities at each point, e.g.~$\lambda e^u$ in \eqref{liouvillebratu}.}  A few NGS sweeps produces two results on a fine-mesh iterate $w^h$:
 \begin{itemize}
 \item the residual $r^h(w^h)$ becomes smooth, but not necessarily small, and
 \item the algebraic error $e^h = w^h - u^h$ becomes smooth, but not necessarily small.
 \end{itemize}
 
-Using more sweeps of NGS would eventually make the residual and error small and thus solve problem \eqref{weakform} on the fine mesh, but this is inefficient in the sense that many sweeps may be needed, generally giving an $O(m^k)$ method for $k\gg 1$.  However, NGS sweeps on a coarser mesh see the ``same'' residual as less smooth, thus a large fraction of the error is quickly eliminated by smoothing.  Here ``same'' refers to a coarse-mesh interpolant of the fine mesh residual.  Descending to yet coarser meshes after a few sweeps, in a V-cycle as described in the next section, leads to a coarsest mesh on which the error can be eliminated entirely by applying NGS at a few interior points.  In the default settings for \texttt{fas1.py}, the coarsest mesh has two subintervals and only one interior point.
+Using more sweeps of NGS would eventually make the residual and error small and thus solve problem \eqref{feweakform} on the fine mesh, but this is inefficient in the sense that many sweeps may be needed, generally giving an $O(m^k)$ method for $k\gg 1$.  However, NGS sweeps on a coarser mesh see the ``same'' residual as less smooth, thus a large fraction of the error is quickly eliminated by smoothing.  Here ``same'' refers to a coarse-mesh interpolant of the fine mesh residual.  Descending to yet coarser meshes after a few sweeps, in a V-cycle as described in section \ref{sec:fascycles}, leads to a coarsest mesh on which the error can be eliminated entirely by applying NGS at a few interior points.  In the default settings for \texttt{fas1.py}, the coarsest mesh actually has two subintervals and only one interior point.
 
-However, what is the coarse-mesh version of the problem?  To derive this equation, namely to explain Brandt's proposed FAS equation \cite{Brandt1977}, we start from the finite element weak form equation \eqref{feweakform}.  The fine-mesh solution $u^h$ is generally unknown.  For a current iterate $w^h$ we subtract $F^h(w^h)[v]$ from both sides to get the residual \eqref{feresidual} on the right:
+However, what is the coarse-mesh version of the problem?  To derive this equation, namely to explain Brandt's FAS equation \cite{Brandt1977}, we start from the finite element weak form \eqref{feweakform}.  The fine-mesh solution $u^h$ is generally unknown.  For a current iterate $w^h$ we subtract $F^h(w^h)[v]$ from both sides of \eqref{feweakform} to get the residual \eqref{feresidual} on the right:
 \begin{equation}
-  F^h(u^h)[v] - F^h(w^h)[v] = r^h(w^h)[v] \label{fasproto}
+  F^h(u^h)[v] - F^h(w^h)[v] = r^h(w^h)[v]. \label{fasproto}
 \end{equation}
-for $v$ in $\mathcal{S}^h$.
 
-Three key observations apply for equation \eqref{fasproto}:
+Three key observations apply to equation \eqref{fasproto}, which is not yet the FAS equation:
 \begin{itemize}
 \item Both $w^h$ and $r^h(w^h)$ are known and/or computable.
-\item If NGS sweeps have already been applied to $w^h$ then $e^h$ and $r^h(w^h)$ are smooth.
+\item If NGS sweeps have been applied to $w^h$ then $e^h=w^h-u^h$ and $r^h(w^h)$ are smooth.
 \item If $F^h$ were linear in $w^h$ then we could rewrite the equation in terms of the error \eqref{feerror}:
-    $$F^h(e^h)[v] = -r^h(w^h)[v] \qquad (\text{\emph{if $F^h$ linear}}).$$
+    $$F^h(e^h)[v] = -r^h(w^h)[v] \qquad (\text{\emph{if $F^h$ is linear}}).$$
 \end{itemize}
-One could write a linear error equation using a matrix, $A\be=-\br$, but our operator $F^h$ is in fact nonlinear in $w^h$.
+In the linear case one could even write the error equation using a matrix, ``$A\be=-\br$''.
 
-Based on the above considerations the FAS method proposes a \emph{new} equation on the coarse mesh.  It is derived from \eqref{fasproto} by replacement of terms using linear restriction operators on the computable quantities, and by re-discretizing the nonlinear operator, i.e.~to get $F^{2h}$ acting on $\mathcal{S}^{2h}$.  The key idea behind the new error equation is that, because the error and residual are smooth, we may transfer the problem to the coarser mesh, but because our operator is nonlinear we must continue to store an approximation to the original continuum solution $u$.
+Based on the above considerations the FAS method proposes a \emph{new} equation on the coarse mesh.  It is derived from \eqref{fasproto} by replacement of terms using linear restriction operators on the computable quantities, and by re-discretizing the nonlinear operator, i.e.~to get $F^{2h}$ acting on $\mathcal{S}^{2h}$.  The key idea behind the new equation is that, because the error and residual are smooth, we may usefully transfer the problem to the coarser mesh.  However, because our operator is nonlinear we must continue to store an approximation to the solution $u$.
 
-Denoting the restriction operators by $R'$ and $R$---these operators are addressed in the next section---we get
+Denoting the restriction operators by $R'$ and $R$ (addressed in the next section), Brandt created the coarse-mesh approximation to \eqref{fasproto} as the FAS equation:
 \begin{equation}
   F^{2h}(u^{2h})[v] - F^{2h}(R w^h)[v] = R' (r^h(w^h))[v], \label{faspreequation}
 \end{equation}
-analogous to \eqref{fasproto}, or by trivial rearrangement,
+or by trivial rearrangement,
 \begin{equation}
   F^{2h}(u^{2h})[v] = R' (r^h(w^h))[v] + F^{2h}(R w^h)[v], \label{fasequation}
 \end{equation}
-for all $v$ in $\mathcal{S}^{2h}$.  Here $u^{2h}$ in $\mathcal{S}^{2h}$ is the solution on the coarse mesh.  Note that if $w^h=u^h$, that is, if $w^h$ were the exact solution to the fine mesh problem \eqref{feweakform}, then $r^h(w^h)=0$ and the right side of \eqref{fasequation} would simplify to $F^{2h}(R w^h)[v]$, and the solution of \eqref{fasequation} would be $u^{2h} = R w^h$ by well-posedness; we would solve for the restriction of the fine-mesh iterate.
+for all $v$ in $\mathcal{S}^{2h}$.  Here $u^{2h}$ in $\mathcal{S}^{2h}$ is the FE solution on the coarse mesh.  Note that if $w^h=u^h$, that is, if $w^h$ were the exact solution to the fine-mesh problem \eqref{feweakform}, then $r^h(w^h)=0$ and the right side of \eqref{fasequation} would simplify to $F^{2h}(R w^h)[v]$, and the solution of \eqref{fasequation} would be $u^{2h} = R w^h$ by well-posedness.
 
 The right-hand side of \eqref{fasequation} defines a linear functional on the coarse mesh,
 \begin{equation}
   \ell^{2h}[v] = R' (r^h(w^h))[v] + F^{2h}(R w^h)[v]. \label{fasell}
 \end{equation}
-Thereby \eqref{fasequation} has the same form as the fine-mesh weak form \eqref{feweakform}.
-
-In a two-level method we propose to solve \eqref{fasequation} by sufficient NGS sweeps so that $u^{2h}$ is computed almost exactly.  (If the coarse mesh has only one interior point, as the coarsest mesh does under default settings in \texttt{fas1.py}, then this requires a single NGS sweep if the Newton iteration is sufficiently-accurate.)  In any case, after solving the FAS coarse-mesh equation \eqref{fasequation} we have $u^{2h}$, assumed exact.  Then FAS updates the iterate on the finer mesh,
+Thereby \eqref{fasequation} has the same form as the fine-mesh weak form \eqref{feweakform}.  In the two-level method we suppose \eqref{fasequation} is solved by sufficient NGS sweeps so that $u^{2h}$ is computed exactly.  Then FAS updates the iterate on the finer mesh,
 \begin{equation}
   w^h \gets w^h + P(u^{2h} - R w^h) \label{fasupdate}
 \end{equation}
-Here $P$ is a prolongation operation, about which we say more in the next section, which extends a function in $\mathcal{S}^{2h}$ to a function in $\mathcal{S}^h$.
+Here $P$ is a prolongation operator, about which we say more in the next section, which extends a function in $\mathcal{S}^{2h}$ to a function in $\mathcal{S}^h$.
 
-Formulas \eqref{fasequation} and \eqref{fasupdate} fully-describe the two-level FAS algorithm, assuming NGS sweeps as a smoother, and supposing restriction/prolongation operators $R',R,P$ are all determined.  One improvement is to allow additional smoothing after the coarse-mesh correction.  We have the following algorithm which modifies $w^h$ in place using \texttt{down} NGS forward sweeps before the coarse-mesh correction and \texttt{up} backward sweeps after:
+Formulas \eqref{fasequation} and \eqref{fasupdate} essentially describe the two-level FAS algorithm, supposing that the smoother and the restriction/prolongation operators $R',R,P$ are all determined.  One allows smoothing both before and after the coarse-mesh correction, and specifically we will modify $w^h$ in-place using \texttt{down} NGS forward sweeps before the coarse-mesh correction and \texttt{up} backward sweeps after.  Note that a vector copy must be made before the in-place coarse-mesh solution.  In the following algorithm $F^h$ and $F^{2h}$ denote discretizations of $F$ on the two meshes:
 
 \label{fastwolevel}
 \begin{pseudo*}
@@ -283,15 +280,15 @@ Formulas \eqref{fasequation} and \eqref{fasupdate} fully-describe the two-level 
         \pr{ngssweep-back}(w^h,\ell^h)
 \end{pseudo*}
 
-In this algorithm $F^h$ denotes a discretization of $F$ on the finer mesh and $F^{2h}$ on the coarser mesh.  Note that a vector copy must be made before the in-place coarse-mesh solution.  While it is common in linear multigrid \cite{Briggsetal2000,Bueler2021,Trottenbergetal2001} to apply a direct solver like LU decomposition as the coarse-mesh solution, our problem is nonlinear so we cannot offer a direct solver at all.  We simply do enough NGS sweeps to solve the problem accurately on the coarsest mesh:
+While it is common in linear multigrid \cite{Briggsetal2000,Bueler2021,Trottenbergetal2001} to apply a direct solver like LU decomposition as the coarse-mesh solution, our problem is nonlinear so no finite-time direct solver is available.  Instead we do enough NGS sweeps to solve the coarse-mesh problem accurately:
 
 \begin{pseudo*}
 \pr{coarsesolve}(w,\ell)\text{:} \\+
     for $j=1,\dots,$\id{coarse} \\+
-        \pr{ngssweep}(w,F^{2h},\ell)
+        \pr{ngssweep}(w,\ell)
 \end{pseudo*}
 
-In order to implement FAS we must clarify the action of operators $R'$, $R$, and $P$ in the context of FE methods, as in the next section.  In section \ref{sec:fascycles} we will define an FAS V-cycle by replacing \textsc{coarsesolve} with the recursive application of the FAS solver itself.
+In order to implement FAS we must clarify the action of operators $R'$, $R$, and $P$ in \eqref{fasell} and \eqref{fasupdate}, done next.  In section \ref{sec:fascycles} we will define an FAS V-cycle by replacing \textsc{coarsesolve} with the recursive application of the FAS solver itself.
 
 
 \section{Restriction and prolongation operators} \label{sec:restrictionprolongation}
@@ -303,7 +300,7 @@ To explain the two different restriction operators $R'$ and $R$ in \eqref{fasequ
   P  &: \mathcal{S}^{2h} \to \mathcal{S}^h. \notag
 \end{align}
 
-Functions in $\mathcal{S}^h$ and linear functionals in $(\mathcal{S}^h)'$ are representable by vectors in $\RR^{m-1}$.  One stores the former via coefficients $w[p]$ with respect to an expansion in the hat function basis $\{\psi_p\}$, as in \eqref{fesolution} for example, while one stores a functional $\ell=r^h(w^h)$ by its values $\ell[\psi_p]$.  While both representations are vectors in $\RR^{m-1}$, and though it makes sense to represent $w^h$ as a column vector and $\ell$ as a row vector \cite{TrefethenBau1997}, in Python it is easiest to use ``flat'' one-dimensional NumPy arrays for both purposes.  For our problems an iterate $w^h$ has zero boundary values, and likewise $\ell$ acts on $v$ with zero boundary values, thus only interior-point hat functions are needed in these representations.
+Both functions in $\mathcal{S}^h$ and linear functionals in $(\mathcal{S}^h)'$ are representable by vectors in $\RR^{m-1}$.  One stores functions via coefficients $w[p]$ with respect to an expansion in the hat function basis $\{\psi_p\}$, as in \eqref{fesolution} for example, while one stores a functional $\ell$ by its values $\ell[\psi_p]$.  Though it makes sense to represent $w^h$ as a column vector and $\ell$ as a row vector \cite{TrefethenBau1997}, in Python it is easiest to use ``flat'' one-dimensional NumPy arrays for both purposes.  For our problem an iterate $w^h$ has zero boundary values, and likewise $\ell$ acts on $v$ with zero boundary values, thus only interior-point hat functions are needed in these representations.
 
 But how do $R'$, $R$, and $P$ actually operate in the finite element (FE) case?  A key calculation relates the coarse-mesh hat functions $\psi_q^{2h}(x)$ to the fine mesh hats $\psi_p^h(x)$ (Figure \ref{fig:hatcombination}):
 \begin{equation}
@@ -355,13 +352,9 @@ R' = \begin{bmatrix}
 \end{bmatrix} \label{rprimematrix}
 \end{equation}
 
-Finally we consider the restriction $R:\mathcal{S}^h\to\mathcal{S}^{2h}$ acting on functions.  This is a more interesting map as it loses information present in its piecewise-linear, fine-mesh input function $w^h = \sum_{p=1}^{m-1} w[p] \psi_p^{h}$.  (By contrast, $P$ and $R'$ essentially preserve the input object, without loss, via a reinterpretation on the other mesh.)  The result $R w^h$ is linear across those fine-mesh nodes which are not in the coarse mesh.
+Finally we consider the restriction $R:\mathcal{S}^h\to\mathcal{S}^{2h}$ acting on functions.  This is a more interesting map as it loses information present in the fine-mesh input function $w^h = \sum_{p=1}^{m-1} w[p] \psi_p^{h}$.  (By contrast, $P$ and $R'$ essentially preserve the input object, without loss, via a reinterpretation on the other mesh.)  In particular, the result $R w^h$ is linear across those fine-mesh nodes which are not in the coarse mesh.
 
-\newcommand{\Rpr}{R_{\text{pr}}}
-\newcommand{\Rin}{R_{\text{in}}}
-\newcommand{\Rfw}{R_{\text{fw}}}
-
-There are three well-known versions of such a restriction:
+There are three well-known versions of the restriction $R$:
 \begin{itemize}
 \item $\Rpr$ is defined as projection, by the property
 \begin{equation}
@@ -383,7 +376,7 @@ or equivalently $\Rpr = (Q^{2h})^{-1} R' Q^{h}$.  Equation \eqref{rprequation} i
 \begin{equation}
   \Rin w^h = \sum_{q=1}^{M-1} w[2q] \psi_q^{2h}. \label{rindefinition}
 \end{equation}
-Observe that $(\Rin w^h)(x_q) = w^h(x_q) = w[2q]$ for each point $x_q$.  In other words, to compute $\Rin w^h$ in $\mathcal{S}^{2h}$ we drop the nodal values at those fine-mesh nodes which are not in the coarse mesh.  As a matrix this is
+Observe that $(\Rin w^h)(x_q) = w^h(x_q) = w[2q]$ for each point $x_q$.  In other words, to compute $\Rin w^h$ in $\mathcal{S}^{2h}$ we simply drop the nodal values at those fine-mesh nodes which are not in the coarse mesh.  As a matrix this is
 \begin{equation}
 \Rin = \begin{bmatrix}
 0 & 1 &   &   &   &   &\\
@@ -397,7 +390,7 @@ This restriction is very simple but it may lose track of the magnitude of $w^h$,
 \begin{equation}
   \Rfw w^h = \sum_{q=1}^{M-1} \left(\frac{1}{4} w[2q-1] + \frac{1}{2} w[2q] + \frac{1}{4} w[2q+1]\right) \psi_q^{2h}. \label{rfwdefinition}
 \end{equation}
-This computes each coarse-mesh nodal value of $z=\Rfw w^h$ as a weighted average of the value of $w^h$ at the three fine-mesh nodes closest to the coarse-mesh node.  The matrix is thus a multiple of the canonical restriction matrix in \eqref{rprimematrix}:
+This computes each coarse-mesh nodal value of $z=\Rfw w^h$ as a weighted average of the value of $w^h$ at the three closest fine-mesh nodes.  The matrix is thus a multiple of the canonical restriction matrix in \eqref{rprimematrix}:
 \begin{equation}
 \Rfw = \begin{bmatrix}
 1/4 & 1/2 & 1/4 &     &     &  \\
@@ -409,12 +402,12 @@ This computes each coarse-mesh nodal value of $z=\Rfw w^h$ as a weighted average
 \end{itemize}
 
 \medskip
-Which restriction do we choose?  Because of its simplicity, and its ability to approximately preserve norms, we use the full-weighting restriction $R=\Rfw$ in the implementation \texttt{fas1.py}.  That is, we choose $\Rfw$ over $\Rpr$ because it is simpler to compute, and we $\Rfw$ over $\Rin$ to avoid unnecessary information loss from the fine-mesh iterate.
+Which restriction do we choose?  Because of its simplicity, and its ability to approximately preserve norms, we use the full-weighting restriction $R=\Rfw$ in the implementation \texttt{fas1.py}.  That is, we choose $\Rfw$ over $\Rpr$ because it is simpler to compute, and $\Rfw$ over $\Rin$ to avoid unnecessary information loss.
 
 
 \section{FAS V-cycles and F-cycles} \label{sec:fascycles}
 
-The main principle of FAS is already contained in the \textsc{fas-twolevel} algorithm in section \ref{sec:fastwolevel}.  From such a two-level scheme it is a small step to solve the coarse-mesh problem by the same scheme, generating a so-called ``V-cycle''.
+The main principles of the FAS scheme are already contained in the \textsc{fas-twolevel} algorithm in section \ref{sec:fastwolevel}.  From this two-level scheme it is a small step to solve the coarse-mesh problem by the same scheme, generating a so-called ``V-cycle''.
 
 To define a V-cycle precisely we need an indexed hierarchy of mesh levels.  Start with a coarsest mesh with $m_0$ elements (subintervals) of length (node spacing) $h_0=1/m_0$.  (By default in \texttt{fas1.py} we have $m_0=2$.)  For $k=1,\dots,K$ we refine by factors of two so that the $k$th mesh has $m_k=2^k m_0$ elements of length $h_k=h_0/2^k$.  Note that the $K$th mesh is now called the ``fine mesh''.  Instead of the superscripts $h$ and $2h$ used in section \ref{sec:fastwolevel}, now we use a ``$k$'' superscript to indicate the mesh on which some quantity lives.
 
@@ -439,11 +432,11 @@ It is critical to observe that the meaning of ``$\ell^k$'' depends on the mesh l
 
 \begin{figure}
 \input{tikz/cycles.tex}
-\caption{An FAS V-cycle (left) and F-cycle (right) on a mesh hierarchy with four levels ($K=3$).  Solid dots correspond to \texttt{down} sweeps of NGS, open circles to \texttt{up} sweeps, and squares to \textsc{coarsesolve}(). Thick grey edges represent $\hat P$.}
+\caption{An FAS V-cycle (left) and F-cycle (right) on a mesh hierarchy with four levels ($K=3$).  Solid dots correspond to \texttt{down} sweeps of NGS, open circles to \texttt{up} sweeps, and squares to \textsc{coarsesolve}. Thick grey edges represent $\hat P$.}
 \label{fig:cycles}
 \end{figure}
 
-V-cycles can be done repeatedly, using the whole mesh hierarchy, to solve the original problem \eqref{weakform} to desired accuracy.  We put this in a pseudocode for clarity:
+V-cycles can be iterated, using the whole mesh hierarchy, to solve problem \eqref{feweakform} to desired accuracy.  We put this in a pseudocode for clarity:
 
 \begin{pseudo*}
 \pr{fas-vcycles}(Z)\text{:} \\+
@@ -453,9 +446,9 @@ V-cycles can be done repeatedly, using the whole mesh hierarchy, to solve the or
     return $w^K$
 \end{pseudo*}
 
-In \texttt{fas1.py} the option \texttt{-cycles} specifies $Z$, defaulting to $Z=1$.  As we will see in practice, five to ten V-cycles, using the default settings in \textsc{fas-vcycle} including \texttt{down} $=1$ and \texttt{up} $=1$ smoother applications, make a very effective solver on any mesh.
+In \texttt{fas1.py} the option \texttt{-cycles} specifies $Z$, defaulting to $Z=1$.  As we will see in practice, 7 to 12 V-cycles, using the default settings in \textsc{fas-vcycle} including \texttt{down} $=1$ and \texttt{up} $=1$ smoother applications, make a very effective solver on any mesh.
 
-Next we can add a different multilevel idea.  It is based on the observation that the performance of a nonlinear equation solver usually depends critically on the quality of the initial iterate.  Indeed, choosing initial iterate $w=0$ as in \textsc{fas-vcycles} may not yield a convergent method.  However, it is easy to see in practice that coarse meshes are more forgiving with respect to the initial iterate than are finer meshes.  The additional idea is to start on the coarsest mesh in the hierarchy, where a blind guess like $w=0$ is most likely to succeed, and then work upward through the levels.  At each mesh level one computes an initial iterate by prolongation of the already-converged iterate on the next-coarser level, and then one does a V-cycle.  At the finest mesh level we may do repeated V-cycles.
+Next we can add a different multilevel idea.  It is based on the observation that a nonlinear equation solver usually depends critically on a quality initial iterate.  Indeed, choosing initial iterate $w=0$ as in \textsc{fas-vcycles} may not yield a convergent method.  However, one finds in practice that coarse meshes are more forgiving with respect to the initial iterate than are finer meshes.  The new idea is to start on the coarsest mesh in the hierarchy, where a blind guess like $w^0=0$ is most likely to succeed, and then work upward through the levels.  At each mesh level one computes an initial iterate by prolongation of a nearly-converged iterate on the next-coarser level, and then one does a V-cycle.  At the finest mesh level we may do repeated V-cycles.
 
 The resulting algorithm is called an FAS multigrid ``F-cycle'' because the pattern in Figure \ref{fig:cycles} (right) looks vaguely like an ``F'' on its back.\footnote{Confusingly, this algorithm is also called a ``full multigrid'' (FMG) cycle \cite{BrandtLivne2011,Briggsetal2000}.  The meaning of ``full'' is fundamentally different in FAS versus FMG terminology.}  It is the following algorithm:
 
@@ -463,7 +456,7 @@ The resulting algorithm is called an FAS multigrid ``F-cycle'' because the patte
 \pr{fas-f}(Z)\text{:} \\+
     $w^0 = 0$, \, $\ell^0[v] = \ip{g}{v}$ \\
     \pr{coarsesolve}(w^0,\ell^0) \\
-    for $k=0,\dots,K$ \\+
+    for $k=1,\dots,K$ \\+
         $w^k = \hat P w^{k-1}$, \, $\ell^k[v] = \ip{g}{v}$ \\
         if $k=K$ \\+
             for $s=1,\dots,Z$ \\+
@@ -473,11 +466,11 @@ The resulting algorithm is called an FAS multigrid ``F-cycle'' because the patte
     return $w^K$
 \end{pseudo*}
 
-An important detail in the algorithm is that the the initial prolongation onto the next level is enhanced \cite{BrandtLivne2011}
+It is particularly important to avoid the introduction of high frequencies as one generates the first iterate on the finer mesh.  Thus an important detail in the algorithm is that the solution prolongation is enhanced \cite{BrandtLivne2011}:
 \begin{equation}
   w^k = \hat P w^{k-1} \label{enhancedprolongation}
 \end{equation}
-It is particularly important to avoid the introduction of high frequencies as one generates the first iterate on the finer mesh.  The operator $\hat P$ first applies $P$ to generate a fine-mesh function, but then we sweep through the \emph{new} fine-mesh nodes and apply NGS there without altering values at the nodes already present in the coarse mesh.
+Our operator $\hat P$ first applies $P$ to generate a fine-mesh function, but then we sweep through the \emph{new} fine-mesh nodes and apply NGS there without altering values at the nodes already present in the coarse mesh.
 
 
 \section{Results}  \label{sec:results}
