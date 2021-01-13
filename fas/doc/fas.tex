@@ -473,9 +473,9 @@ It is particularly important to avoid the introduction of high frequencies as on
 Our operator $\hat P$ first applies $P$ to generate a fine-mesh function, but then we sweep through the \emph{new} fine-mesh nodes and apply NGS there without altering values at the nodes already present in the coarse mesh.
 
 
-\section{Results}  \label{sec:results}
+\section{Results and Discussion}  \label{sec:results}
 
-The Python program accompanying this note applies, by default, a single $V$ cycle to solve \eqref{liouvillebratu}, with $\lambda=1$, on a very coarse mesh.  To get started, clone the Git repository and run the program:
+The Python program \texttt{fas1.py} accompanying this note applies, by default, a single $V$ cycle to solve equation \eqref{liouvillebratu} on a very coarse mesh.  To get started, clone the Git repository and run the program:
 \begin{cline}
 $ git clone https://github.com/bueler/mg-glaciers.git
 $ cd mg-glaciers/fas/py/
@@ -483,18 +483,20 @@ $ ./fas1.py
   m=8 mesh using 1 V(1,1) cycles (3.25 WU): |u|_2=0.094945
 \end{cline}
 %$
-The program depends on the widely-available NumPy library \cite{Harrisetal2020}, and it imports the program imports local modules \texttt{meshlevel.py}, \texttt{problems.py}, and \texttt{cycles.py}, all from the same directory.  The various allowed options to \texttt{fas1.py} are shown by asking for help:
+The program depends only on the widely-available NumPy library \cite{Harrisetal2020}, though it imports local modules \texttt{meshlevel.py}, \texttt{problems.py}, and \texttt{cycles.py} from the same directory.  The various allowed options to \texttt{fas1.py} are shown by usage help:
 \begin{cline}
 $ ./fas1.py -h
 \end{cline}
 %$
-For example, a computation using a mesh with $m=2^{K+1}=16$ elements and two V-cycles, on a problem with known exact solution (section \ref{sec:intro}), yields Figure \ref{fig:show}:
+Also, a small suite of software (regression) tests of \texttt{fas1.py} is run with \,\texttt{make test}.
+
+For example, choosing a mesh with $m=2^{K+1}=16$ elements, two V-cycles, and a problem with known exact solution (section \ref{sec:intro}), yields Figure \ref{fig:show}:
 \begin{cline}
 $ ./fas1.py -K 3 -cycles 2 -mms -show
   m=16 mesh using 2 V(1,1) cycles ..., |u-u_ex|_2=1.2485e-02
 \end{cline}
 %$
-The V-cycles in this run are the same as shown in Figure \ref{fig:cycles}.  They are reported as ``\texttt{V(1,1)}'' because the defaults correspond to \texttt{-down} $=1$ and \texttt{-up} $=1$ NGS sweeps on each level.  Note that runs with option \texttt{-mms} report the numerical error $\|u-u_{\text{ex}}\|_2$.  Finally, a small suite of software (regression) tests of \texttt{fas1.py} is run with \,\texttt{make test}.
+The V-cycles in this run are the same as shown in Figure \ref{fig:cycles}.  They are reported as ``\texttt{V(1,1)}'' because the defaults correspond to \texttt{down} $=1$ and \texttt{up} $=1$ NGS sweeps on each level.  Note that runs with option \texttt{-mms} report the numerical error $\|u-u_{\text{ex}}\|_2$.
 
 \begin{figure}
 \includegraphics[width=0.8\textwidth]{figs/show.pdf}
@@ -502,7 +504,7 @@ The V-cycles in this run are the same as shown in Figure \ref{fig:cycles}.  They
 \label{fig:show}
 \end{figure}
 
-By using \texttt{-mms} runs we can demonstrate convergence of our implemented FE method, and thereby verify \texttt{fas1.py}.  The numerical error from runs with 12 V-cycles and $K=3,4,\dots,14$, corresponding to $K+1$ mesh levels and $16\le m \le 32768$ elements, are shown in Figure \ref{fig:converge}.  Because our problem is so simple, with a very smooth solution, the convergence rate is exactly as expected \cite{Elmanetal2014}, at the rate $O(h^2)$.
+By using \texttt{-mms} we can demonstrate convergence of our implemented FE method, and thereby verify \texttt{fas1.py}.  The numerical error from runs with 12 V-cycles and $K=3,4,\dots,14$, corresponding to $16\le m \le 32768$ elements, are shown in Figure \ref{fig:converge}.  Because our problem is so simple, with a very smooth solution, the convergence rate is exactly at the expected rate $O(h^2)$ \cite{Elmanetal2014}.
 
 However, if instead of a small, fixed number of V-cycles we instead try a large, fixed number of NGS sweeps, i.e.~we apply the algorithm below, then the results are disappointing.
 
@@ -514,7 +516,7 @@ However, if instead of a small, fixed number of V-cycles we instead try a large,
     return $w^K$
 \end{pseudo*}
 
-As also shown in Figure \ref{fig:converge}, \textsc{ngsonly}$(10^4$) generates convergence to discretization error on meshes with $m=16,32,64,128$.  However, for finer meshes ($m=256,512$) the same number of sweeps is no longer sufficient.  Continuing to finer meshes using the same $Z$ would make essentially no progress (not shown).  The reason for this behavior is that almost all of the algebraic and numerical error (section \ref{sec:femethod}) is in low-frequency modes which the NGS sweeps are barely able to reduce \cite[Chapter 6]{Bueler2021}.  Thus we observe the situation which multigrid schemes are designed to address \cite{BrandtLivne2011,Briggsetal2000}: by moving the problem between meshes the same smoother will efficiently-reduce the remaining error.  Both the smoother and coarse-level solver components of our FAS algorithms consist entriely of NGS sweeps, but by adding a multilevel mesh infrastructure we arrange that the sweeps are always making progress.
+As shown in Figure \ref{fig:converge}, \textsc{ngsonly}$(10^4$) generates convergence to discretization error on meshes with $m=16,32,64,128$.  However, for finer meshes ($m=256,512$) the same number of sweeps is no longer sufficient.  Continuing to yet finer meshes using the same $Z$ would make essentially no progress (not shown).  The reason for this behavior is that almost all of the algebraic and numerical error (section \ref{sec:femethod}) is in low-frequency modes which the NGS sweeps are barely able to reduce \cite[Chapter 6]{Bueler2021}.  Thus we observe the situation which multigrid schemes are designed to address \cite{BrandtLivne2011,Briggsetal2000}: by moving the problem between meshes the same smoother will efficiently-reduce all frequencies present in the remaining error.  Both the smoother and coarse-level solver components of our FAS algorithms consist entirely of NGS sweeps, but by adding a multilevel mesh infrastructure we have arranged that the sweeps are always making progress.
 
 \begin{figure}
 \includegraphics[width=0.7\textwidth]{figs/converge.pdf}
@@ -530,9 +532,9 @@ Having verified our method, we compare the performance of three solver algorithm
 \item \textsc{ngsonly}$(Z)$, defined above.
 \end{itemize}
 
-\noindent Note that each algorithm returns an approximate solution $w^K$ on the finest mesh after iterating the solver $Z$ times, so these algorithms have the same signature.
+\noindent Note that each algorithm returns an approximate solution $w^K$ on the finest mesh after iterating the solver $Z$ times, so these algorithms all have the same signature.
 
-The two FAS algorithms actually represent many different algorithms.  While making no attempt to systematically-explore the allowed solver and parameter choices, we observe that 7 to 12 V(1,1) cycles suffice to reach discretization error in the \texttt{-mms} problem, on the larger end for very fine meshes.  For F-cycles we must choose how many finest-level V-cycles to take, and we observe that 2 or 3 suffice.  However, experimentation in minimizing the work units (below), while maintaining convergence, yields a choice of three V(1,0) cycles.  Thus our three algorithms have become the following runs on meshes with $m=2^{K+1}$ elements:
+The two FAS algorithms actually represent many different algorithms.  While making no attempt to systematically-explore the allowed solver and parameter choices, we observe that 7 to 12 V(1,1) cycles suffice to approach discretization error in the \texttt{-mms} problem.  For F-cycles we must choose how many finest-level V-cycles to take, and we observe that 2 or 3 suffice.  However, experimentation in minimizing the work units (below), while maintaining convergence, yields a choice of three V(1,0) cycles.  Thus our three algorithms become the following specific runs on meshes with $m=2^{K+1}$ elements:
 
 \medskip
 \begin{tabular}{ll}
@@ -542,27 +544,29 @@ The two FAS algorithms actually represent many different algorithms.  While maki
 \end{tabular}
 
 \medskip
-In order to achieve convergence for NGS sweeps alone, as noted we must choose increasing $Z$ as $K$ increases.  For this we simply double $Z$ until the reported numerical error is within a factor of two of discretization error as reported by the FAS algorithms.
+In order to achieve convergence for NGS sweeps alone, we must choose rapidly increasing $Z$ as $K$ increases.  For the comparison below we simply double $Z$ until the reported numerical error is within a factor of two of discretization error (as reported by the FAS algorithms).
 
-The results for run time on the author's laptop are in Figure \ref{fig:optimal}.  For all the coarser meshes, e.g.~$m=16,\dots,256$, the FAS algorithms run in about 0.3 seconds.  This is the minimum time to start and run any Python program on this machine, so the actual computational time is not really detected.  For $m \ge 10^3$ both algorithms enter into a regime where the run time is greater than one second and directly proportional to $m$.  That is, their solver complexity is $O(m^1)$, thus these are \emph{optimal} \cite[Chapter 7]{Bueler2021} solvers.  By contrast, for \textsc{ngsonly}$(Z)$ the number of sweeps $Z$ needed to reach discretization error grows rapidly.  This algorithm is far from optimal and not capable of solving on fine meshes.
+The results for run time on the author's laptop are in Figure \ref{fig:optimal}.  For all the coarser meshes, e.g.~$m=16,\dots,256$, the FAS algorithms run in about 0.3 seconds.  This is the minimum time to start and run any Python program on this machine, so the actual computational time is not really detected.  For $m \ge 10^3$ both algorithms enter into a regime where the run time is greater than one second and directly proportional to $m$.  That is, their solver complexity is $O(m^1)$, thus these are \emph{optimal} \cite[Chapter 7]{Bueler2021} solvers.  By contrast, the \textsc{ngsonly}$(Z)$ algorithm is far from optimal and not capable of solving on fine meshes.
 
 \begin{figure}
 \includegraphics[width=0.7\textwidth]{figs/optimal.pdf}
-\caption{Run time to reach discretization error is optimal $O(m)$ for both V-cycles and F-cycles, but explodes for NGS sweeps.}
+\caption{Run time to reach discretization error is optimal $O(m)$ for both V-cycles and F-cycles, but it explodes for NGS sweeps.}
 \label{fig:optimal}
 \end{figure}
 
-Because measuring run time is machine dependent, a standard way to compare multigrid-type solver algorithms uses the concept of a \emph{work unit} (WU), the time or operations needed to do one smoother sweep on the finest mesh in the hierarchy.  One WU takes $O(m)$ arithmetic (floating point) operations.  To count WUs in a 1D multilevel scheme we note that a smoother sweep on the second-finest mesh is $\frac{1}{2}$WU, and so on downward in the hierarchy.  For simplicity here we do not count the arithmetic work in restriction and prolongation, other than in the enhanced prolongation $\hat P$ in \eqref{enhancedprolongation}, which uses $\frac{1}{2}$WU when passing to the finest mesh.  Also we ignore the non-arithmetic work of the algorithms entirely, for example the time taken to move quantities in memory.
+Because measuring run time is machine dependent, a standard way to compare multigrid-type solver algorithms uses the concept of a \emph{work unit} (WU), namely the time or operations needed to do one smoother sweep on the finest mesh.  One WU takes $O(m)$ arithmetic (floating point) operations.  To count WUs in a 1D multilevel scheme we note that a smoother sweep on the second-finest mesh is $\frac{1}{2}$WU, and so on downward in the hierarchy.  For simplicity here we do not count the arithmetic work in restriction and prolongation, other than in the enhanced prolongation $\hat P$ in \eqref{enhancedprolongation}, which uses $\frac{1}{2}$WU when passing to the finest mesh.  Also we ignore non-arithmetic work entirely, for example the time taken to move quantities in memory.
 
-On multilevel hierarchies, by summing geometric series \cite{Briggsetal2000} we may compute the $K\to\infty$ WUs of the three algorithms above.  When the hierarchy has a large number of levels we have the following accurate estimates:
+On multilevel hierarchies, by summing geometric series \cite{Briggsetal2000} we may compute the $K\to\infty$ WUs of the three algorithms above.  Thus, when the hierarchy has a large number of levels, we have the following estimates:
 \begin{align*}
 \text{WU}\big(\text{\textsf{F-cycles $Z$xV(1,0)}}\big) &\approx 3+2Z \\
 \text{WU}\big(\text{\textsf{$Z$ V(1,1) cycles}}\big)   &\approx 4Z \\
 \text{WU}\big(\text{\textsf{$Z$ NGS sweeps}}\big)      &= Z
 \end{align*}
-(Note that counting work units for NGS sweeps is trivial.)  To confirm this we have added WU counting to \texttt{fas1.py}.  On a $K=10$ mesh with $m=2^{11}=2048$ elements, for example, we observe that \textsf{F-cycles 3xV(1,0)} requires a measured 8.98 WU while \textsf{12 V(1,1) cycles} uses 47.96 WU.  The above estimates give two-digit accuracy for the WU count for $K \ge 13$.
+(Note that counting work units for NGS sweeps is trivial.)  To confirm this we have added WU counting to \texttt{fas1.py}.  On a $K=10$ mesh with $m=2^{11}=2048$ elements, for example, we observe that \textsf{F-cycles 3xV(1,0)} requires a measured 8.98 WU while \textsf{12 V(1,1) cycles} uses 47.96 WU.  The above estimates give two-digit accuracy for $K \ge 13$.
 
-Some multigrid works \cite[for example]{BrownSmithAhmadia2013} use the concept of ``textbook multigrid efficiency'' to mean ``less than 10 WU to achieve discretization error.''  By that standard, \textsf{F-cycles 3xV(1,0)} is textbook multigrid efficient.
+Some multigrid authors \cite[for example]{BrownSmithAhmadia2013} use the concept of ``textbook multigrid efficiency'' to mean ``less than 10 WU to achieve discretization error.''  By that standard, \textsf{F-cycles 3xV(1,0)} shows textbook multigrid efficiency.
+
+FIXME INSERT B
 
 
 \section{Conclusion}  \label{sec:conclusion}
@@ -570,10 +574,10 @@ Some multigrid works \cite[for example]{BrownSmithAhmadia2013} use the concept o
 Regarding the performance of the three solvers listed in the last section, we summarize as follows:
 
 \begin{quotation}
-\emph{On any mesh of practical effective resolution, say with $m>10^2$ elements, the problem can be solved to within the discretization error of our piecewise-linear FE method by using \textsc{fas-f}$(3)$ or \textsc{fas-vcycles}$(12)$.  This holds for all $m$, up to values where rounding error overwhelms the discretization error, at around $m=10^6$.  By contrast, for \textsc{ngsonly}$(Z)$ we must increase $Z$ rapidly with $m$, and $Z > 10^3$ is required if $m>10^2$.  If $m>10^3$ then discretization error cannot be achieved by \textsc{ngsonly}$(Z)$ in reasonable time.}
+\emph{On any mesh of practical effective resolution, say with $m>10^2$ elements, problem \eqref{feweakform} can be solved to within the discretization error of our piecewise-linear FE method by using \textsc{fas-f}$(3)$ or \textsc{fas-vcycles}$(12)$.  This holds for all $m$, up to values where rounding error overwhelms the discretization error, at around $m=10^6$.  By contrast, for \textsc{ngsonly}$(Z)$ we must increase $Z$ rapidly with $m$, and $Z > 10^3$ is required if $m>10^2$.  If $m>10^3$ then discretization error cannot be achieved by \textsc{ngsonly}$(Z)$ in reasonable time.}
 \end{quotation}
 
-In other words, the two FAS methods require a small $Z$ which is independent of the mesh.  When we carefully measure the computational work required for the three algorithms we see that the amount of work is comparable to $mZ$ in all cases.  Thus both FAS methods are optimal solvers which require only $O(m)$ work, and the FAS F-cycle, which is fastest, gives textbook multigrid efficiency.
+In other words, the two FAS methods require only a small number of cycles $Z$ which is independent of the mesh.  When we carefully measure the computational work required for the three algorithms we see that the amount of work is proportional to $mZ$ in all cases.  Thus both FAS methods are optimal solvers which require only $O(m)$ work.  The faster F-cycle gives textbook multigrid efficiency.
 
 
 \small
