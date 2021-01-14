@@ -566,18 +566,30 @@ On multilevel hierarchies, by summing geometric series \cite{Briggsetal2000} we 
 
 Some multigrid authors \cite[for example]{BrownSmithAhmadia2013} use the concept of ``textbook multigrid efficiency'' to mean ``less than 10 WU to achieve discretization error.''  By that standard, \textsf{F-cycles 3xV(1,0)} shows textbook multigrid efficiency.
 
-FIXME INSERT B
-
+Our program \texttt{fas1.py} is deliberately basic in many senses.  Here are four possible extensions which the reader might want to implement, roughly ordered from easiest to most difficult:
+\renewcommand{\labelenumi}{\textbf{\Roman{enumi}.}}
+\begin{enumerate}
+\item The number of V-cycles, either in simple iterative usage or as the finest-level action in an F-cycle, is fixed by the option \texttt{-cycles}.  It would be natural to instead use relative and absolute residual norm tolerances as stopping criteria.  For example, one might set \texttt{rtol} and \texttt{atol} so that V-cycles stop when either of the following conditions hold for the $j$th iterate $w^j$ on the finest mesh:
+    $$\frac{\|r^K(w^j)\|_2}{\|r^K(w^0)\|_2} \le \text{\texttt{rtol}} \quad \text{or} \quad \|r^K(w^j)\|_2 \le \text{\texttt{atol}}.$$
+Example default values are \texttt{rtol} $=10^{-8}$ and \texttt{atol} $=10^{-50}$ \cite{Bueler2021}.
+\item The default value of the parameter $\lambda$ in \eqref{liouvillebratu} is \texttt{-lam 1.0}, but one can check that the $g=0$ problem becomes unstable at a critical value $\lambda_c \approx 3.5$.  Interestingly, the solution changes very little as $\lambda \nearrow \lambda_c$; things are boring until failure occurs.  (The most-common numerical symptom is overflow of $e^u$.)  Equation \eqref{liouvillebratu} is a very simple model for combustion of a chemical mixture, and this instability corresponds to a chemical explosion \cite{FrankKameneckij1955}.  However, finding $\lambda_c$ precisely is not easy because \texttt{fas1.py} always initializes at the distant location $w^0=0$.  The behavior of FAS F-cycles is especially nontrivial near the critical $\lambda$ because the critical value is different on coarse grids.  (And apparently sometimes smaller!)  A better strategy for solutions near the critical value, and for parameter studies generally, is ``continuation''.  For example, one might use a saved fine-mesh solution as the initial value in a run with a slightly-different $\lambda$ value.  The new run would then only need a few V-cycles.
+\item Equation \eqref{liouvillebratu} is a ``semilinear'' ODE because the nonlinearity occurs in the zeroth-derivative term \cite{Evans2010}.  One might instead solve a ``quasilinear'' equation where the nonlinearity is in the coefficient to the highest-order derivative.  For example, one might try a $p$-Laplacian \cite{Evans2010} extension to the Liouville-Bratu equation:
+\begin{equation}
+  -\left(|u'|^{p-2} u'\right)' - \lambda e^u = g.  \label{pbratu}
+\end{equation}
+This equation is the same as \eqref{liouvillebratu} when $p=2$, but for other values $p$ in $(1,\infty)$ the solution is less well-behaved because the coefficient of $u''$ can degenerate or explode.  However, a literature at least exists for the corresponding Poisson problem ($\lambda=0$) \cite{BarrettLiu1993,Bueler2021,Evans2007}.  A basic technique is to regularize the leading coefficient with a numerical parameter $\eps>0$: replace $|u'|^{p-2}$ with $\left(|u'|^2+\eps\right)^{(p-2)/2}$.  With such a change, continuation (item \textbf{II}) will be both important and a bit complicated.
+\item By far the most consequential extension of \texttt{fas1.py} would be to ``merely'' change from 1D to 2D or 3D.  That is, to change from solving ODEs to solving elliptic PDEs like $-\grad^2 u - \lambda e^u=g$, where $\grad^2$ is the Laplacian operator.  However, doing this in the style of \texttt{fas1.py}, using only NumPy vectors for infrastructure, is not recommended.  Instead, application of a finite element library like Firedrake \cite{Bueler2021,Rathgeberetal2016} or Fenics \cite{Loggetal2012} would be wise.  Using such libraries requires a substantial learning curve, and these libraries do not have full support for FAS multigrid methods, but using such libraries would also allow experimentation with higher-order finite element spaces and many other benefits.
+\end{enumerate}
 
 \section{Conclusion}  \label{sec:conclusion}
 
 Regarding the performance of the three solvers listed in the last section, we summarize as follows:
 
 \begin{quotation}
-\emph{On any mesh of practical effective resolution, say with $m>10^2$ elements, problem \eqref{feweakform} can be solved to within the discretization error of our piecewise-linear FE method by using \textsc{fas-f}$(3)$ or \textsc{fas-vcycles}$(12)$.  This holds for all $m$, up to values where rounding error overwhelms the discretization error, at around $m=10^6$.  By contrast, for \textsc{ngsonly}$(Z)$ we must increase $Z$ rapidly with $m$, and $Z > 10^3$ is required if $m>10^2$.  If $m>10^3$ then discretization error cannot be achieved by \textsc{ngsonly}$(Z)$ in reasonable time.}
+\emph{On any mesh of practical effective resolution, say with $m>10^2$ elements, problem \eqref{feweakform} can be solved to within the discretization error of our piecewise-linear FE method by using \textsc{fas-f}$(3)$ or \textsc{fas-vcycles}$(12)$.  This holds for all $m$, up to values where rounding error overwhelms the discretization error, at around $m=10^6$.  By contrast, for \textsc{ngsonly}$(Z)$ we must increase $Z$ rapidly with $m$; for example $Z > 10^3$ is required if $m>10^2$.  If $m>10^3$ then discretization error cannot be achieved by \textsc{ngsonly}$(Z)$ in reasonable time.}
 \end{quotation}
 
-In other words, the two FAS methods require only a small number of cycles $Z$ which is independent of the mesh.  When we carefully measure the computational work required for the three algorithms we see that the amount of work is proportional to $mZ$ in all cases.  Thus both FAS methods are optimal solvers which require only $O(m)$ work.  The faster F-cycle gives textbook multigrid efficiency.
+In other words, the two FAS methods require only a small number of cycles $Z$, independently of the mesh resolution.  When we measure the computational work required for the three algorithms we see that the amount of work is proportional to $mZ$ in all cases, but both FAS methods are optimal solvers which require only $O(m)$ work because $Z$ can be fixed.  The faster F-cycle gives textbook multigrid efficiency.
 
 
 \small
