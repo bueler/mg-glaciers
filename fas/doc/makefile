@@ -1,5 +1,15 @@
 all: fas.pdf
 
+publish.zip: fas.pdf fas.bbl
+	rm -rf publish/
+	mkdir publish/
+	mkdir publish/figs/
+	cp -f figs/*.pdf publish/figs/
+	mkdir publish/tikz/
+	cp -f tikz/*.tex publish/tikz/
+	cp -f fas.bib fas.bbl fas.tex publish/
+	zip -r publish publish
+
 _figures := onehat hatcombination converge optimal
 figures := $(addprefix figs/, $(addsuffix .pdf, $(_figures)))
 
