@@ -13,12 +13,14 @@ Solve a 1D obstacle problem:
     min_{u >= phi}   |  1/2 (u')^2 - f u
                      /0
 where phi(x) = 8x(1-x)-1, f(x) = -2, and u is in H_0^1[0,1].
-Interior condition is -u''=-2.
+Note that the interior condition (PDE) is -u''=-2.
 
 Solution is by Alg. 4.7 in Gräser & Kornhuber (2009), namely the subset
 decomposition V-cycle method by Tai (2003).  The smoother and the coarse-mesh
 solver are projected Gauss-Seidel (pGS).  Monotone restrictions decompose
-the defect obstacle.  Option -pgs reverts to single-level pGS.
+the defect obstacle.  Option -pgsonly reverts to single-level pGS.
+
+Get usage help with -h or --help.
 
 References:
 * Gräser, C., & Kornhuber, R. (2009). Multigrid methods for
@@ -26,15 +28,15 @@ obstacle problems. J. Comput. Math. 27 (1), 1--44.
 * Tai, X.-C. (2003). Rate of convergence for some constraint
 decomposition methods for nonlinear variational inequalities.
 Numer. Math. 93 (4), 755--786.
-''',add_help=False,formatter_class=argparse.RawTextHelpFormatter)
-parser.add_argument('-coarsesweeps', type=int, default=1, metavar='N',
-                    help='number of sweeps of projected Gauss-Seidel (default=1)')
+''',formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('-coarse', type=int, default=1, metavar='N',
+                    help='pGS sweeps on coarsest grid (default=1)')
 parser.add_argument('-cycles', type=int, default=2, metavar='M',
                     help='number of V-cycles (default=2)')
 parser.add_argument('-diagnostics', action='store_true', default=False,
                     help='add a diagnostics figure to -show or -o output')
-parser.add_argument('-downsweeps', type=int, default=1, metavar='N',
-                    help='number of sweeps of projected Gauss-Seidel (default=1)')
+parser.add_argument('-down', type=int, default=1, metavar='N',
+                    help='pGS sweeps before coarse-mesh correction (default=1)')
 parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
                     help='in Poisson equation -u"=f this multiplies f (default X=1)')
 parser.add_argument('-jfine', type=int, default=2, metavar='J',
@@ -44,12 +46,10 @@ parser.add_argument('-jcoarse', type=int, default=0, metavar='J',
 parser.add_argument('-mgview', action='store_true', default=False,
                     help='view multigrid cycles by indented print statements')
 parser.add_argument('-monitor', action='store_true', default=False,
-                    help='monitor the error at the end of each multigrid cycle')
-parser.add_argument('-obs1help', action='store_true', default=False,
-                    help='print help for this program and quit')
+                    help='monitor the error at the end of each V-cycle')
 parser.add_argument('-o', metavar='FILE', type=str, default='',
                     help='save plot at end in image file, e.g. PDF or PNG')
-parser.add_argument('-pgs', action='store_true', default=False,
+parser.add_argument('-pgsonly', action='store_true', default=False,
                     help='do projected Gauss-Seidel (instead of multigrid)')
 parser.add_argument('-problem', choices=['parabola', 'low', 'icelike'],
                     metavar='X', default='parabola',
@@ -62,12 +62,9 @@ parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-symmetric', action='store_true', default=False,
                     help='use symmetric projected Gauss-Seidel sweeps (forward then backward)')
-parser.add_argument('-upsweeps', type=int, default=0, metavar='N',
-                    help='number of sweeps of projected Gauss-Seidel (default=1)')
+parser.add_argument('-up', type=int, default=0, metavar='N',
+                    help='pGS sweeps after coarse-mesh correction (default=1)')
 args, unknown = parser.parse_known_args()
-if args.obs1help:
-    parser.print_help()
-    sys.exit(0)
 
 # fix the random seed for repeatability
 np.random.seed(1)
@@ -148,10 +145,10 @@ def l2err(u):
 
 # multigrid V-cycles (unless user just wants pGS)
 uu = uinitial.copy()
-if args.pgs:
+if args.pgsonly:
     # sweeps of projected Gauss-Seidel on fine grid
     r = mesh.residual(mesh.zeros(),fsource)
-    for s in range(args.downsweeps):
+    for s in range(args.down):
         pgssweep(mesh.m,mesh.h,uu,r,phifine)
         if args.symmetric:
             pgssweep(mesh.m,mesh.h,uu,r,phifine,backward=True)
@@ -160,18 +157,15 @@ else:
         if args.monitor and exactavailable:
             print('  %d:  |u-uexact|_2 = %.4e' % (s,l2err(uu)))
         uu, chi = vcycle(uu,phifine,fsource,hierarchy,
-                         levels=levels,view=args.mgview,
-                         symmetric=args.symmetric,
-                         downsweeps=args.downsweeps,
-                         coarsesweeps=args.coarsesweeps,
-                         upsweeps=args.upsweeps)
+                         levels=levels,view=args.mgview,symmetric=args.symmetric,
+                         downsweeps=args.down,coarsesweeps=args.coarse,upsweeps=args.up)
 
 # report on computation including numerical error
-if args.pgs:
-   method = 'with %d sweeps of pGS' % args.downsweeps
+if args.pgsonly:
+   method = 'with %d sweeps of pGS' % args.down
 else:
    method = 'using %d V(%d,%d,%d) cycles' \
-            % (args.cycles,args.downsweeps,args.coarsesweeps,args.upsweeps)
+            % (args.cycles,args.down,args.coarse,args.up)
 if exactavailable:
    error = ':  |u-uexact|_2 = %.4e' % l2err(uu)
 else:

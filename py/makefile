@@ -1,7 +1,7 @@
 # testing
 
 runobs1_1:
-	-@./../testit.sh obs1.py "-pgs -jfine 3 -downsweeps 3" 1 1
+	-@./../testit.sh obs1.py "-pgsonly -jfine 3 -down 3" 1 1
 
 runobs1_2:
 	-@./../testit.sh obs1.py "-mgview -cycles 1 -random" 1 2
