@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+# TODO:
+#   1. add inactive-node residual monitoring (-monitor) and also error
+#      monitoring (-monitorerr)
+#   2. factor problem-specific stuff out of meshlevel.py
+#   3. factor visualization stuff out of obs1.py
+
 import numpy as np
 import sys, argparse
 import matplotlib.pyplot as plt
@@ -65,6 +71,11 @@ parser.add_argument('-symmetric', action='store_true', default=False,
 parser.add_argument('-up', type=int, default=0, metavar='N',
                     help='pGS sweeps after coarse-mesh correction (default=1)')
 args, unknown = parser.parse_known_args()
+
+# provide usage help
+if unknown:
+    print('ERROR: unknown arguments ... try -h or --help for usage')
+    sys.exit(1)
 
 # fix the random seed for repeatability
 np.random.seed(1)
