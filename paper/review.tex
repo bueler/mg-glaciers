@@ -64,16 +64,16 @@ urlcolor=black    % ...
 
 \section{Introduction} \label{sec:intro}
 
-The construction of effective numerical glacier and ice sheet models is challenging for two fundamental reasons.  First, the physics of glaciers is nonlinear, subject to incompletely-understood boundary conditions, and involves a two-phase fluid.  In fact the physics is highly-coupled in the sense that mass, momentum, and energy conservation interact in ways that are both relevant to glaciological modeling goals and which are not well-understood in the literature.  Second, the geometry of glaciers and ice sheets is complex, and in particular the fastest-flowing parts of ice sheets are near or on the geometrically nontrivial lateral boundary.  Numerical models need to perform expensive fine-mesh calculations to accomodate the complicated geometry of ice sheet and glacier boundaries.
+The construction of effective numerical glacier and ice sheet models is challenging for two fundamental reasons.  First is the complexity of the equations and boundary conditions.  Indeed, the physics of glaciers is nonlinear, nontrivially-coupled, and subject to imperfectly-understood boundary processes, such as at contact with ocean water.  The coupling is critical in the sense that mass, momentum, and energy conservation interact in ways which are relevant to glaciological modeling goals, such as when basal sliding, and thus ice velocity, is only determined though a simultaneous momentum and energy solution.  Second, the geometry of glaciers and ice sheets is complex, and in particular the fastest-flowing parts of ice sheets are often located at the geometrically-nontrivial lateral boundary where fjord-like bed geometry is also common.  Numerical models therefore need to perform expensive fine-mesh calculations, so as to accomodate the complicated, changing boundary geometry, while solving relatively-complicated multiphysics equations.
 
-On the other hand, since the 1980s researchers in numerial methods have developed multigrid methods to solve partial differential equations like those which describe the ice fluid in glaciers.   For simpler problems like scalar elliptic equations and the linear Stokes system, these methods are now in routine use \cite{Briggsetal2000,Bueler2021,Trottenbergetal2001}.
+On the other hand, since the 1980s researchers in numerial methods have developed multigrid methods to solve partial differential equations like those which describe the ice fluid in glaciers.   For simpler problems like scalar elliptic equations and the linear Stokes system, especially on domains which have a simpler geometry, these methods are now in routine use \cite{Briggsetal2000,Bueler2021,Trottenbergetal2001}.
 
 FIXME perspectives \emph{not} found here: convergence of GMG (or much detail for application to linear problems); assumptions like ``SPD'' specific to constrained \emph{optimization} as opposed to VI/NCP viewpoint
 
 
 \section{From subspace decomposition to multigrid} \label{sec:subspace}
 
-To introduce multigrid methods we will demonstrate how to solve a simple ordinary differential equation (ODE), namely the Poisson problem
+To introduce multigrid methods we will first demonstrate how to solve a simple ordinary differential equation (ODE), namely the Poisson problem
 \begin{equation}
 - u''(x) = f(x) \quad \text{on} \quad 0 \le x \le 1, \label{eq:poisson}
 \end{equation}
@@ -83,7 +83,7 @@ Our numerical approximation of \eqref{eq:poisson} will use an unequally-spaced m
 \begin{equation}
 u^h(x) = \sum_{p=1}^m u^p \lambda_p(x). \label{eq:trialsolution}
 \end{equation}
-Each hat function is defined on all of $[0,1]$ by $\lambda_p(x_q) = \delta_{pq}$ and by the properties of being linear between the nodes and continuous.  In fact, $\{\lambda_p(x)\}_{p=1}^m$ is a basis of the space $\mathcal{V}$ of continuous, piecewise-linear functions.  Note that $u^h(x)$ is continuous and piecewise-linear.  Its derivative is defined on the elements, but not generally at the nodes.
+Each hat function is defined on all of $[0,1]$ by $\lambda_p(x_q) = \delta_{pq}$ and by the properties of being linear between the nodes and continuous.  In fact, $\{\lambda_p(x)\}_{p=1}^m$ is a basis of the space $\mathcal{V}^h$ of continuous, piecewise-linear functions.  Note that $u^h(x)$ is continuous and piecewise-linear.  Its derivative is defined on the elements, but not generally at the nodes.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{figs/finehats.pdf}
