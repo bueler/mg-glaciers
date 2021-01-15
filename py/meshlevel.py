@@ -41,13 +41,13 @@ class MeshLevel1D(object):
         assert len(v) == self.mcoarser+1, \
                'input vector v is of length %d (should be %d)' \
                % (len(v),self.mcoarser+1)
-        assert self.k > 0, \
-               'cannot prolong from a mesh coarser than the coarsest mesh'
-        y = self.zeros()
-        for q in range(self.mcoarser):
+        y = self.zeros()  # y[0]=y[m]=0
+        y[1] = 0.5 * v[1]
+        for q in range(1,self.mcoarser-1):
             y[2*q] = v[q]
             y[2*q+1] = 0.5 * (v[q] + v[q+1])
-        y[-1] = v[-1]
+        y[self.m-2] = v[self.mcoarser-1]
+        y[self.m-1] = 0.5 * v[self.mcoarser-1]
         return y
 
     def CR(self,v):
