@@ -77,45 +77,51 @@ To introduce multigrid methods we will first demonstrate how to solve a simple o
 \begin{equation}
 - u''(x) = f(x) \quad \text{on} \quad 0 \le x \le 1, \label{eq:poisson}
 \end{equation}
-with boundary conditions $u(0)=u(1)=0$.  Over the course of this and the next two sections, this simple equation will ``evolve'' into a more-or-less realistic model for glacier geometry.
+with boundary conditions $u(0)=u(1)=0$.  Over the course of this and the next two sections, this simple equation will ``evolve'' into a more-or-less realistic model for glacier geometry.  Along the way we will develop the multigrid ideas.
 
-Our numerical approximation of \eqref{eq:poisson} will use an unequally-spaced mesh of $m$ interior \emph{nodes} (points) $x_p$ as shown in Figure \ref{fig:finehats}.  The numerical solution $u^h(x)$ will be constructed as a linear combination of the piecewise-linear hat functions $\lambda_p(x)$ shown in Figure \ref{fig:finehats}, one for each interior node:
+Our numerical approximation of \eqref{eq:poisson} uses an unequally-spaced mesh of $m$ interior \emph{nodes} (points) $x_p$ as shown in Figure \ref{fig:finehats}.  The open subintervals between the nodes are the \emph{elements}.  The numerical solution $u^h(x)$ will be constructed as a linear combination of the piecewise-linear hat functions $\psi_p(x)$, shown in Figure \ref{fig:finehats}, one for each interior node:
 \begin{equation}
-u^h(x) = \sum_{p=1}^m u^p \lambda_p(x). \label{eq:trialsolution}
+u^h(x) = \sum_{p=1}^m u_p \psi_p(x). \label{eq:trialsolution}
 \end{equation}
-Each hat function is defined on all of $[0,1]$ by $\lambda_p(x_q) = \delta_{pq}$ and by the properties of being linear between the nodes and continuous.  In fact, $\{\lambda_p(x)\}_{p=1}^m$ is a basis of the space $\mathcal{V}^h$ of continuous, piecewise-linear functions.  Note that $u^h(x)$ is continuous and piecewise-linear.  Its derivative is defined on the elements, but not generally at the nodes.
+Each hat function is defined on all of $[0,1]$ by $\psi_p(x_q) = \delta_{pq}$ and by being linear between the nodes and continuous.  In fact, $\{\psi_p(x)\}_{p=1}^m$ is a basis of the space $\mathcal{V}^h$ of continuous, piecewise-linear functions, and it is a \emph{nodal basis} in the sense that the coefficients are the values of the function: $u_p=u^h(x_p)$.  Note that the derivative of $u^h(x)$ is defined on the elements, but not generally at the nodes.
 
 \begin{figure}
-\includegraphics[width=0.6\textwidth]{figs/finehats.pdf}
-\caption{Hat functions $\lambda_p(x)$ form a basis for the space of piecewise-linear functions $\mathcal{V}$ on the unequally-spaced fine mesh.}
+\includegraphics[width=0.75\textwidth]{figs/finehats.pdf}
+\caption{Hat functions $\psi_p(x)$ at the interior points $x_p$ form a basis for the vector space of piecewise-linear functions  with zero boundary values $\mathcal{V}^h$.}
 \label{fig:finehats}
 \end{figure}
 
-Having represented the solution, to actually solve the problem we must adjust the coefficients $u^p$.  These coefficients are formed into a column vector, denoted $\bu=\{u^p\}$ in $\RR^m$.  We may directly use equation \eqref{eq:poisson} and a finite difference (FD) method \cite{LeVeque2007} to construct a linear system to determine $\bu$.  However, our applications of multigrid ideas to glacier problems will be clearer if we instead adopt a finite element (FE) approach based on re-phrasing \eqref{eq:poisson} in \emph{weak form} using integrals.  (Accessible introductions to FE methods are in \cite{Bueler2021,Elmanetal2014,Johnson2009}.)  Note that once we state the weak form, next, then the original equation \eqref{eq:poisson} will be called the \emph{strong form}.
+Having represented the solution, if we want to actually solve the problem then we must adjust the coefficients $u_p$ to their correct values.  In a program these coefficients are formed into a column vector, denoted $\bu=\{u_p\}$ in $\RR^m$.  We may directly use equation \eqref{eq:poisson} and a finite difference (FD) method \cite{LeVeque2007} to construct a linear system to determine $\bu$.  However, our applications of multigrid ideas to glacier problems will be much clearer if we instead adopt a finite element (FE) approach based on re-phrasing \eqref{eq:poisson} in \emph{weak form} using integrals.  (Accessible introductions to FE methods are in \cite{Bueler2021,Elmanetal2014,Johnson2009}.)  Note that once we state the weak form, next, then the original equation \eqref{eq:poisson} will be called the \emph{strong form}.
 
-The weak form of \eqref{eq:poisson} arises by multiplying both sides of the equation by a \emph{test function} and integrating by parts so that only first derivatives remain.  Without committing to any mathematical detail, we suppose the exact, continuum solution $u(x)$ comes from a vector space $\mathcal{H}$ of functions which are smooth enough to allow the computations which follow and which have value zero at $x=0$ and $x=1$.  Choosing a test function $v(x)$ from $\mathcal{H}$, by multiplying and integrating by parts, and by using $v(0)=v(1)=0$, we find that equation \eqref{eq:poisson} implies
+The weak form of \eqref{eq:poisson} arises by multiplying both sides of the equation by a \emph{test function} and integrating by parts so that only first derivatives remain.  Without committing to any mathematical detail, we suppose the exact, continuum solution $u(x)$ comes from a vector space $\mathcal{H}$ of functions which are smooth enough to allow the computations which follow and which have value zero at $x=0$ and $x=1$.  Choosing a test function $v(x)$ also from $\mathcal{H}$, by multiplying and integrating by parts, and by using $v(0)=v(1)=0$, we find that equation \eqref{eq:poisson} implies
 \begin{equation}
 \int_0^1 u'(x) v'(x)\,dx = \int_0^1 f(x) v(x)\, dx.
 \label{eq:weakpoisson}
 \end{equation}
-In a FE method one substitutes the \emph{trial} formula \eqref{eq:trialsolution} for $u^h$ into \eqref{eq:weakpoisson} to derive a linear system
+Now we substitute the \emph{trial} formula \eqref{eq:trialsolution} for $u^h$ into \eqref{eq:weakpoisson} to derive a linear system
 \begin{equation}
 A \bu = \bbf, \label{eq:linearsystem}
 \end{equation}
-where $A$ is an invertible $m\times m$ matrix and $\bbf$ is in $\RR^m$.  Each equation in the system is constructed by using a hat function on the fine mesh (Figure \ref{fig:finehats}) as a test function.  That is, substitution of $v=\lambda_p$ into \eqref{eq:weakpoisson} gives the $p$th equation in linear system \eqref{eq:linearsystem}.  For the right side one defines $f^p = \int_0^1 f(x) \lambda_p(x)\,dx$ to form the vector $\bbf = \{f^p\}$.
+where $A$ is an $m\times m$ matrix and $\bbf$ is in $\RR^m$.  Each equation in the linear system is constructed by using a hat function as a test function.  That is, substitution of $v=\psi_p$ into \eqref{eq:weakpoisson} gives the $p$th equation in FE system \eqref{eq:linearsystem}.  The entries of matrix $A$, which is clearly symmetric, and also known to be positive definite for our Poisson equation \cite{Elmanetal2014}, are $A_{pq} = \int_0^1 \psi_p'(x) \psi_q'(x)\,dx$.  For the right side one defines $f_p = \int_0^1 f(x) \psi_p(x)\,dx$ to form the vector $\bbf = \{f_p\}$.
 
-Once an implementation of an FE method has actually done the above steps, the most straightforward way to ask a computer to solve the assembled linear system \eqref{eq:linearsystem} is by a direct method such as Gaussian elimination.  However, in higher dimensions such methods need much more that $O(m)$ operations to solve the system where $m$ is the number of unknowns.  As noted in the introduction, large-scale applications can be quantitatively faster if we can instead apply an optimal $O(m)$ solution method, thus our interest in multigrid.
+The most straightforward way we could ask a computer to solve the assembled linear system \eqref{eq:linearsystem} would be by a direct method such as Gaussian elimination.  However, in higher-dimensional PDE problems such methods need much more that $O(m)$ operations to solve the system where $m$ is the number of unknowns.  As noted in the introduction, large-scale applications need optimal $O(m)$ solution methods, or nearly so, thus our interest in multigrid.  Furthermore, after this section all of our problems will be nonlinear, thus no direct (i.e.~finite time) method will be available, and indeed we will generally not need to form matrix objects at all.
 
-On the basis of the above simple scheme we can take the first step to build a \emph{multilevel} scheme.  Consider an enlarged set of hat functions:
-    $$\underbrace{\lambda_1(x),\dots,\lambda_m(x)}_{\text{fine mesh}},\underbrace{\lambda_{m+1}(x),\dots,\lambda_M}_{\text{coarser meshes}}$$
-In the multilevel scheme shown in Figures \ref{fig:finehats} and \ref{fig:coarsehats}, the later hat functions, namely $\lambda_s(x)$ for $s=m+1,\dots,M$, include two coarser levels.  The first coarsening level shown (top of Figure \ref{fig:coarsehats}) comes from by-passing every other node on the fine mesh, and the next coarsening level (bottom) does this again.  Note that one may regard the coarsening process either as the selection of nodes for the coarse mesh or as the construction of the coarser hat functions, but the coarse-level hat functions only ``know'' about the coarse mesh nodes anyway.  Figures \ref{fig:finehats} and \ref{fig:coarsehats} show a scheme with $m=11$ fine mesh nodes, $5$ intermediate level nodes, and $2$ coarsest-level nodes, thus $M=18$.  Note that the fine mesh has $m+1=12$ subintervals, a number divisible by four.  The construction of coarse levels in 2D and 3D problems is, of course, more complex.
+On the basis of the above simple FE scheme we can now take the first step to build a \emph{multilevel} or multigrid scheme.  Consider an enlarged set of hat functions:
+    $$\underbrace{\psi_1(x),\dots,\psi_m(x)}_{\text{existing fine mesh}},\underbrace{\psi_{m+1}(x),\dots,\psi_M(x)}_{\text{coarser meshes}}$$
+The multilevel scheme shown in Figures \ref{fig:finehats} and \ref{fig:coarsehats} includes two coarser levels.  The first coarsening (top of Figure \ref{fig:coarsehats}) comes from by-passing every other node on the fine mesh, and the next coarsening (bottom) does this again.  On 2D and 3D meshes this manner of constructing coarse-mesh hats is much less straightforward, but for our purposes this is how coarser-mesh hat functions $\psi_p(x)$ for $p>m$ are constructed.  One may regard the coarsening process as the selection of nodes for the coarse mesh, but once the corresponding coarse-mesh hat functions are constructed then they contain the information needed to proceed with coarse-mesh calculations.
+
+FIXME multilevel notation
+
+FIXME $\mathcal{V}^h = \mathcal{V}^0 + \dots + \mathcal{V}^K$; represents a scale of frequencies; is in face nested; $\dim(\mathcal{V}^k) = m_k$; $m_K=m$
+
+FIXME Figures \ref{fig:finehats} and \ref{fig:coarsehats} show a scheme with $m=11$ fine mesh nodes, $5$ intermediate level nodes, and $2$ coarsest-level nodes, thus $M=18$.  Note that the fine mesh has $m+1=12$ subintervals, a number divisible by four.  The construction of coarse levels in 2D and 3D problems is, of course, more complex.
 
 \begin{figure}
-\includegraphics[width=0.56\textwidth]{figs/coarsehats.pdf}
-\medskip
+\includegraphics[width=0.55\textwidth]{figs/coarsehats.pdf}
+\smallskip
 
-\includegraphics[width=0.56\textwidth]{figs/coarsesthats.pdf}
-\caption{A coarse ``mesh'' is really just a set of additional hat functions $\lambda_p(x)$, for $p>m$, each of which spreads over a greater distance.}
+\includegraphics[width=0.55\textwidth]{figs/coarsesthats.pdf}
+\caption{In our FE method a coarse ``mesh'' is a set of additional hat functions which spread over a greater distance.  They are linear combinations of the fine-mesh hats.}
 \label{fig:coarsehats}
 \end{figure}
 
@@ -123,21 +129,35 @@ FIXME think of residual as a function which acts on $u$ to give the residual vec
 
 FIXME the residual can act on the coarse grid ones too
 
-cite for subspace decomp \cite{Xu1992}
+FIXME Gauss-Seidel
+
+FIXME restriction and prolongation
+
+FIXME multigrid V-cycle pseudocode
 
 
 \section{Subset decomposition for obstacle problems} \label{sec:obstacle}
 
+The last section can be read as a quick review, based on the simplest Poisson problem, of a ``classical'' geometric multigrid (GMG) method, as one would find in standard GMG treatments \cite{Briggsetal2000,Bueler2021,Trottenbergetal2001}.  We have, however, taken an FE viewpoint, or more-accurately we have adopted the \emph{subspace decomposition} approach to multilevel and domain decompositions, as pioneered by Xu \cite{Xu1992}.
 
-cite for multigrid obstacle \cite{BrandtCryer1983,Bueler2021,GraeserKornhuber2009,Jouvetetal2013}; cite for subset decomp \cite{Tai2003}
+Classical GMG is, however, not adequate for the main problem in glaciers, namely how the geometry and velocity of a glacier evolves in response to climatic inputs.  First the glaciers problem is (famously) nonlinear, in that the fluid is non-Newtonian, but this is not the leading difficulty.  Rather, regardless of the manner in which momentum (stress) balance is modeled, the boundary condition for the geometry evolution (i.e.~mass conservation) problem arises from an inequality constraint.  Namely that the ice thickness is nonnegative, equivalently that the ice surface elevation is above the bed elevation, a point already made in the Introduction but actually addressed in the next section.  For now we note that the addition of such an inequality constraint generates a nonlinear problem, even if the differential equation is linear.  In this section we modify the GMG subspace decomposition approach to solve a classical \emph{obstacle} problem, which combines an inequality constraint with a linear differential equation.  Switching the differential equation to the nonlinear SIA model in the next section will be comparatively an easy change; one can say that the dominant nonlinearity is already present in the classical obstacle problem here.
 
-\section{Multigrid solutions of a shallow ice sheet mass conservation problem} \label{sec:sia}
+We solve the classical obstacle problem by a \emph{constraint decomposition} \cite{Tai2003} method, which modifies the subspace decomposition to allow an inequality constraint.  FIXME
 
-cite for glaciers as obstacle problems \cite{Bueler2016,Bueler2020,Calvoetal2002,JouvetBueler2012}
+FIXME cite for multigrid obstacle \cite{BrandtCryer1983,Bueler2021,GraeserKornhuber2009,Jouvetetal2013}; cite for subset decomp \cite{Tai2003}
+
+
+\section{Multigrid solutions of a shallow-ice mass conservation problem} \label{sec:sia}
+
+FIXME cite for glaciers as obstacle problems \cite{Bueler2016,Bueler2020,Calvoetal2002,JouvetBueler2012}
+
+FIXME for 2D domains the coarse mesh construction needs reconsideration
 
 \section{Multigrid solutions of a Glen-Stokes glacier flow} \label{sec:stokes}
 
-multigrid already used for Blatter-Pattyn model \cite{BrownSmithAhmadia2013} and for hybrid \cite{Jouvetetal2013}; one goal of this section is to make these approaches more understandable; use Schur complement \cite{Bueler2021,Elmanetal2014}; compare Vanka monolithic smoother \cite{Farrelletal2019}
+FIXME multigrid already used for Blatter-Pattyn model \cite{BrownSmithAhmadia2013} and for hybrid \cite{Jouvetetal2013}; one goal of this section is to make these approaches more understandable
+
+FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to Vanka monolithic smoother \cite{Farrelletal2019}
 
 \small
 
