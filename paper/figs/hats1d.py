@@ -39,10 +39,11 @@ m = 12
 # fine hats figure
 plt.figure(figsize=(10,4))
 xdots = finemeshaxes(m)
-hats(xdots)
+hats(xdots,style='k:',width=1.0,dotsize=14.0)
+plt.plot(xdots[8:11],[0.0,1.0,0.0],'k',lw=3.0)
 plt.text(xdots[9]-0.02,-0.2,r'$x_p$',fontsize=bigfsize)
-plt.annotate(r'$\lambda_p(x)$',
-             xy=(xdots[9]-0.01, 0.9), xytext=(xdots[9]-0.2, 1.15),
+plt.annotate(r'$\psi_p(x)$',
+             xy=(xdots[9]+0.025, 0.6), xytext=(xdots[12], 0.8),
              arrowprops=dict(arrowstyle='-|>',facecolor='black'),
              fontsize=bigfsize)
 plt.text(-0.05,0.0,'0',fontsize=fsize)
@@ -55,7 +56,7 @@ figsave('finehats.pdf')
 plt.figure(figsize=(10,4))
 xdots = finemeshaxes(m)
 hats(xdots,style='k:',width=1.0,dotsize=14.0)
-hats(xdots[0::2],width=2.5,dotstyle='ks',dotsize=12.0)
+hats(xdots[0::2],width=3.0,dotstyle='ks',dotsize=12.0)
 plt.axis([-0.2,1.2,-0.4,1.2])
 plt.axis('off')
 figsave('coarsehats.pdf')
@@ -64,7 +65,7 @@ figsave('coarsehats.pdf')
 plt.figure(figsize=(10,4))
 xdots = finemeshaxes(m)
 hats(xdots,style='k:',width=1.0,dotsize=14.0)
-hats(xdots[0::4],width=2.5,dotstyle='kd',dotsize=16.0)
+hats(xdots[0::4],width=3.0,dotstyle='kd',dotsize=16.0)
 plt.axis([-0.2,1.2,-0.4,1.2])
 plt.axis('off')
 figsave('coarsesthats.pdf')
