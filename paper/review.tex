@@ -7,6 +7,9 @@
 \usepackage{tikz}
 \usetikzlibrary{decorations.pathreplacing}
 
+\usepackage[kw]{pseudo}
+\pseudoset{left-margin=15mm,topsep=5mm,idfont=\texttt}
+
 % hyperref should be the last package we load
 \usepackage[pdftex,
 colorlinks=true,
@@ -47,6 +50,8 @@ urlcolor=black    % ...
 \newcommand{\bzero}{\bm{0}}
 
 \newcommand{\rhoi}{\rho_{\text{i}}}
+
+\newcommand{\ip}[2]{\left<#1,#2\right>}
 
 
 \begin{document}
@@ -108,13 +113,7 @@ The most straightforward way we could ask a computer to solve the assembled line
 
 On the basis of the above simple FE scheme we can now take the first step to build a \emph{multilevel} or multigrid scheme.  Consider an enlarged set of hat functions:
     $$\underbrace{\psi_1(x),\dots,\psi_m(x)}_{\text{existing fine mesh}},\underbrace{\psi_{m+1}(x),\dots,\psi_M(x)}_{\text{coarser meshes}}$$
-The multilevel scheme shown in Figures \ref{fig:finehats} and \ref{fig:coarsehats} includes two coarser levels.  The first coarsening (top of Figure \ref{fig:coarsehats}) comes from by-passing every other node on the fine mesh, and the next coarsening (bottom) does this again.  On 2D and 3D meshes this manner of constructing coarse-mesh hats is much less straightforward, but for our purposes this is how coarser-mesh hat functions $\psi_p(x)$ for $p>m$ are constructed.  One may regard the coarsening process as the selection of nodes for the coarse mesh, but once the corresponding coarse-mesh hat functions are constructed then they contain the information needed to proceed with coarse-mesh calculations.
-
-FIXME multilevel notation
-
-FIXME $\mathcal{V}^h = \mathcal{V}^0 + \dots + \mathcal{V}^K$; represents a scale of frequencies; is in face nested; $\dim(\mathcal{V}^k) = m_k$; $m_K=m$
-
-FIXME Figures \ref{fig:finehats} and \ref{fig:coarsehats} show a scheme with $m=11$ fine mesh nodes, $5$ intermediate level nodes, and $2$ coarsest-level nodes, thus $M=18$.  Note that the fine mesh has $m+1=12$ subintervals, a number divisible by four.  The construction of coarse levels in 2D and 3D problems is, of course, more complex.
+The multilevel scheme shown in Figures \ref{fig:finehats} and \ref{fig:coarsehats} includes two coarser levels.  The first coarsening (top of Figure \ref{fig:coarsehats}) comes from by-passing every other node on the fine mesh, and the next coarsening (bottom) does this again.  (A warning: On 2D and 3D meshes this manner of constructing coarse-mesh hats is much less straightforward.  There it is more common to start from a coarse mesh and refine.)  One may regard the coarsening process as the selection of coarse-mesh nodes, but the coarse-mesh hat functions, once identified, contain all the information needed to do coarse-mesh calculations.
 
 \begin{figure}
 \includegraphics[width=0.55\textwidth]{figs/coarsehats.pdf}
@@ -125,15 +124,68 @@ FIXME Figures \ref{fig:finehats} and \ref{fig:coarsehats} show a scheme with $m=
 \label{fig:coarsehats}
 \end{figure}
 
+We need some notation for the levels.  Suppose that the coarsest level is $k=0$ and the finest is $k=K$, thus that $K=2$ in Figures \ref{fig:finehats} and \ref{fig:coarsehats}.  We group the hat functions by level, so
+\begin{equation}
+  \psi_j^k(x) \quad \text{is the $j$th hat function on the $k$ level},  \label{definepsijk}
+\end{equation}
+and we denote the interior nodes $x_j^k$ by the same scheme.  There are $m_k$ hats in the $k$th level, thus index $j$ is in the set $\{1,\dots,m_k\}$.  The $k$th level is also a vector space, namely
+\begin{equation}
+  \mathcal{V}^k = \operatorname{span}\{\psi_1^k(x),\dots,\psi_{m_k}^k(x)\}.  \label{definevk}
+\end{equation}
+These hat functions are linearly-independent and form a basis for $\mathcal{V}^k$, thus the dimension of $\mathcal{V}^k$ is $m_k$.  From now on we write $m_K$ for the previous ``$m$''; this is the number of nodes in the fine mesh and the dimension of the FE solution space.
+
+Figures \ref{fig:finehats} and \ref{fig:coarsehats} show a scheme with $K=2$ and $m_2=11$ fine mesh nodes.  There $m_1=5$ intermediate level nodes, $m_0=2$ coarsest-level nodes, thus $M=18$ total hat functions on all levels.  Note that the fine mesh has $m+1=12$ elements, divisible by four, so the above coarsening scheme makes sense.
+
+In fact the vector spaces we have just defined are nested, $\mathcal{V}^{k-1} \subset \mathcal{V}^k$, because each coarser-mesh hat function can be written as a linear combination of finer-mesh hats:
+\begin{equation}
+   \psi_j^{k-1}(x) = \sum_{\ell=1}^{m_k} c_\ell \psi_\ell^k(x). \label{hatcombination}
+\end{equation}
+(The only nonzero coefficients $c_\ell$ are those where the support of $\psi_j^{k-1}(x)$ overlaps with the support of $\psi_\ell^k(x)$.)
+
+The coarser-mesh vector spaces $\mathcal{V}^0,\dots,\mathcal{V}^{K-1}$ would seem not to add any value, as they are mere subspaces of the fine-mesh vector space we started with, $\mathcal{V}^K = \mathcal{V}^h$.  But they add something very important, namely a \emph{scale of frequencies}.  Informally, if $f(x)$ is a function on $[0,1]$ then its inner product with a fine-mesh hat, $\ip{f}{\psi_j^K(x)} = \int_0^1 f(x) \psi_j^K(x)\,dx$, relative to its norm $\|f\| = \ip{f}{f}^{1/2}$, is a measure of its high-frequency content at $x_j^K$.  The inner product with a coarse-mesh hat, by contrast, measures lower frequencies.
+
+Thus the main equation of our multilevel subspace decomposition,
+\begin{equation}
+  \mathcal{V}^h = \mathcal{V}^0 + \dots + \mathcal{V}^K, \label{subspacedecomposition}
+\end{equation}
+will be useful even though the final fine-mesh term $\mathcal{V}^K$ actually spans the whole space.  Equation \eqref{subspacedecomposition} only asserts that a piecewise-linear function (i.e.~in $\mathcal{V}^h$) \emph{can} be written as a linear combination of hat functions from all the levels, but there is no unique representation.  This decomposition has a different purpose from an orthogonal sum.  We will use our hierarchy of meshes, and fast computations on each mesh, to find the components of the solution $u^h$.
+
+
 FIXME think of residual as a function which acts on $u$ to give the residual vector $F(u)$; its component ($v$th component) is $F(u)[v]=\int_0^1 f(x) v(x) - \int_0^1 u'(x)v'(x)\,dx$
 
-FIXME the residual can act on the coarse grid ones too
+FIXME the residual can act on the coarse-mesh hats too
 
-FIXME Gauss-Seidel
+FIXME Gauss-Seidel is sequential point-wise relaxation
+
+\begin{pseudo*}
+\pr{gssweep}(w^h,\ell^h)\text{:} \\+
+    $r(w^h)[v] := \ell^h[v] - F^h(w^h)[v]$ \\
+    for $p=1,\dots,m-1$ \\+
+        $\phi(c) := r^h(w^h + c \psi_p)[\psi_p]$ \\
+        $c=0$ \\
+        for $k=1,\dots,$\id{niters} \\+
+            $c \gets c - \phi(c) / \phi'(c)$ \\-
+        $w[p] \gets w[p] + c$
+\end{pseudo*}
 
 FIXME restriction and prolongation
 
 FIXME multigrid V-cycle pseudocode
+
+\begin{pseudo*}
+\pr{vcycle}(k,w,F)\text{:} \\+
+    if $k=0$ \\+
+        \pr{coarsesolve}(w,F) \\-
+    else \\+
+        for $j=1,\dots,$\id{down} \\+
+            \pr{gssweep}(w,F) \\-
+        $F^{k-1}[v] := FIXME$ \\
+        $e^{k-1} =$ \pr{vcycle}(k-1,w^{k-1},F^{k-1}) \\
+        $w^k \gets w^k + P e^{k-1}$ \\
+        for $j=1,\dots,$\id{up} \\+
+            \pr{gssweep}(w,F) \\--
+    return $w$
+\end{pseudo*}
 
 
 \section{Subset decomposition for obstacle problems} \label{sec:obstacle}
