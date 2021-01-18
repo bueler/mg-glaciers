@@ -157,8 +157,6 @@ The coarser levels $\mathcal{V}^0,\dots,\mathcal{V}^{K-1}$ would seem not to add
 
 Recall the weak form \eqref{eq:weakpoisson}.  On any level our goal is to find an FE solution so that \eqref{eq:weakpoisson} holds for all test functions $v$
 
-
-
 FIXME Gauss-Seidel is sequential point-wise relaxation
 
 \begin{pseudo*}
@@ -167,6 +165,12 @@ FIXME Gauss-Seidel is sequential point-wise relaxation
         $\displaystyle c=\frac{\ell[p] - \sum_{q=p-1}^{p+1} a_{pq}^k \,w[q]}{a_{pp}^k}$ \quad \ct{where $a_{pq}^k = a(\psi_p^k,\psi_q^k)$} \\
         $w[p] \gets w[p] + c$
 \end{pseudo*}
+
+\begin{figure}
+\includegraphics[width=0.8\textwidth]{figs/residualpoints.pdf}
+\caption{A left-to-right Gauss-Seidel sweep adjusts the iterate $w$ at each node $x_p^k$ so that the residual $r^k(w)[\psi_p^k]$ at that point is zero (left).  The error $e=w-u$ gets a bit smaller and significantly smoother (right).}
+\label{fig:residualpoints}
+\end{figure}
 
 FIXME restriction and prolongation
 
