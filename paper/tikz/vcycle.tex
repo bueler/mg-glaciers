@@ -1,0 +1,19 @@
+\begin{tikzpicture}[scale=1.2]
+  \pgfmathsetmacro\hstep{0.5}
+  \pgfmathsetmacro\vstep{0.75}
+  \pgfmathsetmacro\ceps{0.08}   % size of square for coarse grid
+
+% grid labels at left
+  \node at (-2,2*\vstep) {$k=2$};
+  \node at (-2,\vstep) {$k=1$};
+  \node at (-2,0.0) {$k=0$};
+
+% V-cycle
+  \draw[black,thin] (0.0,2*\vstep) -- (\hstep,\vstep) --  (2*\hstep,0.0)
+                    -- (3*\hstep,\vstep) -- (4*\hstep,2*\vstep);
+  \filldraw (0.0,2*\vstep) circle (2.0pt);
+  \filldraw (\hstep,\vstep) circle (2.0pt);
+  \draw     (2*\hstep-\ceps,-\ceps) rectangle (2*\hstep+\ceps,+\ceps);
+  \draw     (3*\hstep,\vstep) circle (2.0pt);
+  \draw     (4*\hstep,2*\vstep) circle (2.0pt);
+\end{tikzpicture}
