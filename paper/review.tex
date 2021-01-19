@@ -78,7 +78,7 @@ On the other hand, since the 1980s researchers in numerial methods have develope
 FIXME perspectives \emph{not} found here: convergence of GMG (or much detail for application to linear problems); assumptions like ``SPD'' specific to constrained \emph{optimization} as opposed to VI/NCP viewpoint
 
 
-\section{From subspace decomposition to multigrid (Poisson equation)} \label{sec:subspace}
+\section{From subspace decomposition to multigrid (for the Poisson equation)} \label{sec:subspace}
 
 To introduce multigrid methods we will first demonstrate how to solve a simple ordinary differential equation (ODE), namely the Poisson problem
 \begin{equation}
@@ -155,20 +155,50 @@ This will be useful even though the final term $\mathcal{V}^K$ is actually equal
 
 The coarser levels $\mathcal{V}^0,\dots,\mathcal{V}^{K-1}$ would seem not to add any value, as they are mere subspaces of the fine-level space $\mathcal{V}^K$, but in fact they provide a \emph{scale of frequencies}.  Informally, if $g(x)$ is any function on $[0,1]$ then the value of its inner product with a fine-level hat, $\ip{g}{\psi_j^K} = \int_0^1 g(x) \psi_j^K(x)\,dx$, relative to its norm $\|g\| = \ip{g}{g}^{1/2}$, is a measure of its high-frequency content at $x_j^K$.  The inner product with a coarse-mesh hat, by contrast, measures a lower frequency at that location.  (If decomposition \eqref{eq:subspacedecomposition} were a Fourier decomposition, with each $\mathcal{V}^k$ spanned by sines and cosines of disjoint ranges of frequencies, then the sum would be orthogonal and the ``scale of frequencies'' meaning would be exact.)
 
-Recall the weak form \eqref{eq:weakpoisson}.  On any level our goal is to find an FE solution so that \eqref{eq:weakpoisson} holds for all test functions $v$
+Recall the weak form \eqref{eq:weakpoisson}.  The goal of our FE method is to find a solution $u^K$ on the fine level, i.e.~in $\mathcal{V}^K$, so that \eqref{eq:weakpoisson} holds for all test functions $v$ in $\mathcal{V}^K$.  It will be essential to treat the right-hand side abstractly, so on the fine level we define the linear functional
+\begin{equation}
+  \ell^K[v] = \ip{f}{v}.  \label{eq:rhsfine}
+\end{equation}
+On other mesh levels we will also have a right-hand-side linear functional $\ell^k[v]$ acting on $v$ in $\mathcal{V}^k$ (below), but only on the finest level is it defined by formula \eqref{eq:rhsfine}.  Our method solves a finite-dimensional weak form on each level $k$,
+\begin{equation}
+  a(u^k,v) = \ell^k[v],  \label{eq:feweakpoisson}
+\end{equation}
+for all $v$ in $\mathcal{V}^k$, where the bilinear form $a(u,v)$ has the same meaning on each level, namely as the left side of \eqref{eq:weakpoissonearly}.  We will try an FE solution $u^k$, a linear combination of hat functions $\psi_q^k$ as in \eqref{eq:trialsolution}, and then solve the level-$k$ system \eqref{eq:feweakpoisson} arising from substituting each $v=\psi_p^k$ as a test function.  Our solution method will never assemble a matrix for the system, an advantage as we extend it to the nonlinear and inequality-constrained glacier geometry problem (sections \ref{sec:obstacle}, \ref{sec:sia}).
 
-FIXME Gauss-Seidel is sequential point-wise relaxation
+Suppose $w(x)$ in $\mathcal{V}^k$ is an approximation of the solution $u^k$ to \eqref{eq:feweakpoisson} on mesh level $k$.  Define the \emph{residual} linear functional
+\begin{equation}
+  r^k(w)[v] = \ell^k[v] - a(w,v)  \label{eq:residual}
+\end{equation}
+acting on $v$ in $\mathcal{V}^k$.  Clearly, finding $w$ such that $r^k(w)=0$ solves \eqref{eq:feweakpoisson}.
 
+On each mesh level our solution method for \eqref{eq:feweakpoisson} is \emph{Gauss-Seidel (GS) iteration}, namely sequential and point-wise \emph{relaxation}.  It goes through the level-$k$ hat functions $\psi_p^k$ and modifies the iterate $w(x)$ by a multiple of $\psi_p^k$ so as to make $r^k(w)[\psi_p^k]=0$, that is, it makes the residual zero at $x_p^k$.  By linearity of the form $a(\cdot,\cdot)$ in the first argument, if $w(x) = \sum_{q=1}^{m_k} w[q] \psi_q^k(x)$ then
+\begin{equation}
+  r^k(w)[\psi_p^k] = \ell^k[p] - \sum_{q=1}^{m_k} a(\psi_q^k,\psi_p^k)\, w[q].  \label{eq:residualpoisson}
+\end{equation}
+(Note $\ell^k[p] = \ell^k[\psi_p^k]$ by definition.)  The GS pointwise equation finds a real number $c$ so that
+\begin{equation}
+  r^k(w+c\,\psi_p^k)[\psi_p^k] = 0.  \label{eq:gaussseidelpoint}
+\end{equation}
+Also denoting $a_{p,q}^k = a(\psi_p^k,\psi_q^k)$, one GS sweep is given by the following algorithm:
 \begin{pseudo*}
 \pr{gssweep}(k,w,\ell)\text{:} \\+
     for $p=1,\dots,m_k$ \\+
-        $\displaystyle c=\frac{\ell[p] - \sum_{q=p-1}^{p+1} a_{pq}^k \,w[q]}{a_{pp}^k}$ \quad \ct{where $a_{pq}^k = a(\psi_p^k,\psi_q^k)$} \\
+        $\displaystyle c=\frac{\ell[p] - \sum_{q=1}^{m_k} a_{p,q}^k \,w[q]}{a_{p,p}^k}$ \\
         $w[p] \gets w[p] + c$
 \end{pseudo*}
+Note that the algorithm modifies $w$ in-place, and it takes the linear functional $\ell$ as an argument.
+
+In the \textsc{gssweep} pseudocode we have written a sum over all of the (trial) hat functions $\psi_q^k$, but for our 1D Poisson problem there are in fact only three nonzero contributions, namely $a_{p,p-1}^k = -(x_p^k-x_{p-1}^k)^{-1}$, $a_{p,p}^k = (x_p^k-x_{p-1}^k)^{-1} + (x_{p+1}^k-x_p^k)^{-1}$, and $a_{p,p+1}^k = -(x_{p+1}^k-x_p^k)^{-1}$.  (These formulae are just details, but worthwhile if they remind the reader of finite difference approximations for the Laplacian \cite[for example]{Bueler2021}.)  Thus the matrix $A$ in \eqref{eq:linearsystem} is tridiagonal.  Generally the number of nonzero terms is equal to the number of hat functions $\psi_q^k$ whose support overlaps the support of the test function $\psi_p^k$.  Thus, because the computation of $c$ involves $O(1)$ work, one application of \textsc{gssweep} is $O(m)$ work.
+
+What does a sweep of GS do to an iterate $w$?  By making the residual zero on each point (i.e.~hat function) in turn we can hope that the residual becomes smaller, but modifying $w$ to make the residual zero at one point generally means the previously-zeroed locations are no longer zero.  (That is, the equations are non-trivially coupled!)  One can prove for our model Poisson problem that the iteration converges to the solution $u^k$ \cite[for example]{Greenbaum1997}, but that is not actually our focus.
+
+The key observation is that a GS sweep is a good \emph{smoother} of the error $e=w-u^k$ for an iterate $w$ even when it is slow to make the residual or error small.  Informally, the formula for $c$ in \textsc{gssweep} combines three values of $w$ so as to flatten a peak or trough.  The observation can be made quantitative in the sense of the frequencies supported on the $k$-level mesh, at least if the mesh is equally-spaced.  In that case there is a precise highest-frequency mode, namely the sawtooth mode whose spatial frequency is $\omega^k=(2h^k)^{-1}$, which is faithfully-represented on the mesh, and one GS sweep multiplies all modes with frequencies higher than $\frac{1}{2} \omega^k$ by factors at most $1/\sqrt{5}\approx 0.45$ \cite[Chapter 4]{Briggsetal2000}.  That is, a GS sweep \emph{damps the highest half of the frequencies present in the error vector of iterate} $w$, by the factor 0.45.  This factor is correct for the 1D Poisson equation, but the damping factor depends on the dimension and the particular differential operator.
+
+An example is shown in Figure \ref{fig:residualpoints}, where we start with a non-smooth initial iterate $w$ on an $m=6$ mesh; its residual $r(w)$ is at top-left in the Figure.  (We choose to plot the linear functional $r(w)[\cdot]$ as a piecewise-constant function with values $r(w)[\psi_p]$.)  The Figure shows the residual after each step (index) $p$ in the \textbf{for} loop in \textsc{gssweep}, and it indicates the location which is zeroed.  Both the residual and error do indeed become smaller in norm, but the most notable effect is the removal of the high frequencies in the error.
 
 \begin{figure}
 \includegraphics[width=0.8\textwidth]{figs/residualpoints.pdf}
-\caption{A left-to-right Gauss-Seidel sweep adjusts the iterate $w$ at each node $x_p^k$ so that the residual $r^k(w)[\psi_p^k]$ at that point is zero (left).  The error $e=w-u$ gets a bit smaller and significantly smoother (right).}
+\caption{A Gauss-Seidel (GS) sweep adjusts the iterate $w$ so that the residual $r^k(w)[\psi_p^k]$ at each node is zero (left).  The corresponding error $e=w-u$ gets a bit smaller, but significantly smoother (right).}
 \label{fig:residualpoints}
 \end{figure}
 
@@ -198,6 +228,7 @@ FIXME multigrid V-cycle pseudocode
 \label{fig:vcycle}
 \end{figure}
 
+
 \section{Subset decomposition for the classical obstacle problem} \label{sec:obstacle}
 
 The last section can be read as a quick review, based on the simplest Poisson problem, of a ``classical'' geometric multigrid (GMG) method.  It is not so different from the standard GMG treatments in \cite{Briggsetal2000,Bueler2021,Trottenbergetal2001}, for example.  We have, however, taken a particular FE viewpoint, namely the \emph{subspace decomposition} approach which has been applied both to multilevel and domain decompositions, as pioneered by Xu \cite{Xu1992}.
@@ -209,13 +240,13 @@ We solve the classical obstacle problem by a \emph{constraint decomposition} \ci
 FIXME cite for multigrid obstacle \cite{BrandtCryer1983,Bueler2021,GraeserKornhuber2009,Jouvetetal2013}; cite for subset decomp \cite{Tai2003}
 
 
-\section{Multigrid solutions of a shallow-ice mass conservation problem} \label{sec:sia}
+\section{Multigrid for a shallow-ice mass conservation problem} \label{sec:sia}
 
 FIXME cite for glaciers as obstacle problems \cite{Bueler2016,Bueler2020,Calvoetal2002,JouvetBueler2012}
 
 FIXME for 2D domains the coarse mesh construction needs reconsideration
 
-\section{Multigrid solutions of a Glen-Stokes glacier flow} \label{sec:stokes}
+\section{Multigrid for a Glen-Stokes glacier flow} \label{sec:stokes}
 
 FIXME multigrid already used for Blatter-Pattyn model \cite{BrownSmithAhmadia2013} and for hybrid \cite{Jouvetetal2013}; one goal of this section is to make these approaches more understandable
 
