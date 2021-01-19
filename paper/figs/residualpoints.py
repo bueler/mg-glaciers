@@ -36,7 +36,8 @@ f = np.pi**2 * uex
 # plot ell[v] as piecewise-constant at interior points
 def dualplot(x,ell):
     for p in range(1,m+1):
-        plt.plot([x[p]-h/2.0,x[p]+h/2.0],[ell[p],ell[p]],'k',lw=2.0)
+        # for some reason +- h/2 does not align properly
+        plt.plot([x[p]-h/2.3,x[p]+h/2.3],[ell[p],ell[p]],'k',lw=2.0)
 
 # initial w with both high frequency and low-frequency errors
 np.random.seed(1)   # fix the random seed for repeatability
