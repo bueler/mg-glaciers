@@ -202,25 +202,43 @@ An example is shown in Figure \ref{fig:residualpoints}, where we start with a no
 \label{fig:residualpoints}
 \end{figure}
 
-FIXME restriction and prolongation
+Once the GS smoother is applied on a given level $k$, e.g.~the finest level, both the error and the residual of the current iterate $w^k$ no longer contain much energy in those high-frequency modes for which we need the fine-level ($k$th-level) representation.  Thus the FE weak form \eqref{eq:feweakpoisson} can be represented on a coarser level, and furthermore an equation relates the smooth error and residual quantities, as follows.  First, the residual definition \eqref{eq:residual} can be rewritten as
+\begin{equation}
+  a(w^k,v) = \ell^k[v] - r^k(w^k)[v].  \label{eq:residualrewrite}
+\end{equation}
+Subtracting the weak form \eqref{eq:feweakpoisson} there is cancellation on the right:
+\begin{equation}
+  %a(w^k,v) - a(u^k,v) = \ell^k[v] - r^k(w^k)[v] - \ell^k[v]
+  a(w^k,v) - a(u^k,w) = - r^k(w^k)[v].  \label{eq:errorequationearly}
+\end{equation}
+Because of the linearity of $a(\cdot,\cdot)$ in the first position, we have the (weak-form) \emph{error equation} in which both the solution $e^k=w^k-u^k$ and the right-hand-side are smooth:
+\begin{equation}
+  a(e^k,w) = - r^k(w^k)[v].  \label{eq:errorequation}
+\end{equation}
 
-FIXME multigrid V-cycle pseudocode
+The main point of the multigrid/multilevel idea is that equation \eqref{eq:errorequation} \emph{can be passed to a coarser level for rapid solution}.  Once we have this solution $e^k$ then the update
+\begin{equation}
+  w^k \gets w^k + e^k  \label{eq:update}
+\end{equation}
+will ``correct'' the fine-level iterate with information from the coarse level.  (Note we are avoiding adding yet another index indicating the iteration count, e.g.~$w^{k,j+1} = w^{k,j} + e^{k,j}$.  We keep the emphasis on the mesh level $k$.)
+
+Combining the above ideas gives the \emph{multigrid V-cycle}.  It adds a coarse-level correction process, i.e.~a recursive solution of the error equation \eqref{eq:errorequationearly} followed by update \eqref{eq:update}, to the smoother algorithm, the GS sweep in our case.  The following pseudocode defines our V-cycle.  Like \textsc{gssweep}, it modifies an iterate $w$ in-place and it can be called repeatedly so as to improve an iterate.
 
 \begin{pseudo*}
-\pr{vcycle}(k,\ell)\text{:} \\+
+\pr{vcycle}(k,w,\ell)\text{:} \\+
     if $k=0$ \\+
         $w =$ \pr{coarsesolve}(\ell) \\-  % in fact is w=0 plus \id{coarse} iterations of \pr{gssweep}(0,w,\ell)
     else \\+
-        $w=0$ \\
         for $j=1,\dots,$\id{down} \\+
             \pr{gssweep}(k,w,\ell) \\-
         $r^k[\cdot] = \ell[\cdot] - a^k(w,\cdot)$ \\
-        $e^{k-1} =$ \pr{vcycle}(k-1,-R r^k) \\
+        $e^{k-1} =$ \pr{vcycle}(k-1,0,-R r^k) \\
         $w \gets w + P e^{k-1}$ \\
         for $j=1,\dots,$\id{up} \\+
             \pr{gssweep}(k,w,\ell) \\--
-    return $w$
 \end{pseudo*}
+
+Observe that after \texttt{down} smoother sweeps the error equation \eqref{eq:errorequation} is passed down to the next-coarser $k-1$ level with a ``new'' right-hand linear functional $\ell^{k-1}[v]=-(R r^k(w^k))[v]$ and a zero initial iterate.  That is, the problem changes to have a new source term, which is the amount by which the fine-level iterate $w^k$ did not already solve the problem.  Then an additional \texttt{up} sweeps are done, in order to remove high-frequency components from the update.  Figure \ref{fig:vcycle} shows a graphical V-cycle of three levels.
 
 \begin{figure}
 \input{tikz/vcycle.tex}
@@ -228,12 +246,33 @@ FIXME multigrid V-cycle pseudocode
 \label{fig:vcycle}
 \end{figure}
 
+Two new symbols have appeared, however.  First, the residual is \emph{restricted} onto the next-coarser level by the \emph{canonical restriction operator} $R$ which creates a linear functional on the $k-1$ level from a linear functional $\ell^k$ on the $k$ level:
+\begin{equation}
+  (R \ell^k)[v] = \ell^k[v] \label{eq:canonicalrestriction}
+\end{equation}
+for all $v$ in $\mathcal{V}^{k-1}$.  That is, $R \ell^k$ acts on $\mathcal{V}^{k-1}$, but it is really just the same as $\ell^k$.  Next, after the recursive solve on the $k-1$ level the coarse-level error $e^{k-1}$ needs to correct the fine-level iterate $w^k$.  This is done by the \emph{canonical prolongation operator} $P$ acting on a function $z^{k-1}$ in $\mathcal{V}^{k-1}$:
+\begin{equation}
+  (P z^{k-1})(x) = z^{k-1}(x). \label{eq:canonicalprolongation}
+\end{equation}
+That is, as with the canonical restriction, the result $P z^{k-1}$ is really just the same as the input function $z^{k-1}$.
+
+Though the operators $R$ and $P$ seem to do nothing, and make no choices, which is the meaning of ``canonical'', in fact they represent computational work because of how we represent functions and functionals on a given level.  That work is entirely contained in the perhaps-forgotten equation \eqref{eq:hatcombination} which describes how to a coarse-level hat function is a linear combination of fine-level hats.  For example, if a fine-level linear functional $\ell^k$ is represented on the computer as a vector of its values $\ell[p] = \ell^k[\psi_p^k]$, then the vector representing the restricted linear functional $R \ell^k$ has values computed via \eqref{eq:hatcombination}.  Likewise, if a coarse-level function $z^{k-1}(x)$ is represented by its coefficients in the basis $\{\psi_p^{k-1}\}$ then \eqref{eq:hatcombination} determines the coeffients of $P z^{k-1}$ in the fine-level basis of hat functions $\{\psi_p^k\}$.  As $R$ and $P$ are linear operators, they may of course be represented as rectangular matrices, but this is not at all necessary.  In any case the application of $R$ and $P$ requires $O(m_k)$ work.
+
+The above \textsc{vcycle} algorithm also calls a coarse solver on the $k=0$ level.  For a linear problem like our current Poisson problem it is traditional to apply a direct solver for this linear system (i.e.~equation \eqref{eq:linearsystem}), but again this will not be an option for the nonlinear glacier geometry problem.  Instead we define \textsc{coarsesolve} as the application of a fixed number of GS sweeps.  If the coarsest mesh has a single node then a single sweep suffices to give an exact solution of the $k=0$ problem.
+%\begin{pseudo*}
+%\pr{coarsesolve}(\ell)\text{:} \\+
+%    $w=0$ \\
+%    for $j=1,\dots,$\id{coarse} \\+
+%        \pr{gssweep}(0,w,\ell) \\-
+%    return $w$
+%\end{pseudo*}
+
+The goal of this section has been to be as clear as possible about the basic geometric multigrid algorithm.  We have taken a particular FE viewpoint, namely the subspace decomposition approach as pioneered by Xu \cite{Xu1992}, an idea which applies both to multilevel and domain-decomposition algorithms.  Now would be the place to put computational results, which would prominently feature the efficiency of the V-cycle algorithm, namely evidence of optimal $O(m_K)$ time to solve the problem, and indeed such results appear in all of our multigrid references \cite{Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.  However, we forego such easy-to-produce results in favor of introducing the less-trivial ``obstacle'' problem in the next section, which has the essential free-boundary character of the glacier geometry problem.  Computational results will be given at the ends of the next three sections.
+
 
 \section{Subset decomposition for the classical obstacle problem} \label{sec:obstacle}
 
-The last section can be read as a quick review, based on the simplest Poisson problem, of a ``classical'' geometric multigrid (GMG) method.  It is not so different from the standard GMG treatments in \cite{Briggsetal2000,Bueler2021,Trottenbergetal2001}, for example.  We have, however, taken a particular FE viewpoint, namely the \emph{subspace decomposition} approach which has been applied both to multilevel and domain decompositions, as pioneered by Xu \cite{Xu1992}.
-
-Classical GMG is, however, not adequate for the main problem in glaciers, namely how the geometry and velocity of a glacier evolves in response to climatic inputs.  First the glaciers problem is (famously) nonlinear, in that the fluid is non-Newtonian, but this is not the leading difficulty.  Rather, regardless of the manner in which momentum (stress) balance is modeled, the boundary condition for the geometry evolution (i.e.~mass conservation) problem arises from an inequality constraint.  Namely that the ice thickness is nonnegative, equivalently that the ice surface elevation is above the bed elevation, a point already made in the Introduction but actually addressed in the next section.  For now we note that the addition of such an inequality constraint generates a nonlinear problem, even if the differential equation is linear.  In this section we modify the GMG subspace decomposition approach to solve a classical \emph{obstacle} problem, which combines an inequality constraint with a linear differential equation.  Switching the differential equation to the nonlinear SIA model in the next section will be comparatively an easy change; one can say that the dominant nonlinearity is already present in the classical obstacle problem here.
+The last section is a quick review, based on the simplest Poisson problem, of a ``classical'' geometric multigrid (GMG) method.  Classical GMG is, however, not adequate for the main problem in glaciers, namely how the geometry and velocity of a glacier evolves in response to climatic inputs.  First the glaciers problem is (famously) nonlinear, in that the fluid is non-Newtonian, but this is not the leading difficulty.  Rather, regardless of the manner in which momentum (stress) balance is modeled, the boundary condition for the geometry evolution (i.e.~mass conservation) problem arises from an inequality constraint.  Namely that the ice thickness is nonnegative, equivalently that the ice surface elevation is above the bed elevation, a point already made in the Introduction but actually addressed in the next section.  For now we note that the addition of such an inequality constraint generates a nonlinear problem, even if the differential equation is linear.  In this section we modify the GMG subspace decomposition approach to solve a classical \emph{obstacle} problem, which combines an inequality constraint with a linear differential equation.  Switching the differential equation to the nonlinear SIA model in the next section will be comparatively an easy change; one can say that the dominant nonlinearity is already present in the classical obstacle problem here.
 
 We solve the classical obstacle problem by a \emph{constraint decomposition} \cite{Tai2003} method, which modifies the subspace decomposition to allow an inequality constraint.  FIXME
 
