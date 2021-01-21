@@ -1,9 +1,10 @@
 # module to implement the V-cycle algorithm for Tai (2003)
 # multilevel subset decomposition method
 
+from pgs import pgssweep
 import numpy as np
 
-__all__ = ['pgssweep,vcycle']
+__all__ = ['vcycle']
 
 def _fzero(x):
     return np.zeros(np.shape(x))
@@ -21,21 +22,6 @@ def _levelreport(indent,k,N,sweeps):
 def _coarsereport(indent,N,sweeps):
     _indentprint(indent,'coarse: %d sweeps over %d nodes' \
                         % (sweeps,N))
-
-def pgssweep(m,h,v,r,phi,backward=False):
-    '''Do projected Gauss-Seidel sweep over the interior points p=1,...,m-1.
-    At each p, solves
-        a(v+c lam_p,lam_p) = r(lam_p)
-    for c and then updates
-        v[p] = max(v[p]+c,phi[p])
-    so v[p] >= phi[p].'''
-    indices = range(m-1,0,-1) if backward else range(1,m)
-    for p in indices:
-        # solve for c:  - (1/h) (v[p-1] - 2(v[p] + c) + v[p+1]) = r[p]
-        c = 0.5 * (h*r[p] + v[p-1] + v[p+1]) - v[p]
-        # enforce that  v_new[p] = v[p] + c  is above phi[p]
-        v[p] = max(v[p]+c,phi[p])   # equivalent:  v[p] += max(c,phi[p] - v[p])
-    return v
 
 def vcycle(u,phi,f,meshes,levels=None,view=False,symmetric=False,
            downsweeps=1,coarsesweeps=1,upsweeps=0):

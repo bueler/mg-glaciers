@@ -1,7 +1,7 @@
 # module for the MeshLevel class suitable for obstacle problems
 
 #TODO
-#  1 separate PDE-specific computations residual(), inactiveresidual()
+#  1 separate PDE-specific computation inactiveresidual()
 #  2 remove VR and VR0 methods?
 
 import numpy as np

@@ -1,9 +1,10 @@
 from meshlevel import MeshLevel1D
 from poisson import ellf, pointresidual, residual
+from pgs import pgssweep
 import numpy as np
 
 #TODO
-#  1 test poisson stuff
+#  1 test pgssweep
 #  2 test hierarchical decomposition in some way
 
 def test_ml_basics():

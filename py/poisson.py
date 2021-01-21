@@ -2,7 +2,7 @@
 
 import numpy as np
 
-__all__ = ['ellf','pointresidual','residual']
+__all__ = ['ellf','formdiagonal','pointresidual','residual']
 
 def ellf(mesh,f):
     '''Represent the linear functional (in (V^k)') which is the inner product
@@ -17,6 +17,13 @@ def ellf(mesh,f):
     ell = mesh.zeros()
     ell[1:-1] = mesh.h * f[1:-1]
     return ell
+
+def formdiagonal(mesh,p):
+    '''Compute the diagonal of a(.,.) at one interior hat function psi_p^k:
+       a(psi_p,psi_p) = int_0^1 (psi_p^k)'(x)^2 dx
+    Input mesh is of class MeshLevel1D.'''
+    assert (p>=1) and (p<=mesh.m)
+    return 2.0 / mesh.h
 
 def pointresidual(mesh,w,ell,p):
     '''Compute the residual linear functional (in (V^k')) for given iterate w
