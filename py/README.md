@@ -4,7 +4,7 @@
 
 Run software tests:
 
-        $ python3 -m pytest
+        $ make test
 
-This should work whether or not `pytest` has been installed (e.g. via pip).
+This calls `python3 -m pytest`, which should work whether or not `pytest` has been installed (e.g. via pip).
 

@@ -120,25 +120,7 @@ class MeshLevel1D(object):
         y[-1] = (1.0/3.0) * v[-2] + (2.0/3.0) * v[-1]
         return y
 
-    #FIXME move to poisson.py
-    def residual(self,u,f):
-        '''Compute the residual linear functional (i.e. in S_k') for
-        given u:
-           r(u)[v] = ell_f(v) - a(u,v)
-                   = int_0^1 f v - int_0^1 u' v'
-        The returned r=r(u) satisfies r[0]=0 and r[m]=0.  Input f is
-        a function.  Uses midpoint rule for the first integral and the
-        exact value for the second.'''
-        assert len(u) == self.m+1, \
-               'input vector u is of length %d (should be %d)' % (len(v),self.m+1)
-        r = self.zeros()
-        for p in range(1,self.m):
-            xpm, xpp = (p-0.5) * self.h, (p+0.5) * self.h
-            r[p] = (self.h/2.0) * (f(xpm) + f(xpp)) \
-                   - (1.0/self.h) * (2.0*u[p] - u[p-1] - u[p+1])
-        return r
-
-    #FIXME move to poisson.py
+    #FIXME move to obs1.py?
     def inactiveresidual(self,u,f,phi):
         '''Compute the values of the residual at nodes where the constraint
         is NOT active.  Note that where the constraint is active the residual

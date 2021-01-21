@@ -1,5 +1,9 @@
 # testing
 
+test:
+	python3 -m pytest
+
+# FIXME broken from here
 runobs1_1:
 	-@./../testit.sh obs1.py "-pgsonly -jfine 3 -down 3" 1 1
 
@@ -13,8 +17,6 @@ runobs1_4:
 	-@./../testit.sh obs1.py "-monitor -mgview -jfine 4 -jcoarse 3" 1 4
 
 test_obs1: runobs1_1 runobs1_2 runobs1_3 runobs1_4
-
-test: test_obs1
 
 .PHONY: clean runobs1_1 runobs1_2 runobs1_3 runobs1_4 test_obs1 test
 
