@@ -1,8 +1,5 @@
 # module for the MeshLevel class suitable for obstacle problems
 
-#TODO
-#  remove VR and VR0 methods?
-
 import numpy as np
 
 __all__ = ['MeshLevel1D']
@@ -87,35 +84,5 @@ class MeshLevel1D(object):
         y = np.zeros(self.mcoarser+2)
         for q in range(1,self.mcoarser+1):
             y[q] = max(v[2*q-1:2*q+2])
-        return y
-
-    #FIXME remove?
-    def VR0(self,v):
-        '''Restrict a vector v in S_k on the current mesh to the next-coarser
-        (k-1) mesh by using full-weighting.  Only the interior points are
-        updated and the returned vector has zero boundary values.'''
-        assert self.k > 0, \
-               'cannot restrict to a mesh coarser than the coarsest mesh'
-        assert len(v) == self.m+1, \
-               'input vector v is of length %d (should be %d)' % (len(v),self.m+1)
-        y = np.zeros(self.mcoarser+1)
-        for q in range(1,len(y)-1):
-            y[q] = 0.25 * (v[2*q-1] + v[2*q+1]) + 0.5 * v[2*q]
-        return y
-
-    #FIXME remove?
-    def VR(self,v):
-        '''Restrict a vector v in S_k on the current mesh to the next-coarser
-        (k-1) mesh by using full-weighting.  All points are updated.  For
-        boundary values see equation (6.20) in Bueler (2021).'''
-        assert len(v) == self.m+1, \
-               'input vector v is of length %d (should be %d)' % (len(v),self.m+1)
-        assert self.k > 0, \
-               'cannot restrict to a mesh coarser than the coarsest mesh'
-        y = np.zeros(self.mcoarser+1)
-        y[0] = (2.0/3.0) * v[0] + (1.0/3.0) * v[1]
-        for q in range(1,len(y)-1):
-            y[q] = 0.25 * (v[2*q-1] + v[2*q+1]) + 0.5 * v[2*q]
-        y[-1] = (1.0/3.0) * v[-2] + (2.0/3.0) * v[-1]
         return y
 
