@@ -2,9 +2,11 @@
 
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 from poisson import residual
+from pgs import inactiveresidual
 
-__all__ = ['obstacleplot,obstaclediagnostics']
+__all__ = ['obstacleplot','obstaclediagnostics']
 
 # better defaults for graphs
 font = {'size' : 20}
@@ -18,16 +20,6 @@ def output(filename):
         plt.savefig(filename,bbox_inches='tight')
     else:
         plt.show()
-
-def inactiveresidual(mesh,w,ell,phi):
-    '''Compute the values of the residual at nodes where the constraint
-    is NOT active.  Note that where the constraint is active the residual
-    may have significantly negative values.  The norm of the residual at
-    inactive nodes is relevant to convergence.'''
-    r = residual(mesh,w,ell)
-    ireps = 1.0e-10
-    r[w < phi + ireps] = np.maximum(r[w < phi + irreps],0.0)
-    return r
 
 def obstacleplot(mesh,uinitial,ufinal,phi,filename,uex=[]):
     xx = mesh.xx()
@@ -47,8 +39,8 @@ def obstaclediagnostics(hierarchy,ufinal,phi,ell,chi,filename):
     xx = mesh.xx()
     plt.figure(figsize=(15.0,15.0))
     plt.subplot(4,1,1)
-    r = residual(mesh,w,ell,phi)
-    ir = inactiveresidual(mesh,w,ell,phi)
+    r = residual(mesh,ufinal,ell)
+    ir = inactiveresidual(mesh,ufinal,ell,phi)
     plt.plot(xx,r,'k',label='residual')
     plt.plot(xx,ir,'r',label='inactive residual')
     plt.legend()
@@ -59,10 +51,10 @@ def obstaclediagnostics(hierarchy,ufinal,phi,ell,chi,filename):
     plt.legend()
     plt.gca().set_xticks([],[])
     plt.subplot(4,1,(3,4))
-    for k in range(levels-1):
+    for k in range(len(hierarchy)-1):
         plt.plot(hierarchy[k].xx(),chi[k],'k.--',ms=8.0,
                  label='level %d' % k)
-    plt.plot(hierarchy[levels-1].xx(),chi[levels-1],'k.-',ms=12.0,
+    plt.plot(hierarchy[-1].xx(),chi[-1],'k.-',ms=12.0,
              label='fine mesh',linewidth=3.0)
     plt.legend()
     plt.title('decomposition of final defect obstacle')

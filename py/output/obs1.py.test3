@@ -1,4 +1,6 @@
   0:  |u-uexact|_2 = 1.8257e-01
   1:  |u-uexact|_2 = 5.1384e-03
   2:  |u-uexact|_2 = 4.5951e-04
-level 3 (m = 16) using 3 V(1,1,0) cycles:  |u-uexact|_2 = 6.1427e-05
+fine level 3 (m = 15) using 3 V(1,1,0) cycles:  |u-uexact|_2 = 6.1427e-05
+saving output to test3.png ...
+saving output to diags_test3.png ...

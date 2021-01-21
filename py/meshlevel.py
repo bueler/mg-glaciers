@@ -28,7 +28,6 @@ class MeshLevel1D(object):
         else:
             self.mcoarser = None
         self.h = 1.0 / (self.m + 1)
-        self.vstate = None  #FIXME
 
     def zeros(self):
         return np.zeros(self.m+2)

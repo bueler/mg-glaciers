@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 
-# TODO:
-#   add inactive-node residual monitoring (-monitor) and also error
-#      monitoring (-monitorerr)
+#TODO:  add -up ability
 
 import numpy as np
 import sys, argparse
 
 from meshlevel import MeshLevel1D
 from poisson import ellf
-from pgs import pgssweep
+from pgs import inactiveresidual, pgssweep
 from subsetdecomp import vcycle
-from visualize import obstacleplot
+from visualize import obstacleplot, obstaclediagnostics
 
 parser = argparse.ArgumentParser(description='''
 Solve a 1D obstacle problem:
@@ -52,7 +50,9 @@ parser.add_argument('-kcoarse', type=int, default=0, metavar='k',
 parser.add_argument('-mgview', action='store_true', default=False,
                     help='view multigrid cycles by indented print statements')
 parser.add_argument('-monitor', action='store_true', default=False,
-                    help='monitor the error at the end of each V-cycle')
+                    help='monitor the inactive residual norm at the end of each V-cycle')
+parser.add_argument('-monitorerr', action='store_true', default=False,
+                    help='monitor the error (if available) at the end of each V-cycle')
 parser.add_argument('-o', metavar='FILE', type=str, default='',
                     help='save plot at end in image file, e.g. PDF or PNG')
 parser.add_argument('-pgsonly', action='store_true', default=False,
@@ -80,6 +80,9 @@ if args.show and args.o:
     print('ERROR: use either -show or -o FILE but not both')
     sys.exit(2)
 exactavailable = (not args.random) and (args.fscale == 1.0)
+if args.monitorerr and not exactavailable:
+    print('ERROR: -monitorerr but exact solution and error not available')
+    sys.exit(3)
 
 # fix the random seed for repeatability
 np.random.seed(1)
@@ -99,6 +102,8 @@ def phi(x):
         perturb[0] = 0.0
         perturb[-1] = 0.0
         ph += perturb
+    ph[0] = 0.0
+    ph[-1] = 0.0
     return ph
 
 def fsource(x):
@@ -135,7 +140,10 @@ def uexact(x):
     return u
 
 # mesh hierarchy = [coarse,...,fine]
+assert (args.kcoarse >= 0)
+assert (args.kfine >= args.kcoarse)
 levels = args.kfine - args.kcoarse + 1
+assert (levels >= 1)
 hierarchy = [None] * (levels)  # list [None,...,None]; indices 0,...,levels-1
 for k in range(args.kcoarse,args.kfine+1):
    hierarchy[k-args.kcoarse] = MeshLevel1D(k=k)
@@ -147,6 +155,10 @@ phifine = phi(mesh.xx())
 # feasible initial iterate
 uinitial = np.maximum(phifine,mesh.zeros())
 
+# exact solution
+if exactavailable:
+    uex = uexact(mesh.xx())
+
 # multigrid V-cycles (unless user just wants pGS)
 uu = uinitial.copy()
 ellfine = ellf(mesh,fsource(mesh.xx()))
@@ -157,13 +169,18 @@ if args.pgsonly:
         if args.symmetric:
             pgssweep(mesh,uu,ellfine,phifine,forward=False)
 else:
-    raise NotImplementedError
     for s in range(args.cycles):
-        if args.monitor and exactavailable:
-            print('  %d:  |u-uexact|_2 = %.4e' % (s,l2err(uu)))
-        uu, chi = vcycle(uu,phifine,fsource,hierarchy,
+        if args.monitor:
+            ir = mesh.l2norm(inactiveresidual(mesh,uu,ellfine,phifine))
+            print('  %d:  |r^i(u)|_2 = %.4e' % (s,ir))
+        if args.monitorerr and exactavailable:
+            print('  %d:  |u-uexact|_2 = %.4e' % (s,mesh.l2norm(uu-uex)))
+        uu, chi = vcycle(hierarchy,uu,ellfine,phifine,
                          levels=levels,view=args.mgview,symmetric=args.symmetric,
-                         downsweeps=args.down,coarsesweeps=args.coarse,upsweeps=args.up)
+                         down=args.down,coarse=args.coarse,up=args.up)
+if args.monitor:
+    ir = mesh.l2norm(inactiveresidual(mesh,uu,ellfine,phifine))
+    print('  %d:  |r^i(u)|_2 = %.4e' % (args.cycles,ir))
 
 # report on computation including numerical error
 if args.pgsonly:
@@ -172,12 +189,11 @@ else:
    method = 'using %d V(%d,%d,%d) cycles' \
             % (args.cycles,args.down,args.coarse,args.up)
 if exactavailable:
-   uex = uexact(mesh.xx())
    error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
 else:
    uex = []
    error = ''
-print('level %d (m = %d) %s%s' % (args.kfine,mesh.m,method,error))
+print('fine level %d (m = %d) %s%s' % (args.kfine,mesh.m,method,error))
 
 # graphical output if desired
 if args.show or args.o:

@@ -1,13 +1,11 @@
-# module to implement the V-cycle algorithm for Tai (2003)
-# multilevel subset decomposition method
+# module to implement the V-cycle algorithm for the Tai (2003)
+#     multilevel subset decomposition method
 
+from poisson import residual
 from pgs import pgssweep
 import numpy as np
 
 __all__ = ['vcycle']
-
-def _fzero(x):
-    return np.zeros(np.shape(x))
 
 def _indentprint(n,s):
     '''Print 2n spaces and then string s.'''
@@ -15,75 +13,75 @@ def _indentprint(n,s):
         print('  ',end='')
     print(s)
 
-def _levelreport(indent,k,N,sweeps):
-    _indentprint(indent-k,'mesh %d: %d sweeps over %d nodes' \
-                          % (k,sweeps,N))
+def _levelreport(indent,k,m,sweeps):
+    _indentprint(indent-k,'level %d: %d sweeps over m=%d nodes' \
+                          % (k,sweeps,m))
 
-def _coarsereport(indent,N,sweeps):
-    _indentprint(indent,'coarse: %d sweeps over %d nodes' \
-                        % (sweeps,N))
+def _coarsereport(indent,m,sweeps):
+    _indentprint(indent,'coarsest: %d sweeps over m=%d nodes' \
+                        % (sweeps,m))
 
-def vcycle(u,phi,f,meshes,levels=None,view=False,symmetric=False,
-           downsweeps=1,coarsesweeps=1,upsweeps=0):
+def vcycle(hierarchy,w,ell,phi,
+           levels=None,view=False,symmetric=False,
+           down=1,coarse=1,up=0):
     '''Apply one V(1,0)-cycle of the multilevel subset decomposition
-    method from Tai (2003).  (Alg. 4.7 in Graeser & Kornhuber (2009).)
-    In-place updates the iterate u in K = {v | v >= phi} in the VI
-        a(u,v-u) >= (f,v-u)  for all v in K
-    Vectors u,phi must be defined on the finest mesh (meshes[levels-1])
-    while input f is a function.  Note meshes[0],...,meshes[levels-1]
-    (coarse to fine) are of type MeshLevel.  The smoother is downsweeps
+    method from Tai (2003), namely Alg. 4.7 in Graeser & Kornhuber (2009).
+    In-place updates the iterate w to solve the obstacle problem on the
+    mesh = hierarchy[-1] = hierarchy[levels-1].  Vectors w,phi are in the
+    fine-mesh function space (V^K) while ell is a fine-mesh linear functional
+    (in (V^K)').  Note hierarchy[0],...,hierarchy[levels-1]
+    (coarse to fine) are of type MeshLevel1D.  The smoother is down
     iterations of projected Gauss-Seidel (pGS).  The coarse solver is
-    coarsesweeps iterations of pGS, and thus not exact.'''
-    chi = [None] * (levels)           # empty list of length levels
+    coarse iterations of pGS (thus possibly not exact).'''
+
+    if up > 0:
+        raise NotImplementedError
+
+    mesh = hierarchy[-1]
+    assert (len(w) == mesh.m+2)
+    assert (len(ell) == mesh.m+2)
+    assert (len(phi) == mesh.m+2)
+    chi = [None] * (levels)           # empty list
     fine = levels - 1
-    chi[fine] = phi - u               # fine mesh defect obstacle
-    r = meshes[fine].residual(u,f)    # fine mesh residual
+
+    # the only place w is used:
+    chi[fine] = phi - w               # fine mesh defect obstacle
+    r = residual(mesh,w,ell)          # fine mesh residual
+
     # DOWN
     for k in range(fine,0,-1):        # k=fine,fine-1,...,1
         # monotone restriction decomposes defect obstacle
-        chi[k-1] = meshes[k].MR(chi[k])
+        chi[k-1] = hierarchy[k].mR(chi[k])
         # the level k obstacle is the *change* in chi
-        psi = chi[k] - meshes[k].prolong(chi[k-1])
-        if upsweeps > 0:
-            psi *= 0.5
+        Psi = chi[k] - hierarchy[k].P(chi[k-1])
         # do projected GS sweeps
         if view:
-            _levelreport(fine,k,meshes[k].m-1,downsweeps)
-        v = meshes[k].zeros()
-        for s in range(downsweeps):
-            pgssweep(meshes[k].m,meshes[k].h,v,r,psi)
+            _levelreport(fine,k,hierarchy[k].m,down)
+        v = hierarchy[k].zeros()
+        for s in range(down):
+            pgssweep(hierarchy[k],v,r,Psi)
             if symmetric:
-                pgssweep(meshes[k].m,meshes[k].h,v,r,psi,backward=True)
-        meshes[k].vstate = v.copy()
+                pgssweep(hierarchy[k],v,r,Psi,forward=False)
+        hierarchy[k].vstate = v.copy()
         # update and canonically-restrict the residual
-        r += meshes[k].residual(v,_fzero)
-        r = meshes[k].CR(r)
+        r = residual(hierarchy[k],v,r)
+        r = hierarchy[k].cR(r)
     # COARSE SOLVE
-    psi = chi[0]  # correct for any upsweeps
+    Psi = chi[0]
     if view:
-        _coarsereport(fine,meshes[0].m-1,coarsesweeps)
-    v = meshes[0].zeros()
-    for s in range(coarsesweeps):
-        pgssweep(meshes[0].m,meshes[0].h,v,r,psi)
+        _coarsereport(fine,hierarchy[0].m,coarse)
+    v = hierarchy[0].zeros()
+    for s in range(coarse):
+        pgssweep(hierarchy[0],v,r,Psi)
         if symmetric:
-            pgssweep(meshes[0].m,meshes[0].h,v,r,psi,backward=True)
-    meshes[0].vstate = v.copy()
+            pgssweep(hierarchy[0],v,r,Psi,forward=False)
+    hierarchy[0].vstate = v.copy()
     # UP
     for k in range(1,fine+1):        # k=1,2,...,fine
         if view:
-            _levelreport(fine,k,meshes[k].m-1,upsweeps)
-        # FIXME something in the following is WRONG ... V(1,1) cycles do not work
-        w = meshes[k].prolong(meshes[k-1].vstate)
-        if upsweeps > 0:
-            psi = 0.5 * (chi[k] - meshes[k].prolong(chi[k-1]))
-            r = meshes[k].residual(w,_fzero)  # FIXME update stored level k residual?
-            #v = meshes[k].zeros()
-            for s in range(upsweeps):
-                pgssweep(meshes[k].m,meshes[k].h,w,r,psi)
-                if symmetric:
-                    pgssweep(meshes[k].m,meshes[k].h,w,r,psi,backward=True)
-            #meshes[k].vstate = v.copy()
-        meshes[k].vstate += w
-    u += meshes[fine].vstate
-    return u, chi
+            _levelreport(fine,k,hierarchy[k].m,up)
+        hierarchy[k].vstate += hierarchy[k].P(hierarchy[k-1].vstate)
+    # new iterate
+    w += hierarchy[fine].vstate
+    return w, chi
 

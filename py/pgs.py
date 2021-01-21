@@ -1,9 +1,19 @@
 # module to implement the projected Gauss-Seidel (pGS) algorithm
 
-from poisson import formdiagonal, pointresidual
+from poisson import residual,formdiagonal,pointresidual
 import numpy as np
 
-__all__ = ['pgssweep']
+__all__ = ['inactiveresidual','pgssweep']
+
+def inactiveresidual(mesh,w,ell,phi):
+    '''Compute the values of the residual at nodes where the constraint
+    is NOT active.  Note that where the constraint is active the residual
+    may have significantly negative values.  The norm of the residual at
+    inactive nodes is relevant to convergence.'''
+    r = residual(mesh,w,ell)
+    ireps = 1.0e-10
+    r[w < phi + ireps] = np.maximum(r[w < phi + ireps],0.0)
+    return r
 
 def pgssweep(mesh,w,ell,phi,forward=True):
     '''Do in-place projected Gauss-Seidel sweep, over the interior points
