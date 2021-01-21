@@ -25,10 +25,6 @@ An illustration of the ice-like problem geometry:
 
         $ ./obs1.py -problem icelike -show -diagnostics -jfine 4 -cycles 10
 
-Run software tests:
-
-        $ make test
-
 ## fas/
 
 This is a paper and Python program which I wrote to make the full approximation storage (FAS) scheme blindingly clear to me.  See `fas/README.md` for details.

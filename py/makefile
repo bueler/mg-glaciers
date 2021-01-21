@@ -20,5 +20,5 @@ test: test_obs1
 
 clean:
 	@rm -f maketmp tmp difftmp *test*.png
-	@rm -rf __pycache__
+	@rm -rf __pycache__ .pytest_cache/
 
