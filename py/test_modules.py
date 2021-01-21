@@ -39,6 +39,19 @@ def test_ml_mR():
 
 def test_po_ellf():
     ml = MeshLevel1D(k=1)
-    f = np.array([0.0,1.0,1.0,1.0,0.0])
-    r = ellf(ml,f)
-    assert True  # FIXME actual test
+    f = np.ones(ml.m+2)
+    assert all(ellf(ml,f) == ml.h * np.array([0.0,1.0,1.0,1.0,0.0]))
+
+def test_po_pointresidual():
+    ml = MeshLevel1D(k=1)
+    f = np.array([1.0,0.5,0.0,0.5,1.0])
+    w = f.copy()
+    assert pointresidual(ml,w,ellf(ml,f),1) == 0.5 * ml.h
+    assert pointresidual(ml,w,ellf(ml,f),2) == 4.0
+
+def test_po_residual():
+    ml = MeshLevel1D(k=1)
+    f = np.array([1.0,0.5,0.0,0.5,1.0])
+    w = f.copy()
+    assert all(residual(ml,w,ellf(ml,f)) == [0.0,0.5*ml.h,4.0,0.5*ml.h,0.0])
+
