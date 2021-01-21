@@ -1,8 +1,7 @@
 # module for the MeshLevel class suitable for obstacle problems
 
 #TODO
-#  1 separate PDE-specific computation inactiveresidual()
-#  2 remove VR and VR0 methods?
+#  remove VR and VR0 methods?
 
 import numpy as np
 
@@ -119,15 +118,4 @@ class MeshLevel1D(object):
             y[q] = 0.25 * (v[2*q-1] + v[2*q+1]) + 0.5 * v[2*q]
         y[-1] = (1.0/3.0) * v[-2] + (2.0/3.0) * v[-1]
         return y
-
-    #FIXME move to obs1.py?
-    def inactiveresidual(self,u,f,phi):
-        '''Compute the values of the residual at nodes where the constraint
-        is NOT active.  Note that where the constraint is active the residual
-        may have significantly negative values.  The norm of the residual at
-        inactive nodes is relevant to convergence.'''
-        r = self.residual(u,f)
-        osreps = 1.0e-10
-        r[u < phi + osreps] = np.maximum(r[u < phi + osreps],0.0)
-        return r
 

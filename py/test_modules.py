@@ -4,8 +4,7 @@ from pgs import pgssweep
 import numpy as np
 
 #TODO
-#  1 test pgssweep
-#  2 test hierarchical decomposition in some way
+#  test hierarchical decomposition in some way
 
 def test_ml_basics():
     ml = MeshLevel1D(k=2)
@@ -55,4 +54,15 @@ def test_po_residual():
     f = np.array([1.0,0.5,0.0,0.5,1.0])
     w = f.copy()
     assert all(residual(ml,w,ellf(ml,f)) == [0.0,0.5*ml.h,4.0,0.5*ml.h,0.0])
+
+def test_pgs_pgssweep1():
+    ml = MeshLevel1D(k=0)
+    f = np.array([0.0,1.0,0.0])
+    ell = ellf(ml,f)
+    assert all(ell == ml.h * f)
+    w = ml.zeros()
+    assert all(residual(ml,w,ell) == ml.h * f)
+    phi = np.array([-2.0,-2.0,-2.0])  # thus unconstrained
+    w = pgssweep(ml,w,ell,phi,forward=True)
+    assert all(residual(ml,w,ell) == ml.zeros())
 

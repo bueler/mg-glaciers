@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   1. add inactive-node residual monitoring (-monitor) and also error
+#   add inactive-node residual monitoring (-monitor) and also error
 #      monitoring (-monitorerr)
-#   2. factor problem-specific stuff out of meshlevel.py
-#   3. factor visualization stuff out of obs1.py
 
 import numpy as np
 import sys, argparse
-import matplotlib.pyplot as plt
 
 from meshlevel import MeshLevel1D
-from subsetdecomp import pgssweep,vcycle
+from poisson import ellf
+from pgs import pgssweep
+from subsetdecomp import vcycle
+from visualize import obstacleplot
 
 parser = argparse.ArgumentParser(description='''
 Solve a 1D obstacle problem:
@@ -45,10 +45,10 @@ parser.add_argument('-down', type=int, default=1, metavar='N',
                     help='pGS sweeps before coarse-mesh correction (default=1)')
 parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
                     help='in Poisson equation -u"=f this multiplies f (default X=1)')
-parser.add_argument('-jfine', type=int, default=2, metavar='J',
-                    help='fine mesh is jth level (default jfine=2)')
-parser.add_argument('-jcoarse', type=int, default=0, metavar='J',
-                    help='coarse mesh is jth level (default jcoarse=0 gives 1 node)')
+parser.add_argument('-kfine', type=int, default=2, metavar='K',
+                    help='fine mesh is kth level (default kfine=2)')
+parser.add_argument('-kcoarse', type=int, default=0, metavar='k',
+                    help='coarse mesh is kth level (default kcoarse=0 gives 1 node)')
 parser.add_argument('-mgview', action='store_true', default=False,
                     help='view multigrid cycles by indented print statements')
 parser.add_argument('-monitor', action='store_true', default=False,
@@ -76,6 +76,10 @@ args, unknown = parser.parse_known_args()
 if unknown:
     print('ERROR: unknown arguments ... try -h or --help for usage')
     sys.exit(1)
+if args.show and args.o:
+    print('ERROR: use either -show or -o FILE but not both')
+    sys.exit(2)
+exactavailable = (not args.random) and (args.fscale == 1.0)
 
 # fix the random seed for repeatability
 np.random.seed(1)
@@ -98,20 +102,14 @@ def phi(x):
     return ph
 
 def fsource(x):
-    '''The source term in -u'' = f.  Assumes x is scalar.'''
+    '''The source term in -u'' = f.'''
     if args.problem == 'icelike':
-        if x < 0.2 or x > 0.8:
-            f = -16.0
-        else:
-            f = 8.0
+        f = 8.0 * np.ones(np.shape(x))
+        f[x<0.2] = -16.0
+        f[x>0.8] = -16.0
     else:
-        f = -2.0
+        f = -2.0 * np.ones(np.shape(x))
     return args.fscale * f
-
-def fzero(x):
-    return np.zeros(np.shape(x))
-
-exactavailable = (not args.random) and (args.fscale == 1.0)
 
 def uexact(x):
     '''Assumes x is a numpy array.'''
@@ -137,33 +135,29 @@ def uexact(x):
     return u
 
 # mesh hierarchy = [coarse,...,fine]
-levels = args.jfine - args.jcoarse + 1
+levels = args.kfine - args.kcoarse + 1
 hierarchy = [None] * (levels)  # list [None,...,None]; indices 0,...,levels-1
-for k in range(args.jcoarse,args.jfine+1):
-   hierarchy[k-args.jcoarse] = MeshLevel1D(k=k)
+for k in range(args.kcoarse,args.kfine+1):
+   hierarchy[k-args.kcoarse] = MeshLevel1D(k=k)
 mesh = hierarchy[-1]  # fine mesh
 
 # discrete obstacle on fine level
 phifine = phi(mesh.xx())
 
 # feasible initial iterate
-uinitial = np.maximum(phifine,np.zeros(np.shape(mesh.xx())))
-
-# ability to evaluate error
-def l2err(u):
-    udiff = u - uexact(mesh.xx())
-    return mesh.l2norm(udiff)
+uinitial = np.maximum(phifine,mesh.zeros())
 
 # multigrid V-cycles (unless user just wants pGS)
 uu = uinitial.copy()
+ellfine = ellf(mesh,fsource(mesh.xx()))
 if args.pgsonly:
     # sweeps of projected Gauss-Seidel on fine grid
-    r = mesh.residual(mesh.zeros(),fsource)
     for s in range(args.down):
-        pgssweep(mesh.m,mesh.h,uu,r,phifine)
+        pgssweep(mesh,uu,ellfine,phifine)
         if args.symmetric:
-            pgssweep(mesh.m,mesh.h,uu,r,phifine,backward=True)
+            pgssweep(mesh,uu,ellfine,phifine,forward=False)
 else:
+    raise NotImplementedError
     for s in range(args.cycles):
         if args.monitor and exactavailable:
             print('  %d:  |u-uexact|_2 = %.4e' % (s,l2err(uu)))
@@ -178,61 +172,16 @@ else:
    method = 'using %d V(%d,%d,%d) cycles' \
             % (args.cycles,args.down,args.coarse,args.up)
 if exactavailable:
-   error = ':  |u-uexact|_2 = %.4e' % l2err(uu)
+   uex = uexact(mesh.xx())
+   error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
 else:
+   uex = []
    error = ''
-print('level %d (m = %d) %s%s' % (args.jfine,mesh.m,method,error))
+print('level %d (m = %d) %s%s' % (args.kfine,mesh.m,method,error))
 
 # graphical output if desired
-import matplotlib
-font = {'size' : 20}
-matplotlib.rc('font', **font)
-lines = {'linewidth': 2}
-matplotlib.rc('lines', **lines)
-
-def finalplot(xx,uinitial,ufinal,phifine):
-    plt.figure(figsize=(15.0,8.0))
-    plt.plot(xx,uinitial,'k--',label='initial iterate')
-    plt.plot(xx,ufinal,'k',label='final iterate',linewidth=4.0)
-    plt.plot(xx,phifine,'r',label='obstacle')
-    if exactavailable:
-        plt.plot(xx,uexact(xx),'g',label='exact')
-    plt.axis([0.0,1.0,-0.3 + min(ufinal),1.1*max(ufinal)])
-    plt.legend()
-    plt.xlabel('x')
-
 if args.show or args.o:
-    finalplot(mesh.xx(),uinitial,uu,phifine)
-    if args.o:
-        plt.savefig(args.o,bbox_inches='tight')
-    else:
-        plt.show()
-
+    obstacleplot(mesh,uinitial,uu,phifine,args.o,uex=uex)
 if args.diagnostics:
-    plt.figure(figsize=(15.0,15.0))
-    plt.subplot(4,1,1)
-    r = mesh.residual(uu,fsource)
-    osr = mesh.inactiveresidual(uu,fsource,phifine)
-    plt.plot(mesh.xx(),r,'k',label='residual')
-    plt.plot(mesh.xx(),osr,'r',label='inactive residual')
-    plt.legend()
-    plt.gca().set_xticks([],[])
-    plt.subplot(4,1,2)
-    plt.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    plt.plot(mesh.xx(),osr,'r',label='inactive residual')
-    plt.legend()
-    plt.gca().set_xticks([],[])
-    plt.subplot(4,1,(3,4))
-    for k in range(levels-1):
-        plt.plot(hierarchy[k].xx(),chi[k],'k.--',ms=8.0,
-                 label='level %d' % k)
-    plt.plot(hierarchy[levels-1].xx(),chi[levels-1],'k.-',ms=12.0,
-             label='fine mesh',linewidth=3.0)
-    plt.legend()
-    plt.title('decomposition of final defect obstacle')
-    plt.xlabel('x')
-    if args.o:
-        plt.savefig('diags_' + args.o,bbox_inches='tight')
-    else:
-        plt.show()
+    obstaclediagnostics(hierarchy,uu,phifine,ellfine,chi,args.o)
 
