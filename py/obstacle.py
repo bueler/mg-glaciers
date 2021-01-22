@@ -16,8 +16,8 @@ Solve a 1D obstacle problem:
                      /1
     min_{u >= phi}   |  1/2 (u')^2 - f u
                      /0
-where phi(x) = 8x(1-x)-1, f(x) = -2, and u is in H_0^1[0,1].
-Note that the interior condition (PDE) is -u''=-2.
+where phi(x) and u(x) are in H_0^1[0,1] and f(x) is in L^2[0,1].
+Note that the interior condition (PDE) is  - u'' = f.
 
 Solution is by Alg. 4.7 in Gräser & Kornhuber (2009), namely the subset
 decomposition V-cycle method by Tai (2003).  The smoother and the coarse-mesh
@@ -55,10 +55,12 @@ parser.add_argument('-monitorerr', action='store_true', default=False,
                     help='monitor the error (if available) at the end of each V-cycle')
 parser.add_argument('-o', metavar='FILE', type=str, default='',
                     help='save plot at end in image file, e.g. PDF or PNG')
+parser.add_argument('-parabolay', type=float, default=-1.0, metavar='X',
+                    help='vertical location of obstacle in -problem parabola (default X=-1.0)')
 parser.add_argument('-pgsonly', action='store_true', default=False,
                     help='do projected Gauss-Seidel (instead of multigrid)')
-parser.add_argument('-problem', choices=['parabola', 'low', 'icelike'],
-                    metavar='X', default='parabola',
+parser.add_argument('-problem', choices=['icelike','parabola'],
+                    metavar='X', default='icelike',
                     help='determines obstacle and source function (default: %(default)s)')
 parser.add_argument('-random', action='store_true', default=False,
                     help='randomly perturb the obstacle')
@@ -72,6 +74,9 @@ parser.add_argument('-up', type=int, default=0, metavar='N',
                     help='pGS sweeps after coarse-mesh correction (default=1)')
 args, unknown = parser.parse_known_args()
 
+# FIXME decide which parabolay values allow exact
+exactavailable = (not args.random) and (args.fscale == 1.0)
+
 # provide usage help
 if unknown:
     print('ERROR: unknown arguments ... try -h or --help for usage')
@@ -79,7 +84,6 @@ if unknown:
 if args.show and args.o:
     print('ERROR: use either -show or -o FILE but not both')
     sys.exit(2)
-exactavailable = (not args.random) and (args.fscale == 1.0)
 if args.monitorerr and not exactavailable:
     print('ERROR: -monitorerr but exact solution and error not available')
     sys.exit(3)
@@ -89,12 +93,11 @@ np.random.seed(1)
 
 def phi(x):
     '''The obstacle:  u >= phi.'''
-    if args.problem == 'parabola':
-        ph = 8.0 * x * (1.0 - x) - 1.0
-    elif args.problem == 'low':
-        ph = 8.0 * x * (1.0 - x) - 3.0
-    elif args.problem == 'icelike':
+    if args.problem == 'icelike':
         ph = x * (1.0 - x)
+    elif args.problem == 'parabola':
+        # maximum is at  2.0 + args.parabolay
+        ph = 8.0 * x * (1.0 - x) + args.parabolay
     else:
         raise ValueError
     if args.random:
@@ -102,8 +105,7 @@ def phi(x):
         perturb[0] = 0.0
         perturb[-1] = 0.0
         ph += perturb
-    ph[0] = 0.0
-    ph[-1] = 0.0
+    ph[[0,-1]] = [0.0, 0.0]  # always force zero boundary conditions
     return ph
 
 def fsource(x):
@@ -119,9 +121,7 @@ def fsource(x):
 def uexact(x):
     '''Assumes x is a numpy array.'''
     assert exactavailable, 'exact solution not available'
-    if args.problem == 'low':
-        u = x * (x - 1.0)   # solution without obstruction
-    elif args.problem == 'icelike':
+    if args.problem == 'icelike':
         u = phi(x)
         a, c0, c1, d0, d1 = 0.1, -0.8, 0.09, 4.0, -0.39  # exact values
         mid = (x > 0.2) * (x < 0.8) # logical and
@@ -131,12 +131,17 @@ def uexact(x):
         u[left] = 8.0*x[left]**2 + c0*x[left] + c1
         u[right] = 8.0*(1.0-x[right])**2 + c0*(1.0-x[right]) + c1
     else:  # problem == 'parabola'
-        a = 1.0/3.0
-        def upoisson(x):
-            return x * (x - 18.0 * a + 8.0)
-        u = phi(x)
-        u[x < a] = upoisson(x[x < a])
-        u[x > 1.0-a] = upoisson(1.0 - x[x > 1.0-a])
+        if args.parabolay == -1.0:
+            a = 1.0/3.0
+            def upoisson(x):
+                return x * (x - 18.0 * a + 8.0)
+            u = phi(x)
+            u[x < a] = upoisson(x[x < a])
+            u[x > 1.0-a] = upoisson(1.0 - x[x > 1.0-a])
+        elif args.parabolay <= -2.25:
+            u = x * (x - 1.0)   # solution without obstruction
+        else:
+            raise NotImplementedError
     return u
 
 # mesh hierarchy = [coarse,...,fine]
