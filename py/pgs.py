@@ -30,8 +30,10 @@ def pgssweep(mesh,w,ell,phi,forward=True):
     else:
         indices = range(mesh.m,0,-1)
     for p in indices:
-        assert w[p] >= phi[p], 'nonfeasible iterate w[%d]=%f < phi[%d]=%f' \
-                               % (p,w[p],p,phi[p])
+        if w[p] < phi[p]:
+            print('WARNING: nonfeasible iterate value w[%d]=%f < phi[%d]=%f' \
+                  % (p,w[p],p,phi[p]))
+            w[p] = phi[p]
         c = pointresidual(mesh,w,ell,p) / formdiagonal(mesh,p)
         w[p] = max(w[p]+c,phi[p])   # equivalent:  w[p] += max(c,phi[p]-w[p])
     return w
