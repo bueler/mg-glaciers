@@ -207,5 +207,5 @@ print('fine level %d (m = %d) %s%s' % (args.kfine,mesh.m,method,error))
 if args.show or args.o:
     obstacleplot(mesh,uinitial,uu,phifine,args.o,uex=uex)
 if args.diagnostics:
-    obstaclediagnostics(hierarchy,uu,phifine,ellfine,chi,args.o)
+    obstaclediagnostics(hierarchy,uu,phifine,ellfine,chi,args.up,args.o)
 

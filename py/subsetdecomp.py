@@ -34,7 +34,11 @@ def vcycle(hierarchy,w,ell,phi,
     iterations of projected Gauss-Seidel (pGS).  The coarse solver is
     coarse iterations of pGS (thus possibly not exact).'''
 
-    if up > 0:
+    if down < 1:
+        raise NotImplementedError
+    if coarse < 1:
+        raise NotImplementedError
+    if symmetric:
         raise NotImplementedError
 
     mesh = hierarchy[-1]
@@ -45,42 +49,54 @@ def vcycle(hierarchy,w,ell,phi,
     fine = levels - 1
 
     # the only place w is used:
-    chi[fine] = phi - w               # fine mesh defect obstacle
-    r = residual(mesh,w,ell)          # fine mesh residual
+    chi[fine] = phi - w                       # fine mesh defect obstacle
+    hierarchy[fine].r = residual(mesh,w,ell)  # fine mesh residual
 
     # DOWN
     for k in range(fine,0,-1):        # k=fine,fine-1,...,1
+        if view:
+            _levelreport(fine,k,hierarchy[k].m,down)
         # monotone restriction decomposes defect obstacle
         chi[k-1] = hierarchy[k].mR(chi[k])
         # the level k obstacle is the *change* in chi
         Psi = chi[k] - hierarchy[k].P(chi[k-1])
+        if up == 1:
+            Psi *= 0.5
         # do projected GS sweeps
-        if view:
-            _levelreport(fine,k,hierarchy[k].m,down)
         v = hierarchy[k].zeros()
         for s in range(down):
-            pgssweep(hierarchy[k],v,r,Psi)
-            if symmetric:
-                pgssweep(hierarchy[k],v,r,Psi,forward=False)
+            pgssweep(hierarchy[k],v,hierarchy[k].r,Psi)
+        #pgssweep(hierarchy[k],v,hierarchy[k].r,Psi,forward=False)
         hierarchy[k].vstate = v.copy()
         # update and canonically-restrict the residual
-        r = residual(hierarchy[k],v,r)
-        r = hierarchy[k].cR(r)
+        hierarchy[k].r = residual(hierarchy[k],v,hierarchy[k].r)
+        hierarchy[k-1].r = hierarchy[k].cR(hierarchy[k].r)
+
     # COARSE SOLVE
-    Psi = chi[0]
     if view:
         _coarsereport(fine,hierarchy[0].m,coarse)
+    Psi = chi[0]
     v = hierarchy[0].zeros()
     for s in range(coarse):
-        pgssweep(hierarchy[0],v,r,Psi)
-        if symmetric:
-            pgssweep(hierarchy[0],v,r,Psi,forward=False)
+        pgssweep(hierarchy[0],v,hierarchy[0].r,Psi)
     hierarchy[0].vstate = v.copy()
+
     # UP
     for k in range(1,fine+1):        # k=1,2,...,fine
         if view:
             _levelreport(fine,k,hierarchy[k].m,up)
-        hierarchy[k].vstate += hierarchy[k].P(hierarchy[k-1].vstate)
+        if up == 1:
+            # the current iterate is what came back from k-1 level (WHY?)
+            v = hierarchy[k].P(hierarchy[k-1].vstate)
+            # the level k obstacle is the *change* in chi
+            Psi = 0.5 * (chi[k] - hierarchy[k].P(chi[k-1]))
+            # do projected GS sweeps
+            for s in range(up):
+                pgssweep(hierarchy[k],v,hierarchy[k].r,Psi,forward=False)
+            hierarchy[k].vstate += v
+        else:
+            hierarchy[k].vstate += hierarchy[k].P(hierarchy[k-1].vstate)
+
     # new iterate
     w += hierarchy[fine].vstate
     return w, chi

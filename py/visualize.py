@@ -34,7 +34,7 @@ def obstacleplot(mesh,uinitial,ufinal,phi,filename,uex=[]):
     plt.xlabel('x')
     output(filename)
 
-def obstaclediagnostics(hierarchy,ufinal,phi,ell,chi,filename):
+def obstaclediagnostics(hierarchy,ufinal,phi,ell,chi,up,filename):
     mesh = hierarchy[-1]
     xx = mesh.xx()
     plt.figure(figsize=(15.0,15.0))
@@ -51,11 +51,19 @@ def obstaclediagnostics(hierarchy,ufinal,phi,ell,chi,filename):
     plt.legend()
     plt.gca().set_xticks([],[])
     plt.subplot(4,1,(3,4))
-    for k in range(len(hierarchy)-1):
-        plt.plot(hierarchy[k].xx(),chi[k],'k.--',ms=8.0,
-                 label='level %d' % k)
-    plt.plot(hierarchy[-1].xx(),chi[-1],'k.-',ms=12.0,
-             label='fine mesh',linewidth=3.0)
+    if up == 0:
+        for k in range(len(hierarchy)-1):
+            plt.plot(hierarchy[k].xx(),chi[k],'k.--',ms=8.0,
+                     label='level %d' % k)
+        plt.plot(hierarchy[-1].xx(),chi[-1],'k.-',ms=12.0,
+                 label='fine mesh',linewidth=3.0)
+    else:
+        #FIXME
+        for k in range(len(hierarchy)-1):
+            plt.plot(hierarchy[k].xx(),chi[k],'k.--',ms=8.0,
+                     label='level %d' % k)
+        plt.plot(hierarchy[-1].xx(),chi[-1],'k.-',ms=12.0,
+                 label='fine mesh',linewidth=3.0)
     plt.legend()
     plt.title('decomposition of final defect obstacle')
     plt.xlabel('x')

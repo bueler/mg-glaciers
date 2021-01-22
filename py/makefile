@@ -11,7 +11,7 @@ runobs1_2:
 	-@./../testit.sh obstacle.py "-problem parabola -parabolay -3.0 -kfine 1 -pgsonly -down 10 -symmetric" 1 2
 
 runobs1_3:
-	-@./../testit.sh obstacle.py "-problem parabola -parabolay -3.0 -kfine 3 -cycles 3 -symmetric -monitorerr -diagnostics -o test3.png" 1 3
+	-@./../testit.sh obstacle.py "-problem parabola -parabolay -3.0 -kfine 3 -cycles 3 -monitorerr -diagnostics -o test3.png" 1 3
 
 runobs1_4:
 	-@./../testit.sh obstacle.py "-problem parabola -kfine 4 -kcoarse 3 -cycles 2 -monitorerr -mgview" 1 4
