@@ -49,7 +49,7 @@ def vcycle(hierarchy,w,ell,phi,
     # DOWN
     for k in range(levels-1,0,-1):          # k=levels-1,levels-2,...,1
         if view:
-            _levelreport(fine,k,hierarchy[k].m,down)
+            _levelreport(levels-1,k,hierarchy[k].m,down)
         # monotone restriction decomposes defect obstacle
         chi[k-1] = hierarchy[k].mR(chi[k])
         # the level k obstacle is the *change* in chi
@@ -69,7 +69,7 @@ def vcycle(hierarchy,w,ell,phi,
 
     # COARSE SOLVE
     if view:
-        _coarsereport(fine,hierarchy[0].m,coarse)
+        _coarsereport(levels-1,hierarchy[0].m,coarse)
     Psi = chi[0]
     v = hierarchy[0].zeros()
     for s in range(coarse):
@@ -81,7 +81,7 @@ def vcycle(hierarchy,w,ell,phi,
     # UP
     for k in range(1,levels):        # k=1,2,...,levels-1
         if view:
-            _levelreport(fine,k,hierarchy[k].m,up)
+            _levelreport(levels-1,k,hierarchy[k].m,up)
         if up == 1:
             # the current iterate is what came back from k-1 level (WHY?)
             v = hierarchy[k].P(hierarchy[k-1].vstate)

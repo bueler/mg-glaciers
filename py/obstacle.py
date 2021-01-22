@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-#TODO:  add -up ability
+# TODO: count WU
 
 import numpy as np
 import sys, argparse
@@ -35,14 +35,16 @@ Numer. Math. 93 (4), 755--786.
 ''',formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-coarse', type=int, default=1, metavar='N',
                     help='pGS sweeps on coarsest grid (default=1)')
-parser.add_argument('-cycles', type=int, default=5, metavar='M',
-                    help='number of V-cycles (default=3)')
+parser.add_argument('-cyclemax', type=int, default=100, metavar='M',
+                    help='maximum number of V-cycles (default=100)')
 parser.add_argument('-diagnostics', action='store_true', default=False,
                     help='add a diagnostics figure to -show or -o output')
 parser.add_argument('-down', type=int, default=1, metavar='N',
                     help='pGS sweeps before coarse-mesh correction (default=1)')
 parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
                     help='in Poisson equation -u"=f this multiplies f (default X=1)')
+parser.add_argument('-irtol', type=float, default=1.0e-3, metavar='X',
+                    help='norm of inactive residual is reduced by this factor (default X=10^-3)')
 parser.add_argument('-kfine', type=int, default=3, metavar='K',
                     help='fine mesh is kth level (default kfine=3)')
 parser.add_argument('-kcoarse', type=int, default=0, metavar='k',
@@ -72,7 +74,7 @@ parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-symmetric', action='store_true', default=False,
                     help='use symmetric projected Gauss-Seidel sweeps (forward then backward)')
-parser.add_argument('-up', type=int, default=0, metavar='N',
+parser.add_argument('-up', type=int, default=1, metavar='N',
                     help='pGS sweeps after coarse-mesh correction (default=1)')
 args, unknown = parser.parse_known_args()
 
@@ -153,8 +155,8 @@ assert (args.kfine >= args.kcoarse)
 levels = args.kfine - args.kcoarse + 1
 assert (levels >= 1)
 hierarchy = [None] * (levels)  # list [None,...,None]; indices 0,...,levels-1
-for k in range(args.kcoarse,args.kfine+1):
-   hierarchy[k-args.kcoarse] = MeshLevel1D(k=k)
+for k in range(levels):
+   hierarchy[k] = MeshLevel1D(k=k+args.kcoarse)
 mesh = hierarchy[-1]  # fine mesh
 
 # discrete obstacle on fine level
@@ -162,6 +164,7 @@ phifine = phi(mesh.xx())
 
 # feasible initial iterate
 uinitial = np.maximum(phifine,mesh.zeros())
+uinitial[[0,-1]] = [0.0,0.0]
 
 # exact solution
 if exactavailable:
@@ -172,14 +175,29 @@ uu = uinitial.copy()
 ellfine = ellf(mesh,fsource(mesh.xx()))
 if args.pgsonly:
     # sweeps of projected Gauss-Seidel on fine grid
-    for s in range(args.down):
+    for s in range(args.cyclemax):
+        ir = mesh.l2norm(inactiveresidual(mesh,uu,ellfine,phifine))
+        if ir < 1.0e-50:
+            break
+        if s == 0:
+            ir0 = ir
+        else:
+            if ir < args.irtol * ir0 or ir < 1.0e-50:
+                break
         pgssweep(mesh,uu,ellfine,phifine)
         if args.symmetric:
             pgssweep(mesh,uu,ellfine,phifine,forward=False)
 else:
-    for s in range(args.cycles):
+    for s in range(args.cyclemax):
+        ir = mesh.l2norm(inactiveresidual(mesh,uu,ellfine,phifine))
+        if ir < 1.0e-50:
+            break
+        if s == 0:
+            ir0 = ir
+        else:
+            if ir < args.irtol * ir0:
+                break
         if args.monitor:
-            ir = mesh.l2norm(inactiveresidual(mesh,uu,ellfine,phifine))
             print('  %d:  |r^i(u)|_2 = %.4e' % (s,ir))
         if args.monitorerr and exactavailable:
             print('  %d:  |u-uexact|_2 = %.4e' % (s,mesh.l2norm(uu-uex)))
@@ -188,14 +206,14 @@ else:
                          down=args.down,coarse=args.coarse,up=args.up)
 if args.monitor:
     ir = mesh.l2norm(inactiveresidual(mesh,uu,ellfine,phifine))
-    print('  %d:  |r^i(u)|_2 = %.4e' % (args.cycles,ir))
+    print('  %d:  |r^i(u)|_2 = %.4e' % (s+1,ir))
 
 # report on computation including numerical error
 if args.pgsonly:
-   method = 'with %d sweeps of pGS' % args.down
+   method = 'with %d applications of pGS' % (s+1)
 else:
    method = 'using %d V(%d,%d,%d) cycles' \
-            % (args.cycles,args.down,args.coarse,args.up)
+            % (s+1,args.down,args.coarse,args.up)
 if exactavailable:
    error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
 else:

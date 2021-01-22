@@ -1,1 +1,1 @@
-fine level 1 (m = 3) with 10 sweeps of pGS:  |u-uexact|_2 = 2.2592e-05
+fine level 1 (m = 3) with 10 applications of pGS:  |u-uexact|_2 = 2.2592e-05
