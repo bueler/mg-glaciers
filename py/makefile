@@ -1,6 +1,7 @@
-# a hybrid testing strategy
+# a hybrid testing strategy: test modules using pytest and test driver using testit.sh
 
 testmodules:
+	@echo "**** TESTING MODULES ****"
 	python3 -m pytest
 
 runobs1_1:
@@ -23,9 +24,12 @@ runobs1_6:
 
 test_obs1: runobs1_1 runobs1_2 runobs1_3 runobs1_4 runobs1_5 runobs1_6
 
-test: testmodules test_obs1
+testbanner:
+	@echo "**** TESTING obs1.py ****"
 
-.PHONY: clean runobs1_1 runobs1_2 runobs1_3 runobs1_4 runobs1_5 runobs1_6 test_obs1 testmodules test
+test: testmodules testbanner test_obs1
+
+.PHONY: clean runobs1_1 runobs1_2 runobs1_3 runobs1_4 runobs1_5 runobs1_6 test_obs1 testmodules test testbanner
 
 clean:
 	@rm -f maketmp tmp difftmp *test*.png
