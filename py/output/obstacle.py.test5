@@ -1,6 +1,14 @@
+  0:  |r^i(u)|_2 = 9.3716e-01
 level 2: 1 sweeps over m=7 nodes
   level 1: 1 sweeps over m=3 nodes
     coarsest: 1 sweeps over m=1 nodes
   level 1: 0 sweeps over m=3 nodes
 level 2: 0 sweeps over m=7 nodes
-fine level 2 (m = 7) using 1 V(1,1,0) cycles
+  1:  |r^i(u)|_2 = 7.3786e-01
+level 2: 1 sweeps over m=7 nodes
+  level 1: 1 sweeps over m=3 nodes
+    coarsest: 1 sweeps over m=1 nodes
+  level 1: 0 sweeps over m=3 nodes
+level 2: 0 sweeps over m=7 nodes
+  2:  |r^i(u)|_2 = 5.0570e-01
+fine level 2 (m = 7) using 2 V(1,1,0) cycles

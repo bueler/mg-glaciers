@@ -35,16 +35,16 @@ Numer. Math. 93 (4), 755--786.
 ''',formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-coarse', type=int, default=1, metavar='N',
                     help='pGS sweeps on coarsest grid (default=1)')
-parser.add_argument('-cycles', type=int, default=2, metavar='M',
-                    help='number of V-cycles (default=2)')
+parser.add_argument('-cycles', type=int, default=5, metavar='M',
+                    help='number of V-cycles (default=3)')
 parser.add_argument('-diagnostics', action='store_true', default=False,
                     help='add a diagnostics figure to -show or -o output')
 parser.add_argument('-down', type=int, default=1, metavar='N',
                     help='pGS sweeps before coarse-mesh correction (default=1)')
 parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
                     help='in Poisson equation -u"=f this multiplies f (default X=1)')
-parser.add_argument('-kfine', type=int, default=2, metavar='K',
-                    help='fine mesh is kth level (default kfine=2)')
+parser.add_argument('-kfine', type=int, default=3, metavar='K',
+                    help='fine mesh is kth level (default kfine=3)')
 parser.add_argument('-kcoarse', type=int, default=0, metavar='k',
                     help='coarse mesh is kth level (default kcoarse=0 gives 1 node)')
 parser.add_argument('-mgview', action='store_true', default=False,
@@ -63,9 +63,11 @@ parser.add_argument('-problem', choices=['icelike','parabola'],
                     metavar='X', default='icelike',
                     help='determines obstacle and source function (default: %(default)s)')
 parser.add_argument('-random', action='store_true', default=False,
-                    help='randomly perturb the obstacle')
-parser.add_argument('-randommag', type=float, default=0.2, metavar='X',
-                    help='magnitude of -random perturbation (default X=0.2)')
+                    help='make a smooth random perturbation the obstacle')
+parser.add_argument('-randomscale', type=float, default=1.0, metavar='X',
+                    help='scaling of modes in -random perturbation (default X=1.0)')
+parser.add_argument('-randommodes', type=int, default=30, metavar='N',
+                    help='number of sinusoid modes in -random perturbation (default N=3)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-symmetric', action='store_true', default=False,
@@ -101,9 +103,10 @@ def phi(x):
     else:
         raise ValueError
     if args.random:
-        perturb = args.randommag * np.random.randn(len(x))
-        perturb[0] = 0.0
-        perturb[-1] = 0.0
+        perturb = np.zeros(len(x))
+        for j in range(args.randommodes):
+            perturb += np.random.randn(1) * np.sin((j+1)*np.pi*x)
+        perturb *= args.randomscale * 0.03 * np.exp(-10*(x-0.5)**2)
         ph += perturb
     ph[[0,-1]] = [0.0, 0.0]  # always force zero boundary conditions
     return ph
