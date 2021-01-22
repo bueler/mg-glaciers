@@ -78,8 +78,8 @@ parser.add_argument('-up', type=int, default=1, metavar='N',
                     help='pGS sweeps after coarse-mesh correction (default=1)')
 args, unknown = parser.parse_known_args()
 
-# FIXME decide which parabolay values allow exact
-exactavailable = (not args.random) and (args.fscale == 1.0)
+exactavailable = (not args.random) and (args.fscale == 1.0) \
+                 and (args.parabolay == -1.0 or args.parabolay <= -2.25)
 
 # provide usage help
 if unknown:
@@ -126,6 +126,7 @@ def fsource(x):
 def uexact(x):
     '''Assumes x is a numpy array.'''
     assert exactavailable, 'exact solution not available'
+    assert args.fscale == 1.0
     if args.problem == 'icelike':
         u = phi(x)
         a, c0, c1, d0, d1 = 0.1, -0.8, 0.09, 4.0, -0.39  # exact values
