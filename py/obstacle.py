@@ -15,26 +15,38 @@ from subsetdecomp import vcycle
 from visualize import obstacleplot, obstaclediagnostics
 
 parser = argparse.ArgumentParser(description='''
-Solve a 1D obstacle problem:
-                     /1
-    min_{u >= phi}   |  1/2 (u')^2 - f u
-                     /0
-where phi(x) and u(x) are in H_0^1[0,1] and f(x) is in L^2[0,1].
+Solve a 1D obstacle problem:  Find u in
+    K = {v in H_0^1[0,1] | v >= phi}
+such that the variational inequality holds,
+    a(u,v-u) - <f,v-u> >= 0   for all v in K,
+or equivalently that solves the constrained minimization,
+    u = argmin_{v in K}   (1/2) a(v,v) - f v
+where phi is in H_0^1[0,1], f is in L^2[0,1], and
+             /1
+    a(u,v) = |  u'(x) v'(x) dx.
+             /0
 Note that the interior condition (PDE) is  - u'' = f.
 
 Solution is by Alg. 4.7 in Gräser & Kornhuber (2009), namely the subset
-decomposition V-cycle method by Tai (2003).  The smoother and the coarse-mesh
-solver are projected Gauss-Seidel (pGS).  Monotone restrictions decompose
-the defect obstacle.  Option -pgsonly reverts to single-level pGS.
+decomposition V-cycle multigrid method by Tai (2003) in which a monotone
+restriction operator decomposes the defect obstacle.  The smoother and the
+coarse-mesh solver are projected Gauss-Seidel (pGS).  Note that option
+-pgsonly reverts to single-level pGS.
 
-Get usage help with -h or --help.
+Choose the problem with "-problem icelike" (the default) or "-problem
+parabola".  The obstacle can be randomly perturbed with -random.  Choose
+the fine-mesh resolution with -kmesh.  Monitor the solution process with
+-monitor, -monitorerr, and -mgview.  Get graphical output with -show,
+-diagnostics, and -o.
+
+Get other usage help with -h or --help.
 
 References:
-* Gräser, C., & Kornhuber, R. (2009). Multigrid methods for
-obstacle problems. J. Comput. Math. 27 (1), 1--44.
-* Tai, X.-C. (2003). Rate of convergence for some constraint
-decomposition methods for nonlinear variational inequalities.
-Numer. Math. 93 (4), 755--786.
+  * Gräser, C., & Kornhuber, R. (2009). Multigrid methods for
+    obstacle problems. J. Comput. Math. 27 (1), 1--44.
+  * Tai, X.-C. (2003). Rate of convergence for some constraint
+    decomposition methods for nonlinear variational inequalities.
+    Numer. Math. 93 (4), 755--786.
 ''',formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-coarse', type=int, default=1, metavar='N',
                     help='pGS sweeps on coarsest grid (default=1)')
