@@ -10,7 +10,6 @@ import numpy as np
 import sys, argparse
 
 from meshlevel import MeshLevel1D
-from poisson import ellf
 from pgs import inactiveresidual, pgssweep
 from subsetdecomp import vcycle
 from visualize import obstacleplot, obstaclediagnostics
@@ -179,7 +178,7 @@ if exactavailable:
 
 # multigrid V-cycles (unless user just wants pGS)
 uu = uinitial.copy()
-ellfine = ellf(mesh,fsource(mesh.xx()))
+ellfine = mesh.ell(fsource(mesh.xx()))
 infeascount = 0
 if args.pgsonly:
     # sweeps of projected Gauss-Seidel on fine grid

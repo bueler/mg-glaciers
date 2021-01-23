@@ -1,5 +1,5 @@
 from meshlevel import MeshLevel1D
-from poisson import ellf, pointresidual, residual
+from poisson import pointresidual, residual
 from pgs import pgssweep
 import numpy as np
 
@@ -11,6 +11,11 @@ def test_ml_basics():
     assert len(v) == ml.m + 2
     s = np.sqrt(ml.xx())
     assert (ml.l2norm(ml.xx()) - 1.0/np.sqrt(2.0)) < 1.0e-10
+
+def test_ml_ell():
+    ml = MeshLevel1D(k=1)
+    f = np.ones(ml.m+2)
+    assert all(ml.ell(f) == ml.h * np.array([0.0,1.0,1.0,1.0,0.0]))
 
 def test_ml_cR():
     ml = MeshLevel1D(k=1)
@@ -57,28 +62,23 @@ def test_ml_hierarchy():
     Psi2 = chi2 - ml2.P(chi1)
     assert all(Psi0 + Psi1 + Psi2 == phi)
 
-def test_po_ellf():
-    ml = MeshLevel1D(k=1)
-    f = np.ones(ml.m+2)
-    assert all(ellf(ml,f) == ml.h * np.array([0.0,1.0,1.0,1.0,0.0]))
-
 def test_po_pointresidual():
     ml = MeshLevel1D(k=1)
     f = np.array([1.0,0.5,0.0,0.5,1.0])
     w = f.copy()
-    assert pointresidual(ml,w,ellf(ml,f),1) == 0.5 * ml.h
-    assert pointresidual(ml,w,ellf(ml,f),2) == 4.0
+    assert pointresidual(ml,w,ml.ell(f),1) == 0.5 * ml.h
+    assert pointresidual(ml,w,ml.ell(f),2) == 4.0
 
 def test_po_residual():
     ml = MeshLevel1D(k=1)
     f = np.array([1.0,0.5,0.0,0.5,1.0])
     w = f.copy()
-    assert all(residual(ml,w,ellf(ml,f)) == [0.0,0.5*ml.h,4.0,0.5*ml.h,0.0])
+    assert all(residual(ml,w,ml.ell(f)) == [0.0,0.5*ml.h,4.0,0.5*ml.h,0.0])
 
 def test_pgs_pgssweep1():
     ml = MeshLevel1D(k=0)
     f = np.array([0.0,1.0,0.0])
-    ell = ellf(ml,f)
+    ell = ml.ell(f)
     assert all(ell == ml.h * f)
     w = ml.zeros()
     assert all(residual(ml,w,ell) == ml.h * f)

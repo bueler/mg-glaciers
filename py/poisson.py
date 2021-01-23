@@ -2,21 +2,7 @@
 
 import numpy as np
 
-__all__ = ['ellf','formdiagonal','pointresidual','residual']
-
-def ellf(mesh,f):
-    '''Represent the linear functional (in (V^k)') which is the inner product
-    with a function f(x):
-       ell[v] = <f,v> = int_0^1 f(x) v(x) dx
-    The values are  ell[p] = ell[psi_p^k]  for p=1,...,m_k, and
-    ell[0]=ell[m+1]=0.  Uses trapezoid rule to evaluate the integrals
-    ell[psi_p^k].  Input mesh is of class MeshLevel1D.'''
-    assert len(f) == mesh.m+2, \
-           'input vector f is of length %d (should be %d)' \
-           % (len(f),mesh.m+2)
-    ell = mesh.zeros()
-    ell[1:-1] = mesh.h * f[1:-1]
-    return ell
+__all__ = ['formdiagonal','pointresidual','residual']
 
 def formdiagonal(mesh,p):
     '''Compute the diagonal of a(.,.) at one interior hat function psi_p^k:
