@@ -10,5 +10,5 @@ level 2: 1 sweeps over m=7 nodes
     coarsest: 1 sweeps over m=1 nodes
   level 1: 1 sweeps over m=3 nodes
 level 2: 1 sweeps over m=7 nodes
-  3:  |r^i(u)|_2 = 8.2051e-02
-fine level 2 (m = 7) using 3 V(1,1,1) cycles
+  2:  |r^i(u)|_2 = 8.2051e-02
+fine level 2 (m = 7) using 2 V(1,1,1) cycles

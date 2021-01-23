@@ -67,9 +67,9 @@ parser.add_argument('-kcoarse', type=int, default=0, metavar='k',
 parser.add_argument('-mgview', action='store_true', default=False,
                     help='view multigrid cycles by indented print statements')
 parser.add_argument('-monitor', action='store_true', default=False,
-                    help='monitor the inactive residual norm at the end of each V-cycle')
+                    help='print the inactive-set residual norm after each cycle')
 parser.add_argument('-monitorerr', action='store_true', default=False,
-                    help='monitor the error (if available) at the end of each V-cycle')
+                    help='print the error (if available) after each cycle')
 parser.add_argument('-o', metavar='FILE', type=str, default='',
                     help='save plot at end in image file, e.g. PDF or PNG')
 parser.add_argument('-parabolay', type=float, default=-1.0, metavar='X',
@@ -190,6 +190,14 @@ uinitial[[0,-1]] = [0.0,0.0]
 if exactavailable:
     uex = uexact(mesh.xx())
 
+def irerrmonitor(s,w):
+    ir = mesh.l2norm(inactiveresidual(mesh,w,ellfine,phifine))
+    if args.monitor:
+        print('  %d:  |r^i(u)|_2 = %.4e' % (s,ir))
+    if args.monitorerr and exactavailable:
+        print('  %d:  |u-uexact|_2 = %.4e' % (s,mesh.l2norm(w-uex)))
+    return ir
+
 # multigrid V-cycles (unless user just wants pGS)
 uu = uinitial.copy()
 ellfine = mesh.ell(fsource(mesh.xx()))
@@ -197,13 +205,13 @@ infeascount = 0
 if args.pgsonly:
     # sweeps of projected Gauss-Seidel on fine grid
     for s in range(args.cyclemax):
-        ir = mesh.l2norm(inactiveresidual(mesh,uu,ellfine,phifine))
+        ir = irerrmonitor(s,uu)
         if ir < 1.0e-50:
             break
         if s == 0:
             ir0 = ir
         else:
-            if ir < args.irtol * ir0 or ir < 1.0e-50:
+            if ir < args.irtol * ir0:
                 break
         infeascount += pgssweep(mesh,uu,ellfine,phifine,
                                 printwarnings=args.printwarnings)
@@ -212,7 +220,7 @@ if args.pgsonly:
                                     forward=False,printwarnings=args.printwarnings)
 else:
     for s in range(args.cyclemax):
-        ir = mesh.l2norm(inactiveresidual(mesh,uu,ellfine,phifine))
+        ir = irerrmonitor(s,uu)
         if ir < 1.0e-50:
             break
         if s == 0:
@@ -220,26 +228,24 @@ else:
         else:
             if ir < args.irtol * ir0:
                 break
-        if args.monitor:
-            print('  %d:  |r^i(u)|_2 = %.4e' % (s,ir))
-        if args.monitorerr and exactavailable:
-            print('  %d:  |u-uexact|_2 = %.4e' % (s,mesh.l2norm(uu-uex)))
         uu, chi, count = vcycle(hierarchy,uu,ellfine,phifine,
                                 levels=levels,view=args.mgview,symmetric=args.symmetric,
                                 down=args.down,coarse=args.coarse,up=args.up,
                                 printwarnings=args.printwarnings)
         infeascount += count
-if args.monitor:
-    ir = mesh.l2norm(inactiveresidual(mesh,uu,ellfine,phifine))
-    print('  %d:  |r^i(u)|_2 = %.4e' % (s+1,ir))
+
+its = s
+if s == args.cyclemax - 1:
+    irerrmonitor(s+1,uu)
+    its = s+1
 
 # report on computation including numerical error
 symstr = 'sym. ' if args.symmetric else ''
 if args.pgsonly:
-   method = 'with %d applications of %spGS' % (s+1,symstr)
+   method = 'with %d applications of %spGS' % (its,symstr)
 else:
    method = 'using %d %sV(%d,%d,%d) cycles' \
-            % (s+1,symstr,args.down,args.coarse,args.up)
+            % (its,symstr,args.down,args.coarse,args.up)
 if exactavailable:
    error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
 else:
