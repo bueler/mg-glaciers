@@ -210,11 +210,12 @@ if args.monitor:
     print('  %d:  |r^i(u)|_2 = %.4e' % (s+1,ir))
 
 # report on computation including numerical error
+symstr = 'sym. ' if args.symmetric else ''
 if args.pgsonly:
-   method = 'with %d applications of pGS' % (s+1)
+   method = 'with %d applications of %spGS' % (s+1,symstr)
 else:
-   method = 'using %d V(%d,%d,%d) cycles' \
-            % (s+1,args.down,args.coarse,args.up)
+   method = 'using %d %sV(%d,%d,%d) cycles' \
+            % (s+1,symstr,args.down,args.coarse,args.up)
 if exactavailable:
    error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
 else:
