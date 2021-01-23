@@ -28,12 +28,16 @@ class MeshLevel1D(object):
         else:
             self.mcoarser = None
         self.h = 1.0 / (self.m + 1)
+        self.WU = 0
 
     def checklen(self,v,coarser=False):
         goodlen = self.mcoarser+2 if coarser else self.m+2
         assert len(v) == goodlen, \
                'input vector is of length %d (should be %d)' \
                % (len(v),goodlen)
+
+    def WUincrement(self):
+        self.WU += 1
 
     def zeros(self):
         return np.zeros(self.m+2)

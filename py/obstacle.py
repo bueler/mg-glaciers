@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 # TODO:
-#   1 count WU
-#   2 correct hier. decomp. figure when up>0
+#   correct hier. decomp. figure when up>0
 
 # NOTE: -up 2 or -symmetric or -up 0 (i.e. a bit more up-smoothing) seems to fix occasional feasibility violations with -up 1
 
@@ -233,6 +232,11 @@ if s == args.cyclemax - 1:
 else:
     its = s
 
+# compute total work units
+wusum = 0.0
+for k in range(levels):
+   wusum += hierarchy[k].WU / 2**(levels - 1 - k)
+
 # report on computation including numerical error
 symstr = 'sym. ' if args.symmetric else ''
 if args.pgsonly:
@@ -246,7 +250,8 @@ else:
    uex = []
    error = ''
 countstr = '' if infeascount == 0 else ' (%d infeasibles)' % infeascount
-print('fine level %d (m = %d) %s%s%s' % (args.kfine,mesh.m,method,error,countstr))
+print('fine level %d (m=%d) %s (%.3f WU)%s%s' \
+      % (args.kfine,mesh.m,method,wusum,error,countstr))
 
 # graphical output if desired
 if args.show or args.o:
