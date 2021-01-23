@@ -11,11 +11,8 @@ def test_ml_basics():
     assert len(v) == ml.m + 2
     s = np.sqrt(ml.xx())
     assert (ml.l2norm(ml.xx()) - 1.0/np.sqrt(2.0)) < 1.0e-10
-
-def test_ml_ell():
-    ml = MeshLevel1D(k=1)
     f = np.ones(ml.m+2)
-    assert all(ml.ell(f) == ml.h * np.array([0.0,1.0,1.0,1.0,0.0]))
+    assert all(ml.ell(f) == ml.h * np.array([0.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0]))
 
 def test_ml_cR():
     ml = MeshLevel1D(k=1)
