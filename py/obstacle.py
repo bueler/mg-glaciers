@@ -238,8 +238,8 @@ symstr = 'sym. ' if args.symmetric else ''
 if args.pgsonly:
    method = 'with %d applications of %spGS' % (its,symstr)
 else:
-   method = 'using %d %sV(%d,%d,%d) cycles' \
-            % (its,symstr,args.down,args.coarse,args.up)
+   method = 'using %d %sV(%d,%d) cycles' \
+            % (its,symstr,args.down,args.up)
 if exactavailable:
    error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
 else:
