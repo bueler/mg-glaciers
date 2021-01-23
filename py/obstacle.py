@@ -85,6 +85,8 @@ parser.add_argument('-random', action='store_true', default=False,
                     help='make a smooth random perturbation the obstacle')
 parser.add_argument('-randomscale', type=float, default=1.0, metavar='X',
                     help='scaling of modes in -random perturbation (default X=1.0)')
+parser.add_argument('-randomseed', type=int, default=1, metavar='X',
+                    help='seed the generator in -random perturbation (default X=1)')
 parser.add_argument('-randommodes', type=int, default=30, metavar='N',
                     help='number of sinusoid modes in -random perturbation (default N=3)')
 parser.add_argument('-show', action='store_true', default=False,
@@ -110,7 +112,7 @@ if args.monitorerr and not exactavailable:
     sys.exit(3)
 
 # fix the random seed for repeatability
-np.random.seed(1)
+np.random.seed(args.randomseed)
 
 def phi(x):
     '''The obstacle:  u >= phi.'''
@@ -131,7 +133,7 @@ def phi(x):
     return ph
 
 def fsource(x):
-    '''The source term in -u'' = f.'''
+    '''The source term in the interior condition -u'' = f.'''
     if args.problem == 'icelike':
         f = 8.0 * np.ones(np.shape(x))
         f[x<0.2] = -16.0
