@@ -83,6 +83,6 @@ def test_pgs_pgssweep1():
     w = ml.zeros()
     assert all(residual(ml,w,ell) == ml.h * f)
     phi = np.array([-2.0,-2.0,-2.0])  # thus unconstrained
-    w = pgssweep(ml,w,ell,phi,forward=True)
+    pgssweep(ml,w,ell,phi,forward=True)
     assert all(residual(ml,w,ell) == ml.zeros())
 

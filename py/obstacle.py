@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 
-# TODO: count WU
+# TODO:
+#   1 count WU
+#   2 correct hier. decomp. figure when up>0
+
+# NOTE: -up 2 or -symmetric or -up 0 (i.e. a bit more up-smoothing) seems to fix occasional feasibility violations with -up 1
 
 import numpy as np
 import sys, argparse
@@ -61,6 +65,8 @@ parser.add_argument('-parabolay', type=float, default=-1.0, metavar='X',
                     help='vertical location of obstacle in -problem parabola (default X=-1.0)')
 parser.add_argument('-pgsonly', action='store_true', default=False,
                     help='do projected Gauss-Seidel (instead of multigrid)')
+parser.add_argument('-printwarnings', action='store_true', default=False,
+                    help='print pointwise feasibility warnings')
 parser.add_argument('-problem', choices=['icelike','parabola'],
                     metavar='X', default='icelike',
                     help='determines obstacle and source function (default: %(default)s)')
@@ -174,6 +180,7 @@ if exactavailable:
 # multigrid V-cycles (unless user just wants pGS)
 uu = uinitial.copy()
 ellfine = ellf(mesh,fsource(mesh.xx()))
+infeascount = 0
 if args.pgsonly:
     # sweeps of projected Gauss-Seidel on fine grid
     for s in range(args.cyclemax):
@@ -185,9 +192,11 @@ if args.pgsonly:
         else:
             if ir < args.irtol * ir0 or ir < 1.0e-50:
                 break
-        pgssweep(mesh,uu,ellfine,phifine)
+        infeascount += pgssweep(mesh,uu,ellfine,phifine,
+                                printwarnings=args.printwarnings)
         if args.symmetric:
-            pgssweep(mesh,uu,ellfine,phifine,forward=False)
+            infeascount += pgssweep(mesh,uu,ellfine,phifine,
+                                    forward=False,printwarnings=args.printwarnings)
 else:
     for s in range(args.cyclemax):
         ir = mesh.l2norm(inactiveresidual(mesh,uu,ellfine,phifine))
@@ -202,9 +211,11 @@ else:
             print('  %d:  |r^i(u)|_2 = %.4e' % (s,ir))
         if args.monitorerr and exactavailable:
             print('  %d:  |u-uexact|_2 = %.4e' % (s,mesh.l2norm(uu-uex)))
-        uu, chi = vcycle(hierarchy,uu,ellfine,phifine,
-                         levels=levels,view=args.mgview,symmetric=args.symmetric,
-                         down=args.down,coarse=args.coarse,up=args.up)
+        uu, chi, count = vcycle(hierarchy,uu,ellfine,phifine,
+                                levels=levels,view=args.mgview,symmetric=args.symmetric,
+                                down=args.down,coarse=args.coarse,up=args.up,
+                                printwarnings=args.printwarnings)
+        infeascount += count
 if args.monitor:
     ir = mesh.l2norm(inactiveresidual(mesh,uu,ellfine,phifine))
     print('  %d:  |r^i(u)|_2 = %.4e' % (s+1,ir))
@@ -221,7 +232,8 @@ if exactavailable:
 else:
    uex = []
    error = ''
-print('fine level %d (m = %d) %s%s' % (args.kfine,mesh.m,method,error))
+countstr = '' if infeascount == 0 else ' (%d infeasibles)' % infeascount
+print('fine level %d (m = %d) %s%s%s' % (args.kfine,mesh.m,method,error,countstr))
 
 # graphical output if desired
 if args.show or args.o:

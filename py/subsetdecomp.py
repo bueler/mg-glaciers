@@ -23,7 +23,7 @@ def _coarsereport(indent,m,sweeps):
 
 def vcycle(hierarchy,w,ell,phi,
            levels=None,view=False,symmetric=False,
-           down=1,coarse=1,up=0):
+           down=1,coarse=1,up=0,printwarnings=False):
     '''Apply one V(1,0)-cycle of the multilevel subset decomposition
     method from Tai (2003), namely Alg. 4.7 in Graeser & Kornhuber (2009).
     In-place updates the iterate w to solve the obstacle problem on the
@@ -40,7 +40,8 @@ def vcycle(hierarchy,w,ell,phi,
     assert (len(w) == mesh.m+2)
     assert (len(ell) == mesh.m+2)
     assert (len(phi) == mesh.m+2)
-    chi = [None] * (levels)           # empty list
+    chi = [None] * (levels)                 # empty list
+    infeas = 0
 
     # the only place w is used:
     chi[-1] = phi - w                       # fine mesh defect obstacle
@@ -59,9 +60,11 @@ def vcycle(hierarchy,w,ell,phi,
         # do projected GS sweeps
         v = hierarchy[k].zeros()
         for s in range(down):
-            pgssweep(hierarchy[k],v,hierarchy[k].r,Psi)
+            infeas += pgssweep(hierarchy[k],v,hierarchy[k].r,Psi,
+                               printwarnings=printwarnings)
             if symmetric:
-                pgssweep(hierarchy[k],v,hierarchy[k].r,Psi,forward=False)
+                infeas += pgssweep(hierarchy[k],v,hierarchy[k].r,Psi,
+                                   forward=False,printwarnings=printwarnings)
         hierarchy[k].vstate = v.copy()
         # update and canonically-restrict the residual
         hierarchy[k].r = residual(hierarchy[k],v,hierarchy[k].r)
@@ -73,9 +76,11 @@ def vcycle(hierarchy,w,ell,phi,
     Psi = chi[0]
     v = hierarchy[0].zeros()
     for s in range(coarse):
-        pgssweep(hierarchy[0],v,hierarchy[0].r,Psi)
+        infeas += pgssweep(hierarchy[0],v,hierarchy[0].r,Psi,
+                           printwarnings=printwarnings)
         if symmetric:
-            pgssweep(hierarchy[0],v,hierarchy[0].r,Psi,forward=False)
+            infeas += pgssweep(hierarchy[0],v,hierarchy[0].r,Psi,
+                               printwarnings=printwarnings,forward=False)
     hierarchy[0].vstate = v.copy()
 
     # UP
@@ -89,14 +94,16 @@ def vcycle(hierarchy,w,ell,phi,
             Psi = 0.5 * (chi[k] - hierarchy[k].P(chi[k-1]))
             # do projected GS sweeps
             for s in range(up):
-                pgssweep(hierarchy[k],v,hierarchy[k].r,Psi,forward=False)
+                infeas += pgssweep(hierarchy[k],v,hierarchy[k].r,Psi,
+                                   printwarnings=printwarnings,forward=False)
                 if symmetric:
-                    pgssweep(hierarchy[k],v,hierarchy[k].r,Psi)
+                    infeas += pgssweep(hierarchy[k],v,hierarchy[k].r,Psi,
+                                       printwarnings=printwarnings)
             hierarchy[k].vstate += v
         else:
             hierarchy[k].vstate += hierarchy[k].P(hierarchy[k-1].vstate)
 
     # new iterate
     w += hierarchy[-1].vstate
-    return w, chi
+    return w, chi, infeas
 
