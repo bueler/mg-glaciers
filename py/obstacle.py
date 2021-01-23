@@ -202,42 +202,36 @@ def irerrmonitor(s,w):
 uu = uinitial.copy()
 ellfine = mesh.ell(fsource(mesh.xx()))
 infeascount = 0
-if args.pgsonly:
-    # sweeps of projected Gauss-Seidel on fine grid
-    for s in range(args.cyclemax):
-        ir = irerrmonitor(s,uu)
-        if ir < 1.0e-50:
+for s in range(args.cyclemax):
+    ir = irerrmonitor(s,uu)
+    if ir < 1.0e-50:
+        break
+    if s == 0:
+        ir0 = ir
+    else:
+        if ir < args.irtol * ir0:
             break
-        if s == 0:
-            ir0 = ir
-        else:
-            if ir < args.irtol * ir0:
-                break
+    if args.pgsonly:
+        # sweeps of projected Gauss-Seidel on fine grid
         infeascount += pgssweep(mesh,uu,ellfine,phifine,
                                 printwarnings=args.printwarnings)
         if args.symmetric:
             infeascount += pgssweep(mesh,uu,ellfine,phifine,
                                     forward=False,printwarnings=args.printwarnings)
-else:
-    for s in range(args.cyclemax):
-        ir = irerrmonitor(s,uu)
-        if ir < 1.0e-50:
-            break
-        if s == 0:
-            ir0 = ir
-        else:
-            if ir < args.irtol * ir0:
-                break
-        uu, chi, count = vcycle(hierarchy,uu,ellfine,phifine,
-                                levels=levels,view=args.mgview,symmetric=args.symmetric,
-                                down=args.down,coarse=args.coarse,up=args.up,
-                                printwarnings=args.printwarnings)
-        infeascount += count
+    else:
+        # Tai (2003) V-cycles
+        uu, chi, infeas = vcycle(hierarchy,uu,ellfine,phifine,
+                                 levels=levels,view=args.mgview,symmetric=args.symmetric,
+                                 down=args.down,coarse=args.coarse,up=args.up,
+                                 printwarnings=args.printwarnings)
+        infeascount += infeas
 
-its = s
+# finalize iterations and monitor (re different stopping criterion above)
 if s == args.cyclemax - 1:
     irerrmonitor(s+1,uu)
     its = s+1
+else:
+    its = s
 
 # report on computation including numerical error
 symstr = 'sym. ' if args.symmetric else ''
