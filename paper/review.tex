@@ -291,6 +291,29 @@ FIXME multigrid already used for Blatter-Pattyn model \cite{BrownSmithAhmadia201
 
 FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to Vanka monolithic smoother \cite{Farrelletal2019}
 
+\section*{Notation used in sections \ref{sec:subspace}--\ref{sec:sia}}
+
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{l|l}
+\textbf{Symbol} {\Large$\strut$} & \textbf{Meaning} \\ \hline
+$a(\cdot,\cdot)$ & bilinear form associated to Poisson equation \\
+$\mathcal{H}$ & Hilbert space for continuum problem \\
+$k$ & index of level in multilevel scheme; $k=0,1,\dots,K$ from coarse to fine \\
+$\mathcal{K}^k$ & $k$th-level admissible functions; $\mathcal{K}^k \subset \mathcal{V}^k$ \\
+$\ell[\cdot]$ & linear functional \\
+$m_k$ & number of nodes in $k$th-level; $\dim \mathcal{V}^k=m_k$ \\
+$P$ & canonical prolongation of functions; $(Pv)(x)=v(x)$ if $v$ in $\mathcal{V}^{k-1}$ gives $Pv$ in $\mathcal{V}^k$ \\
+$R$ & canonical restriction of linear functionals; $(R\ell)[v] = \ell[v]$ for $\ell$ in $(\mathcal{V}^k)'$, $v$ in $\mathcal{V}^{k-1}$ \\
+$r(w)[\cdot]$ & residual of iterate $w$; e.g.~$r(w)[v] = \ell[v] - a(w,v)$ for Poisson equation \\
+$\mathcal{V}^h$ & finite element function space; $\mathcal{V}^h = \mathcal{V}^K$ \\
+$\mathcal{V}^k$ & $k$th-level vector space \\
+$(\mathcal{V}^k)'$ & dual of $k$th-level vector space ($=$ linear functionals) \\
+$x_p^k$ & $p$th node on $k$th-level mesh \\
+$\psi_p^k(x)$ & $k$th-level hat function at $x_p$ \\
+$\ip{\cdot}{\cdot}$ & $L^2$ inner product \\
+$\|\cdot\|$ & $L^2$ norm; $\|f\|=\ip{f}{f}^{1/2}$
+\end{tabular}
+
 \small
 
 \bigskip
