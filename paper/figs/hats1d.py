@@ -42,6 +42,14 @@ plt.text(0.99,-0.2,'1',fontsize=fsize)
 hats(xdots,style='k:',width=1.0,dotsize=14.0)
 plt.plot(xdots[8:11],[0.0,1.0,0.0],'k',lw=3.0)
 plt.text(xdots[9]-0.02,-0.2,r'$x_p$',fontsize=bigfsize)
+plt.annotate(r'$p=1$',
+             xy=(xdots[1],0.02), xytext=(xdots[0]+0.025,0.25),
+             arrowprops=dict(arrowstyle='-|>',facecolor='black'),
+             fontsize=fsize)
+plt.annotate(r'$p=m$',
+             xy=(xdots[m-1],0.02), xytext=(xdots[m],0.25),
+             arrowprops=dict(arrowstyle='-|>',facecolor='black'),
+             fontsize=fsize)
 plt.annotate(r'$\psi_p(x)$',
              xy=(xdots[9]+0.025, 0.6), xytext=(xdots[12], 0.8),
              arrowprops=dict(arrowstyle='-|>',facecolor='black'),
