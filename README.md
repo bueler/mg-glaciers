@@ -12,5 +12,5 @@ Codes in this directory support the above paper.
 
 ## fas/
 
-This is a paper and Python program which I wrote to make the full approximation storage (FAS) scheme blindingly clear to me.  Posted to (https://arxiv.org/abs/2101.05408)[arxiv.org/abs/2101.05408].  See `fas/README.md` for details.
+This is a paper and Python program which I wrote to make the full approximation storage (FAS) scheme blindingly clear to me.  Posted to [arxiv.org/abs/2101.05408](https://arxiv.org/abs/2101.05408).  See `fas/README.md` for details.
 
