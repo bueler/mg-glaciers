@@ -1,8 +1,10 @@
 # mg-glaciers/fas/
 
+This little project is finished.  I posted the documentation as a preprint to (https://arxiv.org/abs/2101.05408)[arxiv.org/abs/2101.05408].  I do not plan to pursue publication.
+
 The program `fas1.py` in directory `py/` demonstrates by example how the _full approximation storage_ (FAS) multigrid scheme works.  It solves an easy nonlinear ODE BVP using piecewise-linear finite elements and a nonlinear Gauss-Seidel smoother.
 
-## Documentation
+## Documentation (the preprint)
 
 Read `fas.pdf` in `doc/` after generating it:
 
@@ -20,7 +22,7 @@ To get started do
         $ cd py/
         $ ./fas1.py -h
 
-Do the following simple run using three FAS V-cycles on a mesh of 64 subintervals:
+Do the following simple run using three FAS V-cycles on a mesh of 2^6=64 subintervals:
 
         $ ./fas1.py -K 6 -cycles 3 -monitor -show
 
