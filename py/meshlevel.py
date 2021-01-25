@@ -1,10 +1,10 @@
-# module for the MeshLevel class suitable for obstacle problems
+'''Module for the MeshLevel class suitable for obstacle problems.'''
 
 import numpy as np
 
 __all__ = ['MeshLevel1D']
 
-class MeshLevel1D(object):
+class MeshLevel1D():
     '''Encapsulate a mesh level for the interval [0,1], suitable for
     obstacle problems.  MeshLevel1D(k=k) has m = 2^{k+1} - 1 interior nodes,
     m+1=2^{k+1} equal subintervals (elements) of length h = 1/(m+1), and
@@ -30,20 +30,23 @@ class MeshLevel1D(object):
         self.h = 1.0 / (self.m + 1)
         self.WU = 0
 
-    def checklen(self,v,coarser=False):
+    def checklen(self, v, coarser=False):
+        '''Check whether the length of v matches the mesh.'''
         goodlen = self.mcoarser+2 if coarser else self.m+2
         assert len(v) == goodlen, \
-               'input vector is of length %d (should be %d)' \
-               % (len(v),goodlen)
+               'input vector is of length %d (should be %d)' % (len(v), goodlen)
 
     def WUincrement(self):
+        '''Increment the work unit counter.'''
         self.WU += 1
 
     def zeros(self):
+        '''Allocate a zero vector.'''
         return np.zeros(self.m+2)
 
     def xx(self):
-        return np.linspace(0.0,1.0,self.m+2)
+        '''Generate a vector of mesh node coordinates.'''
+        return np.linspace(0.0, 1.0, self.m+2)
 
     def l2norm(self, u):
         '''L^2[0,1] norm of a function, computed with trapezoid rule.'''
@@ -51,7 +54,7 @@ class MeshLevel1D(object):
         return np.sqrt(self.h * (0.5*u[0]*u[0] + np.sum(u[1:-1]*u[1:-1]) \
                                  + 0.5*u[-1]*u[-1]))
 
-    def ell(self,f):
+    def ell(self, f):
         '''Represent the linear functional (in (V^k)') which is the inner
         product with a function f (in V^k):
            ell[v] = <f,v> = int_0^1 f(x) v(x) dx
@@ -63,22 +66,22 @@ class MeshLevel1D(object):
         ell[1:-1] = self.h * f[1:-1]
         return ell
 
-    def P(self,v):
+    def P(self, v):
         '''Prolong a vector (function) onto the next-coarser (k-1) mesh (i.e.
         in V^{k-1}) onto the current mesh (in S_k).  Uses linear interpolation.'''
         assert self.k > 0, \
                'cannot prolong from a mesh coarser than the coarsest mesh'
-        self.checklen(v,coarser=True)
+        self.checklen(v, coarser=True)
         y = self.zeros()  # y[0]=y[m+1]=0
         y[1] = 0.5 * v[1]
-        for q in range(1,len(v)-2):
+        for q in range(1, len(v)-2):
             y[2*q] = v[q]
             y[2*q+1] = 0.5 * (v[q] + v[q+1])
         y[-3] = v[-2]
         y[-2] = 0.5 * v[-2]
         return y
 
-    def cR(self,ell):
+    def cR(self, ell):
         '''Restrict a linear functional ell on the current mesh (in (V^k)')
         to the next-coarser mesh, i.e. y = cR(ell) in (V^{k-1})', using
         "canonical restriction".'''
@@ -86,11 +89,11 @@ class MeshLevel1D(object):
                'cannot restrict to a mesh coarser than the coarsest mesh'
         self.checklen(ell)
         y = np.zeros(self.mcoarser+2)  # y[0]=y[mcoarser+1]=0
-        for q in range(1,self.mcoarser+1):
+        for q in range(1, self.mcoarser+1):
             y[q] = 0.5 * ell[2*q-1] + ell[2*q] + 0.5 * ell[2*q+1]
         return y
 
-    def mR(self,v):
+    def mR(self, v):
         '''Evaluate the monotone restriction operator on a vector v
         on the current mesh (in V^k) to give a vector y = mR(v) on the
         next-coarser mesh (in V^{k-1}).  See formula (4.22) in G&K(2009).'''
@@ -98,7 +101,6 @@ class MeshLevel1D(object):
                'cannot restrict to a mesh coarser than the coarsest mesh'
         self.checklen(v)
         y = np.zeros(self.mcoarser+2)
-        for q in range(1,self.mcoarser+1):
+        for q in range(1, self.mcoarser+1):
             y[q] = max(v[2*q-1:2*q+2])
         return y
-

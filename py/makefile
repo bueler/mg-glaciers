@@ -13,7 +13,7 @@ runobstacle_2:
 	-@./../testit.sh obstacle.py "-problem parabola -parabolay -3.0 -kfine 1 -pgsonly -symmetric" 1 2
 
 runobstacle_3:
-	-@./../testit.sh obstacle.py "-kfine 3 -monitorerr -diagnostics -o test3.png" 1 3
+	-@./../testit.sh obstacle.py "-kfine 3 -up 0 -monitorerr -diagnostics -o test3.png" 1 3
 
 runobstacle_4:
 	-@./../testit.sh obstacle.py "-problem parabola -kfine 4 -kcoarse 3 -cyclemax 2 -up 0 -monitorerr -mgview" 1 4
