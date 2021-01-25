@@ -14,7 +14,7 @@ import numpy as np
 from meshlevel import MeshLevel1D
 from pgs import inactiveresidual, pgssweep
 from subsetdecomp import vcycle
-from visualize import obstacleplot, obstaclediagnostics
+from visualize import VisObstacle
 
 parser = argparse.ArgumentParser(description='''
 Solve a 1D obstacle problem:  Find u in
@@ -257,7 +257,14 @@ print('fine level %d (m=%d) %s (%.3f WU)%s%s' \
       % (args.kfine, mesh.m, method, wusum, error, countstr))
 
 # graphical output if desired
-if args.show or args.o:
-    obstacleplot(mesh, uinitial, uu, phifine, args.o, uex=uex)
-if args.diagnostics:
-    obstaclediagnostics(hierarchy, uu, phifine, ellfine, chi, args.up, args.o)
+if args.show or args.o or args.diagnostics:
+    vis = VisObstacle(mesh, phifine)
+    if args.show or args.o:
+        vis.initialfinal(uinitial, uu, filename=args.o, uex=uex)
+    if args.diagnostics:
+        vis.decomposition(hierarchy, chi)
+        if len(args.o) > 0:
+            name = 'diags_' + args.o
+        else:
+            name = ''
+        vis.diagnostics(uu, ellfine, up=args.up, filename=name)
