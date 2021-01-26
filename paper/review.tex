@@ -265,29 +265,19 @@ We have now presented a basic geometric multigrid algorithm via a particular FE 
 
 \section{Subset decomposition for the classical obstacle problem} \label{sec:obstacle}
 
-We now have a basic view of a ``classical'' geometric multigrid (GMG) method, from the multilevel subspace decomposition point of view.  However, as noted in section \ref{sec:intro}, the main problem in glacier modeling, of how the geometry and velocity of a glacier evolves in response to climatic inputs, needs an inequality constraint for well-posedness.  The fact that the ice surface elevation is above the bed elevation generates the land-terminating map-plane boundary condition for the mass conservation problem.  Glacier problems are of course nonlinear, because the fluid is non-Newtonian, but regardless of the manner in which momentum (stress) balance is modeled, this inequality constraint by itself makes the problem nonlinear, and it reduces the regularity of the solution in a manner which is challenging to numerical methods.
+We now have a basic view of a ``classical'' geometric multigrid (GMG) method, but from the multilevel subspace decomposition point of view.  However, as noted in section \ref{sec:intro}, the main problem in glacier modeling of how the ice geometry and velocity co-evolve in response to climatic inputs needs an inequality constraint for well-posedness.  That is, the fact that the ice surface elevation must be above the bed generates the land-terminating map-plane boundary condition for the mass conservation problem.  Regardless of the manner in which momentum conservation (stress balance) is modeled, this inequality constraint by itself makes the problem nonlinear.  It also reduces solution regularity in a manner which is challenging to numerical methods, which are further challenged by the non-Newtonian viscosity of the fluid.
 
-To address such inequality constraints we introduce a second model problem in this section, the classical \emph{obstacle} problem for the Laplace operator.  This problem adds an inequality constraint to a linear differential equation, i.e.~to the same Poisson equation as in the last section.  We will modify the \emph{subspace} decomposition approach to a \emph{subset} decomposition.  That is, each mesh level will host an inequality-constrained problem, and together all the levels will capture the original constraint.  Then switching the differential equation to the nonlinear SIA model in section \ref{sec:sia} will be comparatively an easy change; a dominant nonlinearity is already present in the classical obstacle problem here.
+To address such inequality constraints, and before actually modeling glaciers in section \ref{sec:sia}, we introduce a better classical model problem in this section, namely the \emph{obstacle problem} for the Laplace operator.  This adds an inequality constraint to a linear differential equation, the same Poisson equation as in the last section.  After giving the weak form, which is solved over a subset of the function space in section \ref{sec:subspace}, we will modify the multilevel \emph{subspace} decomposition approach to a \emph{subset} decomposition.  That is, each mesh level will host an inequality-constrained problem, and together all the levels will capture the original constraint set.  Switching the differential equation to the nonlinear SIA model in section \ref{sec:sia} will be comparatively an easy change to our multilevel methods.
 
-Our classical obstacle problem uses the same 1D domain $[0,1]$ and solution space $\mathcal{H}$ as the Poisson problem \eqref{eq:poisson}; recall that functions in $\mathcal{H}$ are smooth and satisfy zero boundary conditions.  Let $\phi(x)$ be a fixed function, also in $\mathcal{H}$, which is the obstacle.  The strong form of the problem is a \emph{complementarity problem} \cite{Bueler2021,KinderlehrerStampacchia1980} which says that the Poisson equation applies everywhere the solution $u(x)$ is strictly above the obstacle:
+Our classical obstacle problem uses the same 1D domain $[0,1]$ and solution space $\mathcal{H}$ as the Poisson problem \eqref{eq:poisson}; recall that functions in $\mathcal{H}$ are smooth and satisfy zero boundary conditions.  Let $\phi(x)$ be a fixed function, also in $\mathcal{H}$, which is the obstacle.  The strong form is a \emph{complementarity problem} \cite{Bueler2021,KinderlehrerStampacchia1980} which says that the Poisson equation applies everywhere the solution $u(x)$ is strictly above the obstacle:
 \begin{align}
   u - \phi &\ge 0 \label{eq:obstaclecp} \\
   -u''-f &\ge 0 \notag \\
   (u-\phi)(-u''-f) &= 0 \notag
 \end{align}
-Note that the last condition, complementarity itself, implies that either the solution is on (coincides with) the obstacle ($u(x)=\phi(x)$), or the Poisson equation holds ($-u''(x)=f(x)$), or both, for every $x$ in $[0,1]$.  These conditions also say that in an open set where the solution coincides with the obstacle, the source term is bounded above: $u=\phi \implies f \le -\psi''$.  As we will address in section \ref{sec:sia}, in the analogous glacier problem, where the solution is the glacier surface elevation and the source term is the climatic (surface) mass balance, then such a complementarity problem says that a conservation equation holds on the glacier while off the glacier the surface mass balance is not positive \cite{Bueler2016}.
+The last condition, complementarity, implies that for each $x$ in $[0,1]$ the solution is on (coincides with) the obstacle, $u(x)=\phi(x)$, or the Poisson equation holds in an open set around $x$ (i.e.~$-u''(x)=f(x)$), or both.  The conditions also say that in an open set where the solution coincides with the obstacle, the source term is bounded above: $u=\phi \implies f \le -\phi''$.
 
-As before the weak form of the problem arises from multiplying by a test function $v$ and integrating by parts.  Now, however, the solution space and test-function space are constrained.  Let
-\begin{equation}
-\mathcal{K} = \left\{v \text{ in } \mathcal{H} \text{ such that } v \ge \phi\right\}.  \label{eq:Kdefine}
-\end{equation}
-This subset of $\mathcal{H}$ is not a vector space but it is closed and especially \emph{convex}, that is, if $v,w$ are in $\mathcal{K}$ then points on the line segment connecting them, namely $\alpha v + (1-\alpha) w$ if $0 \le \alpha \le 1$, are also in $\mathcal{K}$.  Note that if $u$ solves problem \eqref{eq:obstaclecp} then $u$ is in $\mathcal{K}$.  To derive the weak form, the inequalities in \eqref{eq:obstaclecp} enter nontrivially \cite[for example]{Bueler2020}, but the result can be stated as a single \emph{variational inequality}:
-\begin{equation}
-  a(u,v-u) \ge \ip{f}{v-u} \quad \text{ for all } v \text{ in } \mathcal{K}. \label{eq:obstaclevi}
-\end{equation}
-In \eqref{eq:obstaclevi} the bilinear form on the left is the same as for the Poisson weak form \eqref{eq:weakpoisson}: $a(u,v) = \int_0^1 u'(x) v'(x)\,dx$.  Inequality problems \eqref{eq:obstaclecp} and \eqref{eq:obstaclevi} are equivalent up to the same regularity concerns which relate the strong and weak forms of a PDE, respectively \cite{Evans2010}.
-
-In either formulation \eqref{eq:obstaclecp} or \eqref{eq:obstaclevi} of the obstacle problem, FIXME free boundary; as in Figure \ref{fig:icelike}
+As we will see in section \ref{sec:sia}, in the glacier problem corresponding to \eqref{eq:obstaclecp}, the obstacle is the bed elevation, the solution is the glacier surface elevation, and the source term is the climatic (surface) mass balance.  The complementarity problem will say that the mass conservation equation holds on the glacier, and that off the glacier the surface mass balance is not positive \cite{Bueler2016}.  Returning to our classical problem, simply by choosing the formula for the obstacle $\phi(x)$ as a parabola, and the source term $f(x)$ as positive in the middle of $[0,1]$ and negative towards the ends, we get the ``ice-like'' classical obstacle problem solution shown in Figure \ref{fig:icelike}.  Note that the solution (and the obstacle) are defined on the entire domain, but the (Poisson) differential equation only holds in the ``ice'' portion where $u>\phi$.
 
 % regenerate:
 %   $ cd py/
@@ -298,6 +288,23 @@ In either formulation \eqref{eq:obstaclecp} or \eqref{eq:obstaclevi} of the obst
 \caption{An ice-like configuration of the classical obstacle problem.}
 \label{fig:icelike}
 \end{figure}
+
+To proceed with an FE method we need the weak form of the problem.  Again it arises from multiplying by a test function $v$ and integrating by parts, but now the solution (and test-function) space incorporates the constraint:
+\begin{equation}
+\mathcal{K} = \left\{v \text{ in } \mathcal{H} \text{ such that } v \ge \phi\right\}.  \label{eq:Kdefine}
+\end{equation}
+This subset of $\mathcal{H}$ is not a vector space but it is closed and \emph{convex}.  (If $v,w$ are in $\mathcal{K}$ then a point on the line segment connecting them, namely $\alpha v + (1-\alpha) w$ if $0 \le \alpha \le 1$, is also in $\mathcal{K}$.)  Note that if $u$ solves problem \eqref{eq:obstaclecp} then $u$ is in $\mathcal{K}$.  The inequalities in \eqref{eq:obstaclecp} enter nontrivially in the weak-form derivation \cite[for example]{Bueler2020}, which is not given here, but the result is a single \emph{variational inequality}:
+\begin{equation}
+  a(u,v-u) \ge \ip{f}{v-u} \quad \text{ for all } v \text{ in } \mathcal{K}. \label{eq:obstaclevi}
+\end{equation}
+In \eqref{eq:obstaclevi} the bilinear form on the left is the same as for the Poisson weak form \eqref{eq:weakpoisson}: $a(u,v) = \int_0^1 u'(x) v'(x)\,dx$.  Inequality problems \eqref{eq:obstaclecp} and \eqref{eq:obstaclevi} are equivalent up to the same regularity concerns which relate the strong and weak forms of a PDE, respectively \cite{Evans2010}.
+
+For this classical problem the variational inequality weak form \eqref{eq:obstaclevi} is equivalent to a second weak form which is a \emph{constrained minimization}.  FIXME
+The glacier problem (section \ref{sec:sia}) can be formulated as a complementarity problem like \eqref{eq:obstaclecp}, or as a variational inequality like \eqref{eq:obstaclevi}, but for non-flat bed elevations (obstacles), the glacier problem has no constrained minimization formulation.  The essential reason is the lack of symmetry of the weak form in the general case \cite{JouvetBueler2012}.
+
+The intuition behind a variational inequality like \eqref{eq:obstaclevi} is often a barrier to understanding, and the minimization form \eqref{eq:obstaclemin} can help here.  To give the reader a mental image, imagine the constraint set $\mathcal{K}$ as analogous to the closed first quadrant in the plane, $\mathcal{Q} = \left\{(x_1,x_2)\,:\,x_i\ge 0\right\}$.  (The analogy is that $\mathcal{H} \sim \RR^2$ and $\mathcal{K} \sim \mathcal{Q}$.)  FIXME
+
+Because the solution is in $\mathcal{H}$ have imposed ``fixed'' Dirichlet boundary conditions at the extremes of the domain.  However, either problem formulation \eqref{eq:obstaclecp} or \eqref{eq:obstaclevi} allows a \emph{free boundary} to arise FIXME; as in Figure \ref{fig:icelike}
 
 We solve the classical obstacle problem by a \emph{constraint decomposition} \cite{Tai2003} method, which modifies the subspace decomposition to allow an inequality constraint.  FIXME
 
