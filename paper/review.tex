@@ -93,12 +93,12 @@ u^h(x) = \sum_{p=1}^m u_p \psi_p(x). \label{eq:trialsolution}
 Each hat function $\psi_p(x)$ is continuous on all of $[0,1]$, is linear on each element, and satisfies $\psi_p(x_q) = \delta_{pq}$.  The set $\{\psi_p(x)\}_{p=1}^m$ is a \emph{nodal basis} of the space $\mathcal{V}^h$ of continuous, piecewise-linear functions because the coefficients are the function values: $u_p=u^h(x_p)$.  Note that the derivative of $u^h(x)$ is defined on the elements, but not generally at the nodes.  In a program the coefficients $u_p$ are formed into a column vector $\bu=\{u_p\}$ in $\RR^m$.
 
 \begin{figure}
-\includegraphics[width=0.65\textwidth]{figs/finehats.pdf}
+\includegraphics[width=0.65\textwidth]{genfigs/finehats.pdf}
 \caption{Hat functions $\psi_p(x)$ at interior points $x_p$ form a basis for the vector space $\mathcal{V}^h$ of piecewise-linear functions  with zero boundary values.}
 \label{fig:finehats}
 \end{figure}
 
-Our applications of multigrid ideas to glacier problems will be clearest if we adopt an FE approach based on re-phrasing \eqref{eq:poisson} in \emph{weak form} using integrals.  (Accessible introductions to FE methods are in \cite{Bueler2021,Elmanetal2014,Johnson2009}.)  Note that once we state the weak form then the original equation will be called the \emph{strong form}.  The weak form of \eqref{eq:poisson} arises by multiplying both sides of the equation by a \emph{test function} and integrating by parts so that only first derivatives remain.  Without committing to any mathematical detail, we suppose the exact, continuum solution $u(x)$ comes from a vector space $\mathcal{H}$ of functions which are smooth enough to allow the computations which follow and which have value zero at $x=0$ and $x=1$.  Choosing a test function $v(x)$ also from $\mathcal{H}$, by multiplying both sides of \eqref{eq:poisson} by $v$ and integrating by parts, and by using $v(0)=v(1)=0$, we find
+Our applications of multigrid ideas to glacier problems will be clearest if we adopt an FE approach based on re-phrasing \eqref{eq:poisson} in \emph{weak form} using integrals.  (Accessible introductions to FE methods are in \cite{Bueler2021,Elmanetal2014,Johnson2009}.)  Note that once we state the weak form then the original equation will be called the \emph{strong form}.  The weak form of \eqref{eq:poisson} arises by multiplying both sides of the equation by a \emph{test function} and integrating by parts so that only first derivatives remain.  Without committing to any mathematical detail, we suppose the exact, continuum solution $u(x)$ comes from a vector space $\mathcal{H}$ of functions which are smooth enough to allow the computations which follow and which have value zero at $x=0$ and $x=1$.\footnote{We will generally avoid the language of Sobolev spaces \cite[for example]{Evans2010}, but in particular $\mathcal{H}=H_0^1[0,1]$.}  Choosing a test function $v(x)$ also from $\mathcal{H}$, by multiplying both sides of \eqref{eq:poisson} by $v$ and integrating by parts, and by using $v(0)=v(1)=0$, we find
 \begin{equation}
 \int_0^1 u'(x) v'(x)\,dx = \int_0^1 f(x) v(x)\, dx.  \label{eq:weakpoissonearly}
 \end{equation}
@@ -121,10 +121,10 @@ On the basis of this simple FE scheme we take the first step to build a \emph{mu
 For example, two coarser levels are shown in Figure \ref{fig:coarsehats}, based on the fine level in Figure \ref{fig:finehats}.  The first coarsening (top of Figure \ref{fig:coarsehats}) comes from by-passing every other node on the fine mesh, and the next coarsening (bottom) does this again.  (On 2D and 3D meshes this manner of constructing coarse-mesh hats is much less straightforward, and it is more common to start from a coarse mesh and refine level-by-level up to the fine level.)
 
 \begin{figure}
-\includegraphics[width=0.55\textwidth]{figs/coarsehats.pdf}
+\includegraphics[width=0.55\textwidth]{genfigs/coarsehats.pdf}
 \smallskip
 
-\includegraphics[width=0.55\textwidth]{figs/coarsesthats.pdf}
+\includegraphics[width=0.55\textwidth]{genfigs/coarsesthats.pdf}
 \caption{The coarser levels are simply additional sets of hat functions which spread over a greater distance.}
 \label{fig:coarsehats}
 \end{figure}
@@ -193,7 +193,7 @@ What does a sweep of GS actually do to an iterate $w$?  By sequentially making t
 An example is shown in Figure \ref{fig:residualpoints}, where we start with a non-smooth initial iterate $w$ on an $m=6$ mesh; its residual $r(w)$ is at top-left.  (We plot the linear functional $r(w)[\cdot]$ as a piecewise-constant function with values $r(w)[\psi_p]$.)  The Figure shows the residual after each step (index) $p$ in the \textbf{for} loop in \textsc{gssweep}, indicating the location which is zeroed.  Both the residual and error become smaller in norm, but the most notable effect is the damping of high frequencies in the error.
 
 \begin{figure}
-\includegraphics[width=0.9\textwidth]{figs/residualpoints.pdf}
+\includegraphics[width=0.9\textwidth]{genfigs/residualpoints.pdf}
 \caption{One Gauss-Seidel (GS) sweep adjusts the iterate $w$ so that the residual $r^k(w)[\psi_p^k]$ at each successive node $x_p$ is zero (left).  The corresponding errors $e=w-u$ get a bit smaller, but significantly smoother (right).}
 \label{fig:residualpoints}
 \end{figure}
@@ -265,7 +265,35 @@ We have now presented a basic geometric multigrid algorithm via a particular FE 
 
 \section{Subset decomposition for the classical obstacle problem} \label{sec:obstacle}
 
-The last section is a quick review, based on the simplest Poisson problem, of a ``classical'' geometric multigrid (GMG) method.  Classical GMG is, however, not adequate for the main problem in glaciers, namely how the geometry and velocity of a glacier evolves in response to climatic inputs.  First the glaciers problem is (famously) nonlinear, in that the fluid is non-Newtonian, but this is not the leading difficulty.  Rather, regardless of the manner in which momentum (stress) balance is modeled, the boundary condition for the geometry evolution (i.e.~mass conservation) problem arises from an inequality constraint.  Namely that the ice thickness is nonnegative, equivalently that the ice surface elevation is above the bed elevation, a point already made in the Introduction but actually addressed in the next section.  For now we note that the addition of such an inequality constraint generates a nonlinear problem, even if the differential equation is linear.  In this section we modify the GMG subspace decomposition approach to solve a classical \emph{obstacle} problem, which combines an inequality constraint with a linear differential equation.  Switching the differential equation to the nonlinear SIA model in the next section will be comparatively an easy change; one can say that the dominant nonlinearity is already present in the classical obstacle problem here.
+We now have a basic view of a ``classical'' geometric multigrid (GMG) method, from the multilevel subspace decomposition point of view.  However, as noted in section \ref{sec:intro}, the main problem in glacier modeling, of how the geometry and velocity of a glacier evolves in response to climatic inputs, needs an inequality constraint for well-posedness.  The fact that the ice surface elevation is above the bed elevation generates the land-terminating map-plane boundary condition for the mass conservation problem.  Glacier problems are of course nonlinear, because the fluid is non-Newtonian, but regardless of the manner in which momentum (stress) balance is modeled, this inequality constraint by itself makes the problem nonlinear, and it reduces the regularity of the solution in a manner which is challenging to numerical methods.
+
+To address such inequality constraints we introduce a second model problem in this section, the classical \emph{obstacle} problem for the Laplace operator.  This problem adds an inequality constraint to a linear differential equation, i.e.~to the same Poisson equation as in the last section.  We will modify the \emph{subspace} decomposition approach to a \emph{subset} decomposition.  That is, each mesh level will host an inequality-constrained problem, and together all the levels will capture the original constraint.  Then switching the differential equation to the nonlinear SIA model in section \ref{sec:sia} will be comparatively an easy change; a dominant nonlinearity is already present in the classical obstacle problem here.
+
+Our classical obstacle problem uses the same 1D domain $[0,1]$ and solution space $\mathcal{H}$ as the Poisson problem \eqref{eq:poisson}; recall that functions in $\mathcal{H}$ are smooth and satisfy zero boundary conditions.  Let $\phi(x)$ be a fixed function, also in $\mathcal{H}$, which is the obstacle.  The strong form of the problem is a \emph{complementarity problem} \cite{Bueler2021,KinderlehrerStampacchia1980} which says that the Poisson equation applies everywhere the solution $u(x)$ is strictly above the obstacle:
+\begin{align}
+  u - \phi &\ge 0 \label{eq:obstaclecp} \\
+  -u''-f &\ge 0 \notag \\
+  (u-\phi)(-u''-f) &= 0 \notag
+\end{align}
+Note that the last condition, complementarity itself, implies that either the solution is on (coincides with) the obstacle ($u(x)=\phi(x)$), or the Poisson equation holds ($-u''(x)=f(x)$), or both, for every $x$ in $[0,1]$.  These conditions also say that in an open set where the solution coincides with the obstacle, the source term is bounded above: $u=\phi \implies f \le -\psi''$.  As we will address in section \ref{sec:sia}, in the analogous glacier problem, where the solution is the glacier surface elevation and the source term is the climatic (surface) mass balance, then such a complementarity problem says that a conservation equation holds on the glacier while off the glacier the surface mass balance is not positive \cite{Bueler2016}.
+
+As before the weak form of the problem arises from multiplying by a test function $v$ and integrating by parts.  Now, however, the solution space and test-function space are constrained.  Let
+\begin{equation}
+\mathcal{K} = \left\{v \text{ in } \mathcal{H} \text{ such that } v \ge \phi\right\}.  \label{eq:Kdefine}
+\end{equation}
+This subset of $\mathcal{H}$ is not a vector space but it is closed and especially \emph{convex}, that is, if $v,w$ are in $\mathcal{K}$ then points on the line segment connecting them, namely $\alpha v + (1-\alpha) w$ if $0 \le \alpha \le 1$, are also in $\mathcal{K}$.  Note that if $u$ solves problem \eqref{eq:obstaclecp} then $u$ is in $\mathcal{K}$.  To derive the weak form, the inequalities in \eqref{eq:obstaclecp} enter nontrivially \cite[for example]{Bueler2020}, but the result can be stated as a single \emph{variational inequality}:
+\begin{equation}
+  a(u,v-u) \ge \ip{f}{v-u} \quad \text{ for all } v \text{ in } \mathcal{K}. \label{eq:obstaclevi}
+\end{equation}
+In \eqref{eq:obstaclevi} the bilinear form on the left is the same as for the Poisson weak form \eqref{eq:weakpoisson}: $a(u,v) = \int_0^1 u'(x) v'(x)\,dx$.  Inequality problems \eqref{eq:obstaclecp} and \eqref{eq:obstaclevi} are equivalent up to the same regularity concerns which relate the strong and weak forms of a PDE, respectively \cite{Evans2010}.
+
+In either formulation \eqref{eq:obstaclecp} or \eqref{eq:obstaclevi} of the obstacle problem, FIXME free boundary; as in Figure \ref{fig:icelike}
+
+\begin{figure}
+\includegraphics[width=0.7\textwidth]{fixfigs/icelike.pdf}
+\caption{An ice-like configuration of the classical obstacle problem.}
+\label{fig:icelike}
+\end{figure}
 
 We solve the classical obstacle problem by a \emph{constraint decomposition} \cite{Tai2003} method, which modifies the subspace decomposition to allow an inequality constraint.  FIXME
 
@@ -283,6 +311,8 @@ FIXME for 2D domains the coarse mesh construction needs reconsideration
 FIXME multigrid already used for Blatter-Pattyn model \cite{BrownSmithAhmadia2013} and for hybrid \cite{Jouvetetal2013}; one goal of this section is to make these approaches more understandable
 
 FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to Vanka monolithic smoother \cite{Farrelletal2019}
+
+\clearpage
 
 \section*{Notation used in sections \ref{sec:subspace}--\ref{sec:sia}}
 
