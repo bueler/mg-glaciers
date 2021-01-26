@@ -78,6 +78,8 @@ parser.add_argument('-parabolay', type=float, default=-1.0, metavar='X',
                     help='vertical location of obstacle in -problem parabola (default X=-1.0)')
 parser.add_argument('-pgsonly', action='store_true', default=False,
                     help='do projected Gauss-Seidel (instead of multigrid)')
+parser.add_argument('-plain', action='store_true', default=False,
+                    help='when used with -show or -o, only show exact solution and obstacle')
 parser.add_argument('-printwarnings', action='store_true', default=False,
                     help='print pointwise feasibility warnings')
 parser.add_argument('-problem', choices=['icelike', 'parabola'],
@@ -260,7 +262,13 @@ print('fine level %d (m=%d) %s (%.3f WU)%s%s' \
 if args.show or args.o or args.diagnostics:
     vis = VisObstacle(mesh, phifine)
     if args.show or args.o:
-        vis.initialfinal(uinitial, uu, filename=args.o, uex=uex)
+        if args.plain:
+            if exactavailable:
+                vis.plain(uex, filename=args.o)
+            else:
+                raise ValueError
+        else:
+            vis.initialfinal(uinitial, uu, filename=args.o, uex=uex)
     if args.diagnostics:
         vis.decomposition(hierarchy, chi)
         if len(args.o) > 0:

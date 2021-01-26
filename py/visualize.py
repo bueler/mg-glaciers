@@ -35,6 +35,20 @@ class VisObstacle():
         self.hierarchy = None
         self.chi = None
 
+    def plain(self, uex, filename=''):
+        '''Generate plain graphic showing exact solution and obstacle in
+        black.'''
+        self.mesh.checklen(uex)
+        xx = self.mesh.xx()
+        plt.figure(figsize=(15.0, 6.0))
+        plt.plot(xx, uex, 'k--', label=r'solution $u$', lw=3.0)
+        plt.plot(xx, self.phi, 'k', label=r'obstacle $\phi$', lw=3.0)
+        plt.axis('tight')
+        plt.axis('off')
+        plt.legend()
+        plt.xlabel('x')
+        _output(filename)
+
     def initialfinal(self, uinitial, ufinal, filename='', uex=None):
         '''Generate graphic showing initial and final solution iterates and
         obstacle.  Show exact solution if given.'''
@@ -44,10 +58,10 @@ class VisObstacle():
         plt.figure(figsize=(15.0, 8.0))
         plt.plot(xx, uinitial, 'k--', label='initial iterate')
         plt.plot(xx, ufinal, 'k', label='final iterate', linewidth=4.0)
-        plt.plot(xx, self.phi, 'r', label='obstacle')
         if uex is not None:
             self.mesh.checklen(uex)
-            plt.plot(xx, uex, 'g', label='exact')
+            plt.plot(xx, uex, 'g', label='exact solution')
+        plt.plot(xx, self.phi, 'r', label='obstacle')
         plt.axis([0.0, 1.0, -0.3 + min(ufinal), 1.1*max(ufinal)])
         plt.legend()
         plt.xlabel('x')
