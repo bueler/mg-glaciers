@@ -1,6 +1,6 @@
 all: review.pdf
 
-_figures := finehats coarsehats coarsesthats residualpoints
+_figures := finehats coarsehats coarsesthats residualpoints cartoonplane
 figures := $(addprefix genfigs/, $(addsuffix .pdf, $(_figures)))
 
 review.pdf: review.tex review.bib $(figures)
@@ -9,8 +9,8 @@ review.pdf: review.tex review.bib $(figures)
 	pdflatex review
 	pdflatex review
 
-$(figures): genfigs/hats1d.py genfigs/residualpoints.py
-	(cd genfigs/ && python3 hats1d.py && python3 residualpoints.py)
+$(figures): genfigs/hats1d.py genfigs/residualpoints.py genfigs/cartoonplane.py
+	(cd genfigs/ && python3 hats1d.py && python3 residualpoints.py && python3 cartoonplane.py)
 	for X in $(figures); do \
 	     (pdfcrop $$X $$X); \
 	done
