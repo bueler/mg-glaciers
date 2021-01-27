@@ -53,6 +53,11 @@ urlcolor=black    % ...
 
 \newcommand{\ip}[2]{\left<#1,#2\right>}
 
+% numbering
+\numberwithin{equation}{section}
+\numberwithin{figure}{section}
+\numberwithin{table}{section}
+
 
 \begin{document}
 \title{Geometric multigrid for glacier modeling}
@@ -192,8 +197,8 @@ What does a sweep of GS actually do to an iterate $w$?  By sequentially making t
 
 An example is shown in Figure \ref{fig:residualpoints}, where we start with a non-smooth initial iterate $w$ on an $m=6$ mesh; its residual $r(w)$ is at top-left.  (We plot the linear functional $r(w)[\cdot]$ as a piecewise-constant function with values $r(w)[\psi_p]$.)  The Figure shows the residual after each step (index) $p$ in the \textbf{for} loop in \textsc{gssweep}, indicating the location which is zeroed.  Both the residual and error become smaller in norm, but the most notable effect is the damping of high frequencies in the error.
 
-\begin{figure}
-\includegraphics[width=0.9\textwidth]{genfigs/residualpoints.pdf}
+\begin{figure}[t]
+\includegraphics[width=0.8\textwidth]{genfigs/residualpoints.pdf}
 \caption{One Gauss-Seidel (GS) sweep adjusts the iterate $w$ so that the residual $r^k(w)[\psi_p^k]$ at each successive node $x_p$ is zero (left).  The corresponding errors $e=w-u$ get a bit smaller, but significantly smoother (right).}
 \label{fig:residualpoints}
 \end{figure}
@@ -229,22 +234,14 @@ Combining the above ideas gives the \emph{multigrid V-cycle}.  To the smoother a
     if $k=0$ \\+
         $w =$ \pr{coarsesolve}(\ell) \\-  % in fact is w=0 plus \id{coarse} iterations of \pr{gssweep}(0,w,\ell)
     else \\+
-        for $j=1,\dots,$\id{down} \\+
-            \pr{gssweep}(k,w,\ell) \\-
+        $\text{\pr{gssweep}}^{\text{\id{down}}}(k,w,\ell)$ \\
         $r^k[\cdot] = \ell[\cdot] - a^k(w,\cdot)$ \\
         $e^{k-1} =$ \pr{vcycle}(k-1,0,-R r^k) \\
         $w \gets w + P e^{k-1}$ \\
-        for $j=1,\dots,$\id{up} \\+
-            \pr{gssweep}(k,w,\ell) \\--
+        $\text{\pr{gssweep}}^{\text{\id{up}}}(k,w,\ell)$ \\-
 \end{pseudo*}
 
-Observe that after \texttt{down} smoother sweeps the coarse-level correction equation \eqref{eq:coarsecorrection} is applied on the next-coarser level with a ``new'' right-hand linear functional $\ell^{k-1}[v]=-(R r^k(w^k))[v]$ and a zero initial iterate.  That is, the coarse-level problem has a new source term, which is the amount the fine-level iterate $w^k$ did not already solve the problem.  After this correction an additional \texttt{up} sweeps are done to remove high-frequency components from the update.  Figure \ref{fig:vcycle} illustrates a three-level V-cycle.
-
-\begin{figure}
-\input{tikz/vcycle.tex}
-\caption{A V-cycle on a three-level hierarchy ($K=2$) with a down-smoother (solid dots), up-smoother (circles) and coarse-level solver (square).}
-\label{fig:vcycle}
-\end{figure}
+Observe that after \texttt{down} smoother sweeps, denoted here by $\text{\textsc{gssweep}}^{\text{\texttt{down}}}$, the coarse-level correction equation \eqref{eq:coarsecorrection} is applied on the next-coarser level with a ``new'' right-hand linear functional $\ell^{k-1}[v]=-(R r^k(w^k))[v]$ and a zero initial iterate.  That is, the coarse-level problem has a new source term, which is the amount the fine-level iterate $w^k$ did not already solve the problem.  After this correction an additional \texttt{up} sweeps are done to remove high-frequency components from the update.  Figure \ref{fig:vcycle} illustrates a three-level V-cycle.
 
 Two new symbols have appeared in \eqref{eq:coarsecorrection} and \eqref{eq:update}.  First, the $k$th-level residual is restricted onto the next-coarser level by the \emph{canonical restriction operator} $R$ which creates a linear functional on the $k-1$ level from a linear functional $\ell^k$ on the $k$ level:
 \begin{equation}
@@ -257,6 +254,12 @@ for all $v$ in $\mathcal{V}^{k-1}$.  That is, $R \ell^k$ acts on $\mathcal{V}^{k
 Again the result $P z^{k-1}$ is really just the same as the input function $z^{k-1}$.
 
 Though the operators $R$ and $P$ thus seem to do nothing, and make no choices, which is the meaning of ``canonical'', in fact they represent computational work because of how we represent functions and functionals on each level.  That work is contained in the perhaps-forgotten equation \eqref{eq:hatcombination} which describes how each coarse-level hat function is a linear combination of fine-level hats.  For example, if a fine-level linear functional $\ell^k$ is represented on the computer as a vector of its values $\ell[p] = \ell^k[\psi_p^k]$, then the vector representing the restricted linear functional $R \ell^k$ has values computed via \eqref{eq:hatcombination}.  Likewise, if a coarse-level function $z^{k-1}(x)$ is represented by its coefficients in the basis $\{\psi_p^{k-1}\}$ then \eqref{eq:hatcombination} determines the coefficients of $P z^{k-1}$ in the fine-level basis $\{\psi_p^k\}$.  Linear operators $R$ and $P$ may be represented as rectangular matrices, but this is not necessary; they can be applied using $O(m_k)$ work via straightforward local averaging (full weighting \cite{Briggsetal2000}) formulae.
+
+\begin{figure}
+\input{tikz/vcycle.tex}
+\caption{A V-cycle on a three-level hierarchy ($K=2$) with a down-smoother (solid dots), up-smoother (circles) and coarse-level solver (square).}
+\label{fig:vcycle}
+\end{figure}
 
 The above \textsc{vcycle} algorithm also calls a coarse solver on the $k=0$ level.  For a linear problem like our current Poisson problem it is traditional to apply a direct solver for this linear system (i.e.~equation \eqref{eq:linearsystem}).  However, this will not be an option for the nonlinear glacier geometry problem.  Instead we suppose \textsc{coarsesolve} is implemented as a fixed number of GS sweeps.  If the coarsest mesh has a single node then a single sweep gives an exact solution.
 
