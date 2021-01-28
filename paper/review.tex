@@ -4,6 +4,8 @@
 
 \usepackage{times,bm,bbm,empheq,fancyvrb,graphicx}
 \usepackage[dvipsnames]{xcolor}
+\usepackage{longtable}
+
 \usepackage{tikz}
 \usetikzlibrary{decorations.pathreplacing}
 
@@ -54,13 +56,18 @@ urlcolor=black    % ...
 \newcommand{\ip}[2]{\left<#1,#2\right>}
 
 % numbering
+\setcounter{tocdepth}{3}
+\makeatletter
+\def\l@subsection{\@tocline{2}{0pt}{4pc}{5pc}{}}
+\makeatother
+
 \numberwithin{equation}{section}
 \numberwithin{figure}{section}
 \numberwithin{table}{section}
 
 
 \begin{document}
-\title{Geometric multigrid for glacier modeling}
+\title[Geometric multigrid for glacier modeling]{Geometric multigrid for glacier modeling: \\ A Review and User's Guide}
 
 \author{Ed Bueler}
 
@@ -85,7 +92,7 @@ FIXME perspectives \emph{not} found here: convergence of GMG (or much detail for
 
 \section{From subspace decomposition to multigrid (Poisson equation)} \label{sec:subspace}
 
-In this section we will demonstrate how to solve a simple ordinary differential equation (ODE), namely the Poisson problem
+\subsection*{The simplest model problem}  In this section we will demonstrate how to solve a simple ordinary differential equation (ODE), namely the Poisson problem
 \begin{equation}
 - u''(x) = f(x) \quad \text{on} \quad 0 \le x \le 1, \label{eq:poisson}
 \end{equation}
@@ -103,7 +110,7 @@ Each hat function $\psi_p(x)$ is continuous on all of $[0,1]$, is linear on each
 \label{fig:finehats}
 \end{figure}
 
-Our applications of multigrid ideas to glacier problems will be clearest if we adopt an FE approach based on re-phrasing \eqref{eq:poisson} in \emph{weak form} using integrals.  (Accessible introductions to FE methods are in \cite{Bueler2021,Elmanetal2014,Johnson2009}.)  Note that once we state the weak form then the original equation will be called the \emph{strong form}.  The weak form of \eqref{eq:poisson} arises by multiplying both sides of the equation by a \emph{test function} and integrating by parts so that only first derivatives remain.  Without committing to any mathematical detail, we suppose the exact, continuum solution $u(x)$ comes from a vector space $\mathcal{H}$ of functions which are smooth enough to allow the computations which follow and which have value zero at $x=0$ and $x=1$.\footnote{We will generally avoid the language of Sobolev spaces \cite[for example]{Evans2010}, but in particular $\mathcal{H}=H_0^1[0,1]$.}  Choosing a test function $v(x)$ also from $\mathcal{H}$, by multiplying both sides of \eqref{eq:poisson} by $v$ and integrating by parts, and by using $v(0)=v(1)=0$, we find
+Our applications of multigrid ideas to glacier problems will be clearest if we adopt an FE approach based on re-phrasing \eqref{eq:poisson} in \emph{weak form} using integrals.  (Accessible introductions to FE methods are in \cite{Bueler2021,Elmanetal2014,Johnson2009}.)  Note that once we state the weak form then the original equation will be called the \emph{strong form}.  The weak form of \eqref{eq:poisson} arises by multiplying both sides of the equation by a \emph{test function} and integrating by parts so that only first derivatives remain.  Without committing to any mathematical detail, we suppose the exact, continuum solution $u(x)$ comes from a vector space $\mathcal{H}$ of functions which are smooth enough to allow the computations which follow and which have value zero at $x=0$ and $x=1$.  (Note we will generally avoid the language of Sobolev spaces \cite[for example]{Evans2010}, but in particular $\mathcal{H}=H_0^1[0,1]=W_0^{1,2}[0,1]$.  This language will be used only when precision is needed, and not flaunted.)  Choosing a test function $v(x)$ also from $\mathcal{H}$, by multiplying both sides of \eqref{eq:poisson} by $v$ and integrating by parts, and by using $v(0)=v(1)=0$, we find
 \begin{equation}
 \int_0^1 u'(x) v'(x)\,dx = \int_0^1 f(x) v(x)\, dx.  \label{eq:weakpoissonearly}
 \end{equation}
@@ -121,7 +128,7 @@ where $A$ is an $m\times m$ matrix and $\bbf$ is in $\RR^m$.  Note that each equ
 
 The most straightforward way to numerically solve the assembled linear system \eqref{eq:linearsystem} would be a direct method such as Gaussian elimination.  However, in higher-dimensional PDE problems such methods need much more that $O(m)$ operations to solve the system.  As noted in the introduction, large-scale applications demand optimal $O(m)$ solution methods, or nearly so, thus our focus on multigrid.  Furthermore, after this section all of our problems will be nonlinear, thus no finite-time direct method will be available anyway, and we will generally not assemble matrix objects at all.  Instead we will need rapidly-convergent iterations for our nonlinear FE systems for glacier problems.
 
-On the basis of this simple FE scheme we take the first step to build a \emph{multilevel} (multigrid) scheme.  Consider an enlarged set of hat functions:
+\subsection*{Coarse levels in a multilevel subspace decomposition}  On the basis of the above simple FE scheme we take the first step to build a \emph{multilevel} (multigrid) scheme.  Consider an enlarged set of hat functions:
     $$\underbrace{\psi_1(x),\dots,\psi_m(x)}_{\text{existing fine level}},\underbrace{\psi_{m+1}(x),\dots,\psi_M(x)}_{\text{coarser levels}}$$
 For example, two coarser levels are shown in Figure \ref{fig:coarsehats}, based on the fine level in Figure \ref{fig:finehats}.  The first coarsening (top of Figure \ref{fig:coarsehats}) comes from by-passing every other node on the fine mesh, and the next coarsening (bottom) does this again.  (On 2D and 3D meshes this manner of constructing coarse-mesh hats is much less straightforward, and it is more common to start from a coarse mesh and refine level-by-level up to the fine level.)
 
@@ -168,7 +175,7 @@ On coarser mesh levels $k$ we will also have a right-hand-side linear functional
 \end{equation}
 for all $v$ in $\mathcal{V}^k$.  The bilinear form $a(u,v)$ has the same meaning on each level, namely as the left side of \eqref{eq:weakpoissonearly}.  Our solution method does not need to assemble a matrix for system \eqref{eq:feweakpoisson}.  In sections \ref{sec:obstacle} and \ref{sec:sia}, equation \eqref{eq:feweakpoisson} will be modified into an analogous weak form for the nonlinear and inequality-constrained glacier geometry problem.
 
-Suppose $w(x)$ in $\mathcal{V}^k$ is an approximation of the solution $u^k$.  Define the \emph{residual} as the linear functional
+\subsection*{The residual and Gauss-Seidel}  Suppose $w(x)$ in $\mathcal{V}^k$ is an approximation of the solution $u^k$.  Define the \emph{residual} as the linear functional
 \begin{equation}
   r^k(w)[v] = \ell^k[v] - a(w,v)  \label{eq:residual}
 \end{equation}
@@ -203,7 +210,7 @@ An example is shown in Figure \ref{fig:residualpoints}, where we start with a no
 \label{fig:residualpoints}
 \end{figure}
 
-Once the GS smoother is applied on a given level $k$, both the error and the residual of the current iterate $w^k$ no longer contain much energy in those high-frequency modes for which we need the $k$th-level representation.  Thus the problem can be represented on a coarser level by an equation relating the smooth error and residual quantities, as follows.  First, the residual definition \eqref{eq:residual} can be rewritten as the equation
+\subsection*{V-cycle geometric multigrid}  Once the GS smoother is applied on a given level $k$, both the error and the residual of the current iterate $w^k$ no longer contain much energy in those high-frequency modes for which we need the $k$th-level representation.  Thus the problem can be represented on a coarser level by an equation relating the smooth error and residual quantities, as follows.  First, the residual definition \eqref{eq:residual} can be rewritten as the equation
 \begin{equation}
   a(w^k,v) = \ell^k[v] - r^k(w^k)[v].  \label{eq:residualrewrite}
 \end{equation}
@@ -266,9 +273,9 @@ The above \textsc{vcycle} algorithm also calls a coarse solver on the $k=0$ leve
 We have now presented a basic geometric multigrid algorithm via a particular FE viewpoint, namely the subspace decomposition approach as pioneered by Xu \cite{Xu1992} and others, an idea which applies both to multilevel and domain-decomposition algorithms.  We could now show computational results prominently featuring the efficiency of the V-cycle algorithm, namely evidence of optimal $O(m_K)$ time to solve the problem, and indeed such results appear in multigrid references \cite{Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.  However, we first introduce a less-trivial ``obstacle'' problem which has the essential free-boundary character of the glacier geometry problem.  Computational results will be given in the next three sections.
 
 
-\section{Subset decomposition for the classical obstacle problem} \label{sec:obstacle}
+\section{Multilevel subset decomposition for the classical obstacle problem} \label{sec:obstacle}
 
-We now have a basic view of the ``classical'' geometric multigrid (GMG) method from the multilevel subspace decomposition point of view.  However, as noted in section \ref{sec:intro}, the main problem in glacier modeling, of how the ice geometry and velocity co-evolve in response to climatic inputs, needs an inequality constraint for well-posedness.  The fact that the ice surface elevation must be above the bed generates the land-terminating boundary condition for the mass conservation problem.  Regardless of the manner in which momentum conservation (stress balance) is modeled, this inequality constraint by itself makes the problem nonlinear.  It also reduces solution regularity in a manner which is challenging to numerical methods.  (They are further-challenged by the non-Newtonian viscosity of the fluid.)
+\subsection*{An ice-like model problem}  We now have a basic view of the ``classical'' geometric multigrid (GMG) method from the multilevel subspace decomposition point of view.  However, as noted in section \ref{sec:intro}, the main problem in glacier modeling, of how the ice geometry and velocity co-evolve in response to climatic inputs, needs an inequality constraint for well-posedness.  The fact that the ice surface elevation must be above the bed generates the land-terminating boundary condition for the mass conservation problem.  Regardless of the manner in which momentum conservation (stress balance) is modeled, this inequality constraint by itself makes the problem nonlinear.  It also reduces solution regularity in a manner which is challenging to numerical methods.  (They are further-challenged by the non-Newtonian viscosity of the fluid.)
 
 To address such inequality constraints, and before actually modeling glaciers in section \ref{sec:sia}, we introduce a more-convincing model problem, namely the classical 1D \emph{obstacle problem}.  This simply adds an inequality constraint to the same linear differential equation, the Poisson equation.  After stating the weak form, which is solved over a \emph{subset} of the function space in section \ref{sec:subspace}, we will modify the multilevel subspace decomposition approach to be a \emph{subset decomposition} method.  Each mesh level will host an inequality-constrained problem, and together all the levels will capture the original constraint set.  Switching the differential equation to the nonlinear SIA model in section \ref{sec:sia} will be comparatively an easy change.
 
@@ -282,12 +289,12 @@ The last condition, complementarity, implies that for each $x$ in $[0,1]$ the so
 
 As we will see in section \ref{sec:sia}, for the glacier problem there will also be a CP formulation.  The obstacle will be the bed elevation, the solution will be the glacier surface elevation, and the source term will be the climatic (surface) mass balance.  The CP formulation will say that the mass conservation equation holds on the glacier, and that off the glacier the surface mass balance is not positive \cite{Bueler2016}.
 
-Returning to our classical problem, simply by choosing a source term $f(x)$ which is positive in the middle of the domain and negative near the boundaries, we get the ``ice-like'' solution shown in Figure \ref{fig:icelike}.  In detail, the Figure shows the exact, piecewise-quadratic solution $u(x)$ for the following data:
+Returning to our classical obstacle problem, simply by choosing a source term $f(x)$ which is positive in the middle of the domain and negative near the boundaries, we get the ``ice-like'' solution shown in Figure \ref{fig:icelike}.  In detail, the Figure shows the exact, piecewise-quadratic solution $u(x)$ for the following data:
 \begin{equation}
-\phi(x) = x(1-x) \quad \text{ and } \quad f(x) = \begin{cases} -16, & x<0.2 \text{ or } x>0.8 \\
-                                              8, & 0.2 < x < 0.8. \end{cases}
+\phi(x) = x(1-x) \quad \text{ and } \quad f(x) = \begin{cases} 8, & 0.2 < x < 0.8, \\
+                                                               -16, & x<0.2 \text{ or } x>0.8. \end{cases}  \label{eq:icelikedetails}
 \end{equation}
-Note that $f$ is in $L^2[0,1]$; it is defined almost everywhere.  Finding the formula for $u(x)$, which smoothly-connects five rational-coefficient quadratic pieces, is an exercise for the reader.\footnote{Find the solution in: \, \href{https://github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}{\texttt{github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}}.}
+(Note that $f$ is in $L^2[0,1]$ and it is defined almost everywhere.)  Finding the formula for $u(x)$, which smoothly-connects five rational-coefficient quadratic pieces, is an exercise for the reader.\footnote{Find the solution in: \, \href{https://github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}{\texttt{github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}}.}
 
 % regenerate:
 %   $ cd py/
@@ -299,7 +306,9 @@ Note that $f$ is in $L^2[0,1]$; it is defined almost everywhere.  Finding the fo
 \label{fig:icelike}
 \end{figure}
 
-To proceed with an FE method we need the weak form of the problem.  Again it arises from multiplying by a test function $v$ and integrating by parts, but now the solution (and test-function) space incorporates the constraint:
+Observe that the solution $u$ does not depend linearly on the source function $f$.  In fact, if $f(x)\le 0$ for all $x$ in $[0,1]$ then the solution to the problem with $\phi(x)=x(1-x)$, i.e.~the obstacle shown in Figure \ref{fig:icelike}, is $u=\phi$ on $[0,1]$.  For example, if $\tilde u$ solves the problem for $\tilde f= -1$, then $2\tilde u$ \emph{does not} solve the problem for source term $2\tilde f = -2$.  In this sense the classical obstacle problem is nonlinear even though the corresponding PDE, the Poisson equation, is linear.
+
+\subsection*{Weak formulation with constraints}  For an FE method we will need the weak form of the problem.  Again it arises from multiplying by a test function $v$ and integrating by parts, but now the solution (and test-function) space incorporates the constraint:
 \begin{equation}
 \mathcal{K} = \left\{v \text{ in } \mathcal{H} \text{ such that } v \ge \phi\right\}.  \label{eq:Kdefine}
 \end{equation}
@@ -309,7 +318,7 @@ The inequalities in \eqref{eq:obstaclecp} enter nontrivially into the weak-form 
 \begin{equation}
   a(u,v-u) \ge \ip{f}{v-u} \quad \text{ for all } v \text{ in } \mathcal{K}. \label{eq:obstaclevi}
 \end{equation}
-Compare equation \eqref{eq:weakpoisson}; the bilinear form is the same: $a(u,v) = \int_0^1 u'(x) v'(x)\,dx$.  Inequality problems \eqref{eq:obstaclecp} and \eqref{eq:obstaclevi} are equivalent up to the same regularity concerns which relate the strong and weak forms of a PDE, respectively.  (See reference \cite{Evans2010} regarding the solution regularity of PDEs, and \cite{KinderlehrerStampacchia1980} for the corresponding VI concepts.)
+Compare equation \eqref{eq:weakpoisson}; the bilinear form is the same: $a(u,v) = \int_0^1 u'(x) v'(x)\,dx$.  Inequality problems \eqref{eq:obstaclecp} and \eqref{eq:obstaclevi} are equivalent up to the same regularity concerns which relate the strong and weak forms of a PDE, respectively.  See reference \cite{Evans2010} regarding the solution regularity of PDEs, and \cite{KinderlehrerStampacchia1980} for the corresponding VI concepts.
 
 The intuition behind a VI is often obscure and a barrier to understanding.  To help, we mention yet another weak form for the classical obstacle problem.  Inequality \eqref{eq:obstaclevi} is equivalent to \emph{constrained minimization}:
 \newcommand{\argmin}{\mathop{\mathrm{arg\text{-}min}}}
@@ -318,27 +327,33 @@ The intuition behind a VI is often obscure and a barrier to understanding.  To h
 \end{equation}
 That is, $u$ is the minimizer, over the constraint set $\mathcal{K}$, of the quadratic \emph{objective} functional $J$.  (The proof of equivalence is standard in continuous optimization; see \cite{KinderlehrerStampacchia1980} or \cite[Chapter 12]{Bueler2021}.)
 
-The gradient of the objective $J$, at input $u$, defines the linear functional which appears in \eqref{eq:obstaclevi}, and in fact the VI can be re-stated as follows:
+The gradient of the objective $J$, at input $u$, defines the linear functional which appears in \eqref{eq:obstaclevi}.  In fact, the VI can be re-stated as follows:
 \begin{equation}
   \nabla J(u)[v-u] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}. \label{eq:obstaclevigradient}
 \end{equation}
-Thus the solution $u$ sits at a location in $\mathcal{K}$ where a vector pointing further into the constraint set, namely $v-u$ for $v$ in $\mathcal{K}$, points ``uphill'' on the graph of the objective $J$.  If we think of $\nabla J(u)$ as a vector, instead of as a linear functional, we could write $\ip{\nabla J(u)}{v-u} \ge 0$, i.e.~the angle between $\nabla J(u)$ and $v-u$ is at most 90 degrees.  One possibility is that the constraint $u\ge \phi$ is nowhere active on the domain, in which case \eqref{eq:obstaclevigradient} implies the unconstrained minimum condition $\nabla J(u)[v] = 0$ for all $v$ in $\mathcal{H}$, that is, the gradient of $J$ is zero at $u$.
+Thus the solution $u$ sits at a location in $\mathcal{K}$ where a vector pointing further into the constraint set, namely $v-u$ for $v$ in $\mathcal{K}$, points ``uphill'' on the graph of $J$.  If we think of $\nabla J(u)$ as a vector, instead of a linear functional, we could write \eqref{eq:obstaclevigradient} as $\ip{\nabla J(u)}{v-u} \ge 0$; this says that the angle between $\nabla J(u)$ and $v-u$ is at most 90 degrees.  While the VI always holds, one possibility is that the constraint $u\ge \phi$ is nowhere active on the domain, in which case \eqref{eq:obstaclevigradient} implies the unconstrained minimum condition $\nabla J(u)[v] = 0$ for all $v$ in $\mathcal{H}$; in that case the gradient of $J$ is zero at $u$.
 
-To propose a mental image, imagine the constraint set $\mathcal{K}$ as analogous to the closed first quadrant in the plane, $\mathcal{Q} = \left\{(x_1,x_2)\,:\,x_i\ge 0\right\}$, and $J$ as analogous to a smooth, concave-up (i.e.~\emph{coercive} \cite{Evans2010}), objective function $\gamma(x_1,x_2)$ defined on $\mathcal{Q}$.  The solution $(\hat x_1,\hat x_2)$ in $\mathcal{Q}$, of the corresponding variational inequality, equivalently the constrained minimizer, may not be at a location where $\nabla \gamma$ is zero.  However, it will be as low as possible, perhaps hard against a boundary of $\mathcal{Q}$.  At this location $(\hat x_1,\hat x_2)$, all directions into $\mathcal{Q}$ will imply increasing the value of $\gamma$.  An example is sketched in Figure \ref{fig:cartoonplane}.
+To propose a more global mental image, imagine the constraint set $\mathcal{K}$ as analogous to the closed first quadrant in the plane, $\mathcal{Q} = \left\{(x_1,x_2)\,:\,x_i\ge 0\right\}$, and $J$ as analogous to a smooth, concave-up (i.e.~\emph{coercive} \cite{Evans2010}), objective function $\gamma(x_1,x_2)$ defined on $\mathcal{Q}$.  The solution $(\hat x_1,\hat x_2)$ in $\mathcal{Q}$, of the corresponding variational inequality or constrained minimization problem, may not be at a location where $\nabla \gamma$ is zero.  However, it will be as low as possible, even if that means it is hard against a boundary of $\mathcal{Q}$.  At this solution point all directions into $\mathcal{Q}$ will increase the value of $\gamma$, as sketched by contours in Figure \ref{fig:cartoonplane}.
+
+The VI solution shown in Figure \ref{fig:icelike} is an infinite-dimensional version of the solution point shown in the cartoon view in Figure \ref{fig:cartoonplane}.  The glacier problem in the next section will analogously be formulated as a CP like \eqref{eq:obstaclecp} and as a VI like \eqref{eq:obstaclevi}.  However, for general bed elevation functions (obstacles) the glacier problem has no constrained minimization formulation like \eqref{eq:obstaclemin}; the essential reason is the lack of symmetry of the weak form in the general case \cite{JouvetBueler2012}.  We will return to this point in section \ref{sec:sia}.
 
 \begin{figure}
-\includegraphics[width=0.32\textwidth]{genfigs/cartoonplane.pdf}
-\caption{A cartoon of a variational inequality, and constrained-minimization, solution $(\hat x_1,\hat x_2)$ in the first quadrant $\mathcal{Q}$ of the plane $\RR^2$.  Contours of a hypothetical objective function $\gamma(x_1,x_2)$ are shown.  The VI solution shown in Figure \ref{fig:icelike} is an infinite-dimensional version of the solution point here.}
+\includegraphics[width=0.35\textwidth]{genfigs/cartoonplane.pdf}
+\caption{For analogy purposes only:  A 2-dimensional constrained-minimization solution in a planar quadrant, with objective function contours.}
 \label{fig:cartoonplane}
 \end{figure}
 
-The glacier problem (section \ref{sec:sia}) can be formulated as a CP like \eqref{eq:obstaclecp}, or as a VI like \eqref{eq:obstaclevi}, but for general bed elevation functions (obstacles) the glacier problem has no constrained minimization formulation.  The essential reason is the lack of symmetry of the weak form in the general case \cite{JouvetBueler2012}.  (In the flat-bed case a constrained minimization interpretation is possible for the isothermal SIA model in the next section.)   Thus the reader's mental image of the upcoming, inequality-constrained glacier geometry problem in section \ref{sec:sia} should be modified from the cartoon in Figure \ref{fig:cartoonplane}.  Namely, such a VI uses vectors which are analogous to the gradient vectors of the objective, but in fact there is no scalar objective and thus no contours.
+Regardless of the way the classical obstacle problem is formulated, whether as \eqref{eq:obstaclecp}, \eqref{eq:obstaclevi}, or \eqref{eq:obstaclemin}, a \emph{free boundary} generally arises in the interior of the domain.  For example, in Figure \ref{fig:icelike} there are locations near the ends of $[0,1]$ where the solution becomes fully in contact with the obstacle.  At these locations both $u=\phi$ and $u'=\phi'$ hold, that is, the solution is tangent to the obstacle.  This free boundary involves simultaneous Dirichlet and Neumann ``conditions'' at a location which must be found as part of the solution.  Note that, in addition, there are the fixed boundary conditions from requiring the solution $u$ to be in the vector space $\mathcal{H}$.
 
-Because the solution is in $\mathcal{H}$ have imposed ``fixed'' Dirichlet boundary conditions at the extremes of the domain.  However, either problem formulation \eqref{eq:obstaclecp} or \eqref{eq:obstaclevi} allows a \emph{free boundary} to arise FIXME; as in Figure \ref{fig:icelike}
+Because of the free boundary, the solution of the classical obstacle problem can be non-smooth even when the data is arbitrarily smooth.  For example, smoothing the source term $f$ in \eqref{eq:icelikedetails} would give a solution nearly the same as shown in Figure \ref{fig:icelike}.  That is, one would make the source term $f$ into a smooth function by ``mollification'' \cite{Evans2010}; the transition between the positive interior value to the negative value would be $C^\infty$.  However, the free boundary would remain, and at that free boundary the second derivative $u''$ would jump from value $+16=-f$ to value $-2=\phi''$.  This is a case of the theorem that the solution for smooth data is limited to the Sobolev space $W^{2,\infty}$ \cite{KinderlehrerStampacchia1980}, and generically not smoother.
+
+\subsection*{Constraint decomposition}  PGS first FIXME
 
 We solve the classical obstacle problem by a \emph{constraint decomposition} \cite{Tai2003} method, which modifies the subspace decomposition to allow an inequality constraint.  FIXME
 
 FIXME cite for multigrid obstacle \cite{BrandtCryer1983,Bueler2021,GraeserKornhuber2009,Jouvetetal2013}; cite for subset decomp \cite{Tai2003}
+
+\subsection*{Results} FIXME
 
 
 \section{Multigrid for a shallow-ice mass conservation problem} \label{sec:sia}
@@ -366,7 +381,7 @@ FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to 
 \section{Notation}
 
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{l|l}
+\begin{longtable}{l|l}
 \textbf{Symbol} {\Large$\strut$} & \textbf{Meaning} \\ \hline
 $a(\cdot,\cdot)$ & bilinear form associated to the Poisson problem; left side of equation \eqref{eq:weakpoissonearly} \\
 $\mathcal{H}$ & Hilbert space for the continuum problem \\
@@ -387,6 +402,6 @@ $\phi$ & obstacle in continuum problem; $\phi \in \mathcal{H}$ \\
 $\psi_p^k(x)$ & $k$th-level hat function at $x_p$ \\
 $\ip{\cdot}{\cdot}$ & $L^2$ inner product \\
 $\|\cdot\|$ & $L^2$ norm; $\|f\|=\ip{f}{f}^{1/2}$
-\end{tabular}
+\end{longtable}
 
 \end{document}
