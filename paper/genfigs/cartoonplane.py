@@ -18,28 +18,27 @@ def figsave(name):
         print('saving %s ...' % name)
         plt.savefig(name,bbox_inches='tight',transparent=True)
 
-# fine hats figure
 plt.figure(figsize=(8,6))
 xhat = 0.3
 yhat = 0.0
-x = np.linspace(0.0,1.0,11)
+yc = -0.3
+x = np.linspace(0.0,1.1,11)
 y = np.linspace(0.0,0.8,11)
 zero = np.zeros(np.shape(x))
 plt.plot(x,zero,'k',lw=2.0)
 plt.plot(zero,y,'k',lw=2.0)
-plt.plot(xhat,yhat,'k.',ms=16.0)
+plt.plot(xhat,yhat,'k.',ms=12.0)
 #circ = plt.Circle((xhat,yhat), 0.5, color='k', fill=False)
 ax = plt.gca()
-for ww in [0.1, 0.3, 0.5, 0.7, 0.9, 1.1]:
-    th = 180.0
-    if ww > 0.6:  # end arc at y-axis
-        alpha = (180.0/np.pi) * np.arccos(xhat/(ww/2.0))
-        th -= alpha
-    arc = Arc((xhat,yhat), ww, ww, angle=0.0, theta1=0.0, theta2=th,
-              color='k', lw=1.0)
+for r in [0.4, 0.5, 0.6, 0.7, 0.8]:
+    alpha = (180.0/np.pi) * np.arcsin(-yc/r)
+    beta = 90.0 + (180.0/np.pi) * np.arcsin(xhat/r)
+    beta = min(beta,180.0 - alpha)
+    arc = Arc((xhat,yc), 2.0*r, 2.0*r, angle=0.0, theta1=alpha, theta2=beta,
+              color='k', lw=0.75)
     ax.add_patch(arc)
-plt.text(0.85,0.6,r'$\mathcal{Q}$',fontsize=bigfsize)
-plt.text(0.25,-0.13,r'$(\hat x_1,\hat x_2)$',fontsize=bigfsize)
+plt.text(0.85,0.6,r'$\mathcal{Q}$',fontsize=fsize)
+plt.text(0.15,-0.16,r'$(\hat x_1,\hat x_2)$',fontsize=fsize)
 plt.axis('off')
 plt.axis('equal')
 figsave('cartoonplane.pdf')
