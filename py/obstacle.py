@@ -274,7 +274,9 @@ if args.show or args.o or args.diagnostics:
         if len(args.o) > 0:
             rname = 'resid_' + args.o
             dname = 'decomp_' + args.o
+            iname = 'icedec_' + args.o
         else:
-            rname, dname = '', ''
+            rname, dname, iname = '', '', ''
         vis.residuals(uu, ellfine, filename=rname)
         vis.decomposition(hierarchy, chi, up=args.up, filename=dname)
+        vis.icedecomposition(hierarchy, chi, phifine, up=args.up, filename=iname)

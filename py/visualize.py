@@ -92,11 +92,37 @@ class VisObstacle():
                 plt.plot(hierarchy[k].xx(), chi[k], 'k.--', ms=8.0,
                          label=r'$\chi^%d$' % k)
             plt.plot(hierarchy[-1].xx(), chi[-1], 'k.-', ms=12.0,
-                     label=r'$\chi^%d$ (fine mesh)' % K, linewidth=3.0)
+                     label=r'$\chi^%d = \varphi - w$' % K, linewidth=3.0)
         else:
             #FIXME
             raise NotImplementedError
-        plt.legend()
-        plt.title('decomposition of final defect obstacle')
+        plt.legend(fontsize=24.0)
+        plt.title('decomposition of defect obstacle')
         plt.xlabel('x')
         _output(filename,'hierarchical decomposition')
+
+    def icedecomposition(self, hierarchy, chi, phi, up=0, filename=''):
+        '''Hierarchical defect decomposition shown as "ice" decomposition.'''
+        assert hierarchy[-1].m == self.mesh.m
+        plt.figure(figsize=(15.0, 10.0))
+        K = len(hierarchy) - 1
+        if up == 0:
+            for k in range(K,-1,-1):
+                z = chi[k]
+                for j in range(k,K):
+                    z = hierarchy[j+1].P(z)
+                if k == K:
+                    chilabel = r'$w$'
+                    chistyle = 'k'
+                else:
+                    chilabel = r'level $%d$' % k   # i.e. phi - chi^k
+                    chistyle = 'k--'
+                plt.plot(hierarchy[-1].xx(), phi - z, chistyle, label=chilabel)
+        else:
+            #FIXME
+            raise NotImplementedError
+        plt.plot(hierarchy[-1].xx(), phi, 'k', label=r'$\varphi$', linewidth=4.0)
+        plt.legend(fontsize=24.0)
+        plt.title('"ice-like" decomposition of defect obstacle')
+        plt.xlabel('x')
+        _output(filename,'"ice-like" decomposition')

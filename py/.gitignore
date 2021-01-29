@@ -1,5 +1,5 @@
 /__pycache__/
-*test*.pdf
-*test*.png
+*.pdf
+*.png
 *tmp
 
