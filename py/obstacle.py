@@ -187,8 +187,8 @@ mesh = hierarchy[-1]  # fine mesh
 phifine = phi(mesh.xx())
 
 # feasible initial iterate
-uinitial = np.maximum(phifine, mesh.zeros())
-uinitial[[0, -1]] = [0.0, 0.0]
+uu = np.maximum(phifine, mesh.zeros())
+uu[[0, -1]] = [0.0, 0.0]
 
 # exact solution
 if exactavailable:
@@ -204,9 +204,9 @@ def irerrmonitor(siter, w):
     return irnorm
 
 # multigrid V-cycles (unless user just wants pGS)
-uu = uinitial.copy()
 ellfine = mesh.ell(fsource(mesh.xx()))
 infeascount = 0
+s = 0  # so that runs with -cyclemax 0 work
 for s in range(args.cyclemax):
     ir = irerrmonitor(s, uu)
     if ir < 1.0e-50:
@@ -226,7 +226,8 @@ for s in range(args.cyclemax):
     else:
         # Tai (2003) V-cycles
         uu, chi, infeas = vcycle(hierarchy, uu, ellfine, phifine,
-                                 levels=levels, view=args.mgview, symmetric=args.symmetric,
+                                 levels=levels, view=args.mgview,
+                                 symmetric=args.symmetric,
                                  down=args.down, coarse=args.coarse, up=args.up,
                                  printwarnings=args.printwarnings)
         infeascount += infeas
@@ -252,7 +253,7 @@ else:
 if exactavailable:
     error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
 else:
-    uex = []
+    uex = None
     error = ''
 countstr = '' if infeascount == 0 else ' (%d infeasibles)' % infeascount
 print('fine level %d (m=%d) %s (%.3f WU)%s%s' \
@@ -266,13 +267,14 @@ if args.show or args.o or args.diagnostics:
             if exactavailable:
                 vis.plain(uex, filename=args.o)
             else:
-                raise ValueError
+                raise ValueError('graphic (-plain) not available if no exact solution')
         else:
-            vis.initialfinal(uinitial, uu, filename=args.o, uex=uex)
+            vis.final(uu, filename=args.o, uex=uex)
     if args.diagnostics:
-        vis.decomposition(hierarchy, chi)
         if len(args.o) > 0:
-            name = 'diags_' + args.o
+            rname = 'resid_' + args.o
+            dname = 'decomp_' + args.o
         else:
-            name = ''
-        vis.diagnostics(uu, ellfine, up=args.up, filename=name)
+            rname, dname = '', ''
+        vis.residuals(uu, ellfine, filename=rname)
+        vis.decomposition(hierarchy, chi, up=args.up, filename=dname)
