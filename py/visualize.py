@@ -92,12 +92,12 @@ class VisObstacle():
                 plt.plot(hierarchy[k].xx(), chi[k], 'k.--', ms=8.0,
                          label=r'$\chi^%d$' % k)
             plt.plot(hierarchy[-1].xx(), chi[-1], 'k.-', ms=12.0,
-                     label=r'$\chi^%d = \varphi - w$' % K, linewidth=3.0)
+                     label=r'$\chi^%d = \phi - w$' % K, linewidth=3.0)
         else:
             #FIXME
             raise NotImplementedError
         plt.legend(fontsize=24.0)
-        plt.title('decomposition of defect obstacle')
+        plt.title('decomposition of final defect obstacle')
         plt.xlabel('x')
         _output(filename,'hierarchical decomposition')
 
@@ -121,8 +121,8 @@ class VisObstacle():
         else:
             #FIXME
             raise NotImplementedError
-        plt.plot(hierarchy[-1].xx(), phi, 'k', label=r'$\varphi$', linewidth=4.0)
+        plt.plot(hierarchy[-1].xx(), phi, 'k', label=r'$\phi$', linewidth=4.0)
         plt.legend(fontsize=24.0)
-        plt.title('"ice-like" decomposition of defect obstacle')
+        plt.title('"ice-like" decomposition of final defect obstacle')
         plt.xlabel('x')
         _output(filename,'"ice-like" decomposition')
