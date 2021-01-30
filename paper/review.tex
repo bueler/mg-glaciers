@@ -353,14 +353,40 @@ We solve the classical obstacle problem by a \emph{constraint decomposition} \ci
 
 FIXME cite for multigrid obstacle \cite{BrandtCryer1983,Bueler2021,GraeserKornhuber2009,Jouvetetal2013}; cite for subset decomp \cite{Tai2003}
 
+FIXME Figure \ref{fig:icelikedecomposition} shows the constraint decomposition;  Compared to Figure \ref{fig:icelike}, the obstacle $\phi$ is changed to have smooth ``topography''.
+
+%REGENERATE Figures \ref{fig:icelikedecomposition} and \ref{fig:gooddecomposition}:
+%$ ./obstacle.py -kfine 5 -irtol 1.0e-7 -random -randommodes 8 -diagnostics -up 0 -o defect.pdf
+%fine level 5 (m=63) using 52 V(1,0) cycles (102.375 WU)
+%saving final iterate and obstacle to defect.pdf ...
+%saving residual and inactive residual to resid_defect.pdf ...
+%saving hierarchical decomposition to decomp_defect.pdf ...
+%saving "ice-like" decomposition to icedec_defect.pdf ...
+\begin{figure}
+\includegraphics[width=0.7\textwidth]{fixfigs/icedec_defect.pdf}
+\caption{The multilevel constraint decomposition, visualized as a decomposition of the gap between the current iterate $w$ and the obstacle $\phi$.}
+\label{fig:icelikedecomposition}
+\end{figure}
+
+FIXME Figure \ref{fig:gooddecomposition} shows the same decomposition as in Figure \ref{fig:icelikedecomposition}, but correctly; each level is piecewise-linear on its mesh level
+
+\begin{figure}
+\includegraphics[width=0.75\textwidth]{fixfigs/decomp_defect.pdf}
+\caption{The constraint decomposition writes the fine-mesh defect obstacle $\phi - w$ as a sum of the gaps $\phi^k = \chi^k - \chi^{k-1}$ between the defect obstacles $\chi^k$ on each level.}
+\label{fig:gooddecomposition}
+\end{figure}
+
 \subsection*{Results} FIXME
 
 
 \section{Multigrid for a shallow-ice mass conservation problem} \label{sec:sia}
 
+FIXME model problem in previous section has the wrong ``physics'' but correctly addresses the free boundary and obstacle nature of the glacier problem
+
 FIXME cite for glaciers as obstacle problems \cite{Bueler2016,Bueler2020,Calvoetal2002,JouvetBueler2012}
 
 FIXME for 2D domains the coarse mesh construction needs reconsideration
+
 
 \section{Multigrid for a Glen-Stokes glacier flow} \label{sec:stokes}
 
