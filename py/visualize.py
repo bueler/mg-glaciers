@@ -83,26 +83,26 @@ class VisObstacle():
         _output(filename,'residual and inactive residual')
 
     def decomposition(self, hierarchy, chi, up=0, filename=''):
-        '''Generate graphic hierarchical defect decomposition.'''
+        '''Hierarchical defect decomposition.'''
         assert hierarchy[-1].m == self.mesh.m
         plt.figure(figsize=(15.0, 10.0))
         K = len(hierarchy) - 1
         if up == 0:
             for k in range(K):
-                plt.plot(hierarchy[k].xx(), chi[k], 'k.--', ms=8.0,
+                plt.plot(hierarchy[k].xx(), chi[k], 'k.--', ms=10.0,
                          label=r'$\chi^%d$' % k)
-            plt.plot(hierarchy[-1].xx(), chi[-1], 'k.-', ms=12.0,
+            plt.plot(hierarchy[-1].xx(), chi[-1], 'k.-', ms=14.0,
                      label=r'$\chi^%d = \phi - w$' % K, linewidth=3.0)
         else:
             #FIXME
             raise NotImplementedError
         plt.legend(fontsize=24.0)
-        plt.title('decomposition of final defect obstacle')
+        plt.title('decomposition of defect obstacle')
         plt.xlabel('x')
         _output(filename,'hierarchical decomposition')
 
     def icedecomposition(self, hierarchy, chi, phi, up=0, filename=''):
-        '''Hierarchical defect decomposition shown as "ice" decomposition.'''
+        '''Multilevel "ice-like" decomposition.'''
         assert hierarchy[-1].m == self.mesh.m
         plt.figure(figsize=(15.0, 10.0))
         K = len(hierarchy) - 1
@@ -123,6 +123,6 @@ class VisObstacle():
             raise NotImplementedError
         plt.plot(hierarchy[-1].xx(), phi, 'k', label=r'$\phi$', linewidth=4.0)
         plt.legend(fontsize=24.0)
-        plt.title('"ice-like" decomposition of final defect obstacle')
+        plt.title('"ice-like" multilevel decomposition')
         plt.xlabel('x')
         _output(filename,'"ice-like" decomposition')
