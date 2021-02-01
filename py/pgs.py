@@ -18,14 +18,16 @@ def pgssweep(mesh, w, ell, phi, forward=True, phieps=1.0e-10,
              printwarnings=False):
     '''Do in-place projected Gauss-Seidel sweep, over the interior points
     p=1,...,m, for the classical obstacle problem
-        -u'' - f >= 0,  u >= 0,  u (-u''-f) = 0
+        u - phi >= 0,  -u'' - f >= 0,  (u - phi) (-u''-f) = 0
     Input iterate w is in V^k and ell is in (V^k)'.  At each p, solves
         r(w + c psi_p)[psi_p] = 0
-    for c, thus c = r(w)[psi_p] / a(psi_p,psi_p) and then updates
+    for c, where r(w)[v] = ell[v] - a(w,v).  Thus
+        c = r(w)[psi_p] / a(psi_p,psi_p).
+    The update is
         w[p] <- max(w[p]+c,phi[p])
-    so w[p] >= phi[p].  See pointresidual(), formdiagonal() in poisson.py
-    for r(w)[psi_p] and a(psi_p,psi_p).  Input mesh is of class MeshLevel1D.
-    Returns the number of pointwise feasibility violations.'''
+    so w[p] >= phi[p].  Functions pointresidual(), formdiagonal() in poisson.py
+    evaluate r(w)[psi_p] and a(psi_p,psi_p).  Input mesh is of class
+    MeshLevel1D.  Returns the number of pointwise feasibility violations.'''
     if forward:
         indices = range(1, mesh.m+1)
     else:
