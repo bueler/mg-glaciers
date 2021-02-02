@@ -74,7 +74,7 @@ class VisObstacle():
         plt.plot(xx, r, 'k', label='residual')
         plt.plot(xx, ir, 'r', label='inactive residual')
         plt.legend()
-        plt.gca().set_xticks([], [])
+        plt.gca().set_xticks([],minor=False)
         plt.subplot(2, 1, 2)
         plt.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
         plt.plot(xx, ir, 'r', label='inactive residual')
