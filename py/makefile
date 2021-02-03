@@ -16,7 +16,7 @@ runobstacle_3:
 	-@./../testit.sh obstacle.py "-kfine 3 -up 0 -monitorerr -diagnostics -o test3.png" 1 3
 
 runobstacle_4:
-	-@./../testit.sh obstacle.py "-problem parabola -kfine 4 -kcoarse 3 -cyclemax 2 -up 0 -monitorerr -mgview" 1 4
+	-@./../testit.sh obstacle.py "-problem parabola -kfine 4 -kcoarse 3 -cyclemax 2 -up 0 -monitorerr -mgview -slash" 1 4
 
 runobstacle_5:
 	-@./../testit.sh obstacle.py "-mgview -kfine 2 -random -fscale 0.5 -monitor -irtol 1.0e-1" 1 5

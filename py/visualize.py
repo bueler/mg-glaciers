@@ -82,16 +82,16 @@ class VisObstacle():
         plt.xlabel('x')
         _output(filename,'residual and inactive residual')
 
-    def decomposition(self, hierarchy, chi, up=0, filename=''):
+    def decomposition(self, hierarchy, up=0, filename=''):
         '''Hierarchical defect decomposition.'''
         assert hierarchy[-1].m == self.mesh.m
         plt.figure(figsize=(15.0, 10.0))
         K = len(hierarchy) - 1
         if up == 0:
             for k in range(K):
-                plt.plot(hierarchy[k].xx(), chi[k], 'k.--', ms=10.0,
+                plt.plot(hierarchy[k].xx(), hierarchy[k].chi, 'k.--', ms=10.0,
                          label=r'$\chi^%d$' % k)
-            plt.plot(hierarchy[-1].xx(), chi[-1], 'k.-', ms=14.0, linewidth=3.0,
+            plt.plot(hierarchy[-1].xx(), hierarchy[-1].chi, 'k.-', ms=14.0, linewidth=3.0,
                      label=r'$\chi^%d = \varphi^%d - w^%d$' % (K,K,K))
         else:
             #FIXME
@@ -101,14 +101,14 @@ class VisObstacle():
         plt.xlabel('x')
         _output(filename,'hierarchical decomposition')
 
-    def icedecomposition(self, hierarchy, chi, phi, up=0, filename=''):
+    def icedecomposition(self, hierarchy, phi, up=0, filename=''):
         '''Multilevel "ice-like" decomposition.'''
         assert hierarchy[-1].m == self.mesh.m
         plt.figure(figsize=(15.0, 10.0))
         K = len(hierarchy) - 1
         if up == 0:
             for k in range(K,-1,-1):
-                z = chi[k]
+                z = hierarchy[k].chi
                 for j in range(k,K):
                     z = hierarchy[j+1].P(z)
                 if k == K:
