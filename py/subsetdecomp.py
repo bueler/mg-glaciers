@@ -86,7 +86,7 @@ def vcycle(hierarchy, w, ell, phi,
     for k in range(1, levels):        # k=1,2,...,levels-1
         if view:
             _levelreport(levels-1, k, hierarchy[k].m, up)
-        if up == 1:
+        if up >= 1:
             # the current iterate is what came back from k-1 level (WHY?)
             v = hierarchy[k].P(hierarchy[k-1].vstate)
             # the level k obstacle is the *change* in chi
