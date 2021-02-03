@@ -91,8 +91,8 @@ class VisObstacle():
             for k in range(K):
                 plt.plot(hierarchy[k].xx(), chi[k], 'k.--', ms=10.0,
                          label=r'$\chi^%d$' % k)
-            plt.plot(hierarchy[-1].xx(), chi[-1], 'k.-', ms=14.0,
-                     label=r'$\chi^%d = \varphi^%d - w$' % (K,K), linewidth=3.0)
+            plt.plot(hierarchy[-1].xx(), chi[-1], 'k.-', ms=14.0, linewidth=3.0,
+                     label=r'$\chi^%d = \varphi^%d - w^%d$' % (K,K,K))
         else:
             #FIXME
             raise NotImplementedError
@@ -112,7 +112,7 @@ class VisObstacle():
                 for j in range(k,K):
                     z = hierarchy[j+1].P(z)
                 if k == K:
-                    chilabel = r'$w$'
+                    chilabel = r'$w^%d$' % K
                     chistyle = 'k'
                 else:
                     chilabel = r'level $%d$' % k   # i.e. phi - chi^k
