@@ -31,6 +31,6 @@ test: testmodules testbanner test_obs1
 .PHONY: clean runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 test_obs1 testmodules test testbanner
 
 clean:
-	@rm -f maketmp tmp difftmp *.png
+	@rm -f maketmp tmp difftmp *.png *.pdf
 	@rm -rf __pycache__ .pytest_cache/
 
