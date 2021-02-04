@@ -369,9 +369,8 @@ PGS is justified by noting that the solution to VI \eqref{eq:levelvi} can be fou
 Recall that GS updates the current iterate pointwise, i.e.~it finds $c$ so that $r^k(w+c\psi_p^k)[\psi_p^k]=0$.  Because $\mathcal{K}^k$ consists of piecewise-linear functions, if $w$ is in $\mathcal{K}^k$ then one can test whether the modified iterate is still in $\mathcal{K}^k$ via a pointwise comparison, i.e.~testing $w[p] + c \ge \phi^k[p]$.  Thus we have the following smoother algorithm:
 \begin{pseudo*}
 \pr{pgssweep}(k,w,\ell,\phi)\text{:} \\+
-    $r^k(w)[\cdot] = \ell[\cdot] - a(w,\cdot)$ \\
     for $p=1,\dots,m_k$ \\+
-        $\displaystyle c = r^k(w)[\psi_p^k] \, \big/ \,a(\psi_p^k,\psi_p^k)$ \\
+        $\displaystyle c = r^k(w)[\psi_p^k] \, \big/ \,a(\psi_p^k,\psi_p^k)$ \qquad \ct{where $r^k(w)[\cdot] := \ell[\cdot] - a(w,\cdot)$} \\
         $w[p] \gets \max\{w[p] + c,\phi[p]\}$
 \end{pseudo*}
 
@@ -423,13 +422,17 @@ Recall that our hat functions form nodal bases, and thus $c_p = (\hat R z)(x_p^{
   \chi^{k-1} = \hat R \chi^k.  \label{eq:chik}
 \end{equation}
 
-Each $k$th-level obstacle $\phi^k = \chi^k - \chi^{k-1}$ also defines a constraint set $\mathcal{K}^k = \{v \ge \phi^k\} \subseteq \mathcal{V}^k$.  In fact, given a fine-mesh iterate $w^K$ and the corresponding defect constraint $\chi^K = \varphi^K - w^K$, we have a subset sum analogous to \eqref{eq:subspacedecomposition}:
+Each $k$th-level obstacle $\phi^k = \chi^k - \chi^{k-1}$ also defines a constraint set
+\begin{equation}
+  \mathcal{K}^k = \{v \ge \phi^k\} \subseteq \mathcal{V}^k.  \label{eq:levelconstraint}
+\end{equation}
+Given a fine-mesh iterate $w^K$ and the corresponding defect constraint $\chi^K = \varphi^K - w^K$, we have a sum of subsets which is analogous to \eqref{eq:subspacedecomposition}:
 \begin{equation}
   \left\{v\,:\,w^K + v \ge \varphi^K\right\} = \left\{v \ge \chi^K\right\} = \mathcal{K}^0 + \mathcal{K}^1 + \dots + \mathcal{K}^K. \label{eq:constraintdecomposition}
 \end{equation}
 The meaning here is that every admissible modification $v$ of the current fine-mesh iterate---by \eqref{eq:defectmeaning} this is every $v$ above the fine-mesh defect constraint $\chi^K$---can be built, though not uniquely, by choosing an element from each of the mesh-level constraint sets $\mathcal{K}^k = \{v \ge \phi^k\}$.  Note that the proof of \eqref{eq:constraintdecomposition} is an inequality version of the telescoping sum \eqref{eq:telescopingdecomposition}.
 
-In the ice context (section \ref{sec:sia}) the obstacle $\varphi$ will be the bed elevation and $w^K$ will be the current estimate of the ice surface elevation, and then $-\chi^K$ is the ice thickness on the fine mesh.  Figure \ref{fig:icelikedecomposition} shows the same constraint decomposition as in Figure \ref{fig:gooddecomposition}, but as though it is a decomposition of the ice into layers.  (Compared to Figure \ref{fig:icelike}, note that the obstacle $\phi$ has a more interesting, but still smooth, bed topography.)  Figure \ref{fig:gooddecomposition} plots the decomposition in the correct sense: each defect constraint $\chi^k$ and obstacle $\phi^k$ is piecewise-linear on its mesh level.
+In the ice context (section \ref{sec:sia}) the fine-mesh obstacle $\varphi^K$ will be the bed elevation and $w^K$ a current estimate of the ice surface elevation.  Thus $-\chi^K$ is the ice thickness on the fine mesh.  Figure \ref{fig:icelikedecomposition} shows the same constraint decomposition as in Figure \ref{fig:gooddecomposition} as though it is a decomposition of the ice into layers.  (Compared to Figure \ref{fig:icelike}, note that this bed elevation $\phi^K$ has a more interesting, but still smooth, bed topography.)  However, Figure \ref{fig:gooddecomposition} plots the decomposition in the correct sense: each defect constraint $\chi^k$ and obstacle $\phi^k$ is piecewise-linear on level $k$.
 
 \begin{figure}
 \includegraphics[width=0.7\textwidth]{fixfigs/icedec_defect.pdf}
@@ -437,19 +440,37 @@ In the ice context (section \ref{sec:sia}) the obstacle $\varphi$ will be the be
 \label{fig:icelikedecomposition}
 \end{figure}
 
-FIXME state V-cycle for V(1,0); run as \pr{cd-slash}$(K,r^K,\chi^K)$ where $w^K$ is an existing admissible fine-mesh iterate, $\chi^K=\varphi^K-w^K$, and $r^K[\cdot] = \ell^K[\cdot] - a(w^K,\cdot)$
+FIXME state V-cycle for V(1,0); run as \pr{cd-slash}$(K,r^K,\chi^K)$ where $w^K$ is an existing admissible fine-mesh iterate, $\chi^K=\varphi^K-w^K$, and $r^K[\cdot] = \ell^K[\cdot] - a(w^K,\cdot)$; use the result $v$ to update the iterate: $w^K \gets w^K + v$
 \begin{pseudo*}
 \pr{cd-slash}(k,r,\chi)\text{:} \\+
-    $w=0$ \\
+    $v=0$ \\
     if $k=0$ \\+
-        $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,w,r,\chi)$ \\
-        return $w$ \\-
+        $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,v,r,\chi)$ \\
+        return $v$ \\-
     $\chi^{k-1} = \hat R \chi$ \\
     $\phi^k = \chi - P\chi^{k-1}$ \\
-    $\text{\pr{pgssweep}}^{\text{\id{down}}}(k,w,r,\phi^k)$ \\
-    $\tilde r[\cdot] = r[\cdot] - a^k(w,\cdot)$ \\
+    $\text{\pr{pgssweep}}^{\text{\id{down}}}(k,v,r,\phi^k)$ \\
+    $\tilde r[\cdot] = r[\cdot] - a^k(v,\cdot)$ \\
     $v^{k-1} =$ \pr{cd-slash}(k-1,R \tilde r,\chi^{k-1}) \\
-    return $w + P v^{k-1}$
+    return $v + P v^{k-1}$
+\end{pseudo*}
+
+
+FIXME state V(1,1)-cycle; run the same way
+\begin{pseudo*}
+\pr{cd-vcycle}(k,r,\chi)\text{:} \\+
+    $v=0$ \\
+    if $k=0$ \\+
+        $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,v,r,\chi)$ \\
+        return $v$ \\-
+    $\chi^{k-1} = \hat R \chi$ \\
+    $\phi^k = \frac{1}{2} (\chi - P\chi^{k-1})$ \\
+    $\text{\pr{pgssweep}}^{\text{\id{down}}}(k,v,r,\phi^k)$ \\
+    $\tilde r[\cdot] = r[\cdot] - a^k(v,\cdot)$ \\
+    $v^{k-1} =$ \pr{cd-vcycle}(k-1,R \tilde r,\chi^{k-1}) \\
+    $v \gets v + P v^{k-1}$ \\
+    $\text{\pr{pgssweep}}^{\text{\id{up}}}(k,\hat v,r,\phi^k)$ \\
+    return $v$
 \end{pseudo*}
 
 FIXME cite for multigrid obstacle \cite{BrandtCryer1983,Bueler2021,GraeserKornhuber2009,Jouvetetal2013}; cite for subset decomp \cite{Tai2003}
