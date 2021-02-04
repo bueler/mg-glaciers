@@ -90,9 +90,9 @@ class VisObstacle():
         if up == 0:
             for k in range(K):
                 plt.plot(hierarchy[k].xx(), hierarchy[k].chi, 'k.--', ms=10.0,
-                         label=r'$\chi^%d$' % k)
+                         label=r'$\chi^{%d}$' % k)
             plt.plot(hierarchy[-1].xx(), hierarchy[-1].chi, 'k.-', ms=14.0, linewidth=3.0,
-                     label=r'$\chi^%d = \varphi^%d - w^%d$' % (K,K,K))
+                     label=r'$\chi^{%d} = \varphi^{%d} - w^{%d}$' % (K,K,K))
         else:
             #FIXME
             raise NotImplementedError
@@ -112,7 +112,7 @@ class VisObstacle():
                 for j in range(k,K):
                     z = hierarchy[j+1].P(z)
                 if k == K:
-                    chilabel = r'$w^%d$' % K
+                    chilabel = r'$w^{%d}$' % K
                     chistyle = 'k'
                 else:
                     chilabel = r'level $%d$' % k   # i.e. phi - chi^k
@@ -121,7 +121,7 @@ class VisObstacle():
         else:
             #FIXME
             raise NotImplementedError
-        plt.plot(hierarchy[-1].xx(), phi, 'k', label=r'$\varphi^%d$' % K, linewidth=4.0)
+        plt.plot(hierarchy[-1].xx(), phi, 'k', label=r'$\varphi^{%d}$' % K, linewidth=4.0)
         plt.legend(fontsize=24.0)
         #plt.title('"ice-like" multilevel decomposition')
         plt.xlabel('x')

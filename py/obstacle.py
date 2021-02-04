@@ -198,7 +198,7 @@ def irerrmonitor(siter, w):
     '''Compute inactive residual norm.  Print it, and error if available.'''
     irnorm = mesh.l2norm(inactiveresidual(mesh, w, ellfine, phifine))
     if args.monitor:
-        print('  %d:  |r^i(u)|_2 = %.4e' % (siter, irnorm))
+        print('  %d:  |ir(u)|_2 = %.4e' % (siter, irnorm))
     if args.monitorerr and exactavailable:
         print('  %d:  |u-uexact|_2 = %.4e' % (siter, mesh.l2norm(w-uex)))
     return irnorm
