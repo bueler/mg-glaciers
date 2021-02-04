@@ -2,7 +2,6 @@
 '''Solve a 1D obstacle problem by the subset decomposition method.'''
 
 # TODO:
-#   * extend slash() to up>0 cases, and call it vcycle()
 #   * correct hier. decomp. figure when up>0
 
 # NOTE: -up 2 or -symmetric or -up 0 (i.e. a bit more up-smoothing) seems to
@@ -14,7 +13,7 @@ import numpy as np
 
 from meshlevel import MeshLevel1D
 from pgs import residual, inactiveresidual, pgssweep
-from subsetdecomp import vcycle, slash
+from subsetdecomp import vcycle
 from visualize import VisObstacle
 
 parser = argparse.ArgumentParser(description='''
@@ -96,8 +95,6 @@ parser.add_argument('-randommodes', type=int, default=30, metavar='N',
                     help='number of sinusoid modes in -random perturbation (default N=3)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
-parser.add_argument('-slash', action='store_true', default=False,
-                    help='use the recursive implementation of V(1,0) cycles')
 parser.add_argument('-symmetric', action='store_true', default=False,
                     help='use symmetric projected Gauss-Seidel sweeps (forward then backward)')
 parser.add_argument('-up', type=int, default=1, metavar='N',
@@ -227,24 +224,16 @@ for s in range(args.cyclemax):
             infeascount += pgssweep(mesh, uu, ellfine, phifine,
                                     forward=False, printwarnings=args.printwarnings)
     else:
-        if args.slash:
-            # Tai (2003) V(1,0)-cycles, i.e. Alg. 4.7 in G&K (2009)
-            assert args.up == 0
-            mesh.chi = phifine - uu
-            r = residual(mesh, uu, ellfine)
-            v, infeas = slash(levels-1, hierarchy, r,
-                              levels=levels, view=args.mgview,
-                              symmetric=args.symmetric,
-                              down=args.down, coarse=args.coarse,
-                              printwarnings=args.printwarnings)
-            uu += v
-        else:
-            # Tai (2003) V-cycles
-            uu, infeas = vcycle(hierarchy, uu, ellfine, phifine,
-                                levels=levels, view=args.mgview,
-                                symmetric=args.symmetric,
-                                down=args.down, coarse=args.coarse, up=args.up,
-                                printwarnings=args.printwarnings)
+        # Tai (2003) constraint decomposition method
+        #     for V(1,0)-cycles: Alg. 4.7 in G&K (2009)
+        mesh.chi = phifine - uu
+        r = residual(mesh, uu, ellfine)
+        v, infeas = vcycle(levels-1, hierarchy, r,
+                           down=args.down, up=args.up, coarse=args.coarse,
+                           levels=levels, view=args.mgview,
+                           symmetric=args.symmetric,
+                           printwarnings=args.printwarnings)
+        uu += v
         infeascount += infeas
 
 # finalize iterations and monitor (re different stopping criterion above)
