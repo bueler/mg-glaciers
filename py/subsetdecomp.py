@@ -33,8 +33,9 @@ def _smoother(s, mesh, v, r, phi, forward=True, symmetric=False, printwarnings=F
 def vcycle(k, hierarchy, r, down=1, up=0, coarse=1,
            levels=None, view=False, symmetric=False, printwarnings=False):
     '''Apply one V-cycle of the multilevel subset decomposition method of
-    Tai (2003).  This is  Alg. 4.7 in Graeser & Kornhuber (2009) when up=0.
-    This solves the defect constraint problem on mesh = hierarchy[k], i.e.
+    Tai (2003).  For up=0 case, this is Alg. 4.7 in Graeser & Kornhuber (2009),
+    but implemented recursively.
+    Solves the defect constraint problem on mesh = hierarchy[k], i.e.
     for chi^k = hierarchy[k].chi.  Note hierarchy[k] is of type MeshLevel1D.
     Right-hand-side r is in the fine-mesh linear functional space (V^K)'.
     The smoother is down, up iterations of projected Gauss-Seidel (PGS).
@@ -78,6 +79,7 @@ def vcycle(k, hierarchy, r, down=1, up=0, coarse=1,
     if up > 0:
         if view:
             _levelreport(levels-1, k, mesh.m, up)
+        #r = residual(mesh, mesh.P(vcoarse), r)
         infeas += _smoother(up, mesh, v, r, phi,
                             symmetric=symmetric, printwarnings=printwarnings)
     return v, infeas
