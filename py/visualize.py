@@ -35,15 +35,12 @@ class VisObstacle():
         self.chi = None
 
     def plain(self, uex, filename=''):
-        '''Generate plain graphic showing exact solution and obstacle in
-        black.'''
+        '''Generate plain graphic showing exact solution and obstacle.'''
         self.mesh.checklen(uex)
         xx = self.mesh.xx()
         plt.figure(figsize=(15.0, 6.0))
         plt.plot(xx, uex, 'k--', label=r'solution $u$', lw=3.0)
         plt.plot(xx, self.phi, 'k', label=r'obstacle $\varphi$', lw=3.0)
-        plt.axis('tight')
-        plt.axis('off')
         plt.legend()
         plt.xlabel('x')
         _output(filename,'exact solution and obstacle')

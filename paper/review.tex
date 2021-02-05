@@ -438,7 +438,7 @@ In the ice context (section \ref{sec:sia}) the fine-mesh obstacle $\varphi^K$ wi
 
 \begin{figure}
 \includegraphics[width=0.7\textwidth]{fixfigs/icedec_defect.pdf}
-\caption{The multilevel constraint decomposition, visualized as a decomposition of the ``ice'' between the current fine-mesh iterate $w$ and the obstacle $\varphi^K$.  (Figure \ref{fig:gooddecomposition} shows the correct plot of this constraint decomposition.)}
+\caption{Multilevel constraint decomposition visualized as a decomposition of the ``ice'' between the current fine-mesh iterate $w^K$ and the obstacle $\varphi^K$.  (Figure \ref{fig:gooddecomposition} shows the correct plot of this constraint decomposition.)}
 \label{fig:icelikedecomposition}
 \end{figure}
 
@@ -515,7 +515,7 @@ $\mathcal{H}$ & Hilbert space for the continuum problem \\
 $J$ & scalar-valued objective function, e.g.~$J(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ for the Poisson equation \\
 $\grad J(w)[v]$ & gradient of objective function; note $r(w)[v] = -\grad J(w)[v]$ \\
 $k$ & index of level in multilevel scheme; $k=0,1,\dots,K$ from coarse to fine \\
-$\mathcal{K}$ & constraint (admissible) subset; $\mathcal{K} \subset \mathcal{H}$; e.g.~$\mathcal{K} = \{v \ge \phi\}$ \\
+$\mathcal{K}$ & constraint (admissible) subset; $\mathcal{K} \subset \mathcal{H}$; e.g.~$\mathcal{K} = \{v \ge \varphi\}$ \\
 $\mathcal{K}^k$ & $k$th-level admissible functions; $\mathcal{K}^k = \{v \ge \phi^k\} \subset \mathcal{V}^k$ \\
 $\ell[\cdot]$ & linear functional, e.g.~$\ell[v] = \ip{f}{v}$ \\
 $m_k$ & number of nodes in $k$th-level; $\dim \mathcal{V}^k=m_k$ \\
