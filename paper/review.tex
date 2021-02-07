@@ -23,6 +23,16 @@ urlcolor=black    % ...
 
 \renewcommand{\baselinestretch}{1.05}
 
+\newtheoremstyle{claim}% name
+  {5pt}% space above
+  {5pt}% space below
+  {\itshape}% body font
+  {}% indent amount
+  {}% theorem head font
+  {.}% punctuation after theorem head
+  {.5em}% space after theorem head
+  {\thmname{#1}\thmnumber{ #2}\thmnote{ (#3)}}% theorem head spec
+\theoremstyle{claim}
 \newtheorem*{theorem}{Theorem}
 \newtheorem*{lemma}{Lemma}
 
