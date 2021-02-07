@@ -36,6 +36,7 @@ urlcolor=black    % ...
 \newcommand{\hbn}{\hat{\mathbf{n}}}
 
 \newcommand{\bb}{\mathbf{b}}
+\newcommand{\be}{\mathbf{e}}
 \newcommand{\bbf}{\mathbf{f}}
 \newcommand{\bg}{\mathbf{g}}
 \newcommand{\bn}{\mathbf{n}}
@@ -44,6 +45,7 @@ urlcolor=black    % ...
 \newcommand{\bw}{\mathbf{w}}
 \newcommand{\bx}{\mathbf{x}}
 
+\newcommand{\bF}{\mathbf{F}}
 \newcommand{\bV}{\mathbf{V}}
 \newcommand{\bX}{\mathbf{X}}
 
@@ -255,34 +257,46 @@ These simply-stated schemes, which appeared in this form relatively-late in the 
 \end{equation}
 \end{theorem}
 
-\noindent It follows that if we want the error norm $\|w^{(s)}-u^h\|$ to be reduced to below some level $\eps>0$ then we should do $s>(\log\eps - \log e_0)/\log \rho$ iterations where $e_0=\|w^{(s)}-u^h\|$ is the initial error norm.  That is, we should do $O(\log\eps)$ iterations.
+It follows that if we want the error norm $e^{(s)} = \|w^{(s)}-u^h\|$ to be reduced to below some level $\eps>0$ then we should do $s>(\log\eps - \log e^{(0)})/\log \rho$ iterations where $e^{(0)}$ is the initial error norm.  That is, we need $O(\log\eps)$ iterations, and the constant is better when $\rho<1$ is smaller.
 
-FIXME however, it is not really an algorithm because of how we represent stuff on $k$th level; if we represent on fine level then only \pr{gsweep}$(K,w,F)$ is fast $O(m_K)$; on other levels $k<K$ we no longer can evaluate $F(w)[\psi_p^k]$ in $O(1)$ time; we need ways of ``moving'' problem to coarser meshes and back
+FIXME however, it is not really a fast solver, or even an algorithm?, because of how we represent stuff on $k$th level; if we represent on fine level then only \pr{gsweep}$(K,w,F)$ is fast $O(m_K)$; on other levels $k<K$ we no longer can evaluate $F(w)[\psi_p^k]$ in $O(1)$ time
 
+\subsection*{V-cycle geometric multigrid}  Once the GS smoother has been applied on the finest ($K$) level, the error and the residual no longer contain much energy in the high-frequency modes for which we need the fine-level representation.  The GS smoother should then be applied on the $K-1$ level, but efficiently via a smaller representation of the problem using $K-1$ level data structures.  By going beyond the multilevel subspace correction ideas in this way, i.e.~by using coarse-level representations on a coarse-level problem, we can unlock the speed of multigrid.
 
-\subsection*{V-cycle geometric multigrid}  FIXME On the fine level
+To efficiently solve the problem on coarser levels requires addressing two concerns:
+\renewcommand{\labelenumi}{\emph{\roman{enumi})}}
+\begin{enumerate}
+\item How do we represent an iterate $w$ and an residual $F(w)[v]=0$ on the $k$th level?
+\item What equation do we hand-down to the $k-1$ level?
+\end{enumerate}
 
-so \eqref{eq:feweakpoisson} directly approximates \eqref{eq:weakpoisson} for $k=K$.  However, while on coarser levels $k$ we will also have a right-hand linear functional $\ell^k[v]$ acting on $v$ in $\mathcal{V}^k$, it may be defined by new formulae (see below), though the bilinear form $a(u,v)$ has the same meaning on each level, namely as the left side of \eqref{eq:weakpoissonearly}.
+The answer to \emph{i)} is relatively straightforward.  As already noted, a function $w(x)$ in $\mathcal{V}^k$ is represented by its nodal values $w_p=w(x_p^k)$, thus $w = \sum_p w_p \psi_p^k$, and $\bw = \{w_p\}$ is a vector in $\RR^{m_k}$.  Representing a residual, a linear functional in $(\mathcal{V}^k)'$, is just as simple.  The values $F_p = F(w)[\psi_p^k]$ form a vector $\bF=\{F_p\}$, also in $\RR^{m_k}$.  It is common to think of $\bw$ as a column vector and $\bF$ as a row vector, but this is not essential.
 
-Once the GS smoother is applied on a given level $k$, both the error and the residual no longer contain much energy in those high-frequency modes for which we need the $k$th-level representation.  Thus the problem can be represented on a coarser level.  The new equation relates the smooth quantities, namely the error and residual, as follows.  First, the residual definition \eqref{eq:residual} can be rewritten as the equation
+For \emph{ii)} we need to derive a new equation for the coarser level, one which relates the error and residual, and which loses little information if these quantities are smooth.  First, for a iterate $w$ in the original FE space $\mathcal{V}^h$, the residual definition \eqref{eq:residual} can be rewritten as the equation
 \begin{equation}
-  a(w^k,v) = \ell^k[v] - r^k(w^k)[v].  \label{eq:residualrewrite}
+  a(w,v) = \ip{f}{v} - F(w)[v].  \label{eq:residualrewrite}
 \end{equation}
-Subtracting the weak form \eqref{eq:feweakpoisson} from \eqref{eq:residualrewrite}, there is cancellation on the right:
+Subtracting the weak form \eqref{eq:feweakpoisson} from \eqref{eq:residualrewrite} we cancel the source term:
 \begin{equation}
-  a(w^k,v) - a(u^k,v) = - r^k(w^k)[v].  \label{eq:errorequationearly}
+  a(w,v) - a(u^h,v) = - F(w)[v].  \label{eq:errorequationearly}
 \end{equation}
 Because of the linearity of $a(\cdot,\cdot)$ in the first position, we have the (weak-form) \emph{error equation},
 \begin{equation}
-  a(e^k,v) = - r^k(w^k)[v],  \label{eq:errorequation}
+  a(e,v) = - F(w)[v],  \label{eq:errorequation}
 \end{equation}
-for all $v$ in $\mathcal{V}^k$.  Both $e^k=w^k-u^k$ and the residual $r^k(w^k)[\cdot]$ are smoothed quantities which should have faithful representations on a coarser mesh.
+for all $v$ in $\mathcal{V}^h$, where $e=w-u^h$.  As stated above, on the fine level $\mathcal{V}^h=\mathcal{V}^K$ we represent $e$ by a vector of its nodal values $\be = \{e_p\}$ and $F(w)$ by its values $\bF=\{F_p\}$, both in $\RR^{m_K}$.
 
-The main point of the multigrid/multilevel idea is that equation \eqref{eq:errorequation} can be passed to a coarser level for rapid solution.  Thus, a multigrid method proposes the following \emph{coarse-level (correction) equation},
+Equation \eqref{eq:errorequation} is actually equivalent to the original FE weak form \eqref{eq:feweakpoisson}, but if GS has already been applied on the finest ($K$th) level then both $e$ and the residual $F(w)$ are smoothed quantities which should have faithful representations in terms of only hat functions $\psi_p^{K-1}$, that is, not using all of the fine-level hats.  FIXME  Equation \eqref{eq:errorequation} can be \emph{approximated} by a new equation which will have a rapid solution if its quantities are represented using only the $K-1$ mesh.  That is, geometric multigrid proposes the following \emph{coarse-level equation},
 \begin{equation}
-  a(e^{k-1},v) = - (Rr^k(w^k))[v]  \label{eq:coarsecorrection}
+  a(e^{K-1},v) = - (RF(w))[v]  \label{eq:coarsecorrection}
 \end{equation}
-for all $v$ in $\mathcal{V}^{k-1}$.  In \eqref{eq:coarsecorrection} we need a new \emph{restriction} operation $R$, about which we will say more shortly (see \eqref{eq:canonicalrestriction} below), to put the $k$th-level residual onto the $k-1$ level.  Given the solution $e^{k-1}$, the update
+for all $v$ in $\mathcal{V}^{K-1}$.  In \eqref{eq:coarsecorrection} we use a new operation $R$, to put the $k$th-level residual onto the $k-1$ level.  The \emph{canonical restriction operator} $R$ which creates a linear functional on the $k-1$ level from a linear functional $\ell^k$ on the $k$ level:
+\begin{equation}
+  (R \ell^k)[v] = \ell^k[v] \label{eq:canonicalrestriction}
+\end{equation}
+for all $v$ in $\mathcal{V}^{k-1}$.
+
+  Given the solution $e^{k-1}$, the update
 \begin{equation}
   w^k \gets w^k + P e^{k-1}  \label{eq:update}
 \end{equation}
