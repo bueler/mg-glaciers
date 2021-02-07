@@ -1,0 +1,25 @@
+\begin{tikzpicture}[scale=1.2]
+  \pgfmathsetmacro\slx{-3.0}  % locate slash to left
+  \pgfmathsetmacro\hstep{0.5}
+  \pgfmathsetmacro\vstep{0.75}
+
+% grid labels at left
+  \node at (\slx-2.0,2*\vstep) {$k=2$};
+  \node at (\slx-2.0,\vstep) {$k=1$};
+  \node at (\slx-2.0,0.0) {$k=0$};
+
+% slash
+  \draw[black,thin] (\slx,2*\vstep) -- (\slx+\hstep,\vstep) --  (\slx+2*\hstep,0.0);
+  \filldraw (\slx,2*\vstep) circle (2.0pt);
+  \filldraw (\slx+\hstep,\vstep) circle (2.0pt);
+  \filldraw (\slx+2*\hstep,0.0) circle (2.0pt);
+
+% V-cycle
+  \draw[black,thin] (0.0,2*\vstep) -- (\hstep,\vstep) --  (2*\hstep,0.0)
+                    -- (3*\hstep,\vstep) -- (4*\hstep,2*\vstep);
+  \filldraw (0.0,2*\vstep) circle (2.0pt);
+  \filldraw (\hstep,\vstep) circle (2.0pt);
+  \filldraw (2*\hstep,0.0) circle (2.0pt);
+  \filldraw (3*\hstep,\vstep) circle (2.0pt);
+  \filldraw (4*\hstep,2*\vstep) circle (2.0pt);
+\end{tikzpicture}
