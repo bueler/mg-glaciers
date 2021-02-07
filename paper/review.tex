@@ -153,25 +153,25 @@ For example, two coarser levels are shown in Figure \ref{fig:coarsehats}, derive
 \label{fig:coarsehats}
 \end{figure}
 
-We need notation for the levels.  Suppose that the coarsest level is indexed as $k=0$ and the finest as $k=K$, with intermediate levels $k=1,\dots,K-1$, so the functions $\psi_p^k(x)$, for $p=1,\dots,m_k$, form the $k$th level.  The interior nodes $x_p^k$ use the same multilevel indexing scheme.  The fine level has now gained a superscript $K$, thus the original hats are $\psi_p^K(x)$ and the original nodes are $x_p^K$.  Figures \ref{fig:finehats} and \ref{fig:coarsehats} show a three-level scheme ($K=2$) with a total of $m_2=11$ hats (and interior nodes).  There are $m_1=5$ middle-level hats and $m_0=2$ coarsest-level hats.  The original mesh has $m_2+1=12$ elements, divisible by four, so the above three-level coarsening scheme works.
+We need notation for the levels.  Suppose that the coarsest level is indexed as $j=0$ and the finest as $j=J$, with intermediate levels $j=1,\dots,J-1$, so the functions $\psi_p^j(x)$, for $p=1,\dots,m_j$, form the $j$th level.  The interior nodes $x_p^j$ use the same multilevel indexing scheme.  The fine level has now gained a superscript $J$; the original hats are $\psi_p^J(x)$ and the original nodes are $x_p^J$.  Figures \ref{fig:finehats} and \ref{fig:coarsehats} show a three-level scheme ($J=2$) with a total of $m_2=11$ hats (and interior nodes).  There are $m_1=5$ middle-level hats and $m_0=2$ coarsest-level hats.  The original mesh has $m_2+1=12$ elements, divisible by four, so the above three-level coarsening scheme works.
 
-The $k$th-level hat functions are linearly-independent and form a basis for a vector space:
+The $j$th-level hat functions are linearly-independent and form a basis for a vector space:
 \begin{equation}
-  \mathcal{V}^k = \operatorname{span}\{\psi_1^k(x),\dots,\psi_{m_k}^k(x)\} \subset \mathcal{H}.  \label{eq:definevk}
+  \mathcal{V}^j = \operatorname{span}\{\psi_1^j(x),\dots,\psi_{m_j}^j(x)\} \subset \mathcal{H}.  \label{eq:definevk}
 \end{equation}
-These spaces are nested, i.e.~$\mathcal{V}^{k-1} \subset \mathcal{V}^k$, because each hat function can be written as a linear combination of coarser-level hats,
+These spaces are nested, i.e.~$\mathcal{V}^{j-1} \subset \mathcal{V}^j$, because each hat function can be written as a linear combination of coarser-level hats,
 \begin{equation}
-   \psi_p^{k-1}(x) = \sum_{q=1}^{m_k} c_{pq} \psi_q^k(x), \label{eq:hatcombination}
+   \psi_p^{j-1}(x) = \sum_{q=1}^{m_j} c_{pq} \psi_q^j(x), \label{eq:hatcombination}
 \end{equation}
-and in fact $c_{pq} = \psi_p^{k-1}(x_q^k)$ because the hats $\{\psi_q^k\}$ form a nodal basis. Nonzero coefficients $c_{pq}$ occur when a fine-level node $x_q^k$ is in the non-zero set (\emph{support}) of a coarser hat $\psi_p^{k-1}(x)$.
+and in fact $c_{pq} = \psi_p^{j-1}(x_q^j)$ because the hats $\{\psi_q^j\}$ form a nodal basis. Nonzero coefficients $c_{pq}$ occur when a fine-level node $x_q^j$ is in the non-zero set (\emph{support}) of a coarser hat $\psi_p^{j-1}(x)$.
 
 A multilevel \emph{subspace decomposition} is now described by a vector-space sum:
 \begin{equation}
-  \mathcal{V}^h = \mathcal{V}^0 + \mathcal{V}^1 + \dots + \mathcal{V}^K. \label{eq:subspacedecomposition}
+  \mathcal{V}^h = \mathcal{V}^0 + \mathcal{V}^1 + \dots + \mathcal{V}^J. \label{eq:subspacedecomposition}
 \end{equation}
-This decomposition will be useful even though the final term $\mathcal{V}^K$ is actually equal to the original FE space $\mathcal{V}^h$.  Equation \eqref{eq:subspacedecomposition} asserts that a piecewise-linear function in $\mathcal{V}^h$ \emph{can} be written as a linear combination of hat functions from all the levels, but there is no unique representation.  A multilevel method will use this hierarchy to find the components of the solution in $\mathcal{V}^h$ via fast computations on all levels $\mathcal{V}^k$.
+This decomposition will be useful even though the final term $\mathcal{V}^J$ is actually equal to the original FE space $\mathcal{V}^h$.  Equation \eqref{eq:subspacedecomposition} asserts that a piecewise-linear function in $\mathcal{V}^h$ \emph{can} be written as a linear combination of hat functions from all the levels, but there is no unique representation.  A multilevel method will use this hierarchy to find the components of the solution in $\mathcal{V}^h$ via fast computations on all levels $\mathcal{V}^j$.
 
-The levels $\mathcal{V}^0,\dots,\mathcal{V}^{K}$ provide a \emph{scale of frequencies}.  Informally, the value of the inner product of a function $g(x)$ with a fine-level hat, i.e.~$\ip{g}{\psi_p^K}$, is, relative to its norm $\|g\| = \ip{g}{g}^{1/2}$, mostly a measure of its high-frequency content at $x_p^K$.  The inner product with a coarser-mesh hat, by contrast, measures a lower frequency because it averages over many fine-mesh nodes.  If decomposition \eqref{eq:subspacedecomposition} were instead a Fourier decomposition, with each $\mathcal{V}^k$ spanned by waves of disjoint frequency ranges, then the sum would be orthogonal and the ``scale of frequencies'' meaning would be exact.  In any case, a multilevel method will reduce the energy of the error in a solution estimate (iterate) on each level $\mathcal{V}^k$, and doing so on a coarse level does rapidly reduce the low frequencies present in the error.
+The levels $\mathcal{V}^0,\dots,\mathcal{V}^J$ provide a \emph{scale of frequencies}.  Informally, the value of the inner product of a function $g(x)$ with a fine-level hat, i.e.~$\ip{g}{\psi_p^J}$, is, relative to its norm $\|g\| = \ip{g}{g}^{1/2}$, mostly a measure of its high-frequency content at $x_p^J$.  The inner product with a coarser-mesh hat, by contrast, measures a lower frequency because it averages over many fine-mesh nodes.  If decomposition \eqref{eq:subspacedecomposition} were instead a Fourier decomposition, with each $\mathcal{V}^j$ spanned by waves of disjoint frequency ranges, then the sum would be orthogonal and the ``scale of frequencies'' meaning would be exact.  In any case, a multilevel method will reduce the energy of the error in a solution estimate (iterate) on each level $\mathcal{V}^j$, and doing so on a coarse level does rapidly reduce the low frequencies present in the error.
 
 \subsection*{The residual and Gauss-Seidel}  Recall the weak form \eqref{eq:weakpoisson}.  Our FE method seeks a solution $u^h$ in $\mathcal{V}^h$ of the corresponding finite-dimensional weak-form,
 \begin{equation}
@@ -185,30 +185,30 @@ Suppose $w$ in $\mathcal{V}^h$ is an approximation of $u^h$.  We define the \emp
 \end{equation}
 Finding $u^h$ which solves \eqref{eq:feweakpoisson} is equivalent to making all of the components of the residual zero: $F(u^h)[v]=0$ for all $v$ in $\mathcal{V}^h$.
 
-We may represent an iterate $w$ using the basis of hat functions on any mesh level, i.e.~$w = \sum b_q \psi_q^k$.  By linearity of $a(\cdot,\cdot)$ in the first argument,
+We may represent an iterate $w$ using the basis of hat functions on any mesh level, i.e.~$w = \sum b_q \psi_q^j$.  By linearity of $a(\cdot,\cdot)$ in the first argument,
 \begin{equation}
-  F(w)[\psi_p^k] = \ip{f}{\psi_p^k} - \sum_{q=1}^{m_k} a(\psi_q^k,\psi_p^k) \,b_q.  \label{eq:residualpoisson}
+  F(w)[\psi_p^j] = \ip{f}{\psi_p^j} - \sum_{q=1}^{m_j} a(\psi_q^j,\psi_p^j) \,b_q.  \label{eq:residualpoisson}
 \end{equation}
-The number of nonzero terms in this sum is equal to the number of hat functions $\psi_q^k$ whose support overlaps the support of the test function $\psi_p^k$.  Assuming the values $\ip{f}{\psi_p^k}$ and $a(\psi_p^k,\psi_q^k)$ are already computed, it follows that the computation of the residual $F(w)[\psi_p^k]$, at a node $x_p^k$, requires $O(1)$ work.
+The number of nonzero terms in this sum is equal to the number of hat functions $\psi_q^j$ whose support overlaps the support of the test function $\psi_p^j$.  Assuming the values $\ip{f}{\psi_p^j}$ and $a(\psi_p^j,\psi_q^j)$ are already computed, it follows that the computation of the residual $F(w)[\psi_p^j]$, at a node $x_p^j$, requires $O(1)$ work.
 
 Note that, for our 1D Poisson problem,
 \begin{equation}
-  a(\psi_p^k,\psi_q^k) = \int_0^1 \alpha(x) (\psi_p^k)'(x) (\psi_q^k)'(x)\,dx. \label{eq:poissonentries}
+  a(\psi_p^j,\psi_q^j) = \int_0^1 \alpha(x) (\psi_p^j)'(x) (\psi_q^j)'(x)\,dx. \label{eq:poissonentries}
 \end{equation}
-We may write these values as the entries of a symmetric matrix $A^k$ with dimensions $m_k\times m_k$: $a_{p,q}^k = a(\psi_p^k,\psi_q^k)$.  For our problem, only three values $a_{p,p-1}^k, a_{p,p}^k, a_{p,p+1}^k$ are nonzero, so $A^k$ is tridiagonal.  (Writing these entries in detail may remind the reader of finite difference approximations for the Laplacian.)  Depending on the form of $\alpha(x)$, formula \eqref{eq:poissonentries} may be computed either exactly, or approximately by quadrature, and similarly for the values $\ip{f}{\psi_p^k} = \int_0^1 f(x) \psi_p^k(x)\,dx$.
+We may write these values as the entries of a symmetric matrix $A^j$ with dimensions $m_j\times m_j$: $a_{p,q}^j = a(\psi_p^j,\psi_q^j)$.  For our problem, only three values $a_{p,p-1}^j, a_{p,p}^j, a_{p,p+1}^j$ are nonzero, so $A^j$ is tridiagonal.  (Writing these entries in detail may remind the reader of finite difference approximations for the Laplacian.)  Depending on the form of $\alpha(x)$, formula \eqref{eq:poissonentries} may be computed either exactly, or approximately by quadrature, and similarly for the values $\ip{f}{\psi_p^j} = \int_0^1 f(x) \psi_p^j(x)\,dx$.
 
-Our basic solution method for \eqref{eq:feweakpoisson}, called \emph{Gauss-Seidel (GS) iteration}, is sequential and point-wise \emph{relaxation} of the residual.  (Though matrices are often used to present the GS algorithm \cite[for example]{Bueler2021,Greenbaum1997}, there is no need; we will present it using residuals and hat functions.)  The $k$th-level GS algorithm sweeps through the mesh nodes $x_p^k$, modifying the iterate $w(x)$ by a multiple of $\psi_p^k$ so as to make the residual at $x_p^k$ equal to zero.  That is, at each node it finds a real number $c$ so that
+Our basic solution method for \eqref{eq:feweakpoisson}, called \emph{Gauss-Seidel (GS) iteration}, is sequential and point-wise \emph{relaxation} of the residual.  (Though matrices are often used to present the GS algorithm \cite[for example]{Bueler2021,Greenbaum1997}, there is no need; we will present it using residuals and hat functions.)  The $j$th-level GS algorithm sweeps through the mesh nodes $x_p^j$, modifying the iterate $w(x)$ by a multiple of $\psi_p^j$ so as to make the residual at $x_p^j$ equal to zero.  That is, at each node it finds a real number $c$ so that
 \begin{equation}
-  F(w+c\,\psi_p^k)[\psi_p^k] = 0.  \label{eq:gaussseidelpoint}
+  F(w+c\,\psi_p^j)[\psi_p^j] = 0.  \label{eq:gaussseidelpoint}
 \end{equation}
-Noting that $F(w+c\,\psi_p^k)[\psi_p^k] = F(w)[\psi_p^k] - c\, a(\psi_p^k,\psi_p^k)$, we have the following algorithm:
+Noting that $F(w+c\,\psi_p^j)[\psi_p^j] = F(w)[\psi_p^j] - c\, a(\psi_p^j,\psi_p^j)$, we have the following algorithm:
 \begin{pseudo*}
-\pr{gssweep}(k,w,F)\text{:} \\+
-    for $p=1,\dots,m_k$ \\+
-        $\displaystyle c = F(w)[\psi_p^k]\, \big/ \,a(\psi_p^k,\psi_p^k)$  \\
-        $w \gets w + c \psi_p^k$
+\pr{gssweep}(j,w,F)\text{:} \\+
+    for $p=1,\dots,m_j$ \\+
+        $\displaystyle c = F(w)[\psi_p^j]\, \big/ \,a(\psi_p^j,\psi_p^j)$  \\
+        $w \gets w + c \psi_p^j$
 \end{pseudo*}
-Note for future reference that this procedure takes the residual function as an argument and that it modifies $w$ in-place.  Assuming the values $a(\psi_p^k,\psi_q^k)$ and $\ip{f}{\psi_p^k}$ are available, computing $c$ involves $O(1)$ work, and thus one application of \textsc{gssweep} requires $O(m_k)$ work.
+Note that this procedure takes the residual function as an argument and it modifies $w$ in-place.  Assuming the values $a(\psi_p^j,\psi_q^j)$ and $\ip{f}{\psi_p^j}$ are available, computing $c$ involves $O(1)$ work, and thus one application of \textsc{gssweep} requires $O(m_j)$ work.
 
 What does a sweep of GS do to an iterate $w$?  By sequentially making the residual zero on each hat function we can hope that the residual becomes smaller.  However, modifying $w$ to make the residual zero on one hat generally means the previously-zeroed values are no longer zero.  (That is, the equations are non-trivially coupled!)
 
@@ -216,26 +216,26 @@ Consider only fine-level GS sweeps for a moment.  One can prove for the Poisson 
 
 \begin{figure}[t]
 \includegraphics[width=0.8\textwidth]{genfigs/residualpoints.pdf}
-\caption{One Gauss-Seidel (GS) sweep on the fine level adjusts the iterate $w$ so that the residual $F(w)[\psi_p^K]$ at each successive node $x_p^K$ is zero (left).  The corresponding errors $e=w-u^h$ get significantly smoother (right).}
+\caption{One Gauss-Seidel (GS) sweep on the fine level adjusts the iterate $w$ so that the residual $F(w)[\psi_p^J]$ at each successive node $x_p^J$ is zero (left).  The corresponding errors $e=w-u^h$ get significantly smoother (right).}
 \label{fig:residualpoints}
 \end{figure}
 
-An example is shown in Figure \ref{fig:residualpoints}, where we start with a non-smooth initial iterate $w$ on an $m_K=6$ mesh; its residual $F(w)$ is at top-left.  The Figure shows the residual after each step in the \textbf{for} loop in \textsc{gssweep}, indicating the location which is zeroed.  (We plot the linear functionals $F(w)[\cdot]$ as piecewise-constant functions with values $F(w)[\psi_p^K]$.)  While both the residual and error become smaller in norm, the strongest effect is the damping of high frequencies.
+An example is shown in Figure \ref{fig:residualpoints}, where we start with a non-smooth initial iterate $w$ on an $m_K=6$ mesh; its residual $F(w)$ is at top-left.  The Figure shows the residual after each step in the \textbf{for} loop in \textsc{gssweep}, indicating the location which is zeroed.  (We plot the linear functionals $F(w)[\cdot]$ as piecewise-constant functions with values $F(w)[\psi_p^J]$.)  While both the residual and error become smaller in norm, the strongest effect is the damping of high frequencies.
 
-\subsection*{Multilevel subspace corrections}  Once the GS smoother is applied on a given level $k$, whether once or a few times, the error and the residual no longer contain much energy in the $k$th-level modes.  Thus it makes sense to remove the energy in the next-coarser modes by applying GS on the $k-1$ level.  Starting on the finest level $K$, we have the following \emph{multilevel subspace correction} algorithm.
+\subsection*{Multilevel subspace corrections}  Once the GS smoother is applied on a given level $j$, whether once or a few times, the error and the residual no longer contain much energy in the $j$th-level modes.  Thus it makes sense to remove the energy in the next-coarser modes by applying GS on the $j-1$ level.  Starting on the finest level $J$, we have the following \emph{multilevel subspace correction} algorithm.
 \begin{pseudo*}
 \pr{msc-slash}(w,F)\text{:} \\+
-    for $k=K$ downto $0$ \\+
-        \pr{gssweep}(k,w,F)
+    for $j=J$ downto $0$ \\+
+        \pr{gssweep}(j,w,F)
 \end{pseudo*}
 
 The reason this downward-only scheme is called ``slash'' is shown in Figure \ref{fig:msccycles}.  Other correction sequences are possible, for example one may return to the fine level in a ``V'' cycle.
 \begin{pseudo*}
 \pr{msc-vcycle}(w,F)\text{:} \\+
-    for $k=K$ downto $0$ \\+
-        \pr{gssweep}(k,w,F) \\-
-    for $k=1$ to $K$ \\+
-        \pr{gssweep}(k,w,F)
+    for $j=J$ downto $0$ \\+
+        \pr{gssweep}(j,w,F) \\-
+    for $j=1$ to $J$ \\+
+        \pr{gssweep}(j,w,F)
 \end{pseudo*}
 Furthermore one may repeatedly apply the smoother on each level, which we denote using power notation as \pr{gssweep}$^j$, or go up-and-down the mesh hierarchy in more complicated ways (``W-cycles'', for example), or use coarser subspace corrections before finer; there are many possibilities \cite{Trottenbergetal2001}.
 
@@ -251,13 +251,13 @@ These \pr{msc} algorithms improve a fine-level iterate $w$ but they do not (gene
 
 \begin{figure}
 \input{tikz/msccycles.tex}
-\caption{Subspace corrections can be downward-only as in \pr{msc-slash} (left) or a V-cycle as in \pr{msc-vcycle} (right).  Each dot in this three-level hierarchy ($K=2$) is an application of \pr{gssweep} on that level.}
+\caption{Subspace corrections can be downward-only as in \pr{msc-slash} (left) or a V-cycle as in \pr{msc-vcycle} (right).  Each dot in this three-level hierarchy ($J=2$) is an application of \pr{gssweep} on that level.}
 \label{fig:msccycles}
 \end{figure}
 
-These simply-stated schemes, which appeared in this form relatively-late in the history of multigrid \cite{Xu1992}, have the excellent convergence properties of multigrid schemes.  The following theorem applies to linear elliptic PDEs in any dimension.  The constant $\rho$ depends only on the aspect ratios (\emph{shape regularity} \cite{Elmanetal2014}) of the mesh---not relevant in 1D---and on the coefficient-minimum value $\alpha_0=\inf_x \alpha(x)$.  Recall that $u^h$ is the exact solution of the FE weak form \eqref{eq:feweakpoisson}, and note that we use the norm $\|\cdot\|$ on $\mathcal{H}$.
+These simply-stated schemes, which appeared relatively-late in the history of multigrid \cite{Xu1992}, are the essential multigrid schemes and possess their excellent convergence properties.  For example, the following theorem applies to linear elliptic PDEs in any dimension.  The constant $\rho$ depends only on the element aspect ratios (\emph{shape regularity} \cite{Elmanetal2014}) in the mesh---not relevant in 1D---and on the coefficient-minimum value $\alpha_0=\inf_x \alpha(x)$.  Recall that $u^h$ is the exact solution of the FE weak form \eqref{eq:feweakpoisson}.  Note that we use the norm $\|\cdot\|$ on $\mathcal{H}$.
 
-\begin{theorem} \cite[Theorem 3.10]{GraeserKornhuber2009}  There is $\rho<1$ so that if $w^{(s)}$  results from $s$ applications of \pr{msc-slash} or \pr{msc-vcycle} on the fine level, starting with any $w^{(0)}$, then
+\begin{theorem} \cite[Thm.~3.10]{GraeserKornhuber2009}  There is $\rho<1$ so that if $w^{(s)}$  results from $s$ applications of \pr{msc-slash} or \pr{msc-vcycle} on the fine level, starting with any $w^{(0)}$, then
 \begin{equation}
   \|w^{(s+1)} - u^h\| \le \rho \|w^{(s)} - u^h\|.  \label{eq:mscconvergence}
 \end{equation}
@@ -265,18 +265,18 @@ These simply-stated schemes, which appeared in this form relatively-late in the 
 
 It follows that if we want the error norm $e^{(s)} = \|w^{(s)}-u^h\|$ to be reduced to below some level $\eps>0$ then we should do $s>(\log\eps - \log e^{(0)})/\log \rho$ iterations, where $e^{(0)}$ is the initial error norm.  That is, we need $O(\log\eps)$ iterations, and the constant is better when $\rho<1$ is smaller.
 
-Unfortunately, these \pr{msc} methods are not yet \emph{fast} solvers.  Their performance entirely depends on how iterates $w$ and residuals $F(w)[\cdot]$ are represented on each mesh level.  For example, if we represent $w$ and $F(w)$ using the fine-level basis $\{\psi_p^K\}$ then one application of \pr{gsweep}$(K,w,F)$ is indeed fast, i.e.~$O(m_K)$ operations, with a small constant, because evaluating $F(w)[\psi_p^K]$ requires only a few operations.  However, evaluating $F(w)[\psi_p^k]$ for $k<K$, from the fine-mesh representation of $F(w)$, means computing integrals over the wide support of $\psi_p^k$, which is nonzero at many fine-mesh nodes $x_p^K$.  It is not clear that \pr{gssweep}$(k,w,F)$ is an $O(m_k)$ operation with a small constant.  The \pr{msc} methods are not fully-specified, as solvers, until we have hierarchical representations which are compatible with multilevel corrections.
+Unfortunately, these \pr{msc} methods are not yet \emph{fast} solvers.  Their performance entirely depends on how iterates $w$ and residuals $F(w)[\cdot]$ are represented on each mesh level.  For example, if we represent $w$ and $F(w)$ using the fine-level basis $\{\psi_p^J\}$ then one application of \pr{gsweep}$(J,w,F)$ is indeed fast, i.e.~$O(m_J)$ operations, with a small constant, because evaluating $F(w)[\psi_p^J]$ requires only a few operations.  However, evaluating $F(w)[\psi_p^j]$ for $j<J$, from the fine-mesh representation of $F(w)$, means computing integrals over the wide support of $\psi_p^j$, which is nonzero at many fine-mesh nodes $x_p^J$.  It is not clear that \pr{gssweep}$(j,w,F)$ is an $O(m_j)$ operation with a small constant.  The \pr{msc} methods are not fully-specified, as solvers, until we have hierarchical representations which are compatible with multilevel corrections.
 
-\subsection*{Geometric multigrid}  Once the GS smoother has been applied on the finest ($K$) level, the error and the residual no longer contain much energy in the high-frequency modes for which we need the $K$th-level representation.  The GS smoother should then be applied on the $K-1$ level, but efficiently using $K-1$ level data structures to represent the problem.  By using coarse-level representations we go beyond multilevel subpace corrections, and we unlock the power of multigrid.
+\subsection*{Geometric multigrid}  Once the GS smoother has been applied on the finest level, the error and the residual no longer contain much energy in the high-frequency modes for which we need the $J$th-level representation.  The GS smoother should then be applied on the $J-1$ level, but efficiently using $J-1$ level data structures to represent the problem.  By using coarse-level representations we go beyond multilevel subpace corrections, and we unlock the power of multigrid.
 
 Efficiency on coarser levels requires addressing two concerns:
 \renewcommand{\labelenumi}{\emph{\roman{enumi})}}
 \begin{enumerate}
-\item How do we represent an iterate $w$ and an residual $F(w)[v]=0$ on the $k$th level?
-\item How do we hand-down a partially-solve $k$ level problem to the $k-1$ level?
+\item How do we represent an iterate $w$ and an residual $F(w)[v]=0$ on the $j$th level?
+\item How do we hand-down a partially-solve $j$ level problem to the $j-1$ level?
 \end{enumerate}
 
-Our answer to \emph{i)} is straightforward.  As already noted, a function $w(x)$ in $\mathcal{V}^k$ is represented by its nodal values $w_p=w(x_p^k)$, thus $w = \sum_p w_p \psi_p^k$, and $\bw = \{w_p\}$ is a vector in $\RR^{m_k}$.  Representing a residual, a linear functional in $(\mathcal{V}^k)'$, is just as simple because the values $F_p = F(w)[\psi_p^k]$ form a vector $\bF=\{F_p\}$, also in $\RR^{m_k}$.  It is common to think of $\bw$ as a column vector and $\bF$ as a row vector, but this is not essential.
+Our answer to \emph{i)} is straightforward.  As already noted, a function $w(x)$ in $\mathcal{V}^j$ is represented by its nodal values $w_p=w(x_p^j)$, thus $w = \sum_p w_p \psi_p^j$, and $\bw = \{w_p\}$ is a vector in $\RR^{m_j}$.  Representing a residual, a linear functional in $(\mathcal{V}^j)'$, is just as simple because the values $F_p = F(w)[\psi_p^j]$ form a vector $\bF=\{F_p\}$, also in $\RR^{m_j}$.  It is common to think of $\bw$ as a column vector and $\bF$ as a row vector, but this is not essential.
 
 For \emph{ii)} we need to derive a new equation for the coarser level which loses little information if the key quantities are smooth.  First, for a iterate $w$ in the original FE space $\mathcal{V}^h$, the residual definition \eqref{eq:residual} can be rewritten as the equation
 \begin{equation}
@@ -292,49 +292,49 @@ Because of the linearity of $a(\cdot,\cdot)$ in the first position, we have the 
 \end{equation}
 for all $v$ in $\mathcal{V}^h$, where $e=w-u^h$.
 
-Equation \eqref{eq:errorequation} is actually equivalent to the original FE weak form \eqref{eq:feweakpoisson}, but if GS has already been applied on the finest ($K$th) level then both $e$ and the residual $F(w)$ are smoothed quantities which should have faithful representations in terms of the basis $\{\psi_p^{K-1}\}$, that is, not using the fine-level hats.  However, as stated above, on the fine level $\mathcal{V}^h=\mathcal{V}^K$ we have represented $e$ by a vector of its nodal values $\be = \{e_p\}$ and $F(w)$ by its values $\bF=\{F_p\}$, both in $\RR^{m_K}$.  Therefore we approximate equation \eqref{eq:errorequation} by a new equation wherein all quantities are represented using only the $K-1$ mesh.  That is, geometric multigrid proposes the following \emph{coarse-level equation} for linear problems:
+Equation \eqref{eq:errorequation} is actually equivalent to the original FE weak form \eqref{eq:feweakpoisson}, but if GS has already been applied on the finest level then both $e$ and the residual $F(w)$ are smoothed quantities which should have faithful representations in terms of the basis $\{\psi_p^{J-1}\}$, that is, not using the fine-level hats.  However, as stated above, on the fine level $\mathcal{V}^h=\mathcal{V}^J$ we have represented $e$ by a vector of its nodal values $\be = \{e_p\}$ and $F(w)$ by its values $\bF=\{F_p\}$, both in $\RR^{m_J}$.  Therefore we approximate equation \eqref{eq:errorequation} by a new equation wherein all quantities are represented using only the $J-1$ mesh.  That is, geometric multigrid proposes the following \emph{coarse-level equation} for linear problems:
 \begin{equation}
-  a(e^{K-1},v) = - (RF(w))[v]  \label{eq:coarsecorrection}
+  a(e^{J-1},v) = - (RF(w))[v]  \label{eq:coarsecorrection}
 \end{equation}
-for all $v$ in $\mathcal{V}^{K-1}$.  In \eqref{eq:coarsecorrection} we propose to represent $e^{K-1}$ in the basis $\{\psi_p^{K-1}\}$ and to use $v=\psi_p^{K-1}$ as test functions.  Furthermore we use the \emph{canonical restriction operator} $R$ to put the $K$th-level residual onto the $K-1$ level.  It maps a linear functional $\ell$ on the $K$ level to the $K-1$ level:
+for all $v$ in $\mathcal{V}^{J-1}$.  In \eqref{eq:coarsecorrection} we propose to represent $e^{J-1}$ in the basis $\{\psi_p^{J-1}\}$ and to use $v=\psi_p^{J-1}$ as test functions.  Furthermore we use the \emph{canonical restriction operator} $R$ to put the $J$th-level residual onto the $J-1$ level.  It maps a linear functional $\ell$ on the $J$ level to the $J-1$ level:
 \begin{equation}
   (R \ell)[v] = \ell[v] \label{eq:canonicalrestriction}
 \end{equation}
-for all $v$ in $\mathcal{V}^{K-1}$.  That is, $R \ell$ acts on $\mathcal{V}^{K-1}$ the same as $\ell$, but we represent such linear functionals by their values on the $K-1$ level hats, thus
+for all $v$ in $\mathcal{V}^{J-1}$.  That is, $R \ell$ acts on $\mathcal{V}^{J-1}$ the same as $\ell$, but we represent such linear functionals by their values on the $J-1$ level hats, thus
 \begin{equation}
-  (R \ell)[\psi_p^{K-1}] = FIXME
+  (R \ell)[\psi_p^{J-1}] = FIXME
 \end{equation}
 by \eqref{eq:hatcombination}.
 
-FIXME  Given the solution $e^{k-1}$, the update
+FIXME  Given the solution $e^{j-1}$, the update
 \begin{equation}
-  w^k \gets w^k + P e^{k-1}  \label{eq:update}
+  w^j \gets w^j + P e^{j-1}  \label{eq:update}
 \end{equation}
-``corrects'' the fine-level iterate.  Note we have introduced yet another operation, the \emph{prolongation} $P$, and it is defined in \eqref{eq:canonicalprolongation} below.  One could write \eqref{eq:update} using an index indicating the iteration, e.g.~$w^{k,s+1} = w^{k,s} + Pe^{k-1,s}$, but for simplicity we keep the level index $k$.
+``corrects'' the fine-level iterate.  Note we have introduced yet another operation, the \emph{prolongation} $P$, and it is defined in \eqref{eq:canonicalprolongation} below.  One could write \eqref{eq:update} using an index indicating the iteration, e.g.~$w^{j,s+1} = w^{j,s} + Pe^{j-1,s}$, but for simplicity we keep the level index $j$.
 
 Combining the above ideas gives a \emph{multigrid V-cycle}.  In addition to the GS smoother, a V-cycle adds a recursive solution of the coarse-level correction equation \eqref{eq:coarsecorrection}, followed by update \eqref{eq:update} and more smoother sweeps.  The following pseudocode, which modifies the iterate $w$ in-place, can be called repeatedly so as to improve the iterate $w$.
 
 \begin{pseudo*}
-\pr{gmg-vcycle}(k,w,\ell)\text{:} \\+
-    if $k=0$ \\+
+\pr{gmg-vcycle}(j,w,\ell)\text{:} \\+
+    if $j=0$ \\+
         $w =$ \pr{coarsesolve}(\ell) \\-  % in fact is w=0 plus \id{coarse} iterations of \pr{gssweep}(0,w,\ell)
     else \\+
-        $\text{\pr{gssweep}}^{\text{\id{down}}}(k,w,\ell)$ \\
-        $r^k[\cdot] = \ell[\cdot] - a^k(w,\cdot)$ \\
-        $e^{k-1} =$ \pr{vcycle}(k-1,0,-R r^k) \\
-        $w \gets w + P e^{k-1}$ \\
-        $\text{\pr{gssweep}}^{\text{\id{up}}}(k,w,\ell)$ \\-
+        $\text{\pr{gssweep}}^{\text{\id{down}}}(j,w,\ell)$ \\
+        $r^j[\cdot] = \ell[\cdot] - a^j(w,\cdot)$ \\
+        $e^{j-1} =$ \pr{vcycle}(j-1,0,-R r^j) \\
+        $w \gets w + P e^{j-1}$ \\
+        $\text{\pr{gssweep}}^{\text{\id{up}}}(j,w,\ell)$ \\-
 \end{pseudo*}
 
-Observe that after \texttt{down} smoother sweeps, denoted here by $\text{\textsc{gssweep}}^{\text{\texttt{down}}}$, the coarse-level correction equation \eqref{eq:coarsecorrection} is applied on the next-coarser level with a ``new'' right-hand linear functional $\ell^{k-1}[v]=-(R r^k(w^k))[v]$ and a zero initial iterate.  That is, the coarse-level problem has a new source term, which is the amount the fine-level iterate $w^k$ did not already solve the problem.  After this correction an additional \texttt{up} sweeps are done to remove high-frequency components from the update.  Figure \ref{fig:vcycle} illustrates a three-level V-cycle.
+Observe that after \texttt{down} smoother sweeps, denoted here by $\text{\textsc{gssweep}}^{\text{\texttt{down}}}$, the coarse-level correction equation \eqref{eq:coarsecorrection} is applied on the next-coarser level with a ``new'' right-hand linear functional $\ell^{j-1}[v]=-(R r^j(w^j))[v]$ and a zero initial iterate.  That is, the coarse-level problem has a new source term, which is the amount the fine-level iterate $w^j$ did not already solve the problem.  After this correction an additional \texttt{up} sweeps are done to remove high-frequency components from the update.  Figure \ref{fig:vcycle} illustrates a three-level V-cycle.
 
-FIXME Next, the coarse-level error $e^{k-1}$ corrects the fine-level iterate $w^k$ using the \emph{canonical prolongation operator} $P$ acting on a function $z^{k-1}$ in $\mathcal{V}^{k-1}$:
+FIXME Next, the coarse-level error $e^{j-1}$ corrects the fine-level iterate $w^j$ using the \emph{canonical prolongation operator} $P$ acting on a function $z^{j-1}$ in $\mathcal{V}^{j-1}$:
 \begin{equation}
-  (P z^{k-1})(x) = z^{k-1}(x). \label{eq:canonicalprolongation}
+  (P z^{j-1})(x) = z^{j-1}(x). \label{eq:canonicalprolongation}
 \end{equation}
-Again the result $P z^{k-1}$ is really just the same as the input function $z^{k-1}$.
+Again the result $P z^{j-1}$ is really just the same as the input function $z^{j-1}$.
 
-Though the operators $R$ and $P$ thus seem to do nothing, and make no choices, which is the meaning of ``canonical'', in fact they represent computational work because of how we represent functions and functionals on each level.  That work is contained in the perhaps-forgotten equation \eqref{eq:hatcombination} which describes how each coarse-level hat function is a linear combination of fine-level hats.  For example, if a fine-level linear functional $\ell^k$ is represented on the computer as a vector of its values $\ell[p] = \ell^k[\psi_p^k]$, then the vector representing the restricted linear functional $R \ell^k$ has values computed via \eqref{eq:hatcombination}.  Likewise, if a coarse-level function $z^{k-1}(x)$ is represented by its coefficients in the basis $\{\psi_p^{k-1}\}$ then \eqref{eq:hatcombination} determines the coefficients of $P z^{k-1}$ in the fine-level basis $\{\psi_p^k\}$.  Linear operators $R$ and $P$ may be represented as rectangular matrices, but this is not necessary; they can be applied using $O(m_k)$ work via straightforward local-averaging (\emph{full weighting} \cite{Briggsetal2000}) formulae which come from \eqref{eq:hatcombination}.
+Though the operators $R$ and $P$ thus seem to do nothing, and make no choices, which is the meaning of ``canonical'', in fact they represent computational work because of how we represent functions and functionals on each level.  That work is contained in the perhaps-forgotten equation \eqref{eq:hatcombination} which describes how each coarse-level hat function is a linear combination of fine-level hats.  For example, if a fine-level linear functional $\ell^j$ is represented on the computer as a vector of its values $\ell[p] = \ell^j[\psi_p^j]$, then the vector representing the restricted linear functional $R \ell^j$ has values computed via \eqref{eq:hatcombination}.  Likewise, if a coarse-level function $z^{j-1}(x)$ is represented by its coefficients in the basis $\{\psi_p^{j-1}\}$ then \eqref{eq:hatcombination} determines the coefficients of $P z^{j-1}$ in the fine-level basis $\{\psi_p^j\}$.  Linear operators $R$ and $P$ may be represented as rectangular matrices, but this is not necessary; they can be applied using $O(m_j)$ work via straightforward local-averaging (\emph{full weighting} \cite{Briggsetal2000}) formulae which come from \eqref{eq:hatcombination}.
 
 \begin{figure}
 \input{tikz/vcycle.tex}
@@ -342,9 +342,9 @@ Though the operators $R$ and $P$ thus seem to do nothing, and make no choices, w
 \label{fig:vcycle}
 \end{figure}
 
-The above \textsc{gmg-vcycle} algorithm also calls a coarse solver on the $k=0$ level.  For a linear problem like our current Poisson problem it is traditional to apply a direct solver for this linear system (i.e.~equation \eqref{eq:linearsystem}), but this is not an option for the nonlinear glacier geometry problem.  Instead we suppose \textsc{coarsesolve} is implemented as a fixed number of GS sweeps.  If the coarsest mesh has a single node then a single sweep gives an exact solution.
+The above \textsc{gmg-vcycle} algorithm also calls a coarse solver on the $j=0$ level.  For a linear problem like our current Poisson problem it is traditional to apply a direct solver for this linear system (i.e.~equation \eqref{eq:linearsystem}), but this is not an option for the nonlinear glacier geometry problem.  Instead we suppose \textsc{coarsesolve} is implemented as a fixed number of GS sweeps.  If the coarsest mesh has a single node then a single sweep gives an exact solution.
 
-We have now presented a basic geometric multigrid algorithm via a particular FE viewpoint, the subspace decomposition approach pioneered by Xu \cite{Xu1992} and others, an idea which applies both to multilevel and domain-decomposition algorithms.  We could now show computational results featuring the efficiency of the V-cycle algorithm, namely evidence of optimal $O(m_K)$ time to solve the problem.  (Such results appear in multigrid references \cite{Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.)  However, we first introduce a less-trivial ``obstacle'' problem which has the essential free-boundary character of the glacier geometry problem.  Computational results will be given in the next three sections.
+We have now presented a basic geometric multigrid algorithm via a particular FE viewpoint, the subspace decomposition approach pioneered by Xu \cite{Xu1992} and others, an idea which applies both to multilevel and domain-decomposition algorithms.  We could now show computational results featuring the efficiency of the V-cycle algorithm, namely evidence of optimal $O(m_J)$ time to solve the problem.  (Such results appear in multigrid references \cite{Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.)  However, we first introduce a less-trivial ``obstacle'' problem which has the essential free-boundary character of the glacier geometry problem.  Computational results will be given in the next three sections.
 
 
 \section{Constraint decomposition for the obstacle problem} \label{sec:obstacle}
@@ -386,7 +386,7 @@ Observe that the solution $u$ to \eqref{eq:obstaclecp} does not depend linearly 
 \begin{equation}
 \mathcal{K} = \left\{v \ge \varphi\right\} \subseteq \mathcal{H}.  \label{eq:Kdefine}
 \end{equation}
-This subset is not a vector space, but it is \emph{convex}.  That is, if $v,w$ are in $\mathcal{K}$ then any point on the line segment connecting them, namely $\alpha v + (1-\alpha) w$ for $0 \le \alpha \le 1$, is also in $\mathcal{K}$.  
+This subset is not a vector space, but it is \emph{convex}.  That is, if $v,w$ are in $\mathcal{K}$ then any point on the line segment connecting them, namely $\theta v + (1-\theta) w$ for $0 \le \theta \le 1$, is also in $\mathcal{K}$.
 
 As expected, derivation of the weak form of \eqref{eq:obstaclecp} involves multiplying by a test function and integrating by parts.  However, the inequalities enter nontrivially into the derivation; see \cite[Chapter 12]{Bueler2021}, \cite{JouvetBueler2012}, or \cite{KinderlehrerStampacchia1980}.  The result is a single \emph{variational inequality} (VI):
 \begin{equation}
@@ -410,11 +410,11 @@ This gradient $\nabla J(u)$ already appears in \eqref{eq:obstaclevi}, and the VI
 
 The solution $u$ of \eqref{eq:obstaclevi}, \eqref{eq:obstaclemin}, or \eqref{eq:obstaclevigradient} sits at a location in $\mathcal{K}$, possibly on the boundary of $\mathcal{K}$, where a vector pointing further into the constraint set, namely $v-u$ for $v$ in $\mathcal{K}$, points ``uphill'' on the graph of $J$.  If we think of $\nabla J(u)$ as a vector, instead of a linear functional, we could write \eqref{eq:obstaclevigradient} as $\ip{\nabla J(u)}{v-u} \ge 0$, thus the angle between $\nabla J(u)$ and $v-u$ is at most 90 degrees.  One possibility for our 1D obstacle problem is that the constraint is strict for every $x$, i.e.~$u(x) > \varphi(x)$, in which case \eqref{eq:obstaclevigradient} implies the unconstrained minimum condition $\nabla J(u)[v] = 0$ for all $v$ in $\mathcal{H}$; in this case the gradient of $J$ is zero at $u$.
 
-Of course, $\mathcal{K}$ in \eqref{eq:Kdefine} is an infinite-dimensional set.  To aid the intuition we propose the following low-dimensional, but global, mental image.  Imagine the constraint set $\mathcal{K}$ as analogous to the closed first quadrant in the plane, $\mathcal{Q} = \left\{(x_1,x_2)\,:\,x_i\ge 0\right\}$, and $J$ as analogous to a smooth, concave-up (i.e.~\emph{coercive} \cite{Evans2010}), objective function $\gamma(x_1,x_2)$ defined on the plane.  The solution of the corresponding VI, say $(\hat x_1,\hat x_2)$ in $\mathcal{Q}$, may not be a location where $\nabla \gamma$ is zero.  However, it will have as low a value of $\gamma$ as possible, even if it is on the boundary of $\mathcal{Q}$.  At $(\hat x_1,\hat x_2)$ all directions \emph{into} $\mathcal{Q}$ will increase the value of $\gamma$, as sketched by contours in Figure \ref{fig:cartoonplane}.  The obstacle problem solution shown in Figure \ref{fig:icelike} is an infinite-dimensional version of the solution point shown in the Figure \ref{fig:cartoonplane} cartoon view.
+Of course, $\mathcal{K}$ in \eqref{eq:Kdefine} is an infinite-dimensional set.  To aid the intuition we propose the following low-dimensional, but global, mental image.  Imagine the constraint set $\mathcal{K}$ as analogous to the closed first quadrant in the plane, $\mathcal{Q} = \left\{x = (x_1,x_2)\,:\,x_i\ge 0\right\}$, and $J$ as analogous to a smooth, concave-up (i.e.~\emph{coercive} \cite{Evans2010}), objective function $\gamma(x)$ defined on the plane.  The solution of the corresponding VI, say $\hat x$ in $\mathcal{Q}$, may not be a location where $\nabla \gamma$ is zero.  However, it will have as low a value of $\gamma$ as possible, even if it is on the boundary of $\mathcal{Q}$.  At $\hat x$ all directions \emph{into} $\mathcal{Q}$ will increase the value of $\gamma$, as sketched by contours in Figure \ref{fig:cartoonplane}.  The obstacle problem solution shown in Figure \ref{fig:icelike} is an infinite-dimensional version of the solution point shown in the Figure \ref{fig:cartoonplane} cartoon view.
 
 \begin{figure}
 \includegraphics[width=0.35\textwidth]{genfigs/cartoonplane.pdf}
-\caption{For analogy only:  A 2-dimensional constrained-minimization or VI solution, in a planar quadrant $\mathcal{Q}$, with contours of a scalar function $\gamma(x_1,x_2)$.}
+\caption{For analogy only:  A 2-dimensional constrained-minimization or VI solution, in a planar quadrant $\mathcal{Q}$, with contours of a scalar function $\gamma(x)$.}
 \label{fig:cartoonplane}
 \end{figure}
 
@@ -424,56 +424,56 @@ Regardless of how the classical obstacle problem is formulated, a \emph{free bou
 
 The solution of the classical obstacle problem can be non-smooth at the free boundary even when the data is arbitrarily smooth.  For example, smoothing the source term $f$ in \eqref{eq:icelikedetails} would give a solution nearly the same as shown in Figure \ref{fig:icelike}.  That is, one could make the source term $f$ into a smooth function by ``mollification'' \cite{Evans2010} so that the transition between positive and negative values of $f$ would be $C^\infty$.  However, the free boundary would remain, and at that free boundary the second derivative $u''$ would jump from value $+16=-f$ to value $-2=\varphi''$.  Thus the 1D obstacle problem solution, for smooth data, is limited to the Sobolev space $W^{2,\infty}$ \cite[section IV.6]{KinderlehrerStampacchia1980}, and (generally) not smoother.
 
-\subsection*{Multilevel constraint decomposition}  Recall from section \ref{sec:subspace} that each mesh level corresponds to $m_k$ hat functions $\psi_p^k(x)$, at interior nodes $x_p^k$, and to the corresponding vector space $\mathcal{V}_k$ of piecewise-linear functions with value zero at $x=0,1$.  (See Figures \ref{fig:finehats}, \ref{fig:coarsehats}.)  In this section we add an obstacle function $\phi^k(x)$ on each level, to define a closed, convex $k$\emph{th-level constraint set}
+\subsection*{Multilevel constraint decomposition}  Recall from section \ref{sec:subspace} that each mesh level corresponds to $m_j$ hat functions $\psi_p^j(x)$, at interior nodes $x_p^j$, and to the corresponding vector space $\mathcal{V}_j$ of piecewise-linear functions with value zero at $x=0,1$.  (See Figures \ref{fig:finehats}, \ref{fig:coarsehats}.)  In this section we add an obstacle function $\phi^j(x)$ on each level, to define a closed, convex $k$\emph{th-level constraint set}
 \begin{equation}
-\mathcal{K}^k = \left\{v \text{ in } \mathcal{V}^k \text{ such that } v \ge \phi^k\right\}.  \label{eq:levelKdefine}
+\mathcal{K}^j = \left\{v \text{ in } \mathcal{V}^j \text{ such that } v \ge \phi^j\right\}.  \label{eq:levelKdefine}
 \end{equation}
-However, the construction of the $k$th-level obstacle $\phi^k$ is nontrivial; it is \emph{not} the $k$th-level interpolant of the continuum obstacle $\varphi$.  Indeed, the manner in which we decompose the continuum constraint $\mathcal{K}$ into multilevel sets $\mathcal{K}^k$ is the key concern of this section.  On the $k$th level we have the finite-dimensional VI for $u^k$ in $\mathcal{K}^k$:
+However, the construction of the $j$th-level obstacle $\phi^j$ is nontrivial; it is \emph{not} the $j$th-level interpolant of the continuum obstacle $\varphi$.  Indeed, the manner in which we decompose the continuum constraint $\mathcal{K}$ into multilevel sets $\mathcal{K}^j$ is the key concern of this section.  On the $j$th level we have the finite-dimensional VI for $u^j$ in $\mathcal{K}^j$:
 \begin{equation}
-  a(u^k,v-u^k) \ge \ell^k[v-u] \quad \text{ for all } v \text{ in } \mathcal{K}^k. \label{eq:levelvi}
+  a(u^j,v-u^j) \ge \ell^j[v-u] \quad \text{ for all } v \text{ in } \mathcal{K}^j. \label{eq:levelvi}
 \end{equation}
-As in the previous section, $\ell^K[v]=\ip{f}{v}$ on the finest level, but on coarser levels we will redefine the linear functional $\ell^k$ for the right-hand side.
+As in the previous section, $\ell^J[v]=\ip{f}{v}$ on the finest level, but on coarser levels we will redefine the linear functional $\ell^j$ for the right-hand side.
 
-As we did for GMG on the Poisson equation, on each mesh level we can immediately propose an iterative solution method for the weak form \eqref{eq:levelvi}.  The \emph{projected Gauss-Seidel (PGS) iteration} is a small modification of the original GS method.  This method might ultimately solve the problem---a proof is in \cite{BrandtCryer1983}---but here it serves as a smoother; we only apply one or two iterations on each level.  The PGS iteration finds the solution to VI \eqref{eq:levelvi}, though slowly, by approximately descending the gradient $\grad J$ while remaining in the constraint region $\mathcal{K}^k = \{w\ge \phi^k\}$.  Specifically, PGS descends by adjusting the iterate one point at a time.  Recall that conventional GS successively zeros the residual at points, i.e.~it finds $c$ so that $r^k(w+c\psi_p^k)[\psi_p^k]=0$, but the residual is the same as the \emph{negative} gradient of the objective:
+As we did for GMG on the Poisson equation, on each mesh level we can immediately propose an iterative solution method for the weak form \eqref{eq:levelvi}.  The \emph{projected Gauss-Seidel (PGS) iteration} is a small modification of the original GS method.  This method might ultimately solve the problem---a proof is in \cite{BrandtCryer1983}---but here it serves as a smoother; we only apply one or two iterations on each level.  The PGS iteration finds the solution to VI \eqref{eq:levelvi}, though slowly, by approximately descending the gradient $\grad J$ while remaining in the constraint region $\mathcal{K}^j = \{w\ge \phi^j\}$.  Specifically, PGS descends by adjusting the iterate one point at a time.  Recall that conventional GS successively zeros the residual at points, i.e.~it finds $c$ so that $r^j(w+c\psi_p^j)[\psi_p^j]=0$, but the residual is the same as the \emph{negative} gradient of the objective:
 \begin{equation}
-  r^k(w)[v] = - \grad J^k(w)[v].  \label{eq:levelresidualgradient}
+  r^j(w)[v] = - \grad J^j(w)[v].  \label{eq:levelresidualgradient}
 \end{equation}
-Also, because $\mathcal{K}^k$ consists of piecewise-linear functions, if $w$ is in $\mathcal{K}^k$ then one can test whether the modified iterate is still in $\mathcal{K}^k$ via a pointwise comparison, i.e.~testing $w[p] + c \ge \phi^k[p]$.  Thus we have the following smoother algorithm:
+Also, because $\mathcal{K}^j$ consists of piecewise-linear functions, if $w$ is in $\mathcal{K}^j$ then one can test whether the modified iterate is still in $\mathcal{K}^j$ via a pointwise comparison, i.e.~testing $w[p] + c \ge \phi^j[p]$.  Thus we have the following smoother algorithm:
 \begin{pseudo*}
-\pr{pgssweep}(k,w,\ell,\phi)\text{:} \\+
-    for $p=1,\dots,m_k$ \\+
-        $\displaystyle c = r^k(w)[\psi_p^k] \, \big/ \,a(\psi_p^k,\psi_p^k)$ \qquad \ct{where $r^k(w)[\cdot] := \ell[\cdot] - a(w,\cdot)$} \\
+\pr{pgssweep}(j,w,\ell,\phi)\text{:} \\+
+    for $p=1,\dots,m_j$ \\+
+        $\displaystyle c = r^j(w)[\psi_p^j] \, \big/ \,a(\psi_p^j,\psi_p^j)$ \qquad \ct{where $r^j(w)[\cdot] := \ell[\cdot] - a(w,\cdot)$} \\
         $w[p] \gets \max\{w[p] + c,\phi[p]\}$
 \end{pseudo*}
 
-However, we still need to define the $k$th-level obstacle $\phi^k$.  Suppose that on the fine level we have a solution method which computes iterates $w^K$ in $\mathcal{K}^K$ which converge to the solution $u^K$ of the fine level problem \eqref{eq:levelvi}.  (Applying PGS on the fine level would generate such iterates, but they would converge very slowly.)  Define $\varphi^K$ to be the piecewise-linear interpolant (i.e.~in $\mathcal{V}^K$) of the continuum obstacle $\varphi$.  We define the \emph{defect constraint} \cite{GraeserKornhuber2009} on the fine level to be
+However, we still need to define the $j$th-level obstacle $\phi^j$.  Suppose that on the fine level we have a solution method which computes iterates $w^J$ in $\mathcal{K}^J$ which converge to the solution $u^J$ of the fine level problem \eqref{eq:levelvi}.  (Applying PGS on the fine level would generate such iterates, but they would converge very slowly.)  Define $\varphi^J$ to be the piecewise-linear interpolant (i.e.~in $\mathcal{V}^J$) of the continuum obstacle $\varphi$.  We define the \emph{defect constraint} \cite{GraeserKornhuber2009} on the fine level to be
 \begin{equation}
-  \chi^K = \varphi^K - w^K.  \label{eq:defectconstraint}
+  \chi^J = \varphi^J - w^J.  \label{eq:defectconstraint}
 \end{equation}
-Note that admissibility for the iterate $w^K$ is equivalent to a nonpositive defect constraint: $w^K \ge \varphi^K \iff 0 \ge \chi^K$.  More generally, if we modify an iterate $w^K$ by adding $v$ then the result is admissible if and only if $v$ is above the defect constraint:
+Note that admissibility for the iterate $w^J$ is equivalent to a nonpositive defect constraint: $w^J \ge \varphi^J \iff 0 \ge \chi^J$.  More generally, if we modify an iterate $w^J$ by adding $v$ then the result is admissible if and only if $v$ is above the defect constraint:
 \begin{equation}
-  w^K + v \ge \varphi^K  \qquad \iff \qquad v \ge \chi^K.  \label{eq:defectmeaning}
+  w^J + v \ge \varphi^J  \qquad \iff \qquad v \ge \chi^J.  \label{eq:defectmeaning}
 \end{equation}
 This is the essential meaning of ``defect constraint.''
 
 A main principle for our constraint decomposition method is that
 \begin{quote}
-\emph{as much as possible of the fine-level defect constraint $\chi^K$ is in the coarsest levels.}
+\emph{as much as possible of the fine-level defect constraint $\chi^J$ is in the coarsest levels.}
 \end{quote}
-We will define coarser-level versions of the defect constraint, namely $\chi^k$ in equation \eqref{eq:chik} below, for all levels $k=0,1,\dots,K-1$.  From these we define the \emph{$k$th-level obstacles}:
+We will define coarser-level versions of the defect constraint, namely $\chi^j$ in equation \eqref{eq:chik} below, for all levels $j=0,1,\dots,J-1$.  From these we define the \emph{$j$th-level obstacles}:
 \begin{equation}
-  \phi^k = \chi^k - P\chi^{k-1} \quad \text{ for } k=1,2,\dots,K, \text{ and } \quad \phi^0 = \chi^0.  \label{eq:levelobstacle}
+  \phi^j = \chi^j - P\chi^{j-1} \quad \text{ for } j=1,2,\dots,J, \text{ and } \quad \phi^0 = \chi^0.  \label{eq:levelobstacle}
 \end{equation}
-Recall from section \ref{sec:subspace} that the canonical prolongation operator $P$ actually does nothing; in definition \eqref{eq:levelobstacle} it takes $\chi^{k-1}$ in $\mathcal{V}^{k-1}$ to the same function $P\chi^{k-1}$ in $\mathcal{V}^k$.  Therefore, from now on we simply write $\phi^k = \chi^k - \chi^{k-1}$.
+Recall from section \ref{sec:subspace} that the canonical prolongation operator $P$ actually does nothing; in definition \eqref{eq:levelobstacle} it takes $\chi^{j-1}$ in $\mathcal{V}^{j-1}$ to the same function $P\chi^{j-1}$ in $\mathcal{V}^j$.  Therefore, from now on we simply write $\phi^j = \chi^j - \chi^{j-1}$.
 
 The multilevel constraint decomposition is now a ``telescoping'' sum:
 \begin{equation}
-  \sum_{k=0}^K \phi^k = \chi^0 + (\chi^1 - \chi^0) + (\chi^2 - \chi^1) + \dots + (\chi^K - \chi^{K-1}) = \chi^K.  \label{eq:telescopingdecomposition}
+  \sum_{j=0}^J \phi^j = \chi^0 + (\chi^1 - \chi^0) + (\chi^2 - \chi^1) + \dots + (\chi^J - \chi^{J-1}) = \chi^J.  \label{eq:telescopingdecomposition}
 \end{equation}
-That is, we have decomposed the fine-level defect constraint $\chi^K$ into the obstacles $\phi^k$ which we will actually use on each level.  (Note that the sum does \emph{not} give a decomposition of the original obstacle $\varphi$, and it depends on a fine-mesh iterate.)  An example decomposition is shown in Figure \ref{fig:gooddecomposition}; compare Figure 1 in \cite{GraeserKornhuber2009}.
+That is, we have decomposed the fine-level defect constraint $\chi^J$ into the obstacles $\phi^j$ which we will actually use on each level.  (Note that the sum does \emph{not} give a decomposition of the original obstacle $\varphi$, and it depends on a fine-mesh iterate.)  An example decomposition is shown in Figure \ref{fig:gooddecomposition}; compare Figure 1 in \cite{GraeserKornhuber2009}.
 
 %REGENERATE Figures \ref{fig:icelikedecomposition} and \ref{fig:gooddecomposition}:
-%$ ./obstacle.py -kfine 5 -irtol 1.0e-7 -random -randommodes 8 -diagnostics -up 0 -o defect.pdf
+%$ ./obstacle.py -jfine 5 -jcoarse 1 -irtol 1.0e-7 -random -randommodes 8 -diagnostics -up 0 -o defect.pdf
 %fine level 5 (m=63) using 52 V(1,0) cycles (102.375 WU)
 %saving final iterate and obstacle to defect.pdf ...
 %saving residual and inactive residual to resid_defect.pdf ...
@@ -481,67 +481,67 @@ That is, we have decomposed the fine-level defect constraint $\chi^K$ into the o
 %saving "ice-like" decomposition to icedec_defect.pdf ...
 \begin{figure}
 \includegraphics[width=0.75\textwidth]{fixfigs/decomp_defect.pdf}
-\caption{The constraint decomposition writes the fine-mesh defect obstacle $\chi^K = \varphi^K - w^K$ as a sum of the obstacles (gaps) $\phi^k = \chi^k - \chi^{k-1}$ on each level.  The $k$th-level constraint set in our multilevel method is $\mathcal{K}^k = \{v \ge \phi^k\} \subseteq \mathcal{V}^k$.}
+\caption{The constraint decomposition writes the fine-mesh defect obstacle $\chi^J = \varphi^J - w^J$ as a sum of the obstacles (gaps) $\phi^j = \chi^j - \chi^{j-1}$ on each level.  The $j$th-level constraint set in our multilevel method is $\mathcal{K}^j = \{v \ge \phi^j\} \subseteq \mathcal{V}^j$.}
 \label{fig:gooddecomposition}
 \end{figure}
 
-However, we need to define the coarser-level defect constraints $\chi^k$.  On the fine level we have already set $\chi^K = \varphi^K - w^K$, and we now define the others inductively, down to the coarsest mesh ($k=0$), so that each difference $\phi^k = \chi^k - \chi^{k-1}$ is nonpositive (Figure \ref{fig:gooddecomposition}).  That is, our goals are that $\chi^{k-1}$ is in $\mathcal{V}^{k-1}$ and that $\chi^{k-1}(x) \ge \chi^k(x)$ for all $x$ in $[0,1]$.  Thus we define a \emph{monotone restriction} operator $\hat R$ from $\mathcal{V}^k$ to $\mathcal{V}^{k-1}$.  For $z$ in $\mathcal{V}^k$ one computes $\hat R z$ by maximizing the node values of $z$ over the interior of the support of each level $k-1$ hat function.  That is, if $z = \sum_{q=1}^{m_k} b_q \psi_q^k$ then
+However, we need to define the coarser-level defect constraints $\chi^j$.  On the fine level we have already set $\chi^J = \varphi^J - w^J$, and we now define the others inductively, down to the coarsest mesh ($k=0$), so that each difference $\phi^j = \chi^j - \chi^{j-1}$ is nonpositive (Figure \ref{fig:gooddecomposition}).  That is, our goals are that $\chi^{j-1}$ is in $\mathcal{V}^{j-1}$ and that $\chi^{j-1}(x) \ge \chi^j(x)$ for all $x$ in $[0,1]$.  Thus we define a \emph{monotone restriction} operator $\hat R$ from $\mathcal{V}^j$ to $\mathcal{V}^{j-1}$.  For $z$ in $\mathcal{V}^j$ one computes $\hat R z$ by maximizing the node values of $z$ over the interior of the support of each level $j-1$ hat function.  That is, if $z = \sum_{q=1}^{m_j} b_q \psi_q^j$ then
 \begin{equation}
-  \hat R z = \sum_{p=1}^{m_{k-1}} c_p \psi_p^{k-1} \qquad \text{where} \qquad c_p = \max_{\psi_p^{k-1}(x_q^k) > 0} b_q.  \label{eq:monotonerestriction}
+  \hat R z = \sum_{p=1}^{m_{j-1}} c_p \psi_p^{j-1} \qquad \text{where} \qquad c_p = \max_{\psi_p^{j-1}(x_q^j) > 0} b_q.  \label{eq:monotonerestriction}
 \end{equation}
-Recall that our hat functions form nodal bases, and thus $c_p = (\hat R z)(x_p^{k-1})$, for example.  Also note that while canonical restriction \eqref{eq:canonicalrestriction} acts on linear functionals ($(\mathcal{V}^k)'$), monotone restriction acts on functions ($\mathcal{V}^k$).  Finally define
+Recall that our hat functions form nodal bases, and thus $c_p = (\hat R z)(x_p^{j-1})$, for example.  Also note that while canonical restriction \eqref{eq:canonicalrestriction} acts on linear functionals ($(\mathcal{V}^j)'$), monotone restriction acts on functions ($\mathcal{V}^j$).  Finally define
 \begin{equation}
-  \chi^{k-1} = \hat R \chi^k.  \label{eq:chik}
+  \chi^{j-1} = \hat R \chi^j.  \label{eq:chik}
 \end{equation}
 
-Each $k$th-level obstacle $\phi^k = \chi^k - \chi^{k-1}$ also defines a constraint set
+Each $j$th-level obstacle $\phi^j = \chi^j - \chi^{j-1}$ also defines a constraint set
 \begin{equation}
-  \mathcal{K}^k = \{v \ge \phi^k\} \subseteq \mathcal{V}^k.  \label{eq:levelconstraint}
+  \mathcal{K}^j = \{v \ge \phi^j\} \subseteq \mathcal{V}^j.  \label{eq:levelconstraint}
 \end{equation}
-Given a fine-mesh iterate $w^K$ and the corresponding defect constraint $\chi^K = \varphi^K - w^K$, we have a sum of subsets which is analogous to \eqref{eq:subspacedecomposition}:
+Given a fine-mesh iterate $w^J$ and the corresponding defect constraint $\chi^J = \varphi^J - w^J$, we have a sum of subsets which is analogous to \eqref{eq:subspacedecomposition}:
 \begin{equation}
-  \left\{v\,:\,w^K + v \ge \varphi^K\right\} = \left\{v \ge \chi^K\right\} = \mathcal{K}^0 + \mathcal{K}^1 + \dots + \mathcal{K}^K. \label{eq:constraintdecomposition}
+  \left\{v\,:\,w^J + v \ge \varphi^J\right\} = \left\{v \ge \chi^J\right\} = \mathcal{K}^0 + \mathcal{K}^1 + \dots + \mathcal{K}^J. \label{eq:constraintdecomposition}
 \end{equation}
-The meaning here is that every admissible modification $v$ of the current fine-mesh iterate---by \eqref{eq:defectmeaning} this is every $v$ above the fine-mesh defect constraint $\chi^K$---can be built, though not uniquely, by choosing an element from each of the mesh-level constraint sets $\mathcal{K}^k = \{v \ge \phi^k\}$.  Note that the proof of \eqref{eq:constraintdecomposition} is an inequality version of the telescoping sum \eqref{eq:telescopingdecomposition}.
+The meaning here is that every admissible modification $v$ of the current fine-mesh iterate---by \eqref{eq:defectmeaning} this is every $v$ above the fine-mesh defect constraint $\chi^J$---can be built, though not uniquely, by choosing an element from each of the mesh-level constraint sets $\mathcal{K}^j = \{v \ge \phi^j\}$.  Note that the proof of \eqref{eq:constraintdecomposition} is an inequality version of the telescoping sum \eqref{eq:telescopingdecomposition}.
 
-In the ice context (section \ref{sec:sia}) the fine-mesh obstacle $\varphi^K$ will be the bed elevation and $w^K$ a current estimate of the ice surface elevation.  Thus $-\chi^K$ is the ice thickness on the fine mesh.  Figure \ref{fig:icelikedecomposition} shows the same constraint decomposition as in Figure \ref{fig:gooddecomposition} as though it is a decomposition of the ice into layers.  (Compared to Figure \ref{fig:icelike}, note that this bed elevation $\phi^K$ has a more interesting, but still smooth, bed topography.)  However, Figure \ref{fig:gooddecomposition} plots the decomposition in the correct sense: each defect constraint $\chi^k$ and obstacle $\phi^k$ is piecewise-linear on level $k$.
+In the ice context (section \ref{sec:sia}) the fine-mesh obstacle $\varphi^J$ will be the bed elevation and $w^J$ a current estimate of the ice surface elevation.  Thus $-\chi^J$ is the ice thickness on the fine mesh.  Figure \ref{fig:icelikedecomposition} shows the same constraint decomposition as in Figure \ref{fig:gooddecomposition} as though it is a decomposition of the ice into layers.  (Compared to Figure \ref{fig:icelike}, note that this bed elevation $\phi^J$ has a more interesting, but still smooth, bed topography.)  However, Figure \ref{fig:gooddecomposition} plots the decomposition in the correct sense: each defect constraint $\chi^j$ and obstacle $\phi^j$ is piecewise-linear on level $j$.
 
 \begin{figure}
 \includegraphics[width=0.7\textwidth]{fixfigs/icedec_defect.pdf}
-\caption{Multilevel constraint decomposition visualized as a decomposition of the ``ice'' between the current fine-mesh iterate $w^K$ and the obstacle $\varphi^K$.  (Figure \ref{fig:gooddecomposition} shows the correct plot of this constraint decomposition.)}
+\caption{Multilevel constraint decomposition visualized as a decomposition of the ``ice'' between the current fine-mesh iterate $w^J$ and the obstacle $\varphi^J$.  (Figure \ref{fig:gooddecomposition} shows the correct plot of this constraint decomposition.)}
 \label{fig:icelikedecomposition}
 \end{figure}
 
-FIXME state V-cycle for V(1,0); run as \pr{cd-slash}$(K,r^K,\chi^K)$ where $w^K$ is an existing admissible fine-mesh iterate, $\chi^K=\varphi^K-w^K$, and $r^K[\cdot] = \ell^K[\cdot] - a(w^K,\cdot)$; use the result $v$ to update the iterate: $w^K \gets w^K + v$
+FIXME state V-cycle for V(1,0); run as \pr{cd-slash}$(J,r^J,\chi^J)$ where $w^J$ is an existing admissible fine-mesh iterate, $\chi^J=\varphi^J-w^J$, and $r^J[\cdot] = \ell^J[\cdot] - a(w^J,\cdot)$; use the result $v$ to update the iterate: $w^J \gets w^J + v$
 \begin{pseudo*}
-\pr{cd-slash}(k,r,\chi)\text{:} \\+
+\pr{cd-slash}(j,r,\chi)\text{:} \\+
     $v=0$ \\
-    if $k=0$ \\+
+    if $j=0$ \\+
         $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,v,r,\chi)$ \\
         return $v$ \\-
-    $\chi^{k-1} = \hat R \chi$ \\
-    $\phi^k = \chi - P\chi^{k-1}$ \\
-    $\text{\pr{pgssweep}}^{\text{\id{down}}}(k,v,r,\phi^k)$ \\
-    $\tilde r[\cdot] = r[\cdot] - a^k(v,\cdot)$ \\
-    $v^{k-1} =$ \pr{cd-slash}(k-1,R \tilde r,\chi^{k-1}) \\
-    return $v + P v^{k-1}$
+    $\chi^{j-1} = \hat R \chi$ \\
+    $\phi^j = \chi - P\chi^{j-1}$ \\
+    $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,v,r,\phi^j)$ \\
+    $\tilde r[\cdot] = r[\cdot] - a^j(v,\cdot)$ \\
+    $v^{j-1} =$ \pr{cd-slash}(j-1,R \tilde r,\chi^{j-1}) \\
+    return $v + P v^{j-1}$
 \end{pseudo*}
 
 
 FIXME state V(1,1)-cycle; run the same way
 \begin{pseudo*}
-\pr{cd-vcycle}(k,r,\chi)\text{:} \\+
+\pr{cd-vcycle}(j,r,\chi)\text{:} \\+
     $v=0$ \\
-    if $k=0$ \\+
+    if $j=0$ \\+
         $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,v,r,\chi)$ \\
         return $v$ \\-
-    $\chi^{k-1} = \hat R \chi$ \\
-    $\phi^k = \frac{1}{2} (\chi - P\chi^{k-1})$ \\
-    $\text{\pr{pgssweep}}^{\text{\id{down}}}(k,v,r,\phi^k)$ \\
-    $\tilde r[\cdot] = r[\cdot] - a^k(v,\cdot)$ \\
-    $v^{k-1} =$ \pr{cd-vcycle}(k-1,R \tilde r,\chi^{k-1}) \\
-    $v \gets v + P v^{k-1}$ \\
-    $\text{\pr{pgssweep}}^{\text{\id{up}}}(k,\hat v,r,\phi^k)$ \\
+    $\chi^{j-1} = \hat R \chi$ \\
+    $\phi^j = \frac{1}{2} (\chi - P\chi^{j-1})$ \\
+    $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,v,r,\phi^j)$ \\
+    $\tilde r[\cdot] = r[\cdot] - a^j(v,\cdot)$ \\
+    $v^{j-1} =$ \pr{cd-vcycle}(j-1,R \tilde r,\chi^{j-1}) \\
+    $v \gets v + P v^{j-1}$ \\
+    $\text{\pr{pgssweep}}^{\text{\id{up}}}(j,\hat v,r,\phi^j)$ \\
     return $v$
 \end{pseudo*}
 
@@ -581,26 +581,27 @@ FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to 
 \begin{longtable}{l|l}
 \textbf{Symbol} {\Large$\strut$} & \textbf{Meaning} \\ \hline
 $a(\cdot,\cdot)$ & bilinear form associated to the Poisson problem; left side of equation \eqref{eq:weakpoissonearly} \\
+$F(w)[\cdot]$ & residual of iterate $w$, e.g.~$F(w)[v] = \ip{f}{v} - a(w,v)$ for the Poisson equation \\
 $\mathcal{H}$ & Hilbert space for the continuum problem \\
-$J$ & scalar-valued objective function, e.g.~$J(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ for the Poisson equation \\
-$\grad J(w)[v]$ & gradient of objective function; note $r(w)[v] = -\grad J(w)[v]$ \\
-$k$ & index of level in multilevel scheme; $k=0,1,\dots,K$ from coarse to fine \\
+$J$ & level index of finest mesh \\
+$j$ & index of mesh level; $j=0,1,\dots,J$ from coarse to fine \\
 $\mathcal{K}$ & constraint (admissible) subset; $\mathcal{K} \subset \mathcal{H}$; e.g.~$\mathcal{K} = \{v \ge \varphi\}$ \\
-$\mathcal{K}^k$ & $k$th-level admissible functions; $\mathcal{K}^k = \{v \ge \phi^k\} \subset \mathcal{V}^k$ \\
+$\mathcal{K}^j$ & $j$th-level admissible functions; $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j$ \\
 $\ell[\cdot]$ & linear functional, e.g.~$\ell[v] = \ip{f}{v}$ \\
-$m_k$ & number of nodes in $k$th-level; $\dim \mathcal{V}^k=m_k$ \\
-$P$ & canonical prolongation of functions; equation \eqref{eq:canonicalprolongation} \\
-$R$ & canonical restriction of linear functionals; equation \eqref{eq:canonicalrestriction} \\
-$\hat R$ & monotone restriction of functions; equation \eqref{eq:monotonerestriction} \\
-$r(w)[\cdot]$ & residual of iterate $w$, e.g.~$r(w)[v] = \ip{f}{v} - a(w,v)$ for the Poisson equation \\
-$\mathcal{V}^h$ & finite element function space; $= \mathcal{V}^K$ \\
-$\mathcal{V}^k$ & $k$th-level vector space \\
-$(\mathcal{V}^k)'$ & dual of $k$th-level vector space ($=$ linear functionals) \\
-$x_p^k$ & $p$th node on $k$th-level mesh \\
+$m_j$ & number of nodes in $j$th-level; $\dim \mathcal{V}^j=m_j$ \\
+$P$ & canonical prolongation of functions, $\mathcal{V}^{j-1} \to \mathcal{V}^j$; equation \eqref{eq:canonicalprolongation} \\
+$R$ & canonical restriction of linear functionals, $(\mathcal{V}^j)' \to (\mathcal{V}^{j-1})'$; equation \eqref{eq:canonicalrestriction} \\
+$\hat R$ & monotone restriction of functions, $\mathcal{V}^j \to \mathcal{V}^{j-1}$; equation \eqref{eq:monotonerestriction} \\
+$\mathcal{V}^h$ & finite element function space; $= \mathcal{V}^J$ \\
+$\mathcal{V}^j$ & $j$th-level vector space \\
+$(\mathcal{V}^j)'$ & dual space (linear functionals) of $\mathcal{V}^j$  \\
+$x_p^j$ & $p$th node on $j$th-level mesh \\
+$\Phi$ & scalar-valued objective function, e.g.~$\Phi(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ for the Poisson equation \\
+$\grad \Phi(w)[\cdot]$ & gradient of objective function; note $F(w)[v] = -\grad \Phi(w)[v]$ \\
 $\varphi$ & obstacle in continuum problem \\
-$\phi^k(x)$ & $k$th-level obstacle in constraint decomposition method; $\phi^k=\chi^k - P\chi^{k-1}$ \\
-$\psi_p^k(x)$ & $k$th-level hat function at $x_p$ \\
-$\chi^k(x)$ & $k$th-level (monotone) restriction of defect obstacle; $\chi^K = \varphi^K - w^K$ and $\chi^{k-1} = \hat R \chi^k$ \\
+$\phi^j(x)$ & $j$th-level obstacle in constraint decomposition method; $\phi^j=\chi^j - P\chi^{j-1}$ \\
+$\psi_p^j(x)$ & $j$th-level hat function at $x_p$ \\
+$\chi^j(x)$ & $j$th-level (monotone) restriction of defect obstacle; $\chi^J = \varphi^J - w^J$ and $\chi^{j-1} = \hat R \chi^j$ \\
 $\ip{\cdot}{\cdot}$ & $L^2$ inner product \\
 $\|\cdot\|$ & $L^2$ norm; $\|f\|=\ip{f}{f}^{1/2}$
 \end{longtable}

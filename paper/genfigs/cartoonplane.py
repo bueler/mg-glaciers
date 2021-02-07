@@ -38,7 +38,7 @@ for r in [0.4, 0.5, 0.6, 0.7, 0.8]:
               color='k', lw=0.75)
     ax.add_patch(arc)
 plt.text(0.85,0.6,r'$\mathcal{Q}$',fontsize=fsize)
-plt.text(0.15,-0.16,r'$(\hat x_1,\hat x_2)$',fontsize=fsize)
+plt.text(xhat-0.03,-0.13,r'$\hat x$',fontsize=fsize)
 plt.axis('off')
 plt.axis('equal')
 figsave('cartoonplane.pdf')
