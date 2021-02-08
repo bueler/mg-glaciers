@@ -313,17 +313,16 @@ FIXME  Given the solution $e^{j-1}$, the update
 ``corrects'' the fine-level iterate.  Note we have introduced yet another operation, the \emph{prolongation} $P$, and it is defined in \eqref{eq:canonicalprolongation} below.  One could write \eqref{eq:update} using an index indicating the iteration, e.g.~$w^{j,s+1} = w^{j,s} + Pe^{j-1,s}$, but for simplicity we keep the level index $j$.
 
 Combining the above ideas gives a \emph{multigrid V-cycle}.  In addition to the GS smoother, a V-cycle adds a recursive solution of the coarse-level correction equation \eqref{eq:coarsecorrection}, followed by update \eqref{eq:update} and more smoother sweeps.  The following pseudocode, which modifies the iterate $w$ in-place, can be called repeatedly so as to improve the iterate $w$.
-
 \begin{pseudo*}
-\pr{gmg-vcycle}(j,w,\ell)\text{:} \\+
+\pr{gmg-vcycle}(j,w,F)\text{:} \\+
     if $j=0$ \\+
-        $w =$ \pr{coarsesolve}(\ell) \\-  % in fact is w=0 plus \id{coarse} iterations of \pr{gssweep}(0,w,\ell)
+        $w =$ \pr{coarsesolve}(F) \\-
     else \\+
-        $\text{\pr{gssweep}}^{\text{\id{down}}}(j,w,\ell)$ \\
-        $r^j[\cdot] = \ell[\cdot] - a^j(w,\cdot)$ \\
+        $\text{\pr{gssweep}}^{\text{\id{down}}}(j,w,F)$ \\
+        FIXME $r^j[\cdot] = \ell[\cdot] - a^j(w,\cdot)$ \\
         $e^{j-1} =$ \pr{vcycle}(j-1,0,-R r^j) \\
         $w \gets w + P e^{j-1}$ \\
-        $\text{\pr{gssweep}}^{\text{\id{up}}}(j,w,\ell)$ \\-
+        $\text{\pr{gssweep}}^{\text{\id{up}}}(j,w,F)$ \\-
 \end{pseudo*}
 
 Observe that after \texttt{down} smoother sweeps, denoted here by $\text{\textsc{gssweep}}^{\text{\texttt{down}}}$, the coarse-level correction equation \eqref{eq:coarsecorrection} is applied on the next-coarser level with a ``new'' right-hand linear functional $\ell^{j-1}[v]=-(R r^j(w^j))[v]$ and a zero initial iterate.  That is, the coarse-level problem has a new source term, which is the amount the fine-level iterate $w^j$ did not already solve the problem.  After this correction an additional \texttt{up} sweeps are done to remove high-frequency components from the update.  Figure \ref{fig:vcycle} illustrates a three-level V-cycle.
@@ -342,7 +341,14 @@ Though the operators $R$ and $P$ thus seem to do nothing, and make no choices, w
 \label{fig:vcycle}
 \end{figure}
 
-The above \textsc{gmg-vcycle} algorithm also calls a coarse solver on the $j=0$ level.  For a linear problem like our current Poisson problem it is traditional to apply a direct solver for this linear system (i.e.~equation \eqref{eq:linearsystem}), but this is not an option for the nonlinear glacier geometry problem.  Instead we suppose \textsc{coarsesolve} is implemented as a fixed number of GS sweeps.  If the coarsest mesh has a single node then a single sweep gives an exact solution.
+The above \textsc{gmg-vcycle} algorithm also calls a coarse solver on the $j=0$ level.  For a linear problem like our current Poisson problem it is traditional to apply a direct solver for this linear system (i.e.~equation \eqref{eq:linearsystem}), but this is not an option for the nonlinear glacier geometry problem.  Instead we suppose \textsc{coarsesolve} is implemented as a fixed number of GS sweeps using an initial iterate zero:
+\begin{pseudo*}
+\pr{coarsesolve}(F)\text{:} \\+
+    $w=0$ \\
+    $\text{\pr{gssweep}}^{\text{\id{coarse}}}(0,w,F)$ \\
+    return $w$
+\end{pseudo*}
+If the coarsest mesh has a single node then a single sweep gives an exact solution.
 
 We have now presented a basic geometric multigrid algorithm via a particular FE viewpoint, the subspace decomposition approach pioneered by Xu \cite{Xu1992} and others, an idea which applies both to multilevel and domain-decomposition algorithms.  We could now show computational results featuring the efficiency of the V-cycle algorithm, namely evidence of optimal $O(m_J)$ time to solve the problem.  (Such results appear in multigrid references \cite{Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.)  However, we first introduce a less-trivial ``obstacle'' problem which has the essential free-boundary character of the glacier geometry problem.  Computational results will be given in the next three sections.
 
