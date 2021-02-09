@@ -1,5 +1,4 @@
-'''Module for visualizing obstacle problem results.  Defines class
-VisObstacle.'''
+'''Module for visualizing obstacle problem results (class VisObstacle).'''
 
 __all__ = ['VisObstacle']
 
@@ -83,13 +82,13 @@ class VisObstacle():
         '''Hierarchical defect decomposition.'''
         assert hierarchy[-1].m == self.mesh.m
         plt.figure(figsize=(15.0, 10.0))
-        K = len(hierarchy) - 1
+        J = len(hierarchy) - 1
         if up == 0:
-            for k in range(K):
-                plt.plot(hierarchy[k].xx(), hierarchy[k].chi, 'k.--', ms=10.0,
-                         label=r'$\chi^{%d}$' % k)
+            for j in range(J):
+                plt.plot(hierarchy[j].xx(), hierarchy[j].chi, 'k.--', ms=10.0,
+                         label=r'$\chi^{%d}$' % j)
             plt.plot(hierarchy[-1].xx(), hierarchy[-1].chi, 'k.-', ms=14.0, linewidth=3.0,
-                     label=r'$\chi^{%d} = \varphi^{%d} - w^{%d}$' % (K,K,K))
+                     label=r'$\chi^{%d} = \varphi^{%d} - w^{%d}$' % (J,J,J))
         else:
             #FIXME
             raise NotImplementedError
@@ -102,23 +101,23 @@ class VisObstacle():
         '''Multilevel "ice-like" decomposition.'''
         assert hierarchy[-1].m == self.mesh.m
         plt.figure(figsize=(15.0, 10.0))
-        K = len(hierarchy) - 1
+        J = len(hierarchy) - 1
         if up == 0:
-            for k in range(K,-1,-1):
-                z = hierarchy[k].chi
-                for j in range(k,K):
-                    z = hierarchy[j+1].P(z)
-                if k == K:
-                    chilabel = r'$w^{%d}$' % K
+            for j in range(J,-1,-1):
+                z = hierarchy[j].chi
+                for k in range(j,J):
+                    z = hierarchy[k+1].P(z)
+                if j == J:
+                    chilabel = r'$w^{%d}$' % J
                     chistyle = 'k'
                 else:
-                    chilabel = r'level $%d$' % k   # i.e. phi - chi^k
+                    chilabel = r'level $%d$' % j   # i.e. phi - chi^j
                     chistyle = 'k--'
                 plt.plot(hierarchy[-1].xx(), phi - z, chistyle, label=chilabel)
         else:
             #FIXME
             raise NotImplementedError
-        plt.plot(hierarchy[-1].xx(), phi, 'k', label=r'$\varphi^{%d}$' % K, linewidth=4.0)
+        plt.plot(hierarchy[-1].xx(), phi, 'k', label=r'$\varphi^{%d}$' % J, linewidth=4.0)
         plt.legend(fontsize=24.0)
         #plt.title('"ice-like" multilevel decomposition')
         plt.xlabel('x')

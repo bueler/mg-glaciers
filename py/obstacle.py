@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-'''Solve a 1D obstacle problem by the subset decomposition method.'''
+'''Solve a 1D obstacle problem by a multilevel constraint decomposition method.'''
 
 # TODO:
 #   * correct hier. decomp. figure when up>0
@@ -27,13 +27,13 @@ where phi is in H_0^1[0,1], f is in L^2[0,1], and
              /1
     a(u,v) = |  u'(x) v'(x) dx.
              /0
-Note that the interior condition (PDE) is  - u'' = f.
+Note that the interior condition (PDE) is the Poisson equation  - u'' = f.
 
-Solution is by Alg. 4.7 in Gräser & Kornhuber (2009), namely the subset
+Solution is by Alg. 4.7 in Gräser & Kornhuber (2009), namely the constraint
 decomposition V-cycle multigrid method by Tai (2003) in which a monotone
 restriction operator decomposes the defect obstacle.  The smoother and the
-coarse-mesh solver are projected Gauss-Seidel (pGS).  Note that option
--pgsonly reverts to single-level pGS.
+coarse-mesh solver are projected Gauss-Seidel (PGS).  Note that option
+-pgsonly reverts to single-level PGS.
 
 Choose the problem with "-problem icelike" (the default) or "-problem
 parabola".  The obstacle can be randomly perturbed with -random.  Choose
@@ -51,21 +51,21 @@ References:
     Numer. Math. 93 (4), 755--786.
 ''', formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-coarse', type=int, default=1, metavar='N',
-                    help='pGS sweeps on coarsest grid (default=1)')
+                    help='PGS sweeps on coarsest grid (default=1)')
 parser.add_argument('-cyclemax', type=int, default=100, metavar='M',
                     help='maximum number of V-cycles (default=100)')
 parser.add_argument('-diagnostics', action='store_true', default=False,
                     help='add a diagnostics figure to -show or -o output')
 parser.add_argument('-down', type=int, default=1, metavar='N',
-                    help='pGS sweeps before coarse-mesh correction (default=1)')
+                    help='PGS sweeps before coarse-mesh correction (default=1)')
 parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
                     help='in Poisson equation -u"=f this multiplies f (default X=1)')
 parser.add_argument('-irtol', type=float, default=1.0e-3, metavar='X',
                     help='norm of inactive residual is reduced by this factor (default X=10^-3)')
-parser.add_argument('-kfine', type=int, default=3, metavar='K',
-                    help='fine mesh is kth level (default kfine=3)')
-parser.add_argument('-kcoarse', type=int, default=0, metavar='k',
-                    help='coarse mesh is kth level (default kcoarse=0 gives 1 node)')
+parser.add_argument('-jfine', type=int, default=3, metavar='J',
+                    help='fine mesh is jth level (default jfine=3)')
+parser.add_argument('-jcoarse', type=int, default=0, metavar='j',
+                    help='coarse mesh is jth level (default jcoarse=0 gives 1 node)')
 parser.add_argument('-mgview', action='store_true', default=False,
                     help='view multigrid cycles by indented print statements')
 parser.add_argument('-monitor', action='store_true', default=False,
@@ -98,7 +98,7 @@ parser.add_argument('-show', action='store_true', default=False,
 parser.add_argument('-symmetric', action='store_true', default=False,
                     help='use symmetric projected Gauss-Seidel sweeps (forward then backward)')
 parser.add_argument('-up', type=int, default=1, metavar='N',
-                    help='pGS sweeps after coarse-mesh correction (default=1)')
+                    help='PGS sweeps after coarse-mesh correction (default=1)')
 args, unknown = parser.parse_known_args()
 
 exactavailable = (not args.random) and (args.fscale == 1.0) \
@@ -174,13 +174,13 @@ def uexact(x):
     return u
 
 # mesh hierarchy = [coarse,...,fine]
-assert args.kcoarse >= 0
-assert args.kfine >= args.kcoarse
-levels = args.kfine - args.kcoarse + 1
+assert args.jcoarse >= 0
+assert args.jfine >= args.jcoarse
+levels = args.jfine - args.jcoarse + 1
 assert levels >= 1
 hierarchy = [None] * (levels)  # list [None,...,None]; indices 0,...,levels-1
-for k in range(levels):
-    hierarchy[k] = MeshLevel1D(k=k+args.kcoarse)
+for j in range(levels):
+    hierarchy[j] = MeshLevel1D(j=j+args.jcoarse)
 mesh = hierarchy[-1]  # fine mesh
 
 # discrete obstacle on fine level
@@ -245,8 +245,8 @@ else:
 
 # compute total work units
 wusum = 0.0
-for k in range(levels):
-    wusum += hierarchy[k].WU / 2**(levels - 1 - k)
+for j in range(levels):
+    wusum += hierarchy[j].WU / 2**(levels - 1 - j)
 
 # report on computation including numerical error
 symstr = 'sym. ' if args.symmetric else ''
@@ -261,7 +261,7 @@ else:
     error = ''
 countstr = '' if infeascount == 0 else ' (%d infeasibles)' % infeascount
 print('fine level %d (m=%d) %s (%.3f WU)%s%s' \
-      % (args.kfine, mesh.m, method, wusum, error, countstr))
+      % (args.jfine, mesh.m, method, wusum, error, countstr))
 
 # graphical output if desired
 if args.show or args.o or args.diagnostics:
