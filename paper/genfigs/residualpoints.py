@@ -23,15 +23,15 @@ x = np.linspace(0.0,1.0,m+2)
 # Poisson problem:  - u'' = f,  u(0) = u(1) = 0
 
 def residual(f,w):
-    r = np.zeros(m+2)
-    r[1:-1] = h * f[1:-1] - (1.0/h) * (2.0 * w[1:-1] - w[0:-2] - w[2:])
-    return r
+    F = np.zeros(m+2)
+    F[1:-1] = (1.0/h) * (2.0 * w[1:-1] - w[0:-2] - w[2:]) - h * f[1:-1]
+    return F
 
 def gspoint(f,w,p):
     w[p] = (h**2 * f[p] + w[p-1] + w[p+1]) / 2.0
 
 uex = np.sin(np.pi * x)
-f = np.pi**2 * uex
+frhs = np.pi**2 * uex
 
 # plot ell[v] as piecewise-constant at interior points
 def dualplot(x,ell):
@@ -49,9 +49,9 @@ w[-1] = 0.0
 xdelta = 2.0 * h
 ydelta = 1.7
 plt.figure(figsize=(10,8))
-r = residual(f,w)
+F = residual(frhs,w)
 ew = w - uex
-rscale = 1.0 / (max(r) - min(r))
+rscale = 1.0 / (max(F) - min(F))
 ewscale = 1.0 / (max(ew) - min(ew))
 for p in range(m+1):
     # plot scaled residual and zeroed location
@@ -59,11 +59,10 @@ for p in range(m+1):
     yshift = - p * ydelta
     plt.plot(x+xshift,np.zeros(m+2)+yshift,'k:',lw=1.0)
     if p > 0:
-        gspoint(f,w,p)
-        r = residual(f,w)
-        plt.plot(x[p]+xshift,r[p]+yshift,'ko',ms=10.0,mfc='w')
-    #plt.plot(x+xshift,rscale*r+yshift,'k',lw=2.0)
-    dualplot(x+xshift,rscale*r+yshift)
+        gspoint(frhs,w,p)
+        F = residual(frhs,w)
+        plt.plot(x[p]+xshift,F[p]+yshift,'ko',ms=10.0,mfc='w')
+    dualplot(x+xshift,rscale*F+yshift)
     # plot error
     ew = w - uex
     plt.plot(x+xshift+1.7,np.zeros(m+2)+yshift,'k:',lw=1.0)
