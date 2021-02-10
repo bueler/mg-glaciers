@@ -21,19 +21,18 @@ Solve a 1D obstacle problem:  Find u in
     K = {v in H_0^1[0,1] | v >= phi}
 such that the variational inequality holds,
     a(u,v-u) - <f,v-u> >= 0   for all v in K,
-or equivalently that solves the constrained minimization,
-    u = argmin_{v in K}   (1/2) a(v,v) - f v
 where phi is in H_0^1[0,1], f is in L^2[0,1], and
              /1
     a(u,v) = |  u'(x) v'(x) dx.
              /0
 Note that the interior condition (PDE) is the Poisson equation  - u'' = f.
 
-Solution is by Alg. 4.7 in Gräser & Kornhuber (2009), namely the constraint
-decomposition V-cycle multigrid method by Tai (2003) in which a monotone
+Solution is by Alg. 4.7 in Gräser & Kornhuber (2009), namely the multilevel
+constraint decomposition V-cycle method by Tai (2003) in which a monotone
 restriction operator decomposes the defect obstacle.  The smoother and the
-coarse-mesh solver are projected Gauss-Seidel (PGS).  Note that option
--pgsonly reverts to single-level PGS.
+coarse-mesh solver are projected Gauss-Seidel (PGS).
+
+Option -pgsonly reverts to single-level PGS.
 
 Choose the problem with "-problem icelike" (the default) or "-problem
 parabola".  The obstacle can be randomly perturbed with -random.  Choose
@@ -208,13 +207,13 @@ ellfine = mesh.ell(fsource(mesh.xx()))
 infeascount = 0
 s = 0  # so that runs with -cyclemax 0 work
 for s in range(args.cyclemax):
-    ir = irerrmonitor(s, uu)
-    if ir < 1.0e-50:
+    irnorm = irerrmonitor(s, uu)
+    if irnorm < 1.0e-50:
         break
     if s == 0:
-        ir0 = ir
+        irnorm0 = irnorm
     else:
-        if ir < args.irtol * ir0:
+        if irnorm < args.irtol * irnorm0:
             break
     if args.pgsonly:
         # sweeps of projected Gauss-Seidel on fine grid
@@ -227,8 +226,8 @@ for s in range(args.cyclemax):
         # Tai (2003) constraint decomposition method
         #     for V(1,0)-cycles: Alg. 4.7 in G&K (2009)
         mesh.chi = phifine - uu
-        r = residual(mesh, uu, ellfine)
-        v, infeas = vcycle(levels-1, hierarchy, r,
+        F = residual(mesh, uu, ellfine)
+        v, infeas = vcycle(levels-1, hierarchy, F,
                            down=args.down, up=args.up, coarse=args.coarse,
                            levels=levels, view=args.mgview,
                            symmetric=args.symmetric,
