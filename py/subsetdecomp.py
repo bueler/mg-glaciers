@@ -66,9 +66,9 @@ def vcycle(j, hierarchy, r, down=1, up=0, coarse=1,
     infeas = _smoother(down, mesh, v, r, phi,
                        symmetric=symmetric, printwarnings=printwarnings)
     # update and canonically-restrict the residual
-    rcoarse = mesh.cR(residual(mesh, v, r))
+FIXME    rcoarse = mesh.cR(residual(mesh, v, r))
     # coarse-level correction
-    vcoarse, ifc = vcycle(j-1, hierarchy, rcoarse,
+FIXME    vcoarse, ifc = vcycle(j-1, hierarchy, rcoarse,
                           down=down, up=up, coarse=coarse,
                           levels=levels, view=view, symmetric=symmetric,
                           printwarnings=printwarnings)

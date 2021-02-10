@@ -17,16 +17,16 @@ def diagonalentry(mesh, p):
 def pointresidual(mesh, w, ell, p):
     '''Compute the value of the residual linear functional, in V^j', for given
     iterate w, at one interior hat function psi_p^j:
-       F(w)[psi_p^j] = ell(psi_p^j) - int_0^1 w'(x) (psi_p^j)'(x) dx
+       F(w)[psi_p^j] = int_0^1 w'(x) (psi_p^j)'(x) dx - ell(psi_p^j)
     Input ell is in V^j'.  Input mesh is of class MeshLevel1D.'''
     _checklen(mesh,w,'w')
     _checklen(mesh,ell,'ell')
     assert 1 <= p <= mesh.m
-    return ell[p] - (1.0/mesh.h) * (2.0*w[p] - w[p-1] - w[p+1])
+    return (1.0/mesh.h) * (2.0*w[p] - w[p-1] - w[p+1]) - ell[p]
 
 def residual(mesh, w, ell):
     '''Compute the residual linear functional, in V^j', for given iterate w:
-       F(w)[v] = ell(v) - int_0^1 w'(x) v'(x) dx
+       F(w)[v] = int_0^1 w'(x) v'(x) dx - ell(v)
     The returned F = F(w) satisfies F[p] = F(w)[psi_p^j] and F[0]=F[m+1]=0.
     See above pointresidual().'''
     _checklen(mesh,w,'w')

@@ -71,16 +71,16 @@ def test_po_pointresidual():
     ml = MeshLevel1D(j=1)
     f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
     w = f.copy()
-    assert pointresidual(ml, w, ml.ell(f), 1) == 0.5 * ml.h
-    assert pointresidual(ml, w, ml.ell(f), 2) == 4.0
+    assert pointresidual(ml, w, ml.ell(f), 1) == - 0.5 * ml.h
+    assert pointresidual(ml, w, ml.ell(f), 2) == - 4.0
 
 def test_po_residual():
     '''Residual for Poisson.'''
     ml = MeshLevel1D(j=1)
     f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
     w = f.copy()
-    rcorrect = np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
-    assert all(residual(ml, w, ml.ell(f)) == rcorrect)
+    Fcorrect = - np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
+    assert all(residual(ml, w, ml.ell(f)) == Fcorrect)
 
 def test_pgs_pgssweep1():
     '''Projected Gauss-Seidel sweep.'''
@@ -89,7 +89,7 @@ def test_pgs_pgssweep1():
     ell = ml.ell(f)
     assert all(ell == ml.h * f)
     w = ml.zeros()
-    assert all(residual(ml, w, ell) == ml.h * f)
+    assert all(residual(ml, w, ell) == - ml.h * f)
     phi = np.array([-2.0, -2.0, -2.0])  # thus unconstrained
     pgssweep(ml, w, ell, phi, forward=True)
     assert all(residual(ml, w, ell) == ml.zeros())
