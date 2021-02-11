@@ -42,6 +42,7 @@ def pgssweep(mesh, w, ell, phi, forward=True, phieps=1.0e-10,
             w[p] = phi[p]
             infeascount += 1
         c = - pointresidual(mesh, w, ell, p) / diagonalentry(mesh, p)
-        w[p] = max(w[p] + c, phi[p])   # equivalent:  w[p] += max(c,phi[p]-w[p])
+        c = max(c,phi[p] - w[p])
+        w[p] = w[p] + c
     mesh.WUincrement()
     return infeascount
