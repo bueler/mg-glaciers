@@ -92,7 +92,7 @@ class VisObstacle():
         else:
             #FIXME
             raise NotImplementedError
-        plt.legend(fontsize=24.0)
+        plt.legend(fontsize=24.0,frameon=False)
         #plt.title('decomposition of defect obstacle')
         plt.xlabel('x')
         _output(filename,'hierarchical decomposition')
@@ -118,7 +118,7 @@ class VisObstacle():
             #FIXME
             raise NotImplementedError
         plt.plot(hierarchy[-1].xx(), phi, 'k', label=r'$\varphi^{%d}$' % J, linewidth=4.0)
-        plt.legend(fontsize=24.0)
+        plt.legend(fontsize=24.0,frameon=False)
         #plt.title('"ice-like" multilevel decomposition')
         plt.xlabel('x')
         _output(filename,'"ice-like" decomposition')
