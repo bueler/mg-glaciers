@@ -404,7 +404,7 @@ Simply by choosing a source term $f(x)$ which is positive in the middle of the d
 
 % regenerate:
 %   $ cd py/
-%   $ ./obstacle.py -plain -kfine 5 -o icelike.pdf
+%   $ ./obstacle.py -plain -jfine 5 -o icelike.pdf
 %   $ pdfcrop icelike.pdf icelike.pdf
 \begin{figure}
 \includegraphics[width=0.7\textwidth]{fixfigs/icelike.pdf}
@@ -496,7 +496,13 @@ If we apply PGS on the fine-level only, i.e.~not multilevel, then we may simply 
 PGS will actually serve as our smoother and coarse-level solver, and we will apply only one or two iterations on each level.  However, we are not yet prepared to build a multilevel method for problem \eqref{eq:feobstacleviresidual} because the construction of the obstacles $\phi^j$ and constraint sets $\mathcal{K}^j$ on each mesh level is nontrivial.  In particular, we will \emph{not} choose $\phi^j$ to be the obvious on $j$th-level interpolant of the continuum obstacle $\varphi$.  Instead we will carefully decompose a fine-level constraint.
 
 
-\subsection*{Multilevel constraint decomposition}  FIXME
+\subsection*{Multilevel constraint decomposition}  FIXME explain the issue that $w^{j-1}$ could be admissible w.r.t. coarse level but $Pw^{j-1}$ is not admissible w.r.t. fine level
+
+\begin{figure}
+\qquad \includegraphics[width=0.7\textwidth]{genfigs/prolongobstacle.pdf}
+\caption{When prolonged, an admissible iterate on the coarse level may not be admissible on the fine level.}
+\label{fig:prolongobstacle}
+\end{figure}
 
 Recall from section \ref{sec:subspace} that each mesh level corresponds to $m_j$ hat functions $\psi_p^j(x)$, at interior nodes $x_p^j$, and to the corresponding vector space $\mathcal{V}_j$ of piecewise-linear functions with value zero at $x=0,1$.  (See Figures \ref{fig:finehats}, \ref{fig:coarsehats}.)  In this section we add an obstacle function $\phi^j(x)$ on each level, to define a closed, convex $k$\emph{th-level constraint set}
 \begin{equation}
@@ -535,11 +541,10 @@ The multilevel constraint decomposition is now a ``telescoping'' sum:
 \end{equation}
 That is, we have decomposed the fine-level defect constraint $\chi^J$ into the obstacles $\phi^j$ which we will actually use on each level.  (Note that the sum does \emph{not} give a decomposition of the original obstacle $\varphi$, and it depends on a fine-mesh iterate.)  An example decomposition is shown in Figure \ref{fig:gooddecomposition}; compare Figure 1 in \cite{GraeserKornhuber2009}.
 
-%REGENERATE Figures \ref{fig:icelikedecomposition} and \ref{fig:gooddecomposition}:
+%REGENERATE Figures \ref{fig:gooddecomposition} and \ref{fig:icelikedecomposition}:
 %$ ./obstacle.py -jfine 5 -jcoarse 1 -irtol 1.0e-7 -random -randommodes 8 -diagnostics -up 0 -o defect.pdf
 %fine level 5 (m=63) using 52 V(1,0) cycles (102.375 WU)
-%saving final iterate and obstacle to defect.pdf ...
-%saving residual and inactive residual to resid_defect.pdf ...
+%...
 %saving hierarchical decomposition to decomp_defect.pdf ...
 %saving "ice-like" decomposition to icedec_defect.pdf ...
 \begin{figure}
@@ -589,7 +594,6 @@ FIXME state V-cycle for V(1,0); run as \pr{cd-slash}$(J,r^J,\chi^J)$ where $w^J$
     $v^{j-1} =$ \pr{cd-slash}(j-1,R \tilde r,\chi^{j-1}) \\
     return $v + P v^{j-1}$
 \end{pseudo*}
-
 
 FIXME state V(1,1)-cycle; run the same way
 \begin{pseudo*}
