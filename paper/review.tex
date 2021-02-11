@@ -458,7 +458,47 @@ Regardless of how the classical obstacle problem is formulated, a \emph{free bou
 
 The solution of the classical obstacle problem can be non-smooth at such a free boundary even when the data is arbitrarily smooth.  For example, smoothing the source term $f$ in \eqref{eq:icelikedetails} would give a solution nearly the same as shown in Figure \ref{fig:icelike}.  That is, one could make the source term $f$ into a smooth function by ``mollification'' \cite{Evans2010} so that the transition between positive and negative values of $f$ would be $C^\infty$.  However, the free boundary would remain, and at that free boundary the second derivative $u''$ would jump from value $+16=-f$ to value $-2=\varphi''$.  In general it is known that the obstacle problem solution for smooth $C^\infty$ data is limited to the Sobolev space $W^{2,\infty}$ \cite[section IV.6]{KinderlehrerStampacchia1980}, and not smoother.
 
-\subsection*{Multilevel constraint decomposition}  Recall from section \ref{sec:subspace} that each mesh level corresponds to $m_j$ hat functions $\psi_p^j(x)$, at interior nodes $x_p^j$, and to the corresponding vector space $\mathcal{V}_j$ of piecewise-linear functions with value zero at $x=0,1$.  (See Figures \ref{fig:finehats}, \ref{fig:coarsehats}.)  In this section we add an obstacle function $\phi^j(x)$ on each level, to define a closed, convex $k$\emph{th-level constraint set}
+Consider the corresponding FE method, that is, a finite-dimensional version of the same VI.  On the $j$th level we will define an obstacle $\phi^j$ in $\mathcal{V}^j$, and a constraint set $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j$.  Our FE method seeks $u^j$ in $\mathcal{K}^j$ so that the finite-dimensional VI holds:
+\begin{equation}
+  F(u^j)[v-u^j] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}^j. \label{eq:feobstacleviresidual}
+\end{equation}
+Furthermore, as with the linear Poisson problem, we can immediately propose an iterative solution method for solving \eqref{eq:feobstacleviresidual}.
+
+Suppose we have an iterate $w$ in $\mathcal{K}^j$.  We will modify $w$ at the $p$th node so that \eqref{eq:feobstacleviresidual} holds ``at'' that node, but for clarity we pose the pointwise problem in constrained minimization form \eqref{eq:obstaclemin}.  Note that since $w$ is admissible then $w+c\psi_p^j$ is admissible if and only if $w_p + c \ge \phi_p$ where $\phi_p = \phi^j(x_p^j)$.  (\emph{Warning.}  This equivalence holds for our low-order, piecewise-linear elements, but it does not hold for higher-order polynomial elements, for example.)  Now define a convex scalar function, for real $b$, from the objective functional,
+\begin{equation}
+i(b) = I(w+b\psi_p^j),
+\end{equation}
+and seek its minimizer over admissible perturbations,
+\begin{equation}
+  c = \argmin_{b \ge \phi_p - w_p} \, i(b).
+\end{equation}
+The minimimum of $i(b)$ on the interval $\phi_p - w_p \le b < \infty$ occurs at either the critical point $i'(b)=0$ or at the left end of the interval.  Since $i'(b) = F(w)[\psi_p^j] + b a(\psi_p^j,\psi_p^j)$, the solution is
+\begin{equation}
+  c = \max\{-F(w)[\psi_p^j]/a(\psi_p^j,\psi_p^j), \phi_p - w_p\}.  \label{eq:pgsformula}
+\end{equation}
+We will follow this calculation by the update $w \gets w + c\psi_p^j$, and proceed to the next point.
+
+The minimization view is not essential, however, and we can derive \eqref{eq:pgsformula} using only the VI form.  Given an iterate $w$ in $\mathcal{K}^j$ we seek $c$ such that $w+c\psi_p^j$ is also admissible and so that VI \eqref{eq:obstacleviresidual} holds with $v=w+\tilde c\psi_p^j$. That is, we find $c\ge \phi_p-w_p$ so that
+\begin{equation}
+F(w+c\psi_p^j)[(w+\tilde c\psi_p^j) - (w+c\psi_p^j)] = (\tilde c - c)F(w+c\psi_p^j)[\psi_p^j] \ge 0,
+\end{equation}
+for all $\tilde c\ge \phi_p-w_p$.  This one-dimensional VI also implies \eqref{eq:pgsformula}; the argument is elementary calculus.
+
+In any case, the following \emph{projected Gauss-Seidel} (PGS) algorithm, a small modification of \pr{gssweep}, implements \eqref{eq:pgsformula}.
+\begin{pseudo*}
+\pr{pgssweep}(j,w,F,\phi)\text{:} \\+
+    for $p=1,\dots,m_j$ \\+
+        $c = \max\{-F(w)[\psi_p^j] \,\big/\, a(\psi_p^j,\psi_p^j),\, \phi^j(x_p^j)-w(x_p^j)\}$ \\
+        $w \gets w + c \psi_p^j$
+\end{pseudo*}
+If we apply PGS on the fine-level only, i.e.~not multilevel, then we may simply choose the obstacle $\phi^J$ to be the piecewise-linear interpolant of the continuum obstacle $\varphi$.  In this case PGS solves problem \eqref{eq:feobstacleviresidual}, as proven in \cite{BrandtCryer1983}, but very slowly on fine meshes.
+
+PGS will actually serve as our smoother and coarse-level solver, and we will apply only one or two iterations on each level.  However, we are not yet prepared to build a multilevel method for problem \eqref{eq:feobstacleviresidual} because the construction of the obstacles $\phi^j$ and constraint sets $\mathcal{K}^j$ on each mesh level is nontrivial.  In particular, we will \emph{not} choose $\phi^j$ to be the obvious on $j$th-level interpolant of the continuum obstacle $\varphi$.  Instead we will carefully decompose a fine-level constraint.
+
+
+\subsection*{Multilevel constraint decomposition}  FIXME
+
+Recall from section \ref{sec:subspace} that each mesh level corresponds to $m_j$ hat functions $\psi_p^j(x)$, at interior nodes $x_p^j$, and to the corresponding vector space $\mathcal{V}_j$ of piecewise-linear functions with value zero at $x=0,1$.  (See Figures \ref{fig:finehats}, \ref{fig:coarsehats}.)  In this section we add an obstacle function $\phi^j(x)$ on each level, to define a closed, convex $k$\emph{th-level constraint set}
 \begin{equation}
 \mathcal{K}^j = \left\{v \text{ in } \mathcal{V}^j \text{ such that } v \ge \phi^j\right\}.  \label{eq:levelKdefine}
 \end{equation}
@@ -468,17 +508,6 @@ However, the construction of the $j$th-level obstacle $\phi^j$ is nontrivial; it
 \end{equation}
 As in the previous section, $\ell^J[v]=\ip{f}{v}$ on the finest level, but on coarser levels we will redefine the linear functional $\ell^j$ for the right-hand side.
 
-As we did for GMG on the Poisson equation, on each mesh level we can immediately propose an iterative solution method for the weak form \eqref{eq:levelvi}.  The \emph{projected Gauss-Seidel (PGS) iteration} is a small modification of the original GS method.  This method might ultimately solve the problem---a proof is in \cite{BrandtCryer1983}---but here it serves as a smoother; we only apply one or two iterations on each level.  The PGS iteration finds the solution to VI \eqref{eq:levelvi}, though slowly, by approximately descending the gradient $\grad J$ while remaining in the constraint region $\mathcal{K}^j = \{w\ge \phi^j\}$.  Specifically, PGS descends by adjusting the iterate one point at a time.  Recall that conventional GS successively zeros the residual at points, i.e.~it finds $c$ so that $r^j(w+c\psi_p^j)[\psi_p^j]=0$, but the residual is the same as the \emph{negative} gradient of the objective:
-\begin{equation}
-  r^j(w)[v] = - \grad J^j(w)[v].  \label{eq:levelresidualgradient}
-\end{equation}
-Also, because $\mathcal{K}^j$ consists of piecewise-linear functions, if $w$ is in $\mathcal{K}^j$ then one can test whether the modified iterate is still in $\mathcal{K}^j$ via a pointwise comparison, i.e.~testing $w[p] + c \ge \phi^j[p]$.  Thus we have the following smoother algorithm:
-\begin{pseudo*}
-\pr{pgssweep}(j,w,\ell,\phi)\text{:} \\+
-    for $p=1,\dots,m_j$ \\+
-        $\displaystyle c = r^j(w)[\psi_p^j] \, \big/ \,a(\psi_p^j,\psi_p^j)$ \qquad \ct{where $r^j(w)[\cdot] := \ell[\cdot] - a(w,\cdot)$} \\
-        $w[p] \gets \max\{w[p] + c,\phi[p]\}$
-\end{pseudo*}
 
 However, we still need to define the $j$th-level obstacle $\phi^j$.  Suppose that on the fine level we have a solution method which computes iterates $w^J$ in $\mathcal{K}^J$ which converge to the solution $u^J$ of the fine level problem \eqref{eq:levelvi}.  (Applying PGS on the fine level would generate such iterates, but they would converge very slowly.)  Define $\varphi^J$ to be the piecewise-linear interpolant (i.e.~in $\mathcal{V}^J$) of the continuum obstacle $\varphi$.  We define the \emph{defect constraint} \cite{GraeserKornhuber2009} on the fine level to be
 \begin{equation}
