@@ -105,13 +105,13 @@ exactavailable = (not args.random) and (args.fscale == 1.0) \
 
 # provide usage help
 if unknown:
-    print('ERROR: unknown arguments ... try -h or --help for usage')
+    print('usage ERROR: unknown arguments ... try -h or --help for usage')
     sys.exit(1)
 if args.show and args.o:
-    print('ERROR: use either -show or -o FILE but not both')
+    print('usage ERROR: use either -show or -o FILE but not both')
     sys.exit(2)
 if args.monitorerr and not exactavailable:
-    print('ERROR: -monitorerr but exact solution and error not available')
+    print('usage ERROR: -monitorerr but exact solution and error not available')
     sys.exit(3)
 
 # fix the random seed for repeatability
@@ -276,10 +276,14 @@ if args.show or args.o or args.diagnostics:
     if args.diagnostics:
         if len(args.o) > 0:
             rname = 'resid_' + args.o
-            dname = 'decomp_' + args.o
-            iname = 'icedec_' + args.o
         else:
-            rname, dname, iname = '', '', ''
+            rname = ''
         vis.residuals(uu, ellfine, filename=rname)
-        vis.decomposition(hierarchy, up=args.up, filename=dname)
-        vis.icedecomposition(hierarchy, phifine, up=args.up, filename=iname)
+        if not args.pgsonly:
+            if len(args.o) > 0:
+                dname = 'decomp_' + args.o
+                iname = 'icedec_' + args.o
+            else:
+                dname, iname = '', ''
+            vis.decomposition(hierarchy, up=args.up, filename=dname)
+            vis.icedecomposition(hierarchy, phifine, up=args.up, filename=iname)
