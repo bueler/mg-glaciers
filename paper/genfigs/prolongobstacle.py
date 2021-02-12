@@ -41,7 +41,7 @@ w[4] = w[4] + 0.1
 
 # generate figure
 plt.figure(figsize=(12,5))
-plt.plot(xc, w,  'k--', lw=2.0, label='coarse admissible iterate')
+plt.plot(xc, w,  'k--', lw=2.0, label='admissible iterate (coarse)')
 plt.plot(xc, yc, 'k.-', lw=3.0, ms=14.0, label='coarse obstacle')
 plt.plot(x,  y,  'k',   lw=1.5, label='fine obstacle')
 plt.legend(fontsize=bigfsize,loc='upper right',frameon=False)
