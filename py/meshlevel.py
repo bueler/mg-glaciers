@@ -36,10 +36,6 @@ class MeshLevel1D():
         assert len(v) == goodlen, \
                'input vector is of length %d (should be %d)' % (len(v), goodlen)
 
-    def WUincrement(self):
-        '''Increment the work unit counter.'''
-        self.WU += 1
-
     def zeros(self):
         '''Allocate a zero vector.'''
         return np.zeros(self.m+2)
