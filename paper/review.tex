@@ -595,53 +595,60 @@ In the glacier context (section \ref{sec:sia}) the fine-mesh obstacle $\varphi^J
 \label{fig:icelikedecomposition}
 \end{figure}
 
-\subsection*{MCD cycles}  We can now write the weak form problem on the $j$th level in three ways.  Recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the original residual \eqref{eq:residual} and $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function.  Suppose $w^J$ is an admissible iterate on the fine level, i.e.~$w^J\ge \varphi^J$ where $\varphi^J$ interpolates $\varphi$ in $\mathcal{H}$.
+\subsection*{MCD cycles}  We now write the obstacle problem on the $j$th level in three forms.  Recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the original residual \eqref{eq:residual} and $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function, and we suppose $w^J$ is an admissible iterate on the fine level: $w^J\ge \varphi^J$.  In stating the weak forms below we assume that we have already descended from the fine level $J$ to some coarser level $j+1$, computing admissible corrections $y^k$ from the constraint set $\mathcal{K}^k$ on each level so far ($k=j+1,\dots,J$).  By definition of the defect constraint \eqref{eq:defectmeaning}, and using the constraint decomposition \eqref{eq:constraintdecomposition}, observe that $z = w^J+y^J+\dots+y^{j+1}$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.
 
-In stating the weak forms we assume we have already descended from the fine level $J$ to some coarser level $j+1$, computing admissible corrections $y^k$ from the constraint set $\mathcal{K}^k$ on each level ($k=j+1,\dots,J$).  By the meaning of the defect constraint \eqref{eq:defectmeaning}, and using the constraint decomposition \eqref{eq:constraintdecomposition}, observe that $z = w^J+y^J+\dots+y^{j+1}$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.
+We seek a $j$th-level correction $y^j$ in $\mathcal{K}^j$, i.e.~$y^j\ge \phi^j$, so that any one of the following holds:
+\begin{itemize}
+\item variational inequality:
+\begin{equation}
+  F(w^J+y^J+\dots+y^{j+1}+y^j)[v - y^j] \ge 0 \qquad \text{for all } v \text{ in } \mathcal{K}^j.  \label{eq:mcdvi}
+\end{equation}
+\item constrained minimization:
+\begin{equation}
+  y^j = \argmin_{v \text{ in } \mathcal{K}^j} I(w^J+y^J+\dots+y^{j+1}+v).  \label{eq:mcdminimization}
+\end{equation}
+\item linear variational inequality:
+\begin{equation}
+  F^j(y^j)[v - y^j] \ge 0 \qquad \text{for all } v \text{ in } \mathcal{K}^j.   \label{eq:mcdvilinear}
+\end{equation}
+\end{itemize}
 
-We seek a $j$th-level correction so that any one of the following holds:
-\renewcommand{\labelenumi}{\Alph{enumi}.}
-\begin{enumerate}
-\item Variational inequality for $y^j$ in $\mathcal{K}^j$:
-   $$F(w^J+y^J+\dots+y^{j+1}+y^j)[v - y^j] \ge 0 \qquad \text{for all } v \text{ in } \mathcal{K}^j.$$
-\item Constrained minimization for $y^j$ in $\mathcal{K}^j$:
-   $$y^j = \argmin_{v \text{ in } \mathcal{K}^j} I(w^J+y^J+\dots+y^{j+1}+v).$$
-\item Linear variational inequality for $y^j$ in $\mathcal{K}^j$:
-   $$F^j(y^j)[v - y^j] \ge 0 \qquad \text{for all } v \text{ in } \mathcal{K}^j.$$
-\end{enumerate}
-
-In C we have defined the $j$th-level residual, descending inductively using linearity:
+In \eqref{eq:mcdvilinear} we define the $j$th-level residual $F^j$ inductively using linearity:
 \begin{align}
-  F^j(z)[\cdot] &= F(w^J+y^J+\dots+y^{j+1}+z)[\cdot] \label{eq:residuallinearlevel} \\
+  F^j(z)[\cdot] &= F(w^J+y^J+\dots+y^{j+1}+z)[\cdot] \label{eq:residuallinearlevelderive} \\
                 &= a(w^J+y^J+\dots+y^{j+1}+z,\cdot) - \ip{f}{\cdot} \notag \\
-                &= \Big(a(w^J+y^J+\dots+y^{j+1},\cdot) - \ip{f}{\cdot}\Big) + a(z,\cdot) \notag \\
-                &= F^{j+1}(y^{j+1})[\cdot] + a(z,\cdot). \notag
+                &= a(z,\cdot) + \Big(a(w^J+y^J+\dots+y^{j+1},\cdot) - \ip{f}{\cdot}\Big) \notag \\
+                &= a(z,\cdot) + F^{j+1}(y^{j+1})[\cdot]. \notag
 \end{align}
-Specifically, $F^J(z)[\cdot] = F(w^J)[\cdot] + a(z,\cdot)$ on the finest level.
+(Note $F^J(z)[\cdot] = a(z,\cdot) + F(w^J)[\cdot]$ on the finest level, so $F^J \ne F$.)  This can be written
+\begin{equation}
+  F^j(z)[\cdot] = a(z,\cdot) - \ell^j[\cdot]  \label{eq:residuallinearlevel}
+\end{equation}
+for $\ell^J[\cdot] = - F(w^J)[\cdot]$ and $\ell^j[\cdot] = - F^{j+1}(y^{j+1})[\cdot]$ if $j<J$.
 
-For the classical obstacle problem, with residual $F(w)[v] = a(w,v) - \ip{f}{v}$ and a symmetric bilinear form $a(\cdot,\cdot)$, the three weak forms are equivalent.  However, the equivalence of A and B depends on symmetry, and the equivalence of A and C depends on bilinearity, and both fail for the glacier problem (section \ref{sec:sia}).  To summarize the logic, A is the most general:
-   $$\mathrm{C} \quad \stackrel{a \text{ bilinear}}{\iff\strut} \quad \mathrm{A} \quad \stackrel{F=\grad I}{\iff\strut} \quad \mathrm{B}.$$
+For the classical obstacle problem, with (continuum) residual $F(w)[v] = a(w,v) - \ip{f}{v}$ and a symmetric bilinear form $a(\cdot,\cdot)$, the three forms \eqref{eq:mcdvi}--\eqref{eq:mcdvilinear} are equivalent.  However, the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdminimization} depends on symmetry, and the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdvilinear} depends on bilinearity, and both fail for the glacier problem (section \ref{sec:sia}).  To summarize the logic, \eqref{eq:mcdvi} is the most general:
+   $$\eqref{eq:mcdvilinear} \quad \stackrel{a \text{ bilinear}}{\iff\strut} \quad \eqref{eq:mcdvi} \quad \stackrel{F=\grad I}{\iff\strut} \quad \eqref{eq:mcdminimization}.$$
 
-Tai \cite{Tai2003} states the MCD method using minimization form B, but the method applies to A.  However, if $F$ is not the gradient of a coercive objective then additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,KinderlehrerStampacchia1980}).
+Tai \cite{Tai2003} states the MCD method using minimization form \eqref{eq:mcdminimization}, but the method applies equally to \eqref{eq:mcdvi}.  However, if $F$ is not the gradient of a coercive objective function then additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,KinderlehrerStampacchia1980}).
 
-We are now in position to write a multilevel solver for the classical obstacle problem.  The following pseudocode, in which \pr{MCDL} stands for ``multilevel constraint decomposition linear'', is analogous to the multilevel subspace decomposition \pr{msd-solver} in section \ref{sec:subspace}.
+We may now write a multilevel solver for the classical obstacle problem.  The following pseudocode, in which \pr{MCDL} stands for ``multilevel constraint decomposition linear'', is analogous to the multilevel subspace decomposition \pr{msd-solver} in section \ref{sec:subspace}.
 \begin{pseudo*}
 \pr{mcdl-solver}(F,\varphi,\id{rtol}=10^{-4})\text{:} \\+
     $w=\varphi$ \qquad\qquad\qquad\qquad\qquad\quad \ct{or other admissible fine-level initial iterate} \\
-    $r_0=\|\hat\bF(w)\|$ \qquad\qquad\qquad\qquad\qquad \ct{initial CP residual norm} \\
+    $r_0=\|\hat\bF(w)\|$ \qquad\qquad\qquad\qquad\qquad \ct{initial residual norm; see \eqref{eq:cpresidual}} \\
     repeat \\+
         $\chi^J = \varphi - w$ \qquad\qquad\qquad\qquad\quad \ct{fine-level defect constraint} \\
-        $F^J(y)[\cdot] = F(w)[\cdot] + a(y,\cdot)$ \\
+        $\ell^J[\cdot] := - F(w)[\cdot]$ \\
+        $F^J(y)[\cdot] := a(y,\cdot) - \ell^J[\cdot]$ \\
         $y=\pr{mcdl-slash}(J,F^J,\chi^J)$ \qquad\qquad \ct{or other cycle} \\
         $w\gets w+y$ \\-
     until $\|\hat\bF(w)\| \le r_0 \id{rtol}$ \\
     return $w$
 \end{pseudo*}
-Recall that the CP residual $\hat\bF$ is defined in \eqref{eq:cpresidual}.
 
-Which brings us to cycle options.  FIXME state V(1,0) cycle
+Initially our solver applies a ``slash'' cycle, also known as a ``V(1,0)'' cycle \cite{GraeserKornhuber2009}.  Here is a recursive pseudocode:
 \begin{pseudo*}
-\pr{mcdl-slash}(j,F,\chi)\text{:} \\+
+\pr{mcdl-slash}(j,F,\chi,\id{down}=1,\id{coarse}=1)\text{:} \\+
     $y=0$ \\
     if $j=0$ \\+
         $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y,F,\chi)$ \\
@@ -649,10 +656,14 @@ Which brings us to cycle options.  FIXME state V(1,0) cycle
     $\chi^{j-1} = \mR \chi$ \\
     $\phi^j = \chi - P\chi^{j-1}$ \\
     $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,y,F,\phi^j)$ \\
-    $\tilde F(\tilde y)[\cdot] = F(y)[\cdot] + a(y,\cdot)$ \\
-    $y^{j-1} =$ \pr{mcd-slash}(j-1,R \tilde F,\chi^{j-1}) \\
+    $\ell^{j-1}[\cdot] := - R (F(y))[\cdot]$ \\
+    $F^{j-1}(y)[\cdot] := a(y,\cdot) - \ell^{j-1}[\cdot]$ \\
+    $y^{j-1} =$ \pr{mcd-slash}(j-1,F^{j-1},\chi^{j-1}) \\
     return $y + P y^{j-1}$
 \end{pseudo*}
+An implementation detail is that the function $F^{j-1}(y)[\cdot]$ need not be passed as a function.  Rather, the FE method has a subroutine which evaluates $a(w,v)$ on any mesh, and then the linear functional $\ell^{j-1}$ is passed as a (row) vector from which $F^{j-1}$ is constructed.  The signatures in the above pseudocode could be stated as ``\pr{pgssweep}$(j,y,\ell,\phi)$'' and ``\pr{mcdl-slash}$(j,\ell,\chi)$''.
+
+FIXME V(1,1)
 
 FIXME cite for multigrid on classical obstacle \cite{BrandtCryer1983,Bueler2021,GraeserKornhuber2009}
 
