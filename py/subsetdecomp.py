@@ -1,10 +1,10 @@
-'''Module implementing the V-cycle algorithm for the Tai (2003) multilevel
-constraint decomposition method.'''
+'''Module implementing the multilevel constraint decomposition (MCD) method
+of the Tai (2003).'''
 
 from poisson import residual
 from pgs import pgssweep
 
-__all__ = ['vcycle']
+__all__ = ['mcdlslash']
 
 def _indentprint(n, s):
     '''Print 2n spaces and then string s.'''
@@ -20,65 +20,58 @@ def _coarsereport(indent, m, sweeps):
     _indentprint(indent, 'coarsest: %d sweeps over m=%d nodes' \
                          % (sweeps, m))
 
-def _smoother(s, mesh, v, F, phi, forward=True, symmetric=False, printwarnings=False):
+def _smoother(s, mesh, v, ell, phi, forward=True, symmetric=False, printwarnings=False):
     infeas = 0
     for _ in range(s):
-        infeas += pgssweep(mesh, v, F, phi, forward=forward,
+        infeas += pgssweep(mesh, v, ell, phi, forward=forward,
                            printwarnings=printwarnings)
         if symmetric:
-            infeas += pgssweep(mesh, v, F, phi, forward=not forward,
+            infeas += pgssweep(mesh, v, ell, phi, forward=not forward,
                                printwarnings=printwarnings)
     return infeas
 
-def vcycle(j, hierarchy, F, down=1, up=0, coarse=1,
-           levels=None, view=False, symmetric=False, printwarnings=False):
-    '''Apply one V-cycle of the multilevel subset decomposition method of
-    Tai (2003).  For up=0 case, this is Alg. 4.7 in Graeser & Kornhuber (2009),
-    but implemented recursively.  Solves the defect constraint problem on
-    mesh = hierarchy[j], i.e. for chi^j = hierarchy[j].chi.  Note hierarchy[j]
-    is of type MeshLevel1D.  Residual F is in the fine-mesh linear
-    functional space V^J'.  The smoother is projected Gauss-Seidel (PGS).
-    The coarse solver is coarse iterations of PGS, thus not exact.'''
+#FIXME keep recursive?
+def mcdlslash(j, hierarchy, ell, down=1, coarse=1,
+              levels=None, view=False, symmetric=False, printwarnings=False):
+    '''Apply one cycle of the multilevel subset decomposition method of
+    Tai (2003), as stated in Alg. 4.7 in Graeser & Kornhuber (2009),
+    but implemented recursively.  Note hierarchy[j] is of type MeshLevel1D,
+    and hierarch[j].chi is the jth-level defect constraint.  Linear functional
+    ell is in V^J'.  The smoother is projected Gauss-Seidel (PGS).  The coarse
+    solver is coarse iterations of PGS, thus not exact.'''
 
     # set up
-    assert down >= 1 and up >= 0 and coarse >= 1
     mesh = hierarchy[j]
-    assert len(F) == mesh.m + 2
-    v = mesh.zeros()
+    y = mesh.zeros()
+    assert down >= 1 and coarse >= 1 and len(ell) == mesh.m + 2
 
     # coarse mesh solver = PGS sweeps
     if j == 0:
         if view:
             _coarsereport(levels-1, mesh.m, coarse)
-        infeas = _smoother(coarse, mesh, v, F, mesh.chi,
+        infeas = _smoother(coarse, mesh, y, ell, mesh.chi,
                            symmetric=symmetric, printwarnings=printwarnings)
-        return v, infeas
+        return y, infeas
 
-    # monotone restriction of defect constraint
+    # update defect constraint and define jth-level obstacle
     hierarchy[j-1].chi = mesh.mR(mesh.chi)
-    # level j obstacle is the *change* in chi
     phi = mesh.chi - mesh.P(hierarchy[j-1].chi)
-    if up > 0:
-        phi *= 0.5
+
     # down smoother = PGS sweeps
     if view:
         _levelreport(levels-1, j, mesh.m, down)
-    infeas = _smoother(down, mesh, v, F, phi,
+    infeas = _smoother(down, mesh, y, ell, phi,
                        symmetric=symmetric, printwarnings=printwarnings)
-    # update and canonically-restrict the residual
-    Fcoarse = mesh.cR(residual(mesh, v, F))
-    # coarse-level correction
-    vcoarse, ifc = vcycle(j-1, hierarchy, Fcoarse,
-                          down=down, up=up, coarse=coarse,
-                          levels=levels, view=view, symmetric=symmetric,
-                          printwarnings=printwarnings)
-    v += mesh.P(vcoarse)
+
+    # canonically-restrict the residual and update to F^{j-1}(y)[.]
+    ellcoarse = - mesh.cR(residual(mesh, y, ell))
+
+    # recursive coarse-level correction
+    ycoarse, ifc = mcdlslash(j-1, hierarchy, ellcoarse,
+                             down=down, coarse=coarse,
+                             levels=levels, view=view, symmetric=symmetric,
+                             printwarnings=printwarnings)
+    y += mesh.P(ycoarse)
     infeas += ifc
-    # up smoother = PGS sweeps
-    if up > 0:
-        if view:
-            _levelreport(levels-1, j, mesh.m, up)
-        #r = residual(mesh, mesh.P(vcoarse), r)
-        infeas += _smoother(up, mesh, v, F, phi,
-                            symmetric=symmetric, printwarnings=printwarnings)
-    return v, infeas
+    return y, infeas
+

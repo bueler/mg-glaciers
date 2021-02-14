@@ -13,7 +13,7 @@ import numpy as np
 
 from meshlevel import MeshLevel1D
 from pgs import residual, inactiveresidual, pgssweep
-from subsetdecomp import vcycle
+from subsetdecomp import mcdlslash
 from visualize import VisObstacle
 
 parser = argparse.ArgumentParser(description='''
@@ -54,7 +54,7 @@ parser.add_argument('-coarse', type=int, default=1, metavar='N',
 parser.add_argument('-cyclemax', type=int, default=100, metavar='M',
                     help='maximum number of V-cycles (default=100)')
 parser.add_argument('-diagnostics', action='store_true', default=False,
-                    help='add a diagnostics figure to -show or -o output')
+                    help='additional diagnostics figures (use with -show or -o)')
 parser.add_argument('-down', type=int, default=1, metavar='N',
                     help='PGS sweeps before coarse-mesh correction (default=1)')
 parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
@@ -223,16 +223,17 @@ for s in range(args.cyclemax):
             infeascount += pgssweep(mesh, uu, ellfine, phifine,
                                     forward=False, printwarnings=args.printwarnings)
     else:
-        # Tai (2003) constraint decomposition method
-        #     for V(1,0)-cycles: Alg. 4.7 in G&K (2009)
+        # Tai (2003) constraint decomposition method for V(1,0)-cycles
+        # = Alg. 4.7 in G&K (2009); next few lines are "mcdl-solver()" in paper
+        assert args.up == 0  #FIXME
         mesh.chi = phifine - uu
-        F = residual(mesh, uu, ellfine)
-        v, infeas = vcycle(levels-1, hierarchy, F,
-                           down=args.down, up=args.up, coarse=args.coarse,
-                           levels=levels, view=args.mgview,
-                           symmetric=args.symmetric,
-                           printwarnings=args.printwarnings)
-        uu += v
+        ell = - residual(mesh,uu,ellfine)
+        y, infeas = mcdlslash(levels-1, hierarchy, ell,
+                              down=args.down, coarse=args.coarse,
+                              levels=levels, view=args.mgview,
+                              symmetric=args.symmetric,
+                              printwarnings=args.printwarnings)
+        uu += y
         infeascount += infeas
 
 # finalize iterations and monitor (re different stopping criterion above)
