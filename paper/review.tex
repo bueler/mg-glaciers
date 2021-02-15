@@ -596,9 +596,9 @@ In the glacier context (section \ref{sec:sia}) the fine-mesh obstacle $\varphi^J
 \label{fig:icelikedecomposition}
 \end{figure}
 
-\subsection*{MCD cycles}  We now write the obstacle problem on the $j$th level in three forms.  Recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the original residual \eqref{eq:residual} and $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function, and we suppose $w^J$ is an admissible iterate on the fine level: $w^J\ge \varphi^J$.  In stating the weak forms below we assume that we have already descended from the fine level $J$ to some coarser level $j+1$, computing admissible corrections $y^k$ from the constraint set $\mathcal{K}^k$ on each level so far ($k=j+1,\dots,J$).  By definition of the defect constraint \eqref{eq:defectmeaning}, and using the constraint decomposition \eqref{eq:constraintdecomposition}, observe that $z = w^J+y^J+\dots+y^{j+1}$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.
+We can now write the obstacle problem on the $j$th level in three forms.  Recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the original residual \eqref{eq:residual}, and $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function.  As above, $w^J$ is an admissible iterate on the fine level: $w^J\ge \varphi^J$.  In stating the $j$th-level forms below we assume that we have already descended from the fine level $J$ to some coarser level $j+1$, computing admissible corrections $y^k$ from the constraint set $\mathcal{K}^k$ on each level so far, for $k=j+1,\dots,J$.  By definition of the defect constraint \eqref{eq:defectmeaning}, and using the constraint decomposition \eqref{eq:constraintdecomposition}, observe that $z = w^J+y^J+\dots+y^{j+1}$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.
 
-We seek a $j$th-level correction $y^j$ in $\mathcal{K}^j$, i.e.~$y^j\ge \phi^j$, so that any one of the following holds:
+We seek a $j$th-level correction $y^j$ in $\mathcal{K}^j$, i.e.~$y^j\ge \phi^j$, so that one of the following holds:
 \begin{itemize}
 \item variational inequality:
 \begin{equation}
@@ -614,25 +614,31 @@ We seek a $j$th-level correction $y^j$ in $\mathcal{K}^j$, i.e.~$y^j\ge \phi^j$,
 \end{equation}
 \end{itemize}
 
-In \eqref{eq:mcdvilinear} we define the $j$th-level residual $F^j$ inductively using linearity:
+In form \eqref{eq:mcdvilinear} we have used linearity to define $F^j$:
 \begin{align}
   F^j(z)[\cdot] &= F(w^J+y^J+\dots+y^{j+1}+z)[\cdot] \label{eq:residuallinearlevelderive} \\
                 &= a(w^J+y^J+\dots+y^{j+1}+z,\cdot) - \ip{f}{\cdot} \notag \\
-                &= a(z,\cdot) + \Big(a(w^J+y^J+\dots+y^{j+1},\cdot) - \ip{f}{\cdot}\Big) \notag \\
                 &= a(z,\cdot) + F^{j+1}(y^{j+1})[\cdot]. \notag
 \end{align}
-(Note $F^J(z)[\cdot] = a(z,\cdot) + F(w^J)[\cdot]$ on the finest level, so $F^J \ne F$.)  This can be written
+That is, on each level we have a residual functional,
 \begin{equation}
-  F^j(z)[\cdot] = a(z,\cdot) - \ell^j[\cdot]  \label{eq:residuallinearlevel}
+  F^j(z)[\cdot] = a(z,\cdot) - \ell^j[\cdot],  \label{eq:residuallinearlevel}
 \end{equation}
-for $\ell^J[\cdot] = - F(w^J)[\cdot]$ and $\ell^j[\cdot] = - F^{j+1}(y^{j+1})[\cdot]$ if $j<J$.
+with an inductively-defined source which is computed in terms of the last correction $y^{j+1}$:
+\begin{equation}
+  \ell^j[\cdot] = \begin{cases} - F^{j+1}(y^{j+1})[\cdot] & j < J, \\
+                                - F(w^J)[\cdot] & j = J. \end{cases} \label{eq:rhslinearlevel}
+\end{equation}
+Note that each $F^j$ here acts on $\mathcal{V}^h$, that is, on whole the FE space, and all its nested subspaces, and $\ell^j$ is in $(\mathcal{V}^h)'$.  However, in an implemented multigrid cycle (below) we will use the canonical restriction operation in the construction of $\ell^j$, which will be in $(\mathcal{V}^j)'$ in that context.
 
-For the classical obstacle problem, with (continuum) residual $F(w)[v] = a(w,v) - \ip{f}{v}$ and a symmetric bilinear form $a(\cdot,\cdot)$, the three forms \eqref{eq:mcdvi}--\eqref{eq:mcdvilinear} are equivalent.  However, the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdminimization} depends on symmetry, and the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdvilinear} depends on bilinearity, and both fail for the glacier problem (section \ref{sec:sia}).  To summarize the logic, \eqref{eq:mcdvi} is the most general:
+For the classical obstacle problem, wherein the (continuum) residual $F(w)[v]$ is built from a symmetric bilinear form $a(w,v)$, the three problems \eqref{eq:mcdvi}--\eqref{eq:mcdvilinear} are equivalent.  However, the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdminimization} depends on symmetry, i.e.~such that $F$ is a gradient, and the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdvilinear} depends on bilinearity, and both fail for the glacier problem (section \ref{sec:sia}).  To summarize the logic, the VI \eqref{eq:mcdvi} is the most general:
    $$\eqref{eq:mcdvilinear} \quad \stackrel{a \text{ bilinear}}{\iff\strut} \quad \eqref{eq:mcdvi} \quad \stackrel{F=\grad I}{\iff\strut} \quad \eqref{eq:mcdminimization}.$$
+Tai \cite{Tai2003} states the MCD method using minimization form \eqref{eq:mcdminimization}, but the method applies equally to \eqref{eq:mcdvi}.  However, if $F\ne \grad I$, for $I$ a coercive objective function, then additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,KinderlehrerStampacchia1980}).
 
-Tai \cite{Tai2003} states the MCD method using minimization form \eqref{eq:mcdminimization}, but the method applies equally to \eqref{eq:mcdvi}.  However, if $F$ is not the gradient of a coercive objective function then additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,KinderlehrerStampacchia1980}).
 
-We may now write a multilevel solver for the classical obstacle problem.  The following pseudocode, in which \pr{MCDL} stands for ``multilevel constraint decomposition linear'', is analogous to the multilevel subspace decomposition \pr{msd-solver} in section \ref{sec:subspace}.
+\subsection*{MCD cycles}  We are now ready to implement a multilevel solver for the classical obstacle problem.
+
+The following pseudocode, in which \pr{MCDL} stands for ``multilevel constraint decomposition linear'', is analogous \pr{msd-solver} in section \ref{sec:subspace}, is based on \eqref{eq:mcdvilinear}.  This outer loop sets up the defect constraint (equation \eqref{eq:defectconstraint}), and the fine-level residual, and it checks for convergence after calling the inner solver, either of \pr{mcdl-slash} or \pr{mcdl-vcycle} below.
 \begin{pseudo*}
 \pr{mcdl-solver}(F,\varphi,\id{rtol}=10^{-4})\text{:} \\+
     $w=\varphi$ \qquad\qquad\qquad\qquad\qquad\quad \ct{or other admissible fine-level initial iterate} \\
@@ -641,32 +647,74 @@ We may now write a multilevel solver for the classical obstacle problem.  The fo
         $\chi^J = \varphi - w$ \qquad\qquad\qquad\qquad\quad \ct{fine-level defect constraint} \\
         $\ell^J[\cdot] := - F(w)[\cdot]$ \\
         $F^J(y)[\cdot] := a(y,\cdot) - \ell^J[\cdot]$ \\
-        $y=\pr{mcdl-slash}(J,F^J,\chi^J)$ \qquad\qquad \ct{or other cycle} \\
+        $y=\pr{mcdl-Z}(J,F^J,\chi^J)$ \qquad\qquad \ct{\pr{Z}$=$\pr{slash},\pr{vcycle}} \\
         $w\gets w+y$ \\-
     until $\|\hat\bF(w)\| \le r_0 \id{rtol}$ \\
     return $w$
 \end{pseudo*}
 
-Initially our solver applies a ``slash'' cycle, also known as a ``V(1,0)'' cycle \cite{GraeserKornhuber2009}, as in the following pseudocode:
+Our first cycle is a ``slash'', also known as a V(1,0) \cite{GraeserKornhuber2009}.  (Recall Figure \ref{fig:msdcycles} shows slash and V cycles.)  It is based on formulae \eqref{eq:chik}, \eqref{eq:levelobstacle}, \eqref{eq:residuallinearlevel}, and \eqref{eq:rhslinearlevel}.  However, before going down a level we restrict the last residual, i.e.
+\begin{equation}
+  \ell^{j-1}[\cdot] = - R(F^j(y^j))[\cdot] \label{eq:rhslinearlevelcycle}
+\end{equation}
+for $j=J,\dots,1$, which represents a loss of the information contained in high-frequency modes on the $j$th level, although we the smoother minimizes this loss.  As a pseudocode:
 \begin{pseudo*}
 \pr{mcdl-slash}(J,F^J,\chi^J,\id{down}=1,\id{coarse}=1)\text{:} \\+
-    for $k=J$ downto $k=1$ \\+
-      $\chi^{k-1} = \mR \chi^k$ \\
-      $\phi^k = \chi^k - P\chi^{k-1}$ \\
-      $y^k = 0$ \\
-      $\text{\pr{pgssweep}}^{\text{\id{down}}}(k,y^k,F^k,\phi^k)$ \\
-      $\ell^{k-1}[\cdot] := - R (F^k(y^k))[\cdot]$ \\
-      $F^{k-1}(y)[\cdot] := a(y,\cdot) - \ell^{k-1}[\cdot]$ \\-
+    for $j=J$ downto $j=1$ \\+
+      $\chi^{j-1} = \mR \chi^j$ \\
+      $\phi^j = \chi^j - P\chi^{j-1}$ \qquad\qquad\qquad\quad \ct{define obstacle} \\
+      $y^j = 0$ \\
+      $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,y^j,F^j,\phi^j)$ \qquad\quad \ct{down smoother} \\
+      $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad \ct{update residual} \\
+      $F^{j-1}(y)[\cdot] := a(y,\cdot) - \ell^{j-1}[\cdot]$ \\-
     $y^0 = 0$ \\
-    $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \\
-    for $k=1$ to $k=J$ \\+
-      $y^k = y^k + P y^{k-1}$ \\-
+    $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \qquad\quad \ct{coarse-level correction} \\
+    for $j=1$ to $j=J$ \\+
+      $y^j \gets y^j + P y^{j-1}$ \qquad\qquad\qquad\quad \ct{accumulate corrections} \\-
     return $y^J$
 \end{pseudo*}
 
-An implementation detail is that functions $F(y)[\cdot]$ need not be passed as functions in the programming-language sense.  Rather, noting that the FE method is based on a subroutine which evaluates $a(w,v)$ on any mesh, the linear functional $\ell^{j-1}$ is passed as a (row) vector from which $F^{j-1}$ is constructed as needed.  That is, the signatures in the above pseudocode could be restated as ``\pr{pgssweep}$(k,y^k,\ell^k,\phi^k)$'' and ``\pr{mcdl-slash}$(J,\ell^J,\chi^J)$''.
+An implementation detail is that the functions $F^j(y)[\cdot]$ are not passed as functions (i.e.~pro\-gramming-language subroutines).  Rather, noting that the FE method includes a subroutine which evaluates $a(w,v)$ as needed, the linear functional $\ell^{j-1}$ is passed as a (row) vector from which $F^{j-1}$ is constructed as needed.  That is, the implementation signatures are essentially \pr{pgssweep}$(j,y^j,\ell^j,\phi^j)$ and \pr{mcdl-slash}$(J,\ell^J,\chi^J)$, with the understanding that \eqref{eq:residuallinearlevel} defines $F^j$.
 
-We should describe what has been accomplished regarding theoretical convergence, for the MCD solver versus the PGS method, for the classical obstacle problem.  Let $u^h$, in $\mathcal{V}^h = \mathcal{V}^J$ and satisfying $u^h \ge \varphi^J$, be the exact solution of the finite-dimensional VI
+Implementing a V-cycle requires reconsideration of the constraint decomposition.  Each update from a correction on a different level needs admissibility, and in a V-cycle this applies on the way up, too.  Gr\"aser \& Kornhuber \cite{GraeserKornhuber2009} suggest that we keep the $j$th-level defect constraints $\chi^j$ \eqref{eq:chik} the same, but split the $j$th-level obstacles in half, and use half down and half up.  Thus we have the following formulae, for $j=-J,\dots,-1,+1,\dots,+J$, in which $j>0$ are down indices and $j<0$ are up:
+\begin{equation}
+\phi_V^j = \frac{1}{2}(\chi^{|j|}-\chi^{|j|-1}), \qquad \mathcal{K}_V^j = \{v \ge \phi_V^j\} \subset \mathcal{V}^{|j|}.
+\end{equation}
+Note $\phi_V^0 = \chi^0,\mathcal{K}_V^0 = \{v \ge \chi^0\}$ as a special case.  This set-up maintains the consistency \cite{GraeserKornhuber2009,Tai2003} of the constraint decomposition, based on a telescoping sum like \eqref{eq:telescopingdecomposition}:
+\begin{equation}
+\chi^J = \sum_{j=-J}^J \phi_V^j, \qquad \mathcal{D}^J = \sum_{j=-J}^J \mathcal{K}_V^j.
+\end{equation}
+Formulae \eqref{eq:mcdvilinear}, \eqref{eq:residuallinearlevelderive}, \eqref{eq:residuallinearlevel}, and \eqref{eq:rhslinearlevel} apply as written, but now we used them for the new index range $j=-J,\dots,+J$.  These ideas come together in the following pseudocode.
+\begin{pseudo*}
+\pr{mcdl-vcycle}(J,F^J,\chi^J,\id{down}=1,\id{up}=1,\id{coarse}=1)\text{:} \\+
+    for $j=J$ downto $j=1$ \\+
+      $\chi^{j-1} = \mR \chi^j$ \\
+      $\phi_V^j = \frac{1}{2}(\chi^j - P\chi^{j-1})$ \qquad\qquad\quad  \ct{define obstacle} \\
+      $y^j = 0$ \\
+      $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,y^j,F^j,\phi_V^j)$ \\
+      $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad \ct{update residual} \\
+      $F^{j-1}(y)[\cdot] := a(y,\cdot) - \ell^{j-1}[\cdot]$ \\-
+    $y^0 = 0$ \\
+    $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \\
+    $z^0 = y^0$ \\
+    for $j=1$ to $j=J$ \\+
+      $\ell^{j}[\cdot] := - P(F^{j-1}(z^{j-1}))[\cdot]$ \qquad\qquad \ct{update residual} \\
+      $F^{j}(y)[\cdot] := a(y,\cdot) - \ell^{j}[\cdot]$ \\
+      $z^j = 0$ \\
+      $\text{\pr{pgssweep}}^{\text{\id{up}}}(j,z^j,F^j,\phi_V^j)$ \\
+      $y^j \gets y^j + z^j + P y^{j-1}$ \qquad\qquad\quad \ct{accumulate corrections} \\-
+    return $y^J$
+\end{pseudo*}
+
+FIXME Figure like Figure \ref{fig:gooddecomposition} but for V-cycle
+
+FIXME note these are really $V(\id{down},0)$ and ...
+
+FIXME F cycle
+
+\subsection*{Computational results} FIXME
+
+\subsection*{Convergence theory and performance models}  Mathematical theory allows us to compare the convergence rates of our MCD solver versus the PGS method, for the classical obstacle problem.  Let $u^h$, in $\mathcal{V}^h = \mathcal{V}^J$ and satisfying $u^h \ge \varphi^J$, be the exact solution of the finite-dimensional VI
 \begin{equation}
   F(u^h)[v-u^h] \ge 0 \quad \text{ for all } v \text{ in $\mathcal{V}^h$ such that } v \ge \varphi^J. \label{eq:feobstaclevioriginal}
 \end{equation}
@@ -684,7 +732,7 @@ Thus the asymptotic convergence rate at which $\|w^{(s)} - u^h\|_{\mathcal{H}} \
     $$\rho_{\text{PGS}} = \sqrt{1-Ch^2} = 1 - O(h^2).$$
 Thus as we refine and $h\to 0$ the value of $\rho_{\text{PGS}}$ goes to one.  In fact if we seek to reduce the error norm below $\eps$ times its original value then we expect to need $O(|\log\eps|/h^2)$ iterations.  The number of iterations increases rapidly as $h\to 0$.
 
-\begin{theorem} \cite[Thm.~4.6]{GraeserKornhuber2009}\,  \label{thm:pgsconvergence}  FIXME Suppose $w^{(s)}$  results from $s$ applications of \pr{mcdl-slash} on the fine level, starting with any $w^{(0)}$.  There is $\rho<1$ so that
+\begin{theorem} \cite[Thm.~4.6]{GraeserKornhuber2009}\,  \label{thm:mcdlconvergence}  FIXME Suppose $w^{(s)}$  results from $s$ applications of \pr{mcdl-slash} on the fine level, starting with any $w^{(0)}$.  There is $\rho<1$ so that
 \begin{equation}
   \|w^{(s+1)} - u^h\|_{\mathcal{H}} \le \rho \|w^{(s)} - u^h\|_{\mathcal{H}}.  \label{eq:mcdlconvergence}
 \end{equation}
@@ -692,10 +740,22 @@ Thus as we refine and $h\to 0$ the value of $\rho_{\text{PGS}}$ goes to one.  In
 
 FIXME Compare Theorem \ref{thm:msdconvergence}.
 
-FIXME V(1,1)
+FIXME model performance when $h=O(2^{-J})$ and $N=2^{J+1}-1=O(2^J)$ so $J = O(\log N)$; Table \ref{tab:performancmodels}; all constants proportional to $|\log\eps|$
 
-\subsection*{Results} FIXME
+\begin{table}
+\begin{tabular}{l|l|l}
+\emph{method} & \emph{iterations} & \emph{work} \\ \hline
+\pr{pgssweeps} & $O(N^2)$ & $O(N^3)$ \\
+\pr{mcdl-slash} & $O(\log N)$ & $O(N \log N)$ \\ \hline
+\pr{gmg-vcycle} & $O(1)$ & $O(N)$
+\end{tabular}
 
+\medskip
+\label{tab:performancmodels}
+\caption{Number of iterations to reduce the error norm $\|w-u^h\|_{\mathcal{H}}$ by a factor of $\eps$, and consequent amount of work (flops), for solvers of the classical obstacle problem, as degrees of freedom $N\to\infty$.  Method \pr{gmg-vcycle} solves the linear Poisson equation.}
+\end{table}
+
+FIXME there are other fast solution methods, e.g.~PFAS in \cite{BrandtCryer1983} and inactive-set Newton-Multigrid \cite[Chapter 12]{Bueler2021}, and monotone and truncated multigrid \cite{GraeserKornhuber2009}, but theory is more complicated or missing
 
 \section{Multigrid for the shallow-ice mass conservation problem} \label{sec:sia}
 
@@ -719,8 +779,8 @@ FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to 
 \bibliographystyle{siam}
 
 \normalsize
-%\clearpage
 
+\clearpage
 \appendix
 \section{Notation}
 
