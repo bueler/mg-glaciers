@@ -13,7 +13,7 @@ import numpy as np
 
 from meshlevel import MeshLevel1D
 from pgs import residual, inactiveresidual, pgssweep
-from subsetdecomp import mcdlslash
+from subsetdecomp import mcdlcycle
 from visualize import VisObstacle
 
 parser = argparse.ArgumentParser(description='''
@@ -225,11 +225,11 @@ for s in range(args.cyclemax):
     else:
         # Tai (2003) constraint decomposition method for V(1,0)-cycles
         # = Alg. 4.7 in G&K (2009); next few lines are "mcdl-solver()" in paper
-        assert args.up == 0  #FIXME
+        #assert args.up == 0  #FIXME
         mesh.chi = phifine - uu
         ell = - residual(mesh,uu,ellfine)
-        y, infeas = mcdlslash(levels-1, hierarchy, ell,
-                              down=args.down, coarse=args.coarse,
+        y, infeas = mcdlcycle(levels-1, hierarchy, ell,
+                              down=args.down, up=args.up, coarse=args.coarse,
                               levels=levels, view=args.mgview,
                               symmetric=args.symmetric,
                               printwarnings=args.printwarnings)
