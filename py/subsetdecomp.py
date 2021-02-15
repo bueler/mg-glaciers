@@ -30,48 +30,43 @@ def _smoother(s, mesh, v, ell, phi, forward=True, symmetric=False, printwarnings
                                printwarnings=printwarnings)
     return infeas
 
-#FIXME keep recursive?
-def mcdlslash(j, hierarchy, ell, down=1, coarse=1,
+def mcdlslash(J, hierarchy, ell, down=1, coarse=1,
               levels=None, view=False, symmetric=False, printwarnings=False):
     '''Apply one cycle of the multilevel subset decomposition method of
-    Tai (2003), as stated in Alg. 4.7 in Graeser & Kornhuber (2009),
-    but implemented recursively.  Note hierarchy[j] is of type MeshLevel1D,
-    and hierarch[j].chi is the jth-level defect constraint.  Linear functional
-    ell is in V^J'.  The smoother is projected Gauss-Seidel (PGS).  The coarse
-    solver is coarse iterations of PGS, thus not exact.'''
+    Tai (2003), as stated in Alg. 4.7 in Graeser & Kornhuber (2009).
+    Note hierarchy[j] is of type MeshLevel1D, and hierarchy[j].chi is the
+    jth-level defect constraint.  Input linear functional ell is in V^J'.
+    The smoother is projected Gauss-Seidel (PGS).  The coarse solver is PGS,
+    thus not exact.'''
 
     # set up
-    mesh = hierarchy[j]
-    y = mesh.zeros()
-    assert down >= 1 and coarse >= 1 and len(ell) == mesh.m + 2
+    assert down >= 1 and coarse >= 1 and len(ell) == hierarchy[J].m + 2
+    infeas = 0
+
+    # downward
+    for k in range(J,0,-1):
+        # update defect constraint and define obstacle
+        hierarchy[k-1].chi = hierarchy[k].mR(hierarchy[k].chi)
+        phi = hierarchy[k].chi - hierarchy[k].P(hierarchy[k-1].chi)
+        # down smoother = PGS sweeps
+        if view:
+            _levelreport(levels-1, k, hierarchy[k].m, down)
+        hierarchy[k].y = hierarchy[k].zeros()
+        infeas += _smoother(down, hierarchy[k], hierarchy[k].y, ell, phi,
+                            symmetric=symmetric, printwarnings=printwarnings)
+        # canonically-restrict the residual
+        ell = - hierarchy[k].cR(residual(hierarchy[k], hierarchy[k].y, ell))
 
     # coarse mesh solver = PGS sweeps
-    if j == 0:
-        if view:
-            _coarsereport(levels-1, mesh.m, coarse)
-        infeas = _smoother(coarse, mesh, y, ell, mesh.chi,
-                           symmetric=symmetric, printwarnings=printwarnings)
-        return y, infeas
-
-    # update defect constraint and define jth-level obstacle
-    hierarchy[j-1].chi = mesh.mR(mesh.chi)
-    phi = mesh.chi - mesh.P(hierarchy[j-1].chi)
-
-    # down smoother = PGS sweeps
     if view:
-        _levelreport(levels-1, j, mesh.m, down)
-    infeas = _smoother(down, mesh, y, ell, phi,
-                       symmetric=symmetric, printwarnings=printwarnings)
+        _coarsereport(levels-1, hierarchy[0].m, coarse)
+    hierarchy[0].y = hierarchy[0].zeros()
+    infeas += _smoother(coarse, hierarchy[0], hierarchy[0].y, ell,
+                        hierarchy[0].chi,
+                        symmetric=symmetric, printwarnings=printwarnings)
 
-    # canonically-restrict the residual and update to F^{j-1}(y)[.]
-    ellcoarse = - mesh.cR(residual(mesh, y, ell))
-
-    # recursive coarse-level correction
-    ycoarse, ifc = mcdlslash(j-1, hierarchy, ellcoarse,
-                             down=down, coarse=coarse,
-                             levels=levels, view=view, symmetric=symmetric,
-                             printwarnings=printwarnings)
-    y += mesh.P(ycoarse)
-    infeas += ifc
-    return y, infeas
+    # upward
+    for k in range(1,J+1):
+        hierarchy[k].y += hierarchy[k].P(hierarchy[k-1].y)
+    return hierarchy[J].y, infeas
 
