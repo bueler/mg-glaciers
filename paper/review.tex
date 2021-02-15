@@ -28,13 +28,13 @@ urlcolor=black    % ...
   {5pt}% space below
   {\itshape}% body font
   {}% indent amount
-  {}% theorem head font
+  {\itshape}% theorem head font
   {.}% punctuation after theorem head
   {.5em}% space after theorem head
   {\thmname{#1}\thmnumber{ #2}\thmnote{ (#3)}}% theorem head spec
 \theoremstyle{claim}
-\newtheorem*{theorem}{Theorem}
-\newtheorem*{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
 
 \newcommand{\eps}{\epsilon}
 \newcommand{\RR}{\mathbb{R}}
@@ -78,6 +78,7 @@ urlcolor=black    % ...
 \numberwithin{equation}{section}
 \numberwithin{figure}{section}
 \numberwithin{table}{section}
+\numberwithin{theorem}{section}
 
 
 \begin{document}
@@ -103,7 +104,7 @@ On the other hand, since the 1980s researchers in numerial methods have develope
 
 FIXME Accessible introductions to FE methods are in \cite{Bueler2021,Elmanetal2014,Johnson2009}.
 
-FIXME perspectives \emph{not} found here: convergence of GMG (or much detail for application to linear problems); assumptions like ``SPD'' specific to constrained \emph{optimization} as opposed to VI/NCP viewpoint
+FIXME cite for multigrid on classical obstacle \cite{BrandtCryer1983,Bueler2021,GraeserKornhuber2009}
 
 
 \section{From subspace decomposition to multigrid} \label{sec:subspace}
@@ -277,13 +278,13 @@ These \pr{msd} algorithms improve a fine-level iterate $w$ but they do not (gene
 
 These simply-stated schemes, which appeared relatively-late in the history of multigrid \cite{Xu1992}, contain the core ideas of all multigrid schemes, and they possess excellent convergence properties.  For example, the following theorem applies to linear elliptic PDEs in any dimension.  The constant $\rho$ depends only on the element aspect ratios (\emph{shape regularity} \cite{Elmanetal2014}) in the mesh---this is not relevant in 1D---and on the coefficient-minimum (\emph{ellipticity bound}) $\alpha_0=\inf_x \alpha(x)$.  Recall that $u^h$ is the exact solution of the FE weak form \eqref{eq:feweakpoisson}.
 
-\begin{theorem} \cite[Thm.~3.10]{GraeserKornhuber2009}  Suppose $w^{(s)}$  results from $s$ applications of \pr{msd-slash} or \pr{msd-vcycle} on the fine level, starting with any $w^{(0)}$.  There is $\rho<1$ so that
+\begin{theorem} \cite[Thm.~3.10]{GraeserKornhuber2009}\,  \label{thm:msdconvergence}  Suppose $w^{(s)}$  results from $s$ applications of \pr{msd-slash} or \pr{msd-vcycle} on the fine level, starting with any $w^{(0)}$.  There is $\rho<1$ independent of $J$ and $h$ so that
 \begin{equation}
   \|w^{(s+1)} - u^h\|_{\mathcal{H}} \le \rho \|w^{(s)} - u^h\|_{\mathcal{H}}.  \label{eq:msdconvergence}
 \end{equation}
 \end{theorem}
 
-It follows that if we want the error norm $e^{(s)} = \|w^{(s)}-u^h\|_{\mathcal{H}}$ to be reduced to below some level $\eps>0$ then we should do $s>(\log\eps - \log e^{(0)})/\log \rho$ iterations, where $e^{(0)}$ is the initial error norm.  That is, we need $O(\log\eps)$ iterations, and a smaller $\rho$ implies a better constant.  The error norms are not computable, but they are related to computable residual norms via the condition number of the system matrix $A$ \cite[Chapter 2]{Bueler2016}.
+It follows that if we want the error norm $e^{(s)} = \|w^{(s)}-u^h\|_{\mathcal{H}}$ to be reduced to below some level $\eps>0$ then we should do $s>(\log\eps - \log e^{(0)})/\log \rho$ iterations, where $e^{(0)}$ is the initial error norm.  That is, we need $O(|\log\eps|)$ iterations.  (Note that a smaller $\rho$ implies a better constant.)  The error norms are not computable, but they are related to computable residual norms via the condition number of the system matrix $A$ \cite[Chapter 2]{Bueler2016}.
 
 However, these \pr{msd} methods are not yet complete solvers.  In fact their performance entirely depends on how iterates $w$ and residuals $F(w)[\cdot]$ are represented on each mesh level.  For example, if we represent $w$ and $F(w)$ using the fine-level basis $\{\psi_p^J\}$ then one application of \pr{gsweep}$(J,w,F)$ is indeed fast, i.e.~$O(m_J)$ operations, with a small constant, because evaluating each $F(w)[\psi_p^J]$ requires only a few operations.  However, evaluating $F(w)[\psi_p^j]$ for $j<J$ means computing integrals over the wide support of $\psi_p^j$, which is nonzero at many fine-mesh nodes $x_p^J$.  That is, \pr{gssweep}$(j,w,F)$ for $j<J$ is not an efficient operation if $w$ and $F(w)$ are represented on the fine level.  Specifically, it is not an $O(m_j)$ operation with a coefficient which is independent of $j$.  Fortunately, these \pr{msd} methods can be improved, as solvers, via hierarchical representations which are compatible with multilevel corrections.
 
@@ -343,9 +344,9 @@ The result $P y$ is the same piecewise-linear function as the input $y$, but aga
   z_q = \sum_{p=1}^{m_{j-1}} c_{pq} y_p. \label{eq:canonicalprolongationaction}
 \end{equation}
 
-Combining the above ideas gives a \emph{geometric multigrid} (GMG) \emph{V-cycle}.  In addition to sweeps of the GS smoother, our V-cycle algorithm adds a recursive solution of the coarse-level correction equation \eqref{eq:coarsecorrection}, followed by update \eqref{eq:update}, followed by more smoother sweeps.  The following pseudocode, which modifies the iterate $w$ in-place, can be called repeatedly so as to improve the iterate $w$.
+Combining the above ideas gives a \emph{geometric multigrid} (GMG) \emph{V-cycle}.  In addition to sweeps of the GS smoother, our V-cycle algorithm solves the coarse-level correction equation \eqref{eq:coarsecorrection}, followed by update \eqref{eq:update}, followed by more smoother sweeps.  The following pseudocode, which modifies the iterate $w$ in-place, can be called repeatedly so as to improve the iterate $w$.  This implementation recurses for the correction, but rewriting using loops is straightforward.
 \begin{pseudo*}
-\pr{gmg-vcycle}(j,w,F)\text{:} \\+
+\pr{gmg-vcycle}(j,w,F,\id{down}=1,\id{up}=1)\text{:} \\+
     if $j=0$ \\+
         $w =$ \pr{coarsesolve}(F) \\-
     else \\+
@@ -368,7 +369,7 @@ Observe that after \texttt{down} smoother sweeps, denoted here by $\text{\textsc
 
 The algorithm calls a coarse solver subroutine on the $j=0$ level.  For a linear problem like \eqref{eq:poisson} one may apply a direct solver to the linear system, but direct solvers are not available for nonlinear (e.g.~glacier) problems.  Instead we suppose \textsc{coarsesolve} is implemented as a fixed number of GS sweeps using an initial iterate zero:
 \begin{pseudo*}
-\pr{coarsesolve}(F)\text{:} \\+
+\pr{coarsesolve}(F,\id{coarse}=1)\text{:} \\+
     $w=0$ \\
     $\text{\pr{gssweep}}^{\text{\id{coarse}}}(0,w,F)$ \\
     return $w$
@@ -499,7 +500,7 @@ The following pseudocode, a small modification of \pr{gssweep}, implements PGS.
         $c = \max\{-F(w)[\psi_p^j] \,\big/\, a(\psi_p^j,\psi_p^j),\, \phi(x_p^j)-w(x_p^j)\}$ \\
         $w \gets w + c \psi_p^j$
 \end{pseudo*}
-As proven in \cite{BrandtCryer1983}, PGS converges to the solution $y^j$ of problem \eqref{eq:feobstacleviresidual}, but slowly on fine meshes.
+PGS converges to the solution $y^j$ of problem \eqref{eq:feobstacleviresidual} \cite[Proposition 4.5]{GraeserKornhuber2009}, but slowly on fine meshes.
 
 However, note that $\|F(w)\|$ does not go to zero (in general) at PGS convergence.  Recalling the CP formulation of the problem \eqref{eq:obstaclecp}, at convergence we have $F(w)[\psi_p^j] = 0$ where $w(x_p^j) > \phi(x_p^j)$ (inactive points), but if $w(x_p^j) = \phi(x_p^j)$ (active points) then $F(w)[\psi_p^j]$ is only required to be nonnegative.  Thus the convergence criterion for iterated PGS sweeps is that the norm of the \emph{CP residual}, the vector
 \begin{equation}
@@ -646,28 +647,54 @@ We may now write a multilevel solver for the classical obstacle problem.  The fo
     return $w$
 \end{pseudo*}
 
-Initially our solver applies a ``slash'' cycle, also known as a ``V(1,0)'' cycle \cite{GraeserKornhuber2009}.  Here is a recursive pseudocode:
+Initially our solver applies a ``slash'' cycle, also known as a ``V(1,0)'' cycle \cite{GraeserKornhuber2009}, as in the following pseudocode:
 \begin{pseudo*}
-\pr{mcdl-slash}(j,F,\chi,\id{down}=1,\id{coarse}=1)\text{:} \\+
-    $y=0$ \\
-    if $j=0$ \\+
-        $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y,F,\chi)$ \\
-        return $y$ \\-
-    $\chi^{j-1} = \mR \chi$ \\
-    $\phi^j = \chi - P\chi^{j-1}$ \\
-    $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,y,F,\phi^j)$ \\
-    $\ell^{j-1}[\cdot] := - R (F(y))[\cdot]$ \\
-    $F^{j-1}(y)[\cdot] := a(y,\cdot) - \ell^{j-1}[\cdot]$ \\
-    $y^{j-1} =$ \pr{mcd-slash}(j-1,F^{j-1},\chi^{j-1}) \\
-    return $y + P y^{j-1}$
+\pr{mcdl-slash}(J,F^J,\chi^J,\id{down}=1,\id{coarse}=1)\text{:} \\+
+    for $k=J$ downto $k=1$ \\+
+      $\chi^{k-1} = \mR \chi^k$ \\
+      $\phi^k = \chi^k - P\chi^{k-1}$ \\
+      $y^k = 0$ \\
+      $\text{\pr{pgssweep}}^{\text{\id{down}}}(k,y^k,F^k,\phi^k)$ \\
+      $\ell^{k-1}[\cdot] := - R (F^k(y^k))[\cdot]$ \\
+      $F^{k-1}(y)[\cdot] := a(y,\cdot) - \ell^{k-1}[\cdot]$ \\-
+    $y^0 = 0$ \\
+    $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \\
+    for $k=1$ to $k=J$ \\+
+      $y^k = y^k + P y^{k-1}$ \\-
+    return $y^J$
 \end{pseudo*}
-An implementation detail is that the function $F^{j-1}(y)[\cdot]$ need not be passed as a function.  Rather, the FE method has a subroutine which evaluates $a(w,v)$ on any mesh, and then the linear functional $\ell^{j-1}$ is passed as a (row) vector from which $F^{j-1}$ is constructed.  The signatures in the above pseudocode could be stated as ``\pr{pgssweep}$(j,y,\ell,\phi)$'' and ``\pr{mcdl-slash}$(j,\ell,\chi)$''.
+
+An implementation detail is that functions $F(y)[\cdot]$ need not be passed as functions in the programming-language sense.  Rather, noting that the FE method is based on a subroutine which evaluates $a(w,v)$ on any mesh, the linear functional $\ell^{j-1}$ is passed as a (row) vector from which $F^{j-1}$ is constructed as needed.  That is, the signatures in the above pseudocode could be restated as ``\pr{pgssweep}$(k,y^k,\ell^k,\phi^k)$'' and ``\pr{mcdl-slash}$(J,\ell^J,\chi^J)$''.
+
+We should describe what has been accomplished regarding theoretical convergence, for the MCD solver versus the PGS method, for the classical obstacle problem.  Let $u^h$, in $\mathcal{V}^h = \mathcal{V}^J$ and satisfying $u^h \ge \varphi^J$, be the exact solution of the finite-dimensional VI
+\begin{equation}
+  F(u^h)[v-u^h] \ge 0 \quad \text{ for all } v \text{ in $\mathcal{V}^h$ such that } v \ge \varphi^J. \label{eq:feobstaclevioriginal}
+\end{equation}
+This is the direct FE approximation of \eqref{eq:obstacleviresidual}; compare \eqref{eq:feobstacleviresidual} which uses the decomposition of the defect constraint.  Recall that $F=\grad I$ for an objective function $I(w)$ (see \eqref{eq:obstaclemin}).  For simplicity assume that the fine ($J$th) mesh is equally-spaced with spacing $h$.
+
+First consider the PGS method.  Note that the following theorem describes the norm of the algebraic error of an iterate, i.e.~$\|w-u^h\|_{\mathcal{H}}$, relative to the objective value on the initial iterate.
+
+\begin{theorem} \cite[Prop.~4.5]{GraeserKornhuber2009}\,  \label{thm:pgsconvergence}  Suppose $w^{(s)}$  results from $s$ applications of \pr{pgssweep} on the fine level, starting with any $w^{(0)}$.  There is $C>0$ independent of $h$ so that
+\begin{equation}
+  \|w^{(s)} - u^h\|_{\mathcal{H}}^2 \le 2 (1-C h^2)^s\,\left(I(w^{(0)}) - I(u^h)\right).  \label{eq:pgsconvergence}
+\end{equation}
+\end{theorem}
+
+Thus the asymptotic convergence rate at which $\|w^{(s)} - u^h\|_{\mathcal{H}} \to 0$ is $O(\rho_{\text{PGS}}^s)$ where
+    $$\rho_{\text{PGS}} = \sqrt{1-Ch^2} = 1 - O(h^2).$$
+Thus as we refine and $h\to 0$ the value of $\rho_{\text{PGS}}$ goes to one.  In fact if we seek to reduce the error norm below $\eps$ times its original value then we expect to need $O(|\log\eps|/h^2)$ iterations.  The number of iterations increases rapidly as $h\to 0$.
+
+\begin{theorem} \cite[Thm.~4.6]{GraeserKornhuber2009}\,  \label{thm:pgsconvergence}  FIXME Suppose $w^{(s)}$  results from $s$ applications of \pr{mcdl-slash} on the fine level, starting with any $w^{(0)}$.  There is $\rho<1$ so that
+\begin{equation}
+  \|w^{(s+1)} - u^h\|_{\mathcal{H}} \le \rho \|w^{(s)} - u^h\|_{\mathcal{H}}.  \label{eq:mcdlconvergence}
+\end{equation}
+\end{theorem}
+
+FIXME Compare Theorem \ref{thm:msdconvergence}.
 
 FIXME V(1,1)
 
-FIXME cite for multigrid on classical obstacle \cite{BrandtCryer1983,Bueler2021,GraeserKornhuber2009}
-
-\subsection*{Convergence and performance results} FIXME
+\subsection*{Results} FIXME
 
 
 \section{Multigrid for the shallow-ice mass conservation problem} \label{sec:sia}
