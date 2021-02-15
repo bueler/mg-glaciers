@@ -1,4 +1,4 @@
-'''Module to implement the projected Gauss-Seidel (pGS) algorithm.'''
+'''Module to implement the projected Gauss-Seidel (PGS) algorithm.'''
 
 import numpy as np
 from poisson import residual, diagonalentry, pointresidual
@@ -18,11 +18,11 @@ def pgssweep(mesh, w, ell, phi, forward=True, phieps=1.0e-10,
              printwarnings=False):
     '''Do in-place projected Gauss-Seidel sweep, over the interior points
     p=1,...,m, for the classical obstacle problem
-        F(u)[v-u] = a(w,v-u) - <f,v-u> >= 0
+        F(u)[v-u] = a(w,v-u) - ell[v-u] >= 0
     for all v in V^j.  Input iterate w is in V^j and ell is in V^j'.
     At each p, solves
         F(w + c psi_p)[psi_p] = 0
-    for c, where F(w)[v] = a(w,v) - ell[v].  Thus
+    for c.  Thus
         c = - F(w)[psi_p] / a(psi_p,psi_p).
     The update of w guarantees admissibility (w[p] >= phi[p])
         w[p] <- max(w[p]+c,phi[p]).
