@@ -52,16 +52,17 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
         hierarchy[k-1].chi = hierarchy[k].mR(hierarchy[k].chi)
         phi = hierarchy[k].chi - hierarchy[k].P(hierarchy[k-1].chi)
         if up > 0:
-            phi *= 0.5
+            phi *= 0.5  # V-cycle obstacle is different
         # down smoother = PGS sweeps
         if view:
             _levelreport(levels-1, k, hierarchy[k].m, down)
         hierarchy[k].y = hierarchy[k].zeros()
-        infeas += _smoother(down, hierarchy[k], hierarchy[k].y, ell, phi,
+        infeas += _smoother(down, hierarchy[k], hierarchy[k].y, hierarchy[k].ell, phi,
                             symmetric=symmetric, printwarnings=printwarnings)
-        # canonically-restrict the residual
-        hierarchy[k-1].ell \
-            = - hierarchy[k].cR(residual(hierarchy[k], hierarchy[k].y, hierarchy[k].ell))
+        # update and canonically-restrict the residual
+        hierarchy[k-1].ell = - hierarchy[k].cR(residual(hierarchy[k],
+                                                        hierarchy[k].y,
+                                                        hierarchy[k].ell))
 
     # coarse mesh solver = PGS sweeps
     if view:
@@ -70,23 +71,26 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
     infeas += _smoother(coarse, hierarchy[0], hierarchy[0].y, hierarchy[0].ell,
                         hierarchy[0].chi,
                         symmetric=symmetric, printwarnings=printwarnings)
-    if up > 0:
-        z = hierarchy[0].y.copy()
 
     # upward
+    hierarchy[0].Z = hierarchy[0].y.copy()
     for k in range(1,J+1):
+        # accumulate corrections
+        hierarchy[k].Z = hierarchy[k].P(hierarchy[k-1].Z) + hierarchy[k].y
         if up > 0:
-            ell = - residual(hierarchy[k],
-                             hierarchy[k].P(hierarchy[k-1].y + z),
-                             hierarchy[k].ell)
+            # V-cycle obstacle
+            phi = 0.5 * (hierarchy[k].chi - hierarchy[k].P(hierarchy[k-1].chi))
+            # update and inject-prolong the residual
+            hierarchy[k].ell = - hierarchy[k].injectP(residual(hierarchy[k-1],
+                                                               hierarchy[k-1].y,
+                                                               hierarchy[k-1].ell))
+            # up smoother = PGS sweeps
             if view:
                 _levelreport(levels-1, k, hierarchy[k].m, up)
-            z = hierarchy[k].zeros()
-            phi = 0.5*(hierarchy[k].chi - hierarchy[k].P(hierarchy[k-1].chi))
-            infeas += _smoother(down, hierarchy[k], z, ell, phi,
-                                symmetric=symmetric, printwarnings=printwarnings)            
-            hierarchy[k].y += z
-        hierarchy[k].y += hierarchy[k].P(hierarchy[k-1].y)
+            hierarchy[k].y = hierarchy[k].zeros()
+            infeas += _smoother(up, hierarchy[k], hierarchy[k].y, hierarchy[k].ell, phi,
+                                symmetric=symmetric, printwarnings=printwarnings)
+            hierarchy[k].Z += hierarchy[k].y
 
-    return hierarchy[J].y, infeas
+    return hierarchy[J].Z, infeas
 

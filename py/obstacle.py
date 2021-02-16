@@ -225,7 +225,6 @@ for s in range(args.cyclemax):
     else:
         # Tai (2003) constraint decomposition method for V(1,0)-cycles
         # = Alg. 4.7 in G&K (2009); next few lines are "mcdl-solver()" in paper
-        #assert args.up == 0  #FIXME
         mesh.chi = phifine - uu
         ell = - residual(mesh,uu,ellfine)
         y, infeas = mcdlcycle(levels-1, hierarchy, ell,
