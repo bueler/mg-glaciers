@@ -73,10 +73,10 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
                         symmetric=symmetric, printwarnings=printwarnings)
 
     # upward
-    hierarchy[0].Z = hierarchy[0].y.copy()
+    hierarchy[0].omega = hierarchy[0].y.copy()
     for k in range(1,J+1):
         # accumulate corrections
-        hierarchy[k].Z = hierarchy[k].P(hierarchy[k-1].Z) + hierarchy[k].y
+        hierarchy[k].omega = hierarchy[k].P(hierarchy[k-1].omega) + hierarchy[k].y
         if up > 0:
             # V-cycle obstacle
             phi = 0.5 * (hierarchy[k].chi - hierarchy[k].P(hierarchy[k-1].chi))
@@ -90,7 +90,7 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
             hierarchy[k].y = hierarchy[k].zeros()
             infeas += _smoother(up, hierarchy[k], hierarchy[k].y, hierarchy[k].ell, phi,
                                 symmetric=symmetric, printwarnings=printwarnings)
-            hierarchy[k].Z += hierarchy[k].y
+            hierarchy[k].omega += hierarchy[k].y
 
-    return hierarchy[J].Z, infeas
+    return hierarchy[J].omega, infeas
 
