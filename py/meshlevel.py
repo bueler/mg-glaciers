@@ -97,7 +97,7 @@ class MeshLevel1D():
                'cannot prolong from a mesh coarser than the coarsest mesh'
         self.checklen(ell, coarser=True)
         y = self.zeros()
-        for q in range(1, len(ell)):
+        for q in range(1, self.mcoarser+1):
             y[2*q] = ell[q]
         return y
 
