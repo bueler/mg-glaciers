@@ -193,13 +193,21 @@ uu[[0, -1]] = [0.0, 0.0]
 if exactavailable:
     uex = uexact(mesh.xx())
 
+lastirnorm = -1.0
 def irerrmonitor(siter, w):
     '''Compute inactive residual norm.  Print it, and error if available.'''
+    global lastirnorm
     irnorm = mesh.l2norm(inactiveresidual(mesh, w, ellfine, phifine))
     if args.monitor:
-        print('  %d:  |ir(u)|_2 = %.4e' % (siter, irnorm))
+        print('  %d:  |ir(u)|_2 = %.4e' % (siter, irnorm), end='')
+        if lastirnorm > 0:
+            print('  (rate %.4f)' % (irnorm/lastirnorm))
+        else:
+            print()
+        lastirnorm = irnorm
     if args.monitorerr and exactavailable:
-        print('  %d:  |u-uexact|_2 = %.4e' % (siter, mesh.l2norm(w-uex)))
+        errnorm = mesh.l2norm(w-uex)
+        print('  %d:  |u-uexact|_2 = %.4e' % (siter, errnorm))
     return irnorm
 
 # multigrid V-cycles (unless user just wants pGS)
