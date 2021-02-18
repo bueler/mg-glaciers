@@ -82,7 +82,7 @@ urlcolor=black    % ...
 
 
 \begin{document}
-\title[Geometric multigrid for glacier modeling]{Geometric multigrid for glacier modeling: \\ Core concepts and new techniques}
+\title[Geometric multigrid for glacier modeling]{Geometric multigrid for glacier modeling: \\ New techniques and concepts}
 
 \author{Ed Bueler}
 
@@ -376,11 +376,37 @@ The algorithm calls a coarse solver subroutine on the $j=0$ level.  For a linear
 \end{pseudo*}
 If the coarsest mesh has a single node ($m_0=1$) then a single sweep gives an exact solution, and in any case this solver should be very accurate, as well as fast, if $m_0$ is small.  (Actually the choice of coarse level and coarse-level solver is nontrivial for realistic problems; see sections \ref{sec:sia} and \ref{sec:stokes}.)
 
-The operators $R$ and $P$ make no choices, which is the meaning of ``canonical'', but they represent computational work because of how we represent functions and functionals on each level.  That work is contained in equations \eqref{eq:hatcombination} and \eqref{eq:nodalcoefficients} which express how each coarse-level hat function is a linear combination of fine-level hats.  As linear operators, $R$ and $P$ may be represented as sparse rectangular matrices, in which case $P=R^\top$ (transpose), but in fact this is not necessary.  Both operators can be applied using $O(m_j)$ work via our straightforward local-averaging formulas, which are also called \emph{full weighting} \cite{Briggsetal2000}.  In fact our formulas \eqref{eq:hatcombination}, \eqref{eq:nodalcoefficients}, \eqref{eq:canonicalrestrictionaction}, and \eqref{eq:canonicalprolongationaction} generalize verbatim to unstructured 2D and 3D meshes, where indices $p$ and $q$ denote the nodes of the mesh.
+\subsection*{On restrictions and prolongations}  The operators $R$ and $P$ make no choices, which is the meaning of ``canonical'', but they represent computational work because of how we represent functions and functionals on each level.  That work is contained in equations \eqref{eq:hatcombination} and \eqref{eq:nodalcoefficients} which express how each coarse-level hat function is a linear combination of fine-level hats.
 
-The reader might ask what makes this approach ``geometric''?  The answer is that the restriction and prolongation formulas directly use the original FE mesh.  In particular, the formula for $P$ has coefficients $c_{pq} = \psi_p^{j-1}(x_q^j)$, the values of hat functions at the mesh nodes.  For comparison, in an \emph{algebraic multigrid} \cite{Trottenbergetal2001} approach the prolongation $P$ would be constructed using operations on the entries of the linear system matrix $A$, and $R=P^\top$ by definition.  For linear elliptic problems the geometric and algebraic approaches are closely-related because the latter have been ``tuned'' to generate prolongations $P$ with similar coefficients.  For our upcoming nonlinear and inequality-constrained problems, the geometric approach generalizes directly.  By contrast, an algebraic multigrid approach could only be used within the linear steps in a separately-constructed iteration, e.g.~based on an outer Newton iteration.  Both approaches are potentially optimal, and are the natural competitors for the highest-performance solutions.
+As linear operators, $R$ and $P$ may be represented as sparse rectangular matrices, and $P=R^\top$ (transpose), but storing them as matrices in memory is not necessary.  Both operators are applied using $O(m_j)$ work via our straightforward local-averaging formulas, also called \emph{full weighting} \cite{Briggsetal2000}.  In fact our formulas \eqref{eq:hatcombination}, \eqref{eq:nodalcoefficients}, \eqref{eq:canonicalrestrictionaction}, and \eqref{eq:canonicalprolongationaction} generalize verbatim to unstructured 2D and 3D meshes, where indices $p$ and $q$ denote the nodes of the mesh.
 
-We have now presented a basic geometric multigrid algorithm via a particular FE viewpoint, namely the subspace decomposition approach pioneered by Xu \cite{Xu1992} and others.  (Subspace decomposition is a foundation for multilevel, domain-decomposition, and a variety of other advanced algorithms \cite{Farrelletal2019}.)  Our natural next step might be to show computational results featuring the efficiency of the V-cycle algorithm, giving evidence of optimal $O(m_J)$ time to solve the problem, and indeed such results appear in all multigrid references \cite{Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.  However, we instead choose to introduce a less-standard ``obstacle'' problem, one which has the essential free-boundary character of the glacier geometry problem, and then give computational results in the next three sections.
+However, the two operators differ in their invertibility.  If $y$ is in $\mathcal{V}^{j-1}$ then $y$ can be exactly recovered from $Py$.  Indeed, $y(x)$ and $(Py)(x)$ are the same piecewise-linear function, and we have made $P$ explicit in order to indicate a change in computer representation.  Saying the same thing a different way, as a linear operator $P$ is one-to-one, and thus it has a ``left'' inverse though it is not square.  By contrast, $\ell$ is not recoverable from $R\ell$; here $\ell$ is in $(\mathcal{V}^j)'$.  That is, the values of $\ell[\psi_p^j]$, the action of $\ell$ on the finer level hats, is averaged away.
+
+FIXME discuss four ops in Table \ref{tab:restrictionsprolongations}; in notation table point back to this table
+
+\newcommand{\iP}{P^{\hookrightarrow}}
+\begin{table}
+\begin{tabular}{l|cccc}
+\emph{operator} & action
+                  & one-to-one & linear \\ \hline
+canonical restriction $R$      & $(\mathcal{V}^j)' \to (\mathcal{V}^{j-1})'$
+                  &            & \checkmark \\
+monotone restriction $\mR$    & $\mathcal{V}^j \to \mathcal{V}^{j-1}$
+                  &            &            \\
+canonical prolongation $P$      & $\mathcal{V}^{j-1} \to \mathcal{V}^j$
+                  & \checkmark & \checkmark \\
+injection prolongation $\iP$    & $(\mathcal{V}^{j-1})' \to (\mathcal{V}^j)'$
+                  & \checkmark & \checkmark
+\end{tabular}
+
+\medskip
+\label{tab:restrictionsprolongations}
+\caption{In this paper we (eventually) use two restriction and two prolongation operators.  They must be carefully distinguished!}
+\end{table}
+
+We have now presented a basic geometric multigrid algorithm via a particular FE viewpoint, namely the subspace decomposition approach pioneered by Xu \cite{Xu1992} and others.  (Subspace decomposition is a foundation for multilevel, domain-decomposition, and a variety of other advanced algorithms \cite{Farrelletal2019}.)  Our natural next step might be to show computational results featuring the efficiency of the V-cycle algorithm, giving evidence of optimal $O(m_J)$ time to solve the problem, and indeed such results appear in all multigrid references \cite{Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.  However, we instead choose to introduce a less-standard ``obstacle'' problem in the next section, one which has the essential free-boundary character of the glacier geometry problem.  We provide computational results in each of the next three sections.
+
+Before proceeding, the reader might ask what makes our approach ``geometric'' multigrid?  The answer is that the restriction and prolongation formulas directly use the original FE mesh.  In particular, the formula for $P$ has coefficients $c_{pq} = \psi_p^{j-1}(x_q^j)$, the values of hat functions at the mesh nodes.  For comparison, in an \emph{algebraic multigrid} \cite{Trottenbergetal2001} approach the prolongation $P$ would be constructed using operations on the entries of the linear system matrix $A$, and $R=P^\top$ by definition.  For linear elliptic problems the geometric and algebraic approaches are closely-related because the latter have been ``tuned'' to generate prolongations $P$ with similar coefficients.  For our upcoming nonlinear and inequality-constrained problems, the geometric approach generalizes directly.  By contrast, an algebraic multigrid approach could only be used within the linear steps in a separately-constructed iteration, e.g.~based on an outer Newton iteration.  Both approaches are potentially optimal, and are the natural competitors for the highest-performance solutions.
 
 
 \section{Constraint decomposition for the obstacle problem} \label{sec:obstacle}
