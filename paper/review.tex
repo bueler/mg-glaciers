@@ -673,11 +673,11 @@ The nonlinear VI form \eqref{eq:mcdvi} is the most general, but note that if $F$
     return $w$
 \end{pseudo*}
 
-Our first cycle is a ``slash'', also known as a V(1,0) \cite{GraeserKornhuber2009}.  (Recall Figure \ref{fig:msdcycles} shows slash and V cycles.)  It is based on formulae \eqref{eq:chik}, \eqref{eq:levelobstacle}, \eqref{eq:residuallinearlevel}, and \eqref{eq:rhslinearlevel}.  However, before going down a level we restrict the last residual, i.e.
+Our first cycle is a ``slash'', also known as a V(1,0)-cycle \cite{GraeserKornhuber2009}.  (Recall Figure \ref{fig:msdcycles} shows slash and V cycles.)  It is based on formulae \eqref{eq:chik}, \eqref{eq:levelobstacle}, \eqref{eq:residuallinearlevel}, and \eqref{eq:rhslinearlevel}.  However, before going down a level we approximate the residual by applying canonical restriction,
 \begin{equation}
   \ell^{j-1}[\cdot] = - R(F^j(y^j))[\cdot] \label{eq:rhslinearlevelcycle}
 \end{equation}
-for $j=J,\dots,1$, which represents a loss of the information contained in high-frequency modes on the $j$th level, although we the smoother minimizes this loss.  As a pseudocode:
+for $j=J,\dots,1$.  As noted in section \ref{sec:subspace}, this loses information contained in the high-frequency modes on the $j$th level, although prior application of the smoother minimizes the loss.  As a pseudocode:
 \begin{pseudo*}
 \pr{mcdl-slash}(J,F^J,\chi^J,\id{down}=1,\id{coarse}=1)\text{:} \\+
     for $j=J$ downto $j=1$ \\+
@@ -685,7 +685,7 @@ for $j=J,\dots,1$, which represents a loss of the information contained in high-
       $\phi^j = \chi^j - P\chi^{j-1}$ \qquad\qquad\qquad\quad \ct{define obstacle} \\
       $y^j = 0$ \\
       $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,y^j,F^j,\phi^j)$ \qquad\quad \ct{down smoother} \\
-      $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad \ct{update residual} \\
+      $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad \ct{update and restrict residual} \\
       $F^{j-1}(y)[\cdot] := a(y,\cdot) - \ell^{j-1}[\cdot]$ \\-
     $y^0 = 0$ \\
     $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \qquad\quad \ct{coarse-level correction} \\
@@ -694,9 +694,9 @@ for $j=J,\dots,1$, which represents a loss of the information contained in high-
     return $y^J$
 \end{pseudo*}
 
-An implementation detail is that the functions $F^j(y)[\cdot]$ are not passed as functions (i.e.~pro\-gramming-language subroutines).  Rather, noting that the FE method includes a subroutine which evaluates $a(w,v)$ as needed, the linear functional $\ell^{j-1}$ is passed as a (row) vector from which $F^{j-1}$ is constructed as needed.  That is, the implementation signatures are essentially \pr{pgssweep}$(j,y^j,\ell^j,\phi^j)$ and \pr{mcdl-slash}$(J,\ell^J,\chi^J)$, with the understanding that \eqref{eq:residuallinearlevel} defines $F^j$.
+In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, noting that the FE method includes a subroutine which evaluates $a(w,v)$ as needed, the linear functional $\ell^{j-1}$ is passed as a (row) vector, from which $F^{j-1}$ is constructed as needed.  That is, the implementation signatures are actually \pr{pgssweep}$(j,y^j,\ell^j,\phi^j)$ and \pr{mcdl-slash}$(J,\ell^J,\chi^J)$, with the understanding that \eqref{eq:residuallinearlevel} defines $F^j$.
 
-Implementing a V-cycle requires reconsideration of the constraint decomposition.  Each update from a correction on a different level needs admissibility, and in a V-cycle this applies on the way up, too.  Gr\"aser \& Kornhuber \cite{GraeserKornhuber2009} suggest that we keep the $j$th-level defect constraints $\chi^j$ \eqref{eq:chik} the same, but split the $j$th-level obstacles in half, and use half down and half up.  Thus we have the following formulae, for $j=-J,\dots,-1,+1,\dots,+J$, in which $j>0$ are down indices and $j<0$ are up:
+Next, implementing a V-cycle, also known as a V(1,1)-cycle \cite{GraeserKornhuber2009}, requires both reconsideration of the constraint decomposition and an addiitonal prolongation operation.  Each update from a correction on a different level needs admissibility, and in a V-cycle this applies on the way up, too.  Gr\"aser \& Kornhuber \cite{GraeserKornhuber2009} suggest that we keep the $j$th-level defect constraints $\chi^j$ \eqref{eq:chik} the same, but split the $j$th-level obstacles in half, and use half down and half up.  Thus we have the following formulae, for $j=-J,\dots,-1,+1,\dots,+J$, in which $j>0$ are down indices and $j<0$ are up:
 \begin{equation}
 \phi_V^j = \frac{1}{2}(\chi^{|j|}-\chi^{|j|-1}), \qquad \mathcal{K}_V^j = \{v \ge \phi_V^j\} \subset \mathcal{V}^{|j|}.
 \end{equation}
