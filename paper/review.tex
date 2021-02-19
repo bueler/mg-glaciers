@@ -288,7 +288,7 @@ It follows that if we want the error norm $e^{(s)} = \|w^{(s)}-u^h\|_{\mathcal{H
 
 However, these \pr{msd} methods are not yet complete solvers.  In fact their performance entirely depends on how iterates $w$ and residuals $F(w)[\cdot]$ are represented on each mesh level.  For example, if we represent $w$ and $F(w)$ using the fine-level basis $\{\psi_p^J\}$ then one application of \pr{gsweep}$(J,w,F)$ is indeed fast, i.e.~$O(m_J)$ operations, with a small constant, because evaluating each $F(w)[\psi_p^J]$ requires only a few operations.  However, evaluating $F(w)[\psi_p^j]$ for $j<J$ means computing integrals over the wide support of $\psi_p^j$, which is nonzero at many fine-mesh nodes $x_p^J$.  That is, \pr{gssweep}$(j,w,F)$ for $j<J$ is not an efficient operation if $w$ and $F(w)$ are represented on the fine level.  Specifically, it is not an $O(m_j)$ operation with a coefficient which is independent of $j$.  Fortunately, these \pr{msd} methods can be improved, as solvers, via hierarchical representations which are compatible with multilevel corrections.
 
-\subsection*{Linear geometric multigrid}  Once the smoother has been applied on the finest ($J$) level, so that the error and the residual no longer contain much energy in the high-frequency modes, the smoother should then be applied on the $J-1$ level, but efficiently using $J-1$ level data structures to represent the problem, and this idea should be applied down the mesh-level hierarchy.  By building efficient coarse-level representations we go beyond multilevel subpace corrections and unlock the power of multigrid.
+\subsection*{Linear geometric multigrid}  Once the smoother has been applied on the finest ($J$) level, so that the error and the residual no longer contain much energy in the high-frequency modes, the smoother should then be applied on the $J-1$ level, but efficiently using $J-1$ level data structures to represent the problem.  This idea is applied down the mesh-level hierarchy.  By identifying the coarse-level representations we go beyond multilevel subpace corrections and create a true multigrid algorithm.
 
 Efficiency on coarser levels requires addressing two concerns:
 \renewcommand{\labelenumi}{\emph{\roman{enumi})}}
@@ -344,22 +344,23 @@ The result $P y$ is the same piecewise-linear function as the input $y$, but aga
   z_q = \sum_{p=1}^{m_{j-1}} c_{pq} y_p. \label{eq:canonicalprolongationaction}
 \end{equation}
 
-Combining the above ideas gives a \emph{geometric multigrid} (GMG) \emph{V-cycle}.  In addition to sweeps of the GS smoother, our V-cycle algorithm solves the coarse-level correction equation \eqref{eq:coarsecorrection}, followed by update \eqref{eq:update}, followed by more smoother sweeps.  The following pseudocode, which modifies the iterate $w$ in-place, can be called repeatedly so as to improve the iterate $w$.  This implementation recurses for the correction, but rewriting using loops is straightforward.
+Combining the above ideas gives a \emph{geometric multigrid} (GMG) \emph{V-cycle}.  In addition to sweeps of the GS smoother, our V-cycle algorithm solves the coarse-level correction equation \eqref{eq:coarsecorrection}, and it applies update \eqref{eq:update}, followed by more smoother sweeps.  The following pseudocode, which modifies the fine-level iterate $w^J$ in-place, can be called repeatedly so as to improve the iterate.
 \begin{pseudo*}
-\pr{gmg-vcycle}(j,w,F,\id{down}=1,\id{up}=1)\text{:} \\+
-    if $j=0$ \\+
-        $w =$ \pr{coarsesolve}(F) \\-
-    else \\+
-        $\text{\pr{gssweep}}^{\text{\id{down}}}(j,w,F)$ \\
-        $\ell^{j-1} := R(F(w))$ \\
+\pr{gmg-vcycle}(J,w^J,F^J,\id{down}=1,\id{up}=1)\text{:} \\+
+    for $j=J$ downto $1$ \\+
+        $\text{\pr{gssweep}}^{\text{\id{down}}}(j,w^j,F^j)$ \\
+        $\ell^{j-1} := R(F^j(w^j))$ \\
         $F^{j-1}(y)[\cdot] := a(y,\cdot) - \ell^{j-1}[\cdot]$ \\
-        $e=0$ \\
-        \pr{gmg-vcycle}(j-1,e,F^{j-1}) \\
-        $w \gets w + P e$ \\
-        $\text{\pr{gssweep}}^{\text{\id{up}}}(j,w,F)$ \\-
+        $w^{j-1} = 0$ \qquad\qquad\qquad\qquad\qquad \ct{note $w^{j-1}=e^{j-1}$} \\-
+    \pr{coarsesolve}(w^0,F^0) \\
+    for $j=1$ to $J$ \\+
+        $w^j \gets w^j + P w^{j-1}$ \\
+        $\text{\pr{gssweep}}^{\text{\id{up}}}(j,w^j,F^j)$ \\-
 \end{pseudo*}
 
-Observe that after \texttt{down} smoother sweeps, denoted here by $\text{\textsc{gssweep}}^{\text{\texttt{down}}}$, the coarse-level correction equation \eqref{eq:coarsecorrection} is applied on the next-coarser level with a ``new'' right-hand linear functional $\ell^{j-1}$ and a zero initial iterate.  The new source term $\ell^{j-1}$ is the amount by which the finer-level iterate $w$ did not already solve the problem, and in fact $\ell^{j-1}=0$ if $w=u^h$.  After this correction an additional \texttt{up} sweeps are done to remove high-frequency components from the updated iterate.  Figure \ref{fig:vcycle} illustrates a three-level V-cycle.
+It is straightforward to implement \pr{gmg-vcycle} recursively, but the above form using loops will be easier to extend to inequality-constrained cases.  A non-recursive implementation also explicitly identifies the storage needed, namely memory to hold states $w^0,\dots,w^J$ and linear functionals $\ell^0,\dots,\ell^J$.
+
+Observe that after \texttt{down} smoother sweeps, denoted here by $\text{\textsc{gssweep}}^{\text{\texttt{down}}}$, the coarse-level correction equation \eqref{eq:coarsecorrection} is applied on the next-coarser level with a ``new'' right-hand linear functional $\ell^{j-1}$ and a zero initial iterate.  The new source term $\ell^{j-1}$ is the amount by which the finer-level iterate $w^j$ did not already solve the problem.  (For instance, $\ell^{J-1}=0$ if $w^J=u^h$.)  After this correction an additional \texttt{up} sweeps are done to remove high-frequency components from the updated iterate.  Figure \ref{fig:vcycle} illustrates a three-level V-cycle.
 
 \begin{figure}
 \input{tikz/vcycle.tex}
@@ -367,16 +368,14 @@ Observe that after \texttt{down} smoother sweeps, denoted here by $\text{\textsc
 \label{fig:vcycle}
 \end{figure}
 
-The algorithm calls a coarse solver subroutine on the $j=0$ level.  For a linear problem like \eqref{eq:poisson} one may apply a direct solver to the linear system, but direct solvers are not available for nonlinear (e.g.~glacier) problems.  Instead we suppose \textsc{coarsesolve} is implemented as a fixed number of GS sweeps using an initial iterate zero:
+The algorithm calls a coarse solver subroutine on the $j=0$ level.  For a linear problem like \eqref{eq:poisson} one may apply a direct solver to the linear system, but direct solvers are not available for nonlinear (e.g.~glacier) problems.  For simplicity and generalizability we suppose \textsc{coarsesolve} is implemented as a fixed number of in-place GS sweeps:
 \begin{pseudo*}
-\pr{coarsesolve}(F,\id{coarse}=1)\text{:} \\+
-    $w=0$ \\
+\pr{coarsesolve}(w,F,\id{coarse}=1)\text{:} \\+
     $\text{\pr{gssweep}}^{\text{\id{coarse}}}(0,w,F)$ \\
-    return $w$
 \end{pseudo*}
-If the coarsest mesh has a single node ($m_0=1$) then a single sweep gives an exact solution, and in any case this solver should be very accurate, as well as fast, if $m_0$ is small.  (Actually the choice of coarse level and coarse-level solver is nontrivial for realistic problems; see sections \ref{sec:sia} and \ref{sec:stokes}.)
+If the coarsest mesh has a single node ($m_0=1$) then a single sweep gives an exact solution.  In general this solver should be accurate and fast if $m_0$ is small.  Nonetheless the choice of the coarse level and its solver can be nontrivial for realistic problems; see sections \ref{sec:sia} and \ref{sec:stokes}.
 
-\subsection*{On restrictions and prolongations}  The operators $R$ and $P$ make no choices, which is the meaning of ``canonical'', but they represent computational work because of how we represent functions and functionals on each level.  That work is contained in equations \eqref{eq:hatcombination} and \eqref{eq:nodalcoefficients} which express how each coarse-level hat function is a linear combination of fine-level hats.
+\subsection*{On restrictions and prolongations}  The operators $R$ and $P$ make no choices, which is the meaning of ``canonical'', but their application requires computational work because of how we represent functions and functionals on each level.  That work is implied by \eqref{eq:hatcombination} and \eqref{eq:nodalcoefficients}, which express each coarse-level hat function as a linear combination of fine-level hats.
 
 As linear operators, $R$ and $P$ may be represented as sparse rectangular matrices, and $P=R^\top$ (transpose), but storing them as matrices in memory is not necessary.  Both operators are applied using $O(m_j)$ work via our straightforward local-averaging formulas, also called \emph{full weighting} \cite{Briggsetal2000}.  In fact our formulas \eqref{eq:hatcombination}, \eqref{eq:nodalcoefficients}, \eqref{eq:canonicalrestrictionaction}, and \eqref{eq:canonicalprolongationaction} generalize verbatim to unstructured 2D and 3D meshes, where indices $p$ and $q$ denote the nodes of the mesh.
 
@@ -387,21 +386,21 @@ FIXME discuss four ops in Table \ref{tab:restrictionsprolongations}; in notation
 \newcommand{\iP}{P^{\hookrightarrow}}
 \begin{table}
 \begin{tabular}{l|cccc}
-\emph{operator} & action
-                  & one-to-one & linear \\ \hline
-canonical restriction $R$      & $(\mathcal{V}^j)' \to (\mathcal{V}^{j-1})'$
+\emph{operator}              & \emph{domain}          & \emph{range}
+                  & \emph{one-to-one} & \emph{linear} \\ \hline
+canonical restriction $R$    & $(\mathcal{V}^j)'$     & $(\mathcal{V}^{j-1})'$
                   &            & \checkmark \\
-monotone restriction $\mR$    & $\mathcal{V}^j \to \mathcal{V}^{j-1}$
+monotone restriction $\mR$   & $\mathcal{V}^j$        & $\mathcal{V}^{j-1}$
                   &            &            \\
-canonical prolongation $P$      & $\mathcal{V}^{j-1} \to \mathcal{V}^j$
+canonical prolongation $P$   & $\mathcal{V}^{j-1}$    & $\mathcal{V}^j$
                   & \checkmark & \checkmark \\
-injection prolongation $\iP$    & $(\mathcal{V}^{j-1})' \to (\mathcal{V}^j)'$
+injection prolongation $\iP$ & $(\mathcal{V}^{j-1})'$ & $(\mathcal{V}^j)'$
                   & \checkmark & \checkmark
 \end{tabular}
 
 \medskip
 \label{tab:restrictionsprolongations}
-\caption{In this paper we (eventually) use two restriction and two prolongation operators.  They must be carefully distinguished!}
+\caption{We use various restriction and prolongation operators, which must be carefully distinguished!}
 \end{table}
 
 We have now presented a basic geometric multigrid algorithm via a particular FE viewpoint, namely the subspace decomposition approach pioneered by Xu \cite{Xu1992} and others.  (Subspace decomposition is a foundation for multilevel, domain-decomposition, and a variety of other advanced algorithms \cite{Farrelletal2019}.)  Our natural next step might be to show computational results featuring the efficiency of the V-cycle algorithm, giving evidence of optimal $O(m_J)$ time to solve the problem, and indeed such results appear in all multigrid references \cite{Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.  However, we instead choose to introduce a less-standard ``obstacle'' problem in the next section, one which has the essential free-boundary character of the glacier geometry problem.  We provide computational results in each of the next three sections.
@@ -696,15 +695,39 @@ for $j=J,\dots,1$.  As noted in section \ref{sec:subspace}, this loses informati
 
 In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, noting that the FE method includes a subroutine which evaluates $a(w,v)$ as needed, the linear functional $\ell^{j-1}$ is passed as a (row) vector, from which $F^{j-1}$ is constructed as needed.  That is, the implementation signatures are actually \pr{pgssweep}$(j,y^j,\ell^j,\phi^j)$ and \pr{mcdl-slash}$(J,\ell^J,\chi^J)$, with the understanding that \eqref{eq:residuallinearlevel} defines $F^j$.
 
-Next, implementing a V-cycle, also known as a V(1,1)-cycle \cite{GraeserKornhuber2009}, requires both reconsideration of the constraint decomposition and an addiitonal prolongation operation.  Each update from a correction on a different level needs admissibility, and in a V-cycle this applies on the way up, too.  Gr\"aser \& Kornhuber \cite{GraeserKornhuber2009} suggest that we keep the $j$th-level defect constraints $\chi^j$ \eqref{eq:chik} the same, but split the $j$th-level obstacles in half, and use half down and half up.  Thus we have the following formulae, for $j=-J,\dots,-1,+1,\dots,+J$, in which $j>0$ are down indices and $j<0$ are up:
+Next, the implementation of a V-cycle, also known as a V(1,1)-cycle \cite{GraeserKornhuber2009}, requires reconsideration of the constraint decomposition and an additional prolongation operation.  Each correction from a different level needs to yield an admissible iterate, and in a V-cycle this applies on the way up, too.  Again we follow \cite{GraeserKornhuber2009} regarding the particular constraint decomposition; they keep the $j$th-level defect constraints $\chi^j$ \eqref{eq:chik} the same, but split the $j$th-level obstacles $\phi^j$ in half and then apply them twice.  Thus we have the following formulae for $j=1,\dots,+J$:
 \begin{equation}
-\phi_V^j = \frac{1}{2}(\chi^{|j|}-\chi^{|j|-1}), \qquad \mathcal{K}_V^j = \{v \ge \phi_V^j\} \subset \mathcal{V}^{|j|}.
+\phi_V^j = \frac{1}{2}(\chi^j-\chi^{j-1}), \qquad \mathcal{K}_V^j = \{v \ge \phi_V^j\} \subset \mathcal{V}^j.
 \end{equation}
-Note $\phi_V^0 = \chi^0,\mathcal{K}_V^0 = \{v \ge \chi^0\}$ as a special case.  This set-up maintains the consistency \cite{GraeserKornhuber2009,Tai2003} of the constraint decomposition, based on a telescoping sum like \eqref{eq:telescopingdecomposition}:
+The coarest-level obstacle remains a special case, $\phi_V^0 = \chi^0,\mathcal{K}_V^0 = \{v \ge \chi^0\}$.  A telescoping sum like \eqref{eq:telescopingdecomposition}, but now with negative indices for going down and positive for going up, retains the consistency of the decomposition \cite{GraeserKornhuber2009,Tai2003}:
 \begin{equation}
-\chi^J = \sum_{j=-J}^J \phi_V^j, \qquad \mathcal{D}^J = \sum_{j=-J}^J \mathcal{K}_V^j.
+\chi^J = \sum_{j=-J}^J \phi_V^{|j|}, \qquad \mathcal{D}^J = \sum_{j=-J}^J \mathcal{K}_V^{|j|}.
 \end{equation}
-Formulae \eqref{eq:mcdvilinear}, \eqref{eq:residuallinearlevelderive}, \eqref{eq:residuallinearlevel}, and \eqref{eq:rhslinearlevel} apply as written, but now we used them for the new index range $j=-J,\dots,+J$.  These ideas come together in the following pseudocode.
+
+On the way up we denote the corrections by $\eta^j$.  Computation \eqref{eq:residuallinearlevelderive} is extended:
+\begin{align}
+  \tilde F^j(z)[\cdot] &= F(w^J + y^J + \dots + y^0 + \eta^1 + \dots + \eta^{j-1} + z)[\cdot]  \label{eq:residuallinearlevelv} \\
+     &= a(z,\cdot) - \tilde \ell^j[\cdot] \notag
+\end{align}
+where
+\begin{equation}
+  \tilde\ell^j[\cdot] = \begin{cases} - \tilde F^{j-1}(\eta^{j-1})[\cdot], & j > 1, \\
+                                      - F^0(y^0)[\cdot], & j = 1. \end{cases} \label{eq:rhslinearlevelv}
+\end{equation}
+However, to actually use $\tilde\ell^j$ on the $j$th level, in the representation $\tilde{\bm{\ell}} = \{\tilde\ell^j[\psi_p^j]\}$ in $\RR^{m_j}$, the $j-1$ level residual $\tilde F^{j-1}(\eta^{j-1})[\cdot]$ must be prolonged.  (This is the first time we have prolonged a linear functional.)
+
+Let $\ell$ be in $(\mathcal{V}^{j-1})'$.  We may define $P^?\ell$ in $(\mathcal{V}^j)'$ to be the exact prolongation in a number of ways.  Recalling \eqref{eq:hatcombination} once again, we want to compute the values $P^?\ell[\psi_q^j]$ so that
+\begin{equation}
+  \sum_{q=1}^{m_j} c_{pq} (P^?\ell)[\psi_q^j] = \ell[\psi_p^{j-1}] \label{eq:dualprolongderive}
+\end{equation}
+for $p=1,\dots,m_{j-1}$, where $c_{pq} = \psi_p^{j-1}(x_q^j)$.  Equation \eqref{eq:dualprolongderive} is in fact an underdetermined system of $m_{j-1}$ equations in $m_j$ unknowns.  One solution uses the fact that $c_{pq}=1$ if $x_q^j=x_p^{j-1}$.  We choose the other values to be zero, and get the \emph{injection prolongation} $\iP$ from $(\mathcal{V}^{j-1})'$ to $\mathcal{V}^j$ satisfying
+\begin{equation}
+  (\iP\ell)[\psi_q^j] = \begin{cases} \ell[\psi_p^{j-1}], & x_q^j=x_p^{j-1}, \\
+                                      0, & \text{otherwise}. \end{cases}  \label{eq:injectprolong}
+\end{equation}
+Using this prolongation for our V-cycle will imply that the prolonged residual is not smooth, but the solution of the equation on the $j$th level will be relatively smooth by ellipticity.
+
+These ideas come together in the following pseudocode.
 \begin{pseudo*}
 \pr{mcdl-vcycle}(J,F^J,\chi^J,\id{down}=1,\id{up}=1,\id{coarse}=1)\text{:} \\+
     for $j=J$ downto $j=1$ \\+
@@ -712,19 +735,23 @@ Formulae \eqref{eq:mcdvilinear}, \eqref{eq:residuallinearlevelderive}, \eqref{eq
       $\phi_V^j = \frac{1}{2}(\chi^j - P\chi^{j-1})$ \qquad\qquad\quad  \ct{define obstacle} \\
       $y^j = 0$ \\
       $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,y^j,F^j,\phi_V^j)$ \\
-      $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad \ct{update residual} \\
-      $F^{j-1}(y)[\cdot] := a(y,\cdot) - \ell^{j-1}[\cdot]$ \\-
+      $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad \ct{update and restrict residual} \\
+      $F^{j-1}(z)[\cdot] := a(z,\cdot) - \ell^{j-1}[\cdot]$ \\-
     $y^0 = 0$ \\
     $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \\
-    $z^0 = y^0$ \\
+    $\omega^0 = y^0$ \\
+    $\eta^0 = y^0$ \\
     for $j=1$ to $j=J$ \\+
-      $\ell^{j}[\cdot] := - P(F^{j-1}(z^{j-1}))[\cdot]$ \qquad\qquad \ct{update residual} \\
-      $F^{j}(y)[\cdot] := a(y,\cdot) - \ell^{j}[\cdot]$ \\
-      $z^j = 0$ \\
-      $\text{\pr{pgssweep}}^{\text{\id{up}}}(j,z^j,F^j,\phi_V^j)$ \\
-      $y^j \gets y^j + z^j + P y^{j-1}$ \qquad\qquad\quad \ct{accumulate corrections} \\-
-    return $y^J$
+      $\ell^{j}[\cdot] := - \iP(\tilde F^{j-1}(\omega^{j-1}))[\cdot]$ \qquad\quad \ct{update and prolong residual} \\
+      $\tilde F^{j}(z)[\cdot] := a(z,\cdot) - \ell^{j}[\cdot]$ \\
+      $\eta^j = 0$ \\
+      $\text{\pr{pgssweep}}^{\text{\id{up}}}(j,\eta^j,F^j,\phi_V^j)$ \\
+      $\omega^j = y^j + \eta^j + P \omega^{j-1}$ \qquad\qquad\quad \ct{accumulate corrections} \\-
+    return $w^J$
 \end{pseudo*}
+Note that the vectors $\omega^j$ are used to add-up (accumulate) the corrections as in \eqref{eq:residuallinearlevelv}.  The procedure returns
+    $$\omega^J = y^J + \dots + y^1 + y^0 + \eta^1 + \dots + \eta^J$$
+in $\mathcal{V}^J$, and then the calling solver, i.e.~\pr{mcdl-solver}, does the update $w^J \gets w^J + \omega^J$.
 
 FIXME Figure like Figure \ref{fig:gooddecomposition} but for V-cycle
 
@@ -766,7 +793,7 @@ FIXME model performance when $h=O(2^{-J})$ and $N=2^{J+1}-1=O(2^J)$ so $J = O(\l
 \begin{tabular}{l|l|l}
 \emph{method} & \emph{iterations} & \emph{work} \\ \hline
 \pr{pgssweeps} & $O(N^2)$ & $O(N^3)$ \\
-\pr{mcdl-slash} & $O(\log N)$ & $O(N \log N)$ \\ \hline
+\pr{mcdl-solver} & $O(\log N)$ & $O(N \log N)$ \\ \hline
 \pr{gmg-vcycle} & $O(1)$ & $O(N)$
 \end{tabular}
 
@@ -818,9 +845,11 @@ $\mathcal{K}$ & continuum constraint set; $\mathcal{K} = \{v \ge \varphi\} \subs
 $\mathcal{K}^j$ & $j$th-level admissible functions; $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j$ \\
 $\ell[\cdot]$ & linear functional, e.g.~$\ell[v] = \ip{f}{v}$ \\
 $m_j$ & number of nodes in $j$th-level; $\dim \mathcal{V}^j=m_j$ \\
-$P$ & canonical prolongation of functions, $\mathcal{V}^{j-1} \to \mathcal{V}^j$; equation \eqref{eq:canonicalprolongation} \\
-$R$ & canonical restriction of linear functionals, $(\mathcal{V}^j)' \to (\mathcal{V}^{j-1})'$; equation \eqref{eq:canonicalrestriction} \\
-$\mR$ & monotone restriction of functions, $\mathcal{V}^j \to \mathcal{V}^{j-1}$; equation \eqref{eq:monotonerestriction} \\
+$N$ & number of degrees of freedom in discretized problem \\
+$P$ & canonical prolongation of functions, $\mathcal{V}^{j-1} \to \mathcal{V}^j$; see \eqref{eq:canonicalprolongation} and Table \ref{tab:restrictionsprolongations} \\
+$\iP$ & injection prolongation of linear functionals, $(\mathcal{V}^{j-1})' \to (\mathcal{V}^j)'$; see \eqref{eq:injectprolong} and Table \ref{tab:restrictionsprolongations} \\
+$R$ & canonical restriction of linear functionals, $(\mathcal{V}^j)' \to (\mathcal{V}^{j-1})'$; see \eqref{eq:canonicalrestriction} and Table \ref{tab:restrictionsprolongations} \\
+$\mR$ & monotone restriction of functions, $\mathcal{V}^j \to \mathcal{V}^{j-1}$; see \eqref{eq:monotonerestriction} and Table \ref{tab:restrictionsprolongations} \\
 $\mathcal{V}^h$ & finite element function space; $= \mathcal{V}^J$ \\
 $\mathcal{V}^j$ & $j$th-level vector space \\
 $(\mathcal{V}^j)'$ & dual space (linear functionals) of $\mathcal{V}^j$  \\
@@ -828,7 +857,7 @@ $x_p^j$ & $p$th node on $j$th-level mesh \\
 $\varphi(x)$ & obstacle in continuum problem \\
 $\varphi^J(x)$ & fine-level interpolant of continuum obstacle \\
 $\phi^j(x)$ & $j$th-level obstacle in MCD method; $\phi^j=\chi^j - P\chi^{j-1}$ \\
-$\chi^J(x)$ & fine-level defect obstacle; $\chi^J = \varphi^J - w^J$ \\
+$\chi^J(x)$ & fine-level defect obstacle; $\chi^J = \varphi^J - w^J$ for iterate $w^J$ \\
 $\chi^j(x)$ & $j$th-level (monotone) restriction of defect obstacle; $\chi^{j-1} = \mR \chi^j$ \\
 $\psi_p^j(x)$ & $j$th-level hat function at $x_p$ \\
 $\ip{\cdot}{\cdot}$ & $L^2$ inner product \\
