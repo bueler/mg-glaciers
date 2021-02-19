@@ -288,7 +288,7 @@ It follows that if we want the error norm $e^{(s)} = \|w^{(s)}-u^h\|_{\mathcal{H
 
 However, these \pr{msd} methods are not yet complete solvers.  In fact their performance entirely depends on how iterates $w$ and residuals $F(w)[\cdot]$ are represented on each mesh level.  For example, if we represent $w$ and $F(w)$ using the fine-level basis $\{\psi_p^J\}$ then one application of \pr{gsweep}$(J,w,F)$ is indeed fast, i.e.~$O(m_J)$ operations, with a small constant, because evaluating each $F(w)[\psi_p^J]$ requires only a few operations.  However, evaluating $F(w)[\psi_p^j]$ for $j<J$ means computing integrals over the wide support of $\psi_p^j$, which is nonzero at many fine-mesh nodes $x_p^J$.  That is, \pr{gssweep}$(j,w,F)$ for $j<J$ is not an efficient operation if $w$ and $F(w)$ are represented on the fine level.  Specifically, it is not an $O(m_j)$ operation with a coefficient which is independent of $j$.  Fortunately, these \pr{msd} methods can be improved, as solvers, via hierarchical representations which are compatible with multilevel corrections.
 
-\subsection*{Linear geometric multigrid}  Once the smoother has been applied on the finest ($J$) level, so that the error and the residual no longer contain much energy in the high-frequency modes, for which we need the $J$th-level representation, the smoother should then be applied on the $J-1$ level, but efficiently using $J-1$ level data structures to represent the problem.  Then this idea should be applied on down the mesh-level hierarchy.  By building efficient coarse-level representations we go beyond multilevel subpace corrections and unlock the power of multigrid.
+\subsection*{Linear geometric multigrid}  Once the smoother has been applied on the finest ($J$) level, so that the error and the residual no longer contain much energy in the high-frequency modes, the smoother should then be applied on the $J-1$ level, but efficiently using $J-1$ level data structures to represent the problem, and this idea should be applied down the mesh-level hierarchy.  By building efficient coarse-level representations we go beyond multilevel subpace corrections and unlock the power of multigrid.
 
 Efficiency on coarser levels requires addressing two concerns:
 \renewcommand{\labelenumi}{\emph{\roman{enumi})}}
@@ -537,9 +537,7 @@ in $\RR^{m_j}$, should be small: $\|\hat\bF(w)\| < \text{\texttt{rtol}}$.
 
 PGS will serve as our smoother and coarse-level solver, applied one or two times on each level.  However, we are not yet prepared to build a multilevel method for problem \eqref{eq:feobstacleviresidual} because the construction of the obstacles $\phi^j$ and residuals $F^j$ on each mesh level is nontrivial.  In particular, we will \emph{not} choose $\phi^j$ to be the $j$th-level interpolant of the continuum obstacle $\varphi$, but instead decompose a fine-level constraint across the mesh-level hierarchy.
 
-\subsection*{Multilevel constraint decomposition (MCD)}  Consider the coarse-level correction $e^{j-1}$ in a linear V-cycle (section \ref{sec:subspace}, equation \eqref{eq:coarsecorrection}), which is prolonged onto the $j$th level.  In the obstacle problem the updated iterate ($w+Pe^{j-1}$) would need to be admissible, that is, above $\phi^j$.  However, as illustrated in Figure \ref{fig:prolongobstacle}, an iterate which is admissible on the $j-1$ level is \emph{not} necessarily admissible on the $j$ level if the obstacles are interpolants of a (common) continuum obstacle $\varphi$.  In the glacier context, an admissible coarse-mesh ice surface may be breached by the fine-mesh bed topography.
-
-To resolve this issue we might try an ad hoc fix, namely overwriting $\tilde w = w+Pe^{j-1}$ with $\max\{\tilde w,\phi^j\}$, that is, we could enforce admissibility by \emph{truncation}.  However, this may reintroduce high frequencies, requiring additional smoother effort to remove.
+\subsection*{Multilevel constraint decomposition (MCD)}  Consider the coarse-level correction $e^{j-1}$ in a linear V-cycle (section \ref{sec:subspace}, equation \eqref{eq:coarsecorrection}), which is prolonged onto the $j$th level.  In the obstacle problem the resulting iterate ($w+Pe^{j-1}$) would need to be admissible, that is, above $\phi^j$.  However, as illustrated in Figure \ref{fig:prolongobstacle}, an iterate which is admissible on the $j-1$ level is \emph{not} necessarily admissible on the $j$ level if the obstacles are interpolants of a (common) continuum obstacle $\varphi$.  (In the glacier context, an admissible coarse-mesh ice surface may be breached by the fine-mesh bed topography.)  To resolve this issue we might try an ad hoc fix, namely overwriting $\tilde w = w+Pe^{j-1}$ with $\max\{\tilde w,\phi^j\}$, that is, enforce admissibility by \emph{truncation}.  However, this may reintroduce high frequencies, requiring additional smoother effort to remove.
 
 \begin{figure}
 \qquad \includegraphics[width=0.75\textwidth]{genfigs/prolongobstacle.pdf}
@@ -547,44 +545,42 @@ To resolve this issue we might try an ad hoc fix, namely overwriting $\tilde w =
 \label{fig:prolongobstacle}
 \end{figure}
 
-So, how do we maintain admissibility throughout the V-cycle while also not introducing high-frequencies?  One way forward is the \emph{multilevel constraint decomposition} (MCD) method of Tai \cite{Tai2003}, which can be formulated as a slash-cycle \cite[Algorithm 4.7]{GraeserKornhuber2009} or a V-cycle.
+So, how do we maintain admissibility throughout the V-cycle while not introducing high-frequencies?  One way forward is the \emph{multilevel constraint decomposition} (MCD) method of Tai \cite{Tai2003}, which can be formulated as a slash-cycle \cite[Algorithm 4.7]{GraeserKornhuber2009} or a V-cycle.
 
 Start with $w^J$ in $\mathcal{V}^J$, on the finest level, which is admissible in the original sense, namely
 \begin{equation}
-  w^J \ge \varphi^J \label{eq:fineadmissibleiterate}
+  w^J \ge \varphi^J. \label{eq:fineadmissibleiterate}
 \end{equation}
-where $\varphi^J$ is the interpolant of the continuum obstacle $\varphi$, i.e.~$\varphi^J(x_p^J)=\varphi(x_p^J)$.  We define the \emph{defect constraint} \cite{GraeserKornhuber2009} of $w^J$ to be
+(Here $\varphi^J$ is the interpolant of the continuum obstacle $\varphi$, i.e.~$\varphi^J(x_p^J)=\varphi(x_p^J)$.)  We define the \emph{defect constraint} \cite{GraeserKornhuber2009} of $w^J$ to be
 \begin{equation}
   \chi^J = \varphi^J - w^J,  \label{eq:defectconstraint}
 \end{equation}
-which is nonpositive ($\chi^J\le 0$).  The idea is that if we modify $w^J$ by adding $y$ from $\mathcal{V}^J$ then the result is admissible if and only if $y$ is above the defect constraint:
+which is nonpositive ($\chi^J\le 0$).  The idea behind defining the defect constraint is that if we modify $w^J$ by adding $y$ then the result is admissible if and only if $y$ is above it:
 \begin{equation}
   w^J + y \ge \varphi^J  \qquad \iff \qquad y \ge \chi^J.  \label{eq:defectmeaning}
 \end{equation}
 
-Now the principle of the MCD method is to \emph{put as much as possible of $\chi^J$ into the coarsest levels.}  Corrections on the coarse levels are inexpensive, and they reduce the error in low frequencies, so we seek to make the largest corrections there.
-
-To decompose $\chi^J$ we use a \emph{monotone restriction} operator $\mR$ from $\mathcal{V}^j$ to $\mathcal{V}^{j-1}$ \cite[equation (4.22)]{GraeserKornhuber2009}.  For $z$ in $\mathcal{V}^j$ one computes $\mR z$ by maximizing the node values of $z$ over the interior of the support of each $j-1$ level hat function.  That is, supposing $z = \sum_q z_q \psi_q^j$, we define
+Now our intention is to \emph{put as much as possible of $\chi^J$ into the coarsest levels.}  Corrections on the coarse levels are inexpensive, so we seek to make the largest corrections there.  To decompose $\chi^J$ we use a \emph{monotone restriction} operator $\mR$ from $\mathcal{V}^j$ to $\mathcal{V}^{j-1}$ \cite[equation (4.22)]{GraeserKornhuber2009}, a nonlinear operator.  For $z$ in $\mathcal{V}^j$ one computes $\mR z$ by maximizing the node values of $z$ over the interior of the support of each $j-1$ level hat function.  That is, supposing $z = \sum_q z_q \psi_q^j$, we define
 \begin{equation}
   \mR z = \sum_{p=1}^{m_{j-1}} \zeta_p \psi_p^{j-1} \qquad \text{where} \qquad \zeta_p = \max \{z_q \,:\, \psi_p^{j-1}(x_q^j) > 0\}.  \label{eq:monotonerestriction}
 \end{equation}
-Observe that $\mR z \ge z$.  Monotone restriction $\mR$ acts on functions $\mathcal{V}^j$ while canonical restriction $R$ acts on linear functionals $(\mathcal{V}^j)'$.
+Observe that $\mR z \ge z$ and that $\mR$ acts on functions $\mathcal{V}^j$ while canonical restriction $R$ acts on linear functionals $(\mathcal{V}^j)'$.
 
 We then define the \emph{$j$th-level defect constraint} inductively by
 \begin{equation}
   \chi^{j-1} = \mR \chi^j  \label{eq:chik}
 \end{equation}
-for $j=J$ down to $j=1$.  These defect constraints have two key properties: $\chi^j$ is in $\mathcal{V}^j$ and $\chi^j \le \chi^{j-1}$.  (Formally one should say ``$\chi^j \le P \chi^{j-1}$'' using the canonical prolongation operator \eqref{eq:canonicalprolongation}, so that we are comparing functions in the same space.)  Now the \emph{$j$th-level obstacle} is the difference:
+for $j=J$ down to $j=1$.  These defect constraints have two key properties: $\chi^j$ is in $\mathcal{V}^j$ and $\chi^j \le \chi^{j-1}$.  (Formally one might say ``$\chi^j \le P \chi^{j-1}$'', using the canonical prolongation operator \eqref{eq:canonicalprolongation}, so as to compare functions in the same space.)  Now the \emph{$j$th-level obstacle} is the difference:
 \begin{equation}
   \phi^j = \chi^j - \chi^{j-1} \quad \text{ for } j=0,1,\dots,J,  \label{eq:levelobstacle}
 \end{equation}
-where we also define $\chi^{-1}=0$ so that $\phi^0 = \chi^0$.  Note $\phi^j\le 0$.
+where we also define $\chi^{-1}=0$ so that $\phi^0 = \chi^0$.  Note $\phi^j\le 0$ is in $\mathcal{V}^j$.
 
-We have now decomposed $\chi^J$ via a ``telescoping'' sum:
+We have now decomposed the defect constraint $\chi^J$ via a ``telescoping'' sum:
 \begin{equation}
   \sum_{j=0}^J \phi^j = \chi^0 + (\chi^1 - \chi^0) + (\chi^2 - \chi^1) + \dots + (\chi^J - \chi^{J-1}) = \chi^J.  \label{eq:telescopingdecomposition}
 \end{equation}
-(Note that this sum does \emph{not} give a decomposition of the original obstacle $\varphi^J$.)  An example is shown in Figure \ref{fig:gooddecomposition}; compare Figure 1 in \cite{GraeserKornhuber2009}.  The obstacles $\phi^j$ are the gaps between the plotted defect constraints $\chi^j$.
+(Note that this sum does \emph{not} decompose the original obstacle $\varphi^J$.)  An example is shown in Figure \ref{fig:gooddecomposition}; compare Figure 1 in \cite{GraeserKornhuber2009}.  The obstacles $\phi^j$ are the gaps between the plotted defect constraints $\chi^j$.
 
 %REGENERATE Figures \ref{fig:gooddecomposition} and \ref{fig:icelikedecomposition}:
 %$ ./obstacle.py -jfine 5 -jcoarse 1 -irtol 1.0e-7 -random -randommodes 8 -diagnostics -up 0 -o defect.pdf
@@ -594,7 +590,7 @@ We have now decomposed $\chi^J$ via a ``telescoping'' sum:
 %saving "ice-like" decomposition to icedec_defect.pdf ...
 \begin{figure}
 \includegraphics[width=0.75\textwidth]{fixfigs/decomp_defect.pdf}
-\caption{The MCD method writes a fine-mesh defect obstacle $\chi^J = \varphi^J - w^J$ as a sum \eqref{eq:telescopingdecomposition} of obstacles $\phi^j = \chi^j - \chi^{j-1}$ on each level.}
+\caption{The MCD method writes a fine-level defect constraint $\chi^J = \varphi^J - w^J$ as a sum \eqref{eq:telescopingdecomposition} of obstacles $\phi^j = \chi^j - \chi^{j-1}$ on each level.}
 \label{fig:gooddecomposition}
 \end{figure}
 
@@ -602,9 +598,9 @@ From the obstacles $\phi^j$ we finally define the closed, convex \emph{constrain
 \begin{equation}
 \mathcal{K}^j = \left\{v \ge \phi^j\right\} \subseteq \mathcal{V}^j \label{eq:defineKj}
 \end{equation}
-for $j=0,1,\dots,J$.  Because $\phi^j \le 0$, the zero function is always in $\mathcal{K}^j$.  On the finest level, note that $\phi^J$ is not the same as $\varphi^J$, so $\mathcal{K}^J$ does not approximate $\mathcal{K}$.  Instead, as suggested by Figure \ref{fig:gooddecomposition}, if the $J$th level is a high-resolution mesh and the defect constraint $\chi^J$ is smooth then $\phi^J\approx 0$, because $\chi^J$ is well-approximated on the $J-1$ level.
+for $j=0,1,\dots,J$.  Because $\phi^j \le 0$, the zero function is in each $\mathcal{K}^j$.  On the finest level, note that $\phi^J$ is not the same as $\varphi^J$, and so $\mathcal{K}^J$ does not approximate $\mathcal{K}$.  Instead, as suggested by Figure \ref{fig:gooddecomposition}, if the $J$th level is a high-resolution mesh and the defect constraint $\chi^J$ is smooth then $\phi^J\approx 0$, because $\chi^J$ is well-approximated on the $J-1$ level.
 
-Corresponding to the defect constraint on the fine level, namely $\chi^J = \varphi^J - w^J$, we also define the fine-level \emph{defect constraint set}
+Corresponding to the defect constraint $\chi^J$ on the fine level, we also define the fine-level \emph{defect constraint set}
 \begin{equation}
   \mathcal{D}^J = \left\{v \ge \chi^J\right\} \subset \mathcal{V}^J.
 \end{equation}
@@ -612,7 +608,7 @@ The sets $\mathcal{K}^j$ decompose $\mathcal{D}^J$:
 \begin{equation}
   \mathcal{D}^J = \mathcal{K}^0 + \mathcal{K}^1 + \dots + \mathcal{K}^J. \label{eq:constraintdecomposition}
 \end{equation}
-(The proof uses the telescoping sum \eqref{eq:telescopingdecomposition}.)  That is, every admissible modification of the current fine-mesh iterate, i.e.~every $y$ from $\mathcal{V}^J$ for which $y\ge \chi^J$, can be built by choosing a function from each of the mesh-level constraint sets $\mathcal{K}^j$.  As with \eqref{eq:subspacedecomposition}, wherein the mesh-level subspaces $\mathcal{V}^j$ decompose the whole FE space $\mathcal{V}^h$, this representation is usually not unique.  Note that a constraint decomposition like \eqref{eq:constraintdecomposition} is fundamental to the MCD method of \cite{Tai2003}, but our specific choices follow \cite{GraeserKornhuber2009} in determining $\mathcal{K}^j$.
+(The proof uses the telescoping sum \eqref{eq:telescopingdecomposition}.)  That is, every admissible modification of the current fine-mesh iterate, i.e.~every $y$ from $\mathcal{V}^J$ for which $y\ge \chi^J$, can be built by choosing a function from each of the mesh-level constraint sets $\mathcal{K}^j$.  As with \eqref{eq:subspacedecomposition}, wherein the mesh-level subspaces $\mathcal{V}^j$ decompose the whole FE space $\mathcal{V}^h$, this representation is usually not unique.  Note that constraint decomposition \eqref{eq:constraintdecomposition} is fundamental to any application of the MCD method in \cite{Tai2003}, but our specific choices follow \cite{GraeserKornhuber2009} in determining $\mathcal{K}^j$.
 
 In the glacier context (section \ref{sec:sia}) the fine-mesh obstacle $\varphi^J$ will be the bed elevation and $w^J$ will be a candidate ice surface elevation, so $-\chi^J$ will be an ice thickness.  Figure \ref{fig:icelikedecomposition} illustrates the same constraint decomposition as in Figure \ref{fig:gooddecomposition}, but pictured as a decomposition of the ice into layers.  (Compared to Figure \ref{fig:icelike}, this bed elevation $\phi^J$ has bumpy bed topography.)  However, Figure \ref{fig:gooddecomposition} plots the decomposition in the \emph{correct} sense, such that each defect constraint $\chi^j$ and obstacle $\phi^j$ is piecewise-linear (i.e.~in $\mathcal{V}^j$); Figure \ref{fig:icelikedecomposition} is merely heuristic.
 
@@ -622,9 +618,9 @@ In the glacier context (section \ref{sec:sia}) the fine-mesh obstacle $\varphi^J
 \label{fig:icelikedecomposition}
 \end{figure}
 
-We can now write the obstacle problem on the $j$th level in three forms.  Recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the original residual \eqref{eq:residual}, and $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function.  As above, $w^J$ is an admissible iterate on the fine level: $w^J\ge \varphi^J$.  In stating the $j$th-level forms below we assume that we have already descended from the fine level $J$ to some coarser level $j+1$, computing admissible corrections $y^k$ from the constraint set $\mathcal{K}^k$ on each level so far, for $k=j+1,\dots,J$.  By definition of the defect constraint \eqref{eq:defectmeaning}, and using the constraint decomposition \eqref{eq:constraintdecomposition}, observe that $z = w^J+y^J+\dots+y^{j+1}$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.
+We can now write the obstacle problem on the $j$th level in three forms, which are equivalent for the classical obstacle problem.  Recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the original residual \eqref{eq:residual}, and $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function.  As above, $w^J$ is an admissible iterate on the fine level: $w^J\ge \varphi^J$.  The $j$th-level forms below assume that we have already descended from the fine level $J$ to some level $j+1$, computing admissible corrections $y^k$ from the constraint set $\mathcal{K}^k$ for $k=j+1,\dots,J$.  By  \eqref{eq:defectmeaning} and the constraint decomposition \eqref{eq:constraintdecomposition}, observe that $z = w^J+y^J+\dots+y^{j+1}$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.
 
-We seek a $j$th-level correction $y^j$ in $\mathcal{K}^j$, i.e.~$y^j\ge \phi^j$, so that one of the following holds:
+We seek a $j$th-level correction $y^j$ in $\mathcal{K}^j$, i.e.~$y^j\ge \phi^j$, such that:
 \begin{itemize}
 \item variational inequality:
 \begin{equation}
@@ -650,28 +646,26 @@ That is, on each level we have a residual functional,
 \begin{equation}
   F^j(z)[\cdot] = a(z,\cdot) - \ell^j[\cdot],  \label{eq:residuallinearlevel}
 \end{equation}
-with an inductively-defined source which is computed in terms of the last correction $y^{j+1}$:
+with an inductively-defined source:
 \begin{equation}
-  \ell^j[\cdot] = \begin{cases} - F^{j+1}(y^{j+1})[\cdot] & j < J, \\
-                                - F(w^J)[\cdot] & j = J. \end{cases} \label{eq:rhslinearlevel}
+  \ell^j[\cdot] = \begin{cases} - F^{j+1}(y^{j+1})[\cdot], & j < J, \\
+                                - F(w^J)[\cdot], & j = J. \end{cases} \label{eq:rhslinearlevel}
 \end{equation}
-Note that each $F^j$ here acts on $\mathcal{V}^h$, that is, on whole the FE space, and all its nested subspaces, and $\ell^j$ is in $(\mathcal{V}^h)'$.  However, in an implemented multigrid cycle (below) we will use the canonical restriction operation in the construction of $\ell^j$, which will be in $(\mathcal{V}^j)'$ in that context.
+Note that each $F^j$ here acts on $\mathcal{V}^h$, that is, on whole the FE space, and all its nested subspaces, and $\ell^j$ is in $(\mathcal{V}^h)'$.  However, in an implemented multigrid cycle (below) we will approximate $\ell^j$ by $\tilde \ell^j$ in $(\mathcal{V}^j)'$, using a representation in $j$th-level values $\{\ell^j[\psi_p^j]\}$.
 
-For the classical obstacle problem, wherein the (continuum) residual $F(w)[v]$ is built from a symmetric bilinear form $a(w,v)$, the three problems \eqref{eq:mcdvi}--\eqref{eq:mcdvilinear} are equivalent.  However, the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdminimization} depends on symmetry, i.e.~such that $F$ is a gradient, and the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdvilinear} depends on bilinearity, and both fail for the glacier problem (section \ref{sec:sia}).  To summarize the logic, the VI \eqref{eq:mcdvi} is the most general:
+For the classical obstacle problem, wherein the (continuum) residual $F(w)[v]$ is built from a symmetric bilinear form $a(w,v)$, the three problems \eqref{eq:mcdvi}--\eqref{eq:mcdvilinear} are equivalent.  However, the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdminimization} depends on symmetry, i.e.~such that $F$ is a gradient, and the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdvilinear} depends on bilinearity, and both fail for the glacier problem (section \ref{sec:sia}):
    $$\eqref{eq:mcdvilinear} \quad \stackrel{a \text{ bilinear}}{\iff\strut} \quad \eqref{eq:mcdvi} \quad \stackrel{F=\grad I}{\iff\strut} \quad \eqref{eq:mcdminimization}.$$
-Tai \cite{Tai2003} states the MCD method using minimization form \eqref{eq:mcdminimization}, but the method applies equally to \eqref{eq:mcdvi}.  However, if $F\ne \grad I$, for $I$ a coercive objective function, then additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,KinderlehrerStampacchia1980}).
+The nonlinear VI form \eqref{eq:mcdvi} is the most general, but note that if $F$ is not the gradient of a coercive objective function then additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,KinderlehrerStampacchia1980}).
 
 
-\subsection*{MCD cycles}  We are now ready to implement a multilevel solver for the classical obstacle problem.
-
-The following pseudocode, in which \pr{MCDL} stands for ``multilevel constraint decomposition linear'', is analogous \pr{msd-solver} in section \ref{sec:subspace}, is based on \eqref{eq:mcdvilinear}.  This outer loop sets up the defect constraint (equation \eqref{eq:defectconstraint}), and the fine-level residual, and it checks for convergence after calling the inner solver, either of \pr{mcdl-slash} or \pr{mcdl-vcycle} below.
+\subsection*{MCD cycles}  We are now ready to implement a multilevel solver for the classical obstacle problem.  The following pseudocode solves \eqref{eq:mcdvilinear}.  Here \pr{MCDL} stands for ``multilevel constraint decomposition (linear)'', and this procedure is analogous to \pr{msd-solver} in section \ref{sec:subspace}.  This outer loop sets up the defect constraint (equation \eqref{eq:defectconstraint}) and the fine-level residual.  Checks for convergence occur after calling the inner solver, given next.
 \begin{pseudo*}
 \pr{mcdl-solver}(F,\varphi,\id{rtol}=10^{-4})\text{:} \\+
     $w=\varphi$ \qquad\qquad\qquad\qquad\qquad\quad \ct{or other admissible fine-level initial iterate} \\
     $r_0=\|\hat\bF(w)\|$ \qquad\qquad\qquad\qquad\qquad \ct{initial residual norm; see \eqref{eq:cpresidual}} \\
     repeat \\+
         $\chi^J = \varphi - w$ \qquad\qquad\qquad\qquad\quad \ct{fine-level defect constraint} \\
-        $\ell^J[\cdot] := - F(w)[\cdot]$ \\
+        $\ell^J[\cdot] := - F(w)[\cdot]$ \qquad\qquad\qquad\quad \ct{$F(w)[\cdot] = a(w,\cdot) - \ip{f}{\cdot}$} \\
         $F^J(y)[\cdot] := a(y,\cdot) - \ell^J[\cdot]$ \\
         $y=\pr{mcdl-Z}(J,F^J,\chi^J)$ \qquad\qquad \ct{\pr{Z}$=$\pr{slash},\pr{vcycle}} \\
         $w\gets w+y$ \\-
