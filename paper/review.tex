@@ -714,18 +714,17 @@ where
   \tilde\ell^j[\cdot] = \begin{cases} - \tilde F^{j-1}(\eta^{j-1})[\cdot], & j > 1, \\
                                       - F^0(y^0)[\cdot], & j = 1. \end{cases} \label{eq:rhslinearlevelv}
 \end{equation}
-However, to actually use $\tilde\ell^j$ on the $j$th level, in the representation $\tilde{\bm{\ell}} = \{\tilde\ell^j[\psi_p^j]\}$ in $\RR^{m_j}$, the $j-1$ level residual $\tilde F^{j-1}(\eta^{j-1})[\cdot]$ must be prolonged.  (This is the first time we have prolonged a linear functional.)
 
-Let $\ell$ be in $(\mathcal{V}^{j-1})'$.  We may define $P^?\ell$ in $(\mathcal{V}^j)'$ to be the exact prolongation in a number of ways.  Recalling \eqref{eq:hatcombination} once again, we want to compute the values $P^?\ell[\psi_q^j]$ so that
+However, to use $\tilde\ell^j$ on the $j$th level, in a representation $\tilde{\bm{\ell}} = \{\tilde\ell^j[\psi_q^j]\}$ as a vector in $\RR^{m_j}$, it must be prolonged.  (This is the first time we have prolonged a linear functional.)  Suppose $\ell$ is in $(\mathcal{V}^{j-1})'$ and that we want to compute its prolongation $\lambda$, a linear functional in $(\mathcal{V}^j)'$.  Recalling \eqref{eq:hatcombination} once again, we need to determine the values $\lambda[\psi_q^j]$ so that
 \begin{equation}
-  \sum_{q=1}^{m_j} c_{pq} (P^?\ell)[\psi_q^j] = \ell[\psi_p^{j-1}] \label{eq:dualprolongderive}
+  \sum_{q=1}^{m_j} c_{pq} \lambda[\psi_q^j] = \ell[\psi_p^{j-1}] \label{eq:dualprolongderive}
 \end{equation}
-for $p=1,\dots,m_{j-1}$, where $c_{pq} = \psi_p^{j-1}(x_q^j)$.  Equation \eqref{eq:dualprolongderive} is in fact an underdetermined system of $m_{j-1}$ equations in $m_j$ unknowns.  One solution uses the fact that $c_{pq}=1$ if $x_q^j=x_p^{j-1}$.  We choose the other values to be zero, and get the \emph{injection prolongation} $\iP$ from $(\mathcal{V}^{j-1})'$ to $\mathcal{V}^j$ satisfying
+for $p=1,\dots,m_{j-1}$, where $c_{pq} = \psi_p^{j-1}(x_q^j)$.  Equation \eqref{eq:dualprolongderive} is an underdetermined system of $m_{j-1}$ equations in $m_j$ unknowns, exactly solvable in different ways.  Noting that $c_{pq}=1$ if $x_q^j=x_p^{j-1}$, we may choose the other values to be zero, and this yields \emph{injection prolongation},
 \begin{equation}
   (\iP\ell)[\psi_q^j] = \begin{cases} \ell[\psi_p^{j-1}], & x_q^j=x_p^{j-1}, \\
                                       0, & \text{otherwise}. \end{cases}  \label{eq:injectprolong}
 \end{equation}
-Using this prolongation for our V-cycle will imply that the prolonged residual is not smooth, but the solution of the equation on the $j$th level will be relatively smooth by ellipticity.
+In other words, we keep the values of $\ell$ on the coarser-level nodes and fill-in the other finer-level nodes with zero.  Using this prolongation gives a $j$th-level residual that is not smooth, but the solution of the equation on the $j$th level (i.e.~$\tilde F^j(y^j)[v]=0$ for all $v$ in $\mathcal{K}^j$) will be relatively smooth by ellipticity.
 
 These ideas come together in the following pseudocode.
 \begin{pseudo*}
@@ -749,15 +748,15 @@ These ideas come together in the following pseudocode.
       $\omega^j = y^j + \eta^j + P \omega^{j-1}$ \qquad\qquad\quad \ct{accumulate corrections} \\-
     return $w^J$
 \end{pseudo*}
-Note that the vectors $\omega^j$ are used to add-up (accumulate) the corrections as in \eqref{eq:residuallinearlevelv}.  The procedure returns
+Note that the vectors $\omega^j$ in the second \kw{for} loop are used to add-up (accumulate) the corrections in \eqref{eq:residuallinearlevelv}, both the corrections $y^j$ on the way down and the $\eta^j$ from the way up.  The procedure returns
     $$\omega^J = y^J + \dots + y^1 + y^0 + \eta^1 + \dots + \eta^J$$
-in $\mathcal{V}^J$, and then the calling solver, i.e.~\pr{mcdl-solver}, does the update $w^J \gets w^J + \omega^J$.
+in $\mathcal{V}^J$, and then the calling solver (\pr{mcdl-solver}) does the update $w^J \gets w^J + \omega^J$.
 
 FIXME Figure like Figure \ref{fig:gooddecomposition} but for V-cycle
 
-FIXME note these are really $V(\id{down},0)$ and ...
+FIXME note these are really $V(\id{down},0)$ and  $V(\id{down},\id{up})$ cycles
 
-FIXME F cycle
+FIXME F cycle?
 
 \subsection*{Computational results} FIXME
 
@@ -787,7 +786,7 @@ Thus as we refine and $h\to 0$ the value of $\rho_{\text{PGS}}$ goes to one.  In
 
 FIXME Compare Theorem \ref{thm:msdconvergence}.
 
-FIXME model performance when $h=O(2^{-J})$ and $N=2^{J+1}-1=O(2^J)$ so $J = O(\log N)$; Table \ref{tab:performancmodels}; all constants proportional to $|\log\eps|$
+FIXME model performance when $h=O(2^{-J})$ and $N=2^{J+1}-1=O(2^J)$ so $J = O(\log N)$; Table \ref{tab:performancemodels}; all constants proportional to $|\log\eps|$
 
 \begin{table}
 \begin{tabular}{l|l|l}
@@ -798,9 +797,11 @@ FIXME model performance when $h=O(2^{-J})$ and $N=2^{J+1}-1=O(2^J)$ so $J = O(\l
 \end{tabular}
 
 \medskip
-\label{tab:performancmodels}
-\caption{Number of iterations to reduce the error norm $\|w-u^h\|_{\mathcal{H}}$ by a factor of $\eps$, and consequent amount of work (flops), for solvers of the classical obstacle problem, as degrees of freedom $N\to\infty$.  Method \pr{gmg-vcycle} solves the linear Poisson equation.}
+\label{tab:performancemodels}
+\caption{Number of iterations to reduce the error norm $\|w-u^h\|_{\mathcal{H}}$ by a factor of $\eps$, and amount of work (flops) as degrees of freedom $N\to\infty$.}
 \end{table}
+
+FIXME in Table \ref{tab:performancemodels}, the first two solvers are for the classical obstacle problem, but \pr{gmg-vcycle} solves the linear Poisson equation
 
 FIXME there are other fast solution methods, e.g.~PFAS in \cite{BrandtCryer1983} and inactive-set Newton-Multigrid \cite[Chapter 12]{Bueler2021}, and monotone and truncated multigrid \cite{GraeserKornhuber2009}, but theory is more complicated or missing
 
