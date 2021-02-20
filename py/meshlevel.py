@@ -89,10 +89,23 @@ class MeshLevel1D():
             y[q] = 0.5 * ell[2*q-1] + ell[2*q] + 0.5 * ell[2*q+1]
         return y
 
+    def injectP(self, ell):
+        '''Prolong a linear functional ell on the next-coarser mesh
+        (in (V^{j-1})') to the current mesh, i.e. y = injectP(ell) in (V^j)'.
+        This is an underdetermined problem, but injection is a solution.'''
+        assert self.j > 0, \
+               'cannot prolong from a mesh coarser than the coarsest mesh'
+        self.checklen(ell, coarser=True)
+        y = self.zeros()
+        for q in range(1, self.mcoarser+1):
+            y[2*q] = ell[q]
+        return y
+
     def mR(self, v):
         '''Evaluate the monotone restriction operator on a vector v
         on the current mesh (in V^j) to give a vector y = mR(v) on the
-        next-coarser mesh (in V^{j-1}).  See formula (4.22) in G&K(2009).'''
+        next-coarser mesh (in V^{j-1}).  See formula (4.22) in G&K(2009).
+        This is a nonlinear operation.'''
         assert self.j > 0, \
                'cannot restrict to a mesh coarser than the coarsest mesh'
         self.checklen(v)

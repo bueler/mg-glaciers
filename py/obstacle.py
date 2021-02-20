@@ -13,7 +13,7 @@ import numpy as np
 
 from meshlevel import MeshLevel1D
 from pgs import residual, inactiveresidual, pgssweep
-from subsetdecomp import mcdlslash
+from subsetdecomp import mcdlcycle
 from visualize import VisObstacle
 
 parser = argparse.ArgumentParser(description='''
@@ -193,13 +193,21 @@ uu[[0, -1]] = [0.0, 0.0]
 if exactavailable:
     uex = uexact(mesh.xx())
 
+lastirnorm = -1.0
 def irerrmonitor(siter, w):
     '''Compute inactive residual norm.  Print it, and error if available.'''
+    global lastirnorm
     irnorm = mesh.l2norm(inactiveresidual(mesh, w, ellfine, phifine))
     if args.monitor:
-        print('  %d:  |ir(u)|_2 = %.4e' % (siter, irnorm))
+        print('  %d:  |ir(u)|_2 = %.4e' % (siter, irnorm), end='')
+        if lastirnorm > 0:
+            print('  (rate %.4f)' % (irnorm/lastirnorm))
+        else:
+            print()
+        lastirnorm = irnorm
     if args.monitorerr and exactavailable:
-        print('  %d:  |u-uexact|_2 = %.4e' % (siter, mesh.l2norm(w-uex)))
+        errnorm = mesh.l2norm(w-uex)
+        print('  %d:  |u-uexact|_2 = %.4e' % (siter, errnorm))
     return irnorm
 
 # multigrid V-cycles (unless user just wants pGS)
@@ -225,11 +233,10 @@ for s in range(args.cyclemax):
     else:
         # Tai (2003) constraint decomposition method for V(1,0)-cycles
         # = Alg. 4.7 in G&K (2009); next few lines are "mcdl-solver()" in paper
-        assert args.up == 0  #FIXME
         mesh.chi = phifine - uu
         ell = - residual(mesh,uu,ellfine)
-        y, infeas = mcdlslash(levels-1, hierarchy, ell,
-                              down=args.down, coarse=args.coarse,
+        y, infeas = mcdlcycle(levels-1, hierarchy, ell,
+                              down=args.down, up=args.up, coarse=args.coarse,
                               levels=levels, view=args.mgview,
                               symmetric=args.symmetric,
                               printwarnings=args.printwarnings)
