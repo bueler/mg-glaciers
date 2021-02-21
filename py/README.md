@@ -1,28 +1,11 @@
 # mg-glaciers/py/
 
-Program `obstacle.py` in `py/` solves a 1D obstacle problem on [0,1] for the Poisson equation, with "ice-like" geometry.  For now the available algorithms are
+There are two examples of applying the multilevel constraint decomposition of Tai (2003) on obstacle problems.
 
-  * sweeps of projected Gauss-Seidel (pGS) on the fine grid
-  * V-cycles of the Tai (2003) multilevel subset decomposition method using pGS as a smoother
+## 1D/
 
-For detailed information:
+We solve the simplest possible problem, a classical obstacle problem for the Poisson equation (Laplace operator) on the interval [0,1], using a from-scratch implementation of the piecewise-linear (P1) finite element method.  These Python programs need only standard libraries and Numpy.
 
-        $ ./obstacle.py -h
+## 2D/
 
-An illustration of the default ice-like problem geometry:
-
-        $ ./obstacle.py -show -diagnostics -kfine 4 -cycles 10
-
-A good illustration using classical obstacle problem geometry, and some different options, is:
-
-        $ ./obstacle.py -problem parabola -show -diagnostics -kfine 5 -kcoarse 2 -cycles 20 -random -fscale 10 -symmetric
-
-
-## testing
-
-Run software tests:
-
-        $ make test
-
-This calls `python3 -m pytest`, which should work whether or not `pytest` has been installed (e.g. via pip).
-
+We solve the shallow ice approximation on planar domains.  These Python programs use the Firedrake library and P1 elements.
