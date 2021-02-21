@@ -28,7 +28,7 @@ where phi is in H_0^1[0,1], f is in L^2[0,1], and
 Note that the interior condition (PDE) is the Poisson equation  - u'' = f.
 
 Solution is by Alg. 4.7 in Gräser & Kornhuber (2009), namely the multilevel
-constraint decomposition V-cycle method by Tai (2003) in which a monotone
+constraint decomposition slash-cycle method by Tai (2003) in which a monotone
 restriction operator decomposes the defect obstacle.  The smoother and the
 coarse-mesh solver are projected Gauss-Seidel (PGS).
 
@@ -96,8 +96,8 @@ parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-symmetric', action='store_true', default=False,
                     help='use symmetric projected Gauss-Seidel sweeps (forward then backward)')
-parser.add_argument('-up', type=int, default=1, metavar='N',
-                    help='PGS sweeps after coarse-mesh correction (default=1)')
+parser.add_argument('-up', type=int, default=0, metavar='N',
+                    help='PGS sweeps after coarse-mesh correction (default=0; up>0 is V-cycle)')
 args, unknown = parser.parse_known_args()
 
 exactavailable = (not args.random) and (args.fscale == 1.0) \

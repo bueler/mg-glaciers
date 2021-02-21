@@ -13,13 +13,13 @@ runobstacle_2:
 	-@./../testit.sh obstacle.py "-problem parabola -parabolay -3.0 -jfine 1 -pgsonly -symmetric" 1 2
 
 runobstacle_3:
-	-@./../testit.sh obstacle.py "-jfine 3 -up 0 -monitorerr -diagnostics -o test3.png" 1 3
+	-@./../testit.sh obstacle.py "-jfine 3 -monitorerr -diagnostics -o test3.png" 1 3
 
 runobstacle_4:
-	-@./../testit.sh obstacle.py "-problem parabola -jfine 4 -jcoarse 3 -cyclemax 2 -up 0 -monitorerr -mgview" 1 4
+	-@./../testit.sh obstacle.py "-problem parabola -jfine 4 -jcoarse 3 -cyclemax 2 -monitorerr -mgview" 1 4
 
 runobstacle_5:
-	-@./../testit.sh obstacle.py "-mgview -jfine 2 -random -fscale 0.5 -monitor -irtol 1.0e-1" 1 5
+	-@./../testit.sh obstacle.py "-up 1 -mgview -jfine 2 -random -fscale 0.5 -monitor -irtol 1.0e-1" 1 5
 
 test_obs1: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5
 
