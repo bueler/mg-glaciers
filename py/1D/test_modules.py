@@ -16,7 +16,7 @@ def test_ml_basics():
     assert (ml.l2norm(ml.xx()) - 1.0 / np.sqrt(2.0)) < 1.0e-10
     f = np.ones(ml.m+2)
     ellcorrect = ml.h * np.array([0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0])
-    assert all(ml.ell(f) == ellcorrect)
+    assert all(ml.ellf(f) == ellcorrect)
 
 def test_ml_cR():
     '''Canonical restriction in MeshLevel1D.'''
@@ -83,8 +83,8 @@ def test_po_pointresidual():
     ml = MeshLevel1D(j=1)
     f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
     w = f.copy()
-    assert pointresidual(ml, w, ml.ell(f), 1) == - 0.5 * ml.h
-    assert pointresidual(ml, w, ml.ell(f), 2) == - 4.0
+    assert pointresidual(ml, w, ml.ellf(f), 1) == - 0.5 * ml.h
+    assert pointresidual(ml, w, ml.ellf(f), 2) == - 4.0
 
 def test_po_residual():
     '''Residual for Poisson.'''
@@ -92,13 +92,13 @@ def test_po_residual():
     f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
     w = f.copy()
     Fcorrect = - np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
-    assert all(residual(ml, w, ml.ell(f)) == Fcorrect)
+    assert all(residual(ml, w, ml.ellf(f)) == Fcorrect)
 
 def test_pgs_pgssweep1():
     '''Projected Gauss-Seidel sweep.'''
     ml = MeshLevel1D(j=0)
     f = np.array([0.0, 1.0, 0.0])
-    ell = ml.ell(f)
+    ell = ml.ellf(f)
     assert all(ell == ml.h * f)
     w = ml.zeros()
     assert all(residual(ml, w, ell) == - ml.h * f)

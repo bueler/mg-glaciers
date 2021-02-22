@@ -50,17 +50,17 @@ class MeshLevel1D():
         return np.sqrt(self.h * (0.5*u[0]*u[0] + np.sum(u[1:-1]*u[1:-1]) \
                                  + 0.5*u[-1]*u[-1]))
 
-    def ell(self, f):
+    def ellf(self, f):
         '''Represent the linear functional (in (V^j)') which is the inner
         product with a function f (in V^j):
-           ell[v] = <f,v> = int_0^1 f(x) v(x) dx
-        The values are  ell[p] = ell[psi_p^j]  for p=1,...,m_j, and
-        ell[0]=ell[m+1]=0.  Uses trapezoid rule to evaluate the integrals
-        ell[psi_p^j].'''
+           ellf[v] = <f,v> = int_0^1 f(x) v(x) dx
+        The values are  ellf[p] = ellf[psi_p^j]  for p=1,...,m_j, and
+        ellf[0]=ellf[m+1]=0.  Uses trapezoid rule to evaluate the integrals
+        ellf[psi_p^j].'''
         self.checklen(f)
-        ell = self.zeros()
-        ell[1:-1] = self.h * f[1:-1]
-        return ell
+        ellf = self.zeros()
+        ellf[1:-1] = self.h * f[1:-1]
+        return ellf
 
     def cP(self, v):
         '''Prolong a vector (function) onto the next-coarser (j-1) mesh (i.e.

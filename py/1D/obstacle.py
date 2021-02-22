@@ -208,7 +208,7 @@ def irerrmonitor(siter, w):
     return irnorm
 
 # multigrid V-cycles (unless user just wants pGS)
-ellfine = mesh.ell(fsource(mesh.xx()))
+ellfine = mesh.ellf(fsource(mesh.xx()))
 infeascount = 0
 s = 0  # so that runs with -cyclemax 0 work
 for s in range(args.cyclemax):
