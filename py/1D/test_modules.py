@@ -27,11 +27,11 @@ def test_ml_cR():
     r[1:4] = 1.0
     assert all(ml.cR(r) == [0.0, 2.0, 0.0])
 
-def test_ml_P():
+def test_ml_cP():
     '''Canonical prolongation in MeshLevel1D.'''
     ml = MeshLevel1D(j=1)
     v = np.array([0.0, 1.0, 0.0])
-    assert all(ml.P(v) == [0.0, 0.5, 1.0, 0.5, 0.0])
+    assert all(ml.cP(v) == [0.0, 0.5, 1.0, 0.5, 0.0])
 
 def test_ml_injectP():
     '''Prolongation of linear functionals by injection in MeshLevel1D.'''
@@ -39,13 +39,19 @@ def test_ml_injectP():
     ell = np.array([0.0, 1.0, 2.0, 3.0, 0.0])
     assert all(ml.injectP(ell) == [0.0, 0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.0])
 
+def test_ml_fwP():
+    '''Prolongation of linear functionals by full-weighting in MeshLevel1D.'''
+    ml = MeshLevel1D(j=2)
+    ell = np.array([0.0, 1.0, 2.0, 3.0, 0.0])
+    assert all(ml.fwP(ell) == [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 0.75, 0.0])
+
 def test_ml_mR():
     '''Monotone restriction in MeshLevel1D.'''
     ml = MeshLevel1D(j=2)
     assert ml.m == 7
     v = np.array([0.0, 1.0, 1.0, 0.5, 0.5, 0.5, 0.5, 1.0, 0.0])
     assert all(ml.mR(v) == [0.0, 1.0, 0.5, 1.0, 0.0])
-    vback = ml.P(ml.mR(v))  # note P uses zero boundary values
+    vback = ml.cP(ml.mR(v))  # note cP uses zero boundary values
     assert all(vback[2:-2] >= v[2:-2])
     assert all(vback[[1, -2]] == [0.5, 0.5])
 
@@ -67,9 +73,9 @@ def test_ml_hierarchy():
     chi0 = ml1.mR(chi1)
     assert all(chi1 == [0.0, 2.0, 1.0, 1.0, 0.0])
     assert all(chi0 == [0.0, 2.0, 0.0])
-    Psi0 = ml2.P(ml1.P(chi0))
-    Psi1 = ml2.P(chi1 - ml1.P(chi0))
-    Psi2 = chi2 - ml2.P(chi1)
+    Psi0 = ml2.cP(ml1.cP(chi0))
+    Psi1 = ml2.cP(chi1 - ml1.cP(chi0))
+    Psi2 = chi2 - ml2.cP(chi1)
     assert all(Psi0 + Psi1 + Psi2 == phi)
 
 def test_po_pointresidual():

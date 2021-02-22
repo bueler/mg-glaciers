@@ -62,7 +62,7 @@ class MeshLevel1D():
         ell[1:-1] = self.h * f[1:-1]
         return ell
 
-    def P(self, v):
+    def cP(self, v):
         '''Prolong a vector (function) onto the next-coarser (j-1) mesh (i.e.
         in V^{j-1}) onto the current mesh (in S_j).  Uses linear interpolation.'''
         assert self.j > 0, \
@@ -90,15 +90,33 @@ class MeshLevel1D():
         return y
 
     def injectP(self, ell):
-        '''Prolong a linear functional ell on the next-coarser mesh
-        (in (V^{j-1})') to the current mesh, i.e. y = injectP(ell) in (V^j)'.
-        This is an underdetermined problem, but injection is a solution.'''
+        '''Prolong a linear functional ell by injection, from the next-coarser
+        mesh.  If ell is in (V^{j-1})' then y = injectP(ell) is in (V^j)'.
+        (Dual prolongation is an underdetermined problem, but injection is a
+        solution.  Compare fwP().)'''
         assert self.j > 0, \
                'cannot prolong from a mesh coarser than the coarsest mesh'
         self.checklen(ell, coarser=True)
         y = self.zeros()
         for q in range(1, self.mcoarser+1):
             y[2*q] = ell[q]
+        return y
+
+    def fwP(self, ell):
+        '''Prolong a linear functional ell by full-weighting, from the
+        next-coarser mesh.  If ell is in (V^{j-1})' then y = fdP(ell) is in
+        (V^j)'.  (Dual prolongation is an underdetermined problem, but
+        full-weighting is a solution.  Compare injectP().)'''
+        assert self.j > 0, \
+               'cannot prolong from a mesh coarser than the coarsest mesh'
+        self.checklen(ell, coarser=True)
+        y = self.zeros()
+        y[1] = 0.25 * ell[1]
+        for q in range(1, len(ell)-2):
+            y[2*q] = 0.5 * ell[q]
+            y[2*q+1] = 0.25 * (ell[q] + ell[q+1])
+        y[-3] = 0.5 * ell[-2]
+        y[-2] = 0.25 * ell[-2]
         return y
 
     def mR(self, v):
