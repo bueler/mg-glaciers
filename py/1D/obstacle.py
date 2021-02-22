@@ -4,9 +4,6 @@
 # TODO:
 #   * correct hier. decomp. figure when up>0
 
-# NOTE: -up 2 or -symmetric or -up 0 (i.e. a bit more up-smoothing) seems to
-#       fix occasional feasibility violations with -up 1
-
 import sys
 import argparse
 import numpy as np

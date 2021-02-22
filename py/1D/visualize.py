@@ -106,7 +106,7 @@ class VisObstacle():
             for j in range(J,-1,-1):
                 z = hierarchy[j].chi
                 for k in range(j,J):
-                    z = hierarchy[k+1].P(z)
+                    z = hierarchy[k+1].cP(z)
                 if j == J:
                     chilabel = r'$w^{%d}$' % J
                     chistyle = 'k'
