@@ -55,6 +55,8 @@ parser.add_argument('-diagnostics', action='store_true', default=False,
                     help='additional diagnostics figures (use with -show or -o)')
 parser.add_argument('-down', type=int, default=1, metavar='N',
                     help='PGS sweeps before coarse-mesh correction (default=1)')
+parser.add_argument('-errtol', type=float, default=None, metavar='X',
+                    help='numerical error should be below this value (default=None)')
 parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
                     help='in Poisson equation -u"=f this multiplies f (default X=1)')
 parser.add_argument('-irtol', type=float, default=1.0e-3, metavar='X',
@@ -69,6 +71,10 @@ parser.add_argument('-monitor', action='store_true', default=False,
                     help='print the inactive-set residual norm after each cycle')
 parser.add_argument('-monitorerr', action='store_true', default=False,
                     help='print the error (if available) after each cycle')
+parser.add_argument('-ni', action='store_true', default=False,
+                    help='use nested iteration for initial iterates (i.e. F-cycle)')
+parser.add_argument('-niiters', type=int, default=1, metavar='s',
+                    help='nested iteration: iterations on levels before finest (default s=1)')
 parser.add_argument('-o', metavar='FILE', type=str, default='',
                     help='save plot at end in image file, e.g. PDF or PNG')
 parser.add_argument('-parabolay', type=float, default=-1.0, metavar='X',
@@ -111,6 +117,9 @@ if args.show and args.o:
 if args.monitorerr and not exactavailable:
     print('usage ERROR: -monitorerr but exact solution and error not available')
     sys.exit(3)
+if args.errtol is not None and not exactavailable:
+    print('usage ERROR: -errtol but exact solution and error not available')
+    sys.exit(4)
 
 # fix the random seed for repeatability
 np.random.seed(args.randomseed)
@@ -170,85 +179,111 @@ def uexact(x):
             raise NotImplementedError
     return u
 
-# mesh hierarchy = [coarse,...,fine]
+# hierarchy is a list of MeshLevel1D with indices [0,..,levels-1]
 assert args.jcoarse >= 0
 assert args.jfine >= args.jcoarse
 levels = args.jfine - args.jcoarse + 1
-assert levels >= 1
-hierarchy = [None] * (levels)  # list [None,...,None]; indices 0,...,levels-1
+hierarchy = [None] * (levels)             # list [None,...,None]
 for j in range(levels):
     hierarchy[j] = MeshLevel1D(j=j+args.jcoarse)
-mesh = hierarchy[-1]  # fine mesh
 
-# data on fine level
-phifine = phi(mesh.xx())                   # obstacle
-ellfine = mesh.ellf(fsource(mesh.xx()))    # source functional
-uu = np.maximum(phifine, mesh.zeros())     # feasible initial iterate
-
-# exact solution
-uex = None
-if exactavailable:
-    uex = uexact(mesh.xx())
-
-# initialize monitor
-mon = ObstacleMonitor(mesh, ellfine, phifine, uex=uex,
-                      printresiduals=args.monitor, printerrors=args.monitorerr)
-
-# multigrid slash-cycles (unless user just wants PGS)
-infeascount = 0
-for s in range(args.cyclemax):
-    irnorm = mon.irerr(uu)
-    if irnorm < 1.0e-50:
-        break
-    if s == 0:
-        irnorm0 = irnorm
-    else:
-        if irnorm < args.irtol * irnorm0:
-            break
-    if args.pgsonly:
-        # sweeps of projected Gauss-Seidel on fine grid
-        infeascount += pgssweep(mesh, uu, ellfine, phifine,
-                                printwarnings=args.printwarnings)
-        if args.symmetric:
-            infeascount += pgssweep(mesh, uu, ellfine, phifine,
-                                    forward=False, printwarnings=args.printwarnings)
-    else:
-        # Tai (2003) constraint decomposition method for V(1,0)-cycles
-        # = Alg. 4.7 in G&K (2009); next few lines are "mcdl-solver()" in paper
-        mesh.chi = phifine - uu
-        ell = - residual(mesh,uu,ellfine)
-        y, infeas = mcdlcycle(levels-1, hierarchy, ell,
-                              down=args.down, up=args.up, coarse=args.coarse,
-                              levels=levels, view=args.mgview,
-                              symmetric=args.symmetric,
-                              printwarnings=args.printwarnings)
-        uu += y
-        infeascount += infeas
-
-# finalize iterations and monitor (re different stopping criterion above)
-its = s
-if s == args.cyclemax - 1:
-    mon.irerr(uu)
-    its = s+1
-
-# compute total work units
+# nested iteration outer loop
 wusum = 0.0
-for j in range(levels):
-    wusum += hierarchy[j].WU / 2**(levels - 1 - j)
+infeascount = 0
+if args.ni:
+    nirange = range(levels)
+else:
+    nirange = [levels-1,]     # not nested iteration; just run on finest level
+for ni in nirange:
+    # evaluate data varphi(x), ell[v] = <f,v> on (current) fine level
+    mesh = hierarchy[ni]
+    phifine = phi(mesh.xx())                   # obstacle
+    ellfine = mesh.ellf(fsource(mesh.xx()))    # source functional
 
-# report on computation including numerical error
+    if args.ni and ni > 0:
+        # in nested iteration, prolong solution from previous coarser level,
+        #   and truncate for feasible initial iterate
+        uu = np.maximum(phifine, hierarchy[ni].cP(uu))
+    else:
+        # default initial iterate; sometimes better than phifine when phifine
+        #   is negative in places (e.g. -problem parabola)
+        uu = np.maximum(phifine, mesh.zeros())
+
+    # create monitor; use exact solution if available
+    uex = None
+    if exactavailable:
+        uex = uexact(mesh.xx())
+    mon = ObstacleMonitor(mesh, ellfine, phifine, uex=uex,
+                          printresiduals=args.monitor, printerrors=args.monitorerr)
+
+    # multigrid slash-cycles or V-cycles inner loop
+    if args.ni and ni < levels-1:
+        iters = args.niiters
+    else:
+        iters = args.cyclemax
+    for s in range(iters):
+        irnorm, errnorm = mon.irerr(uu, indent=levels-1-ni)
+        if errnorm is not None and args.errtol is not None and ni == levels-1:
+            # special case: check numerical error on finest level
+            if errnorm < args.errtol:
+                break
+        else:
+            # generally stop based on irtol condition
+            if irnorm < 1.0e-50:
+                break
+            if s == 0:
+                irnorm0 = irnorm
+            else:
+                if irnorm < args.irtol * irnorm0:
+                    break
+        if args.pgsonly:
+            # revert to sweeps of projected Gauss-Seidel on fine grid
+            infeascount += pgssweep(mesh, uu, ellfine, phifine,
+                                    printwarnings=args.printwarnings)
+            if args.symmetric:
+                infeascount += pgssweep(mesh, uu, ellfine, phifine,
+                                        forward=False, printwarnings=args.printwarnings)
+        else:
+            # Tai (2003) constraint decomposition method; usually V(1,0)-cycles;
+            #   Alg. 4.7 in G&K (2009); next lines are "mcdl-solver()" in paper
+            mesh.chi = phifine - uu                # defect obstacle
+            ell = - residual(mesh,uu,ellfine)      # base residual
+            y, infeas = mcdlcycle(ni, hierarchy, ell,
+                                  down=args.down, up=args.up, coarse=args.coarse,
+                                  levels=levels, view=args.mgview,
+                                  symmetric=args.symmetric,
+                                  printwarnings=args.printwarnings)
+            uu += y
+            infeascount += infeas
+
+    # finalize iterations and monitor (see stopping criterion above)
+    its = s
+    if s == iters - 1:
+        mon.irerr(uu, indent=levels-1-ni)
+        its = s+1
+
+    # accumulate work units from this slash
+    for j in range(ni+1):
+        wusum += hierarchy[j].WU / 2**(levels - 1 - j)
+        hierarchy[j].WU = 0    # avoids double-counting in nested iteration
+
+# report on computation; includes numerical error, WU, infeasibles
+method = 'using '
+if args.ni:
+    method = 'nested iter. & '
 symstr = 'sym. ' if args.symmetric else ''
 if args.pgsonly:
-    method = 'with %d applications of %sPGS' % (its, symstr)
+    method += '%d applications of %sPGS' % (its, symstr)
 else:
-    method = 'using %d %sV(%d,%d) cycles' % (its, symstr, args.down, args.up)
+    method += '%d %sV(%d,%d) cycles' % (its, symstr, args.down, args.up)
 if exactavailable:
+    uex = uexact(hierarchy[-1].xx())
     error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
 else:
     uex = None
     error = ''
 countstr = '' if infeascount == 0 else ' (%d infeasibles)' % infeascount
-print('fine level %d (m=%d) %s (%.3f WU)%s%s' \
+print('fine level %d (m=%d): %s -> %.3f WU%s%s' \
       % (args.jfine, mesh.m, method, wusum, error, countstr))
 
 # graphical output if desired

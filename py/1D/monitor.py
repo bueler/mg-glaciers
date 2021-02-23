@@ -18,18 +18,22 @@ class ObstacleMonitor():
         self.lastirnorm = None
         self.s = 0
 
-    def irerr(self, w):
+    def irerr(self, w, indent=0):
         '''Report inactive residual norm and error if available.'''
         irnorm = self.mesh.l2norm(inactiveresidual(self.mesh, w, self.ell, self.phi))
+        ind = indent * '  '
         if self.residuals:
-            print('  %d:  |ir(u)|_2 = %.4e' % (self.s, irnorm), end='')
-            if self.lastirnorm is not None:
+            print(ind + '  %d:  |ir(u)|_2 = %.4e' % (self.s, irnorm), end='')
+            if self.lastirnorm is not None and self.lastirnorm > 0.0:
                 print('  (rate %.4f)' % (irnorm/self.lastirnorm))
             else:
                 print()
             self.lastirnorm = irnorm
-        if self.errors and self.uex is not None:
+        if self.uex is not None:
             errnorm = self.mesh.l2norm(w-self.uex)
-            print('  %d:  |u-uexact|_2 = %.4e' % (self.s, errnorm))
+        else:
+            errnorm = None
+        if self.errors and self.uex is not None:
+            print(ind + '  %d:  |u-uexact|_2 = %.4e' % (self.s, errnorm))
         self.s += 1
-        return irnorm
+        return irnorm, errnorm
