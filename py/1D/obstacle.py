@@ -9,8 +9,9 @@ import argparse
 import numpy as np
 
 from meshlevel import MeshLevel1D
-from pgs import residual, inactiveresidual, pgssweep
+from pgs import residual, pgssweep
 from subsetdecomp import mcdlcycle
+from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
 parser = argparse.ArgumentParser(description='''
@@ -179,40 +180,27 @@ for j in range(levels):
     hierarchy[j] = MeshLevel1D(j=j+args.jcoarse)
 mesh = hierarchy[-1]  # fine mesh
 
-# discrete obstacle on fine level
+# obstacle and source functional on fine level
 phifine = phi(mesh.xx())
+ellfine = mesh.ellf(fsource(mesh.xx()))
 
 # feasible initial iterate
 uu = np.maximum(phifine, mesh.zeros())
 uu[[0, -1]] = [0.0, 0.0]
 
 # exact solution
+uex = None
 if exactavailable:
     uex = uexact(mesh.xx())
 
-lastirnorm = -1.0
-def irerrmonitor(siter, w):
-    '''Compute inactive residual norm.  Print it, and error if available.'''
-    global lastirnorm
-    irnorm = mesh.l2norm(inactiveresidual(mesh, w, ellfine, phifine))
-    if args.monitor:
-        print('  %d:  |ir(u)|_2 = %.4e' % (siter, irnorm), end='')
-        if lastirnorm > 0:
-            print('  (rate %.4f)' % (irnorm/lastirnorm))
-        else:
-            print()
-        lastirnorm = irnorm
-    if args.monitorerr and exactavailable:
-        errnorm = mesh.l2norm(w-uex)
-        print('  %d:  |u-uexact|_2 = %.4e' % (siter, errnorm))
-    return irnorm
+# initialize monitor
+mon = ObstacleMonitor(mesh, ellfine, phifine, uex=uex,
+                      printresiduals=args.monitor, printerrors=args.monitorerr)
 
-# multigrid V-cycles (unless user just wants pGS)
-ellfine = mesh.ellf(fsource(mesh.xx()))
+# multigrid V-cycles (unless user just wants PGS)
 infeascount = 0
-s = 0  # so that runs with -cyclemax 0 work
 for s in range(args.cyclemax):
-    irnorm = irerrmonitor(s, uu)
+    irnorm = mon.irerr(uu)
     if irnorm < 1.0e-50:
         break
     if s == 0:
@@ -241,11 +229,10 @@ for s in range(args.cyclemax):
         infeascount += infeas
 
 # finalize iterations and monitor (re different stopping criterion above)
+its = s
 if s == args.cyclemax - 1:
-    irerrmonitor(s+1, uu)
+    mon.irerr(uu)
     its = s+1
-else:
-    its = s
 
 # compute total work units
 wusum = 0.0
@@ -255,7 +242,7 @@ for j in range(levels):
 # report on computation including numerical error
 symstr = 'sym. ' if args.symmetric else ''
 if args.pgsonly:
-    method = 'with %d applications of %spGS' % (its, symstr)
+    method = 'with %d applications of %sPGS' % (its, symstr)
 else:
     method = 'using %d %sV(%d,%d) cycles' % (its, symstr, args.down, args.up)
 if exactavailable:
