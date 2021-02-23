@@ -18,19 +18,18 @@ runobstacle_3:
 runobstacle_4:
 	-@./../testit.sh obstacle.py "-problem parabola -jfine 4 -jcoarse 3 -cyclemax 2 -monitorerr -mgview" 1 4
 
-runobstacle_5:
-	-@./../testit.sh obstacle.py "-up 1 -mgview -jfine 2 -random -fscale 0.5 -monitor -irtol 1.0e-1" 1 5
+#runobstacle_5:
+#	-@./../testit.sh obstacle.py "-up 1 -mgview -jfine 2 -random -fscale 0.5 -monitor -irtol 1.0e-1" 1 5
 
-test_obs1: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5
+test_obs1: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4
 
 testbanner:
 	@echo "**** TESTING obstacle.py ****"
 
 test: testmodules testbanner test_obs1
 
-.PHONY: clean runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 test_obs1 testmodules test testbanner
+.PHONY: clean runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 test_obs1 testmodules test testbanner
 
 clean:
 	@rm -f maketmp tmp difftmp *.png *.pdf
 	@rm -rf __pycache__ .pytest_cache/
-

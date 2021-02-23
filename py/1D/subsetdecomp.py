@@ -81,19 +81,13 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
             # V-cycle obstacle
             phi = 0.5 * (hierarchy[k].chi - hierarchy[k].cP(hierarchy[k-1].chi))
             # update and prolong the residual
-            # FIXME at least 4 possibilities, but none work properly
+            # FIXME at least 2 possibilities, but neither work properly
             #hierarchy[k].ell = - hierarchy[k].injectP(residual(hierarchy[k-1],
             #                                                   hierarchy[k-1].y,
             #                                                   hierarchy[k-1].ell))
-            #hierarchy[k].ell = - hierarchy[k].fwP(residual(hierarchy[k-1],
-            #                                               hierarchy[k-1].y,
-            #                                               hierarchy[k-1].ell))
-            #hierarchy[k].ell = - residual(hierarchy[k],
-            #                              hierarchy[k].cP(hierarchy[k-1].y),
-            #                              hierarchy[k].injectP(hierarchy[k-1].ell))
             hierarchy[k].ell = - residual(hierarchy[k],
                                           hierarchy[k].cP(hierarchy[k-1].y),
-                                          hierarchy[k].fwP(hierarchy[k-1].ell))
+                                          hierarchy[k].injectP(hierarchy[k-1].ell))
             # up smoother = PGS sweeps
             if view:
                 _levelreport(levels-1, k, hierarchy[k].m, up)

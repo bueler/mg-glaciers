@@ -102,23 +102,6 @@ class MeshLevel1D():
             y[2*q] = ell[q]
         return y
 
-    def fwP(self, ell):
-        '''Prolong a linear functional ell by full-weighting, from the
-        next-coarser mesh.  If ell is in (V^{j-1})' then y = fdP(ell) is in
-        (V^j)'.  (Dual prolongation is an underdetermined problem, but
-        full-weighting is a solution.  Compare injectP().)'''
-        assert self.j > 0, \
-               'cannot prolong from a mesh coarser than the coarsest mesh'
-        self.checklen(ell, coarser=True)
-        y = self.zeros()
-        y[1] = 0.25 * ell[1]
-        for q in range(1, len(ell)-2):
-            y[2*q] = 0.5 * ell[q]
-            y[2*q+1] = 0.25 * (ell[q] + ell[q+1])
-        y[-3] = 0.5 * ell[-2]
-        y[-2] = 0.25 * ell[-2]
-        return y
-
     def mR(self, v):
         '''Evaluate the monotone restriction operator on a vector v
         on the current mesh (in V^j) to give a vector y = mR(v) on the

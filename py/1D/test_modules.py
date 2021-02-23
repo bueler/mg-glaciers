@@ -39,12 +39,6 @@ def test_ml_injectP():
     ell = np.array([0.0, 1.0, 2.0, 3.0, 0.0])
     assert all(ml.injectP(ell) == [0.0, 0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.0])
 
-def test_ml_fwP():
-    '''Prolongation of linear functionals by full-weighting in MeshLevel1D.'''
-    ml = MeshLevel1D(j=2)
-    ell = np.array([0.0, 1.0, 2.0, 3.0, 0.0])
-    assert all(ml.fwP(ell) == [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 0.75, 0.0])
-
 def test_ml_mR():
     '''Monotone restriction in MeshLevel1D.'''
     ml = MeshLevel1D(j=2)
