@@ -653,27 +653,26 @@ For the classical obstacle problem, wherein the (continuum) residual $F(w)[v]$ i
    $$\eqref{eq:mcdvilinear} \quad \stackrel{a \text{ bilinear}}{\iff\strut} \quad \eqref{eq:mcdvi} \quad \stackrel{F=\grad I}{\iff\strut} \quad \eqref{eq:mcdminimization}.$$
 The nonlinear VI form \eqref{eq:mcdvi} is the most general, but note that if $F$ is not the gradient of a coercive objective function then additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,KinderlehrerStampacchia1980}).
 
-
-\subsection*{MCD cycles}  We are now ready to implement a multilevel solver for the classical obstacle problem.  The following pseudocode solves \eqref{eq:mcdvilinear}.  Here \pr{MCDL} stands for ``multilevel constraint decomposition (linear)'', and this procedure is analogous to \pr{msd-solver} in section \ref{sec:subspace}.  This outer loop sets up the defect constraint (equation \eqref{eq:defectconstraint}) and the fine-level residual.  Checks for convergence occur after calling the inner solver, given next.
+\subsection*{MCD cycles}  We are now ready to implement a multilevel solver for the classical obstacle problem.  The following pseudocode solves \eqref{eq:mcdvilinear}.  Here \pr{MCDL} stands for ``multilevel constraint decomposition (linear)'', and this procedure is analogous to \pr{msd-solver} in section \ref{sec:subspace}.  This outer loop sets up the fine-level defect constraint and residual.  Checks for convergence occur after calling the inner solver, addressed next.
 \begin{pseudo*}
 \pr{mcdl-solver}(F,\varphi,\id{rtol}=10^{-4})\text{:} \\+
     $w=\varphi$ \qquad\qquad\qquad\qquad\qquad\quad \ct{or other admissible fine-level initial iterate} \\
-    $r_0=\|\hat\bF(w)\|$ \qquad\qquad\qquad\qquad\qquad \ct{initial residual norm; see \eqref{eq:cpresidual}} \\
+    $r_0=\|\hat\bF(w)\|$ \qquad\qquad\qquad\qquad\qquad \ct{initial CP residual norm; see \eqref{eq:cpresidual}} \\
     repeat \\+
         $\chi^J = \varphi - w$ \qquad\qquad\qquad\qquad\quad \ct{fine-level defect constraint} \\
-        $\ell^J[\cdot] := - F(w)[\cdot]$ \qquad\qquad\qquad\quad \ct{$F(w)[\cdot] = a(w,\cdot) - \ip{f}{\cdot}$} \\
+        $\ell^J[\cdot] := - F(w)[\cdot]$ \qquad\qquad\qquad\quad \ct{see \eqref{eq:rhslinearlevel}} \\
         $F^J(y)[\cdot] := a(y,\cdot) - \ell^J[\cdot]$ \\
-        $y=\pr{mcdl-Z}(J,F^J,\chi^J)$ \qquad\qquad \ct{\pr{Z}$=$\pr{slash},\pr{vcycle}} \\
+        $y=\pr{mcdl-slash}(J,F^J,\chi^J)$ \\
         $w\gets w+y$ \\-
-    until $\|\hat\bF(w)\| \le r_0 \id{rtol}$ \\
+    until $\|\hat\bF(w)\| \le r_0 \id{rtol}$  \qquad\qquad\qquad \ct{see \eqref{eq:cpresidual}} \\
     return $w$
 \end{pseudo*}
 
-Our first cycle is a ``slash'', also known as a V(1,0)-cycle \cite{GraeserKornhuber2009}.  (Recall Figure \ref{fig:msdcycles} shows slash and V cycles.)  It is based on formulae \eqref{eq:chik}, \eqref{eq:levelobstacle}, \eqref{eq:residuallinearlevel}, and \eqref{eq:rhslinearlevel}.  However, before going down a level we approximate the residual by applying canonical restriction,
+The inner solver is a slash cycle, also known as V(1,0) \cite{GraeserKornhuber2009}.  (Figure \ref{fig:msdcycles} shows slash and true V-cycles.)  It is based on formulae \eqref{eq:chik}, \eqref{eq:levelobstacle}, \eqref{eq:residuallinearlevel}, and \eqref{eq:rhslinearlevel}.  Before computing the coarse-level correction, we approximate the residual by applying canonical restriction,
 \begin{equation}
   \ell^{j-1}[\cdot] = - R(F^j(y^j))[\cdot] \label{eq:rhslinearlevelcycle}
 \end{equation}
-for $j=J,\dots,1$.  As noted in section \ref{sec:subspace}, this loses information contained in the high-frequency modes on the $j$th level, although prior application of the smoother minimizes the loss.  As a pseudocode:
+for $j=J,\dots,1$.  As noted in section \ref{sec:subspace}, this loses residual information for the high-frequency modes on the $j$th level, but the smoother has minimized the loss.  As a pseudocode:
 \begin{pseudo*}
 \pr{mcdl-slash}(J,F^J,\chi^J,\id{down}=1,\id{coarse}=1)\text{:} \\+
     for $j=J$ downto $j=1$ \\+
@@ -684,74 +683,23 @@ for $j=J,\dots,1$.  As noted in section \ref{sec:subspace}, this loses informati
       $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad \ct{update and restrict residual} \\
       $F^{j-1}(y)[\cdot] := a(y,\cdot) - \ell^{j-1}[\cdot]$ \\-
     $y^0 = 0$ \\
-    $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \qquad\quad \ct{coarse-level correction} \\
+    $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \qquad\quad \ct{coarsest-level correction} \\
     for $j=1$ to $j=J$ \\+
       $y^j \gets y^j + P y^{j-1}$ \qquad\qquad\qquad\quad \ct{accumulate corrections} \\-
     return $y^J$
 \end{pseudo*}
 
-In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, noting that the FE method includes a subroutine which evaluates $a(w,v)$ as needed, the linear functional $\ell^{j-1}$ is passed as a (row) vector, from which $F^{j-1}$ is constructed as needed.  That is, the implementation signatures are actually \pr{pgssweep}$(j,y^j,\ell^j,\phi^j)$ and \pr{mcdl-slash}$(J,\ell^J,\chi^J)$, with the understanding that \eqref{eq:residuallinearlevel} defines $F^j$.
+In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, noting that the FE method includes a subroutine which evaluates $a(w,v)$ as needed, the linear functional $\ell^{j-1}$ is passed as a (row) vector, from which $F^{j-1}$ is constructed.  That is, the implementation signatures are actually \pr{pgssweep}$(j,y^j,\ell^j,\phi^j)$ and \pr{mcdl-slash}$(J,\ell^J,\chi^J)$, with the understanding that \eqref{eq:residuallinearlevel} defines $F^j$.
 
-Next, the implementation of a V-cycle, also known as a V(1,1)-cycle \cite{GraeserKornhuber2009}, requires reconsideration of the constraint decomposition and an additional prolongation operation.  Each correction from a different level needs to yield an admissible iterate, and in a V-cycle this applies on the way up, too.  Again we follow \cite{GraeserKornhuber2009} regarding the particular constraint decomposition; they keep the $j$th-level defect constraints $\chi^j$ \eqref{eq:chik} the same, but split the $j$th-level obstacles $\phi^j$ in half and then apply them twice.  Thus we have the following formulae for $j=1,\dots,+J$:
-\begin{equation}
-\phi_V^j = \frac{1}{2}(\chi^j-\chi^{j-1}), \qquad \mathcal{K}_V^j = \{v \ge \phi_V^j\} \subset \mathcal{V}^j.
-\end{equation}
-The coarest-level obstacle remains a special case, $\phi_V^0 = \chi^0,\mathcal{K}_V^0 = \{v \ge \chi^0\}$.  A telescoping sum like \eqref{eq:telescopingdecomposition}, but now with negative indices for going down and positive for going up, retains the consistency of the decomposition \cite{GraeserKornhuber2009,Tai2003}:
-\begin{equation}
-\chi^J = \sum_{j=-J}^J \phi_V^{|j|}, \qquad \mathcal{D}^J = \sum_{j=-J}^J \mathcal{K}_V^{|j|}.
-\end{equation}
+FIXME describe nested iteration; give pseudocode \pr{mcdl-fcycle}; mention V(1,1) in Appendix B
 
-On the way up we denote the corrections by $\eta^j$.  Computation \eqref{eq:residuallinearlevelderive} is extended:
-\begin{align}
-  \tilde F^j(z)[\cdot] &= F(w^J + y^J + \dots + y^0 + \eta^1 + \dots + \eta^{j-1} + z)[\cdot]  \label{eq:residuallinearlevelv} \\
-     &= a(z,\cdot) - \tilde \ell^j[\cdot] \notag
-\end{align}
-where
-\begin{equation}
-  \tilde\ell^j[\cdot] = \begin{cases} - \tilde F^{j-1}(\eta^{j-1})[\cdot], & j > 1, \\
-                                      - F^0(y^0)[\cdot], & j = 1. \end{cases} \label{eq:rhslinearlevelv}
-\end{equation}
+\subsection*{Computational results} FIXME error norms for slash cycle on two problems: icelike and parabola; demonstrates convergence rate
 
-However, to use $\tilde\ell^j$ on the $j$th level, in a representation $\tilde{\bm{\ell}} = \{\tilde\ell^j[\psi_q^j]\}$ as a vector in $\RR^{m_j}$, it must be prolonged.  (This is the first time we have prolonged a linear functional.)  Suppose $\ell$ is in $(\mathcal{V}^{j-1})'$ and that we want to compute its prolongation $\lambda$, a linear functional in $(\mathcal{V}^j)'$.  Recalling \eqref{eq:hatcombination} once again, we need to determine the values $\lambda[\psi_q^j]$ so that
-\begin{equation}
-  \sum_{q=1}^{m_j} c_{pq} \lambda[\psi_q^j] = \ell[\psi_p^{j-1}] \label{eq:dualprolongderive}
-\end{equation}
-for $p=1,\dots,m_{j-1}$, where $c_{pq} = \psi_p^{j-1}(x_q^j)$.  Equation \eqref{eq:dualprolongderive} is an underdetermined system of $m_{j-1}$ equations in $m_j$ unknowns, exactly solvable in different ways.  Noting that $c_{pq}=1$ if $x_q^j=x_p^{j-1}$, we may choose the other values to be zero, and this yields \emph{injection prolongation},
-\begin{equation}
-  (\iP\ell)[\psi_q^j] = \begin{cases} \ell[\psi_p^{j-1}], & x_q^j=x_p^{j-1}, \\
-                                      0, & \text{otherwise}. \end{cases}  \label{eq:injectprolong}
-\end{equation}
-In other words, we keep the values of $\ell$ on the coarser-level nodes and fill-in the other finer-level nodes with zero.  Using this prolongation gives a $j$th-level residual that is not smooth, but the solution of the equation on the $j$th level (i.e.~$\tilde F^j(y^j)[v]=0$ for all $v$ in $\mathcal{K}^j$) will be relatively smooth by ellipticity.
+FIXME explain WU
 
-These ideas come together in the following pseudocode.
-\begin{pseudo*}
-\pr{mcdl-vcycle}(J,F^J,\chi^J,\id{down}=1,\id{up}=1,\id{coarse}=1)\text{:} \\+
-    for $j=J$ downto $j=1$ \\+
-      $\chi^{j-1} = \mR \chi^j$ \\
-      $\phi_V^j = \frac{1}{2}(\chi^j - P\chi^{j-1})$ \qquad\qquad\quad  \ct{define obstacle} \\
-      $y^j = 0$ \\
-      $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,y^j,F^j,\phi_V^j)$ \\
-      $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad \ct{update and restrict residual} \\
-      $F^{j-1}(z)[\cdot] := a(z,\cdot) - \ell^{j-1}[\cdot]$ \\-
-    $y^0 = 0$ \\
-    $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \\
-    $\omega^0 = y^0$ \\
-    $\eta^0 = y^0$ \\
-    for $j=1$ to $j=J$ \\+
-      $\ell^{j}[\cdot] := - \iP(\tilde F^{j-1}(\omega^{j-1}))[\cdot]$ \qquad\quad \ct{update and prolong residual} \\
-      $\tilde F^{j}(z)[\cdot] := a(z,\cdot) - \ell^{j}[\cdot]$ \\
-      $\eta^j = 0$ \\
-      $\text{\pr{pgssweep}}^{\text{\id{up}}}(j,\eta^j,F^j,\phi_V^j)$ \\
-      $\omega^j = y^j + \eta^j + P \omega^{j-1}$ \qquad\qquad\quad \ct{accumulate corrections} \\-
-    return $w^J$
-\end{pseudo*}
-Note that the vectors $\omega^j$ in the second \kw{for} loop are used to add-up (accumulate) the corrections in \eqref{eq:residuallinearlevelv}, both the corrections $y^j$ on the way down and the $\eta^j$ from the way up.  The procedure returns
-    $$\omega^J = y^J + \dots + y^1 + y^0 + \eta^1 + \dots + \eta^J$$
-in $\mathcal{V}^J$, and then the calling solver (\pr{mcdl-solver}) does the update $w^J \gets w^J + \omega^J$.
+FIXME give figure with WU on $y$-axis and $N$ on $x$-axis for PGS only, slash cycle, V(2,0), F-cycle, and 2-iterations-on-way-up-F-cycle (5 solvers) on two problems: icelike and icelike-with-random-bed
 
-FIXME Figure like Figure \ref{fig:gooddecomposition} but for V-cycle; note these are really $V(\id{down},0)$ and  $V(\id{down},\id{up})$ cycles; F cycle?
-
-\subsection*{Computational results} FIXME
+FIXME run time per degree of freedom for same runs
 
 \subsection*{Convergence theory and performance models}  Mathematical theory allows us to compare the convergence rates of our MCD solver versus the PGS method.  Let $u^h$, in $\mathcal{V}^h = \mathcal{V}^J$ and satisfying $u^h \ge \varphi^J$, be the exact solution of the finite-dimensional VI
 \begin{equation}
@@ -817,7 +765,7 @@ FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to 
 
 \normalsize
 
-\clearpage
+%\clearpage
 \appendix
 \section{Notation}
 
@@ -854,5 +802,56 @@ $\ip{\cdot}{\cdot}$ & $L^2$ inner product \\
 $\|\cdot\|$ & $L^2$ norm; $\|f\|=\ip{f}{f}^{1/2}$ \\
 $\|\cdot\|_{\mathcal{H}}$ & norm on solution space; $\|f\|_{\mathcal{H}}^2 =\ip{f}{f} + \ip{f'}{f'}$ for $\mathcal{H}=H_0^1[0,1]$
 \end{longtable}
+
+
+\section{Mysterious V(1,1) cycles}  In section \ref{sec:obstacle} we implemented a ``slash cycle'', also known as a V(1,0) cycle because we only do smoothing downward in the mesh hierarchy.  The implementation of a true V-cycle for an obstacle problem, a so-called V(1,1)-cycle \cite{GraeserKornhuber2009} with smoothing after the coarse-level correction, requires reconsideration of the constraint decomposition and an additional prolongation operation.  As always, each correction from a different level needs to yield an admissible iterate, and in a V-cycle this applies on the way up, too.
+
+Gr\"aser and Kornhuber \cite{GraeserKornhuber2009} implement the constraint decomposition in a particular manner which we have implemented, but only unsuccessfully regarding convergence.  They keep the $j$th-level defect constraints $\chi^j$ \eqref{eq:chik} the same, but split the $j$th-level obstacles $\phi^j$ in half and then apply them twice, yielding the following formulae for $j=1,\dots,J$:
+\begin{equation}
+\phi_V^j = \frac{1}{2}(\chi^j-\chi^{j-1}), \qquad \mathcal{K}_V^j = \{v \ge \phi_V^j\} \subset \mathcal{V}^j.
+\end{equation}
+The coarsest-level obstacle remains a special case, $\phi_V^0 = \chi^0,\mathcal{K}_V^0 = \{v \ge \chi^0\}$.  A telescoping sum like \eqref{eq:telescopingdecomposition}, but now with negative indices for going down and positive for going up, retains a consistent decomposition \cite{GraeserKornhuber2009,Tai2003}:
+\begin{equation}
+\chi^J = \sum_{j=-J}^J \phi_V^{|j|}, \qquad \mathcal{D}^J = \sum_{j=-J}^J \mathcal{K}_V^{|j|}.
+\end{equation}
+On the way up we denote the corrections by $\eta^j$.  Computation \eqref{eq:residuallinearlevelderive} is thus extended with additional terms:
+\begin{equation}
+  \tilde F^j(z)[\cdot] = F(w^J + y^J + \dots + y^0 + \eta^1 + \dots + \eta^{j-1} + z)[\cdot] = a(z,\cdot) - \tilde \ell^j[\cdot] \label{eq:residuallinearlevelv}
+\end{equation}
+where $\tilde\ell^j[\cdot] = - \tilde F^{j-1}(\eta^{j-1})[\cdot]$ for $j>1$ and $\tilde\ell^1[\cdot] = - F^0(y^0)[\cdot]$.  However, to use $\tilde\ell^j$ on the $j$th level, in a representation $\tilde{\bm{\ell}} = \{\tilde\ell^j[\psi_q^j]\}$ as a vector in $\RR^{m_j}$, it must be prolonged.  (This is the first time we have prolonged a linear functional; see Table \ref{tab:restrictionsprolongations}.)  Suppose $\ell$ is in $(\mathcal{V}^{j-1})'$ and that we want to compute its prolongation $\lambda$, a linear functional in $(\mathcal{V}^j)'$.  Recalling \eqref{eq:hatcombination} once again, we need to determine the values $\lambda[\psi_q^j]$ so that
+\begin{equation}
+  \sum_{q=1}^{m_j} c_{pq} \lambda[\psi_q^j] = \ell[\psi_p^{j-1}] \label{eq:dualprolongderive}
+\end{equation}
+for $p=1,\dots,m_{j-1}$, where $c_{pq} = \psi_p^{j-1}(x_q^j)$.  Equation \eqref{eq:dualprolongderive} is an underdetermined system of $m_{j-1}$ equations in $m_j$ unknowns, and it is exactly-solvable in many different ways.  However, noting that $c_{pq}=1$ if $x_q^j=x_p^{j-1}$, we may choose $\lambda[\psi_q^j] = \ell[\psi_p^{j-1}]$ when the nodes coincide, and choose the other values to be zero, and this yields \emph{injection prolongation},
+\begin{equation}
+  (\iP\ell)[\psi_q^j] = \begin{cases} \ell[\psi_p^{j-1}], & x_q^j=x_p^{j-1}, \\
+                                      0, & \text{otherwise}. \end{cases}  \label{eq:injectprolong}
+\end{equation}
+In other words, we keep the values of $\ell$ on the coarser-level nodes and just fill-in with zero.  Using this prolongation gives a $j$th-level residual that is not smooth, but the solution of the equation on the $j$th level (i.e.~$\tilde F^j(y^j)[v]=0$ for all $v$ in $\mathcal{K}^j$) will be relatively smooth by ellipticity.  These ideas come together in the following pseudocode.
+\begin{pseudo*}
+\pr{mcdl-vcycle}(J,F^J,\chi^J,\id{down}=1,\id{up}=1,\id{coarse}=1)\text{:} \\+
+    for $j=J$ downto $j=1$ \\+
+      $\chi^{j-1} = \mR \chi^j$ \\
+      $\phi_V^j = \frac{1}{2}(\chi^j - P\chi^{j-1})$ \qquad\qquad\quad  \ct{define obstacle} \\
+      $y^j = 0$ \\
+      $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,y^j,F^j,\phi_V^j)$ \\
+      $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad \ct{update and restrict residual} \\
+      $F^{j-1}(z)[\cdot] := a(z,\cdot) - \ell^{j-1}[\cdot]$ \\-
+    $y^0 = 0$ \\
+    $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \\
+    $\omega^0 = y^0$ \\
+    for $j=1$ to $j=J$ \\+
+      $\ell^{j}[\cdot] := - \iP(\tilde F^{j-1}(\omega^{j-1}))[\cdot]$ \qquad\quad \ct{update and prolong residual} \\
+      $\tilde F^{j}(z)[\cdot] := a(z,\cdot) - \ell^{j}[\cdot]$ \\
+      $\eta^j = 0$ \\
+      $\text{\pr{pgssweep}}^{\text{\id{up}}}(j,\eta^j,\tilde F^j,\phi_V^j)$ \\
+      $\omega^j = y^j + \eta^j + P \omega^{j-1}$ \qquad\qquad\quad \ct{accumulate corrections} \\-
+    return $w^J$
+\end{pseudo*}
+Note that the vectors $\omega^j$ in the second \kw{for} loop are used to add-up (accumulate) the corrections in \eqref{eq:residuallinearlevelv}, $y^j$ from the way down and $\eta^j$ from the way up.  The procedure returns an iterate in $\mathcal{V}^J$,
+    $$\omega^J = y^J + \dots + y^1 + y^0 + \eta^1 + \dots + \eta^J,$$
+and then the calling solver (\pr{mcdl-solver}) does the update $w^J \gets w^J + \omega^J$.
+
+FIXME unable to get the fine-level residuals to become arbitrarily small, though initially they decrease a little
 
 \end{document}
