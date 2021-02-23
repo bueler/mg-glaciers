@@ -180,13 +180,10 @@ for j in range(levels):
     hierarchy[j] = MeshLevel1D(j=j+args.jcoarse)
 mesh = hierarchy[-1]  # fine mesh
 
-# obstacle and source functional on fine level
-phifine = phi(mesh.xx())
-ellfine = mesh.ellf(fsource(mesh.xx()))
-
-# feasible initial iterate
-uu = np.maximum(phifine, mesh.zeros())
-uu[[0, -1]] = [0.0, 0.0]
+# data on fine level
+phifine = phi(mesh.xx())                   # obstacle
+ellfine = mesh.ellf(fsource(mesh.xx()))    # source functional
+uu = np.maximum(phifine, mesh.zeros())     # feasible initial iterate
 
 # exact solution
 uex = None
@@ -197,7 +194,7 @@ if exactavailable:
 mon = ObstacleMonitor(mesh, ellfine, phifine, uex=uex,
                       printresiduals=args.monitor, printerrors=args.monitorerr)
 
-# multigrid V-cycles (unless user just wants PGS)
+# multigrid slash-cycles (unless user just wants PGS)
 infeascount = 0
 for s in range(args.cyclemax):
     irnorm = mon.irerr(uu)
