@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# see py/1D/study.sh  to generate input data  convergence.txt
+# see py/1D/study/convperf.sh  to generate input data  convergence.txt
 
 import numpy as np
 import matplotlib.pyplot as plt
