@@ -429,7 +429,7 @@ Simply by choosing a source term $f(x)$ which is positive in the middle of the d
 (Note that $f$ is in $L^2[0,1]$, and is defined almost everywhere.)  Finding the exact formula for $u(x)$, which smoothly-connects five quadratic pieces, is an exercise for the reader.\footnote{Find the solution in: \, \href{https://github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}{\texttt{github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}}.}
 
 % regenerate:
-%   $ cd py/
+%   $ cd py/1D/
 %   $ ./obstacle.py -plain -jfine 5 -o icelike.pdf
 %   $ pdfcrop icelike.pdf icelike.pdf
 \begin{figure}
@@ -653,7 +653,7 @@ For the classical obstacle problem, wherein the (continuum) residual $F(w)[v]$ i
    $$\eqref{eq:mcdvilinear} \quad \stackrel{a \text{ bilinear}}{\iff\strut} \quad \eqref{eq:mcdvi} \quad \stackrel{F=\grad I}{\iff\strut} \quad \eqref{eq:mcdminimization}.$$
 The nonlinear VI form \eqref{eq:mcdvi} is the most general, but note that if $F$ is not the gradient of a coercive objective function then additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,KinderlehrerStampacchia1980}).
 
-\subsection*{MCD cycles}  We are now ready to implement a multilevel solver for the classical obstacle problem.  The following pseudocode solves \eqref{eq:mcdvilinear}.  Here \pr{MCDL} stands for ``multilevel constraint decomposition (linear)'', and this procedure is analogous to \pr{msd-solver} in section \ref{sec:subspace}.  This outer loop sets up the fine-level defect constraint and residual.  Checks for convergence occur after calling the inner solver, addressed next.
+\subsection*{MCD cycles and convergence results}  We are now ready to implement a multilevel solver for the classical obstacle problem.  The following pseudocode solves \eqref{eq:mcdvilinear}.  Here \pr{MCDL} stands for ``multilevel constraint decomposition (linear)'', and this procedure is analogous to \pr{msd-solver} in section \ref{sec:subspace}.  This outer loop sets up the fine-level defect constraint and residual.  Checks for convergence occur after calling the inner solver, addressed next.
 \begin{pseudo*}
 \pr{mcdl-solver}(F,\varphi,\id{rtol}=10^{-4})\text{:} \\+
     $w=\varphi$ \qquad\qquad\qquad\qquad\qquad\quad \ct{or other admissible fine-level initial iterate} \\
@@ -691,9 +691,26 @@ for $j=J,\dots,1$.  As noted in section \ref{sec:subspace}, this loses residual 
 
 In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, noting that the FE method includes a subroutine which evaluates $a(w,v)$ as needed, the linear functional $\ell^{j-1}$ is passed as a (row) vector, from which $F^{j-1}$ is constructed.  That is, the implementation signatures are actually \pr{pgssweep}$(j,y^j,\ell^j,\phi^j)$ and \pr{mcdl-slash}$(J,\ell^J,\chi^J)$, with the understanding that \eqref{eq:residuallinearlevel} defines $F^j$.
 
-FIXME describe nested iteration; give pseudocode \pr{mcdl-fcycle}; mention V(1,1) in Appendix B
+FIXME error norms for slash cycle on two problems: icelike and parabola; demonstrates convergence rate
 
-\subsection*{Computational results} FIXME error norms for slash cycle on two problems: icelike and parabola; demonstrates convergence rate
+% regenerate:
+%   $ cd py/1D/
+%   $ ./obstacle.py -plain -jfine 7 -o parabola.pdf -problem parabola
+%   $ pdfcrop parabola.pdf parabola.pdf
+\begin{figure}
+\includegraphics[width=0.7\textwidth]{fixfigs/parabola.pdf}
+\caption{A classic configuration with a parabolic obstacle.}
+\label{fig:parabola}
+\end{figure}
+
+\begin{figure}
+\includegraphics[width=0.6\textwidth]{genfigs/convergence.pdf}
+\caption{Convergence of the numerical error norm $\|u-u_{\text{exact}}\|_2$ as a function of mesh spacing $h$ for the problems shown in Figures \ref{fig:icelike} and \ref{fig:parabola}.}
+\label{fig:convergence}
+\end{figure}
+
+
+\subsection*{Nested iteration and performance results} FIXME describe nested iteration; give pseudocode \pr{mcdl-fcycle}; mention V(1,1) in Appendix B
 
 FIXME explain WU
 
