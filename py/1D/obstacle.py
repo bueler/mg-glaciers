@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 '''Solve a 1D obstacle problem by a multilevel constraint decomposition method.'''
 
-# TODO:
-#   * correct hier. decomp. figure when up>0
-
 import sys
 import argparse
 import numpy as np
@@ -49,21 +46,21 @@ References:
 ''', formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-coarse', type=int, default=1, metavar='N',
                     help='PGS sweeps on coarsest grid (default=1)')
-parser.add_argument('-cyclemax', type=int, default=100, metavar='M',
-                    help='maximum number of V-cycles (default=100)')
+parser.add_argument('-cyclemax', type=int, default=100, metavar='N',
+                    help='maximum number of multilevel cycles (default=100)')
 parser.add_argument('-diagnostics', action='store_true', default=False,
                     help='additional diagnostics figures (use with -show or -o)')
 parser.add_argument('-down', type=int, default=1, metavar='N',
                     help='PGS sweeps before coarse-mesh correction (default=1)')
 parser.add_argument('-errtol', type=float, default=None, metavar='X',
-                    help='numerical error should be below this value (default=None)')
+                    help='stop if numerical error (if available) below X (default=None)')
 parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
-                    help='in Poisson equation -u"=f this multiplies f (default X=1)')
+                    help='in Poisson equation -u"=f this multiplies f (default X=1.0)')
 parser.add_argument('-irtol', type=float, default=1.0e-3, metavar='X',
-                    help='norm of inactive residual is reduced by this factor (default X=10^-3)')
+                    help='norm of inactive residual is reduced by this factor (default X=1.0e-3)')
 parser.add_argument('-jfine', type=int, default=3, metavar='J',
                     help='fine mesh is jth level (default jfine=3)')
-parser.add_argument('-jcoarse', type=int, default=0, metavar='j',
+parser.add_argument('-jcoarse', type=int, default=0, metavar='J',
                     help='coarse mesh is jth level (default jcoarse=0 gives 1 node)')
 parser.add_argument('-mgview', action='store_true', default=False,
                     help='view multigrid cycles by indented print statements')
@@ -72,21 +69,20 @@ parser.add_argument('-monitor', action='store_true', default=False,
 parser.add_argument('-monitorerr', action='store_true', default=False,
                     help='print the error (if available) after each cycle')
 parser.add_argument('-ni', action='store_true', default=False,
-                    help='use nested iteration for initial iterates (i.e. F-cycle)')
-parser.add_argument('-niiters', type=int, default=1, metavar='s',
-                    help='nested iteration: iterations on levels before finest (default s=1)')
+                    help='use nested iteration for initial iterates (= F-cycle)')
+parser.add_argument('-nicycles', type=int, default=1, metavar='N',
+                    help='nested iteration: cycles on levels before finest (default N=1)')
 parser.add_argument('-o', metavar='FILE', type=str, default='',
                     help='save plot at end in image file, e.g. PDF or PNG')
 parser.add_argument('-parabolay', type=float, default=-1.0, metavar='X',
                     help='vertical location of obstacle in -problem parabola (default X=-1.0)')
 parser.add_argument('-pgsonly', action='store_true', default=False,
-                    help='do projected Gauss-Seidel (instead of multigrid)')
+                    help='do projected Gauss-Seidel as cycles (instead of multilevel)')
 parser.add_argument('-plain', action='store_true', default=False,
                     help='when used with -show or -o, only show exact solution and obstacle')
 parser.add_argument('-printwarnings', action='store_true', default=False,
                     help='print pointwise feasibility warnings')
-parser.add_argument('-problem', choices=['icelike', 'parabola'],
-                    metavar='X', default='icelike',
+parser.add_argument('-problem', choices=['icelike', 'parabola'], metavar='X', default='icelike',
                     help='determines obstacle and source function (default: %(default)s)')
 parser.add_argument('-random', action='store_true', default=False,
                     help='make a smooth random perturbation the obstacle')
@@ -95,7 +91,7 @@ parser.add_argument('-randomscale', type=float, default=1.0, metavar='X',
 parser.add_argument('-randomseed', type=int, default=1, metavar='X',
                     help='seed the generator in -random perturbation (default X=1)')
 parser.add_argument('-randommodes', type=int, default=30, metavar='N',
-                    help='number of sinusoid modes in -random perturbation (default N=3)')
+                    help='number of sinusoid modes in -random perturbation (default N=30)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-symmetric', action='store_true', default=False,
@@ -218,7 +214,7 @@ for ni in nirange:
 
     # multigrid slash-cycles or V-cycles inner loop
     if args.ni and ni < levels-1:
-        iters = args.niiters
+        iters = args.nicycles
     else:
         iters = args.cyclemax
     for s in range(iters):
