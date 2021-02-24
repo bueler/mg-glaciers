@@ -14,18 +14,18 @@ def inactiveresidual(mesh, w, ell, phi, ireps=1.0e-10):
     F[w < phi + ireps] = np.minimum(F[w < phi + ireps], 0.0)
     return F
 
-def pgssweep(mesh, w, ell, phi, forward=True, phieps=1.0e-10,
+def pgssweep(mesh, w, ell, phi, forward=True, omega=1.0, phieps=1.0e-10,
              printwarnings=False):
-    '''Do in-place projected Gauss-Seidel sweep, over the interior points
-    p=1,...,m, for the classical obstacle problem
+    '''Do in-place projected Gauss-Seidel sweep, with relaxation factor
+    omega, over the interior points p=1,...,m, for the classical obstacle
+    problem
         F(u)[v-u] = a(w,v-u) - ell[v-u] >= 0
     for all v in V^j.  Input iterate w is in V^j and ell is in V^j'.
     At each p, solves
         F(w + c psi_p)[psi_p] = 0
-    for c.  Thus
-        c = - F(w)[psi_p] / a(psi_p,psi_p).
-    The update of w guarantees admissibility (w[p] >= phi[p])
-        w[p] <- max(w[p]+c,phi[p]).
+    for c.  Thus c = - F(w)[psi_p] / a(psi_p,psi_p).  Update of w guarantees
+    admissibility:
+        w[p] <- max(w[p] + omega c, phi[p]).
     Functions pointresidual() and diagonalentry() in poisson.py evaluate
     F(w)[psi_p] and a(psi_p,psi_p), respectively.  Input mesh is of class
     MeshLevel1D.  Returns the number of pointwise feasibility violations.'''
@@ -42,7 +42,6 @@ def pgssweep(mesh, w, ell, phi, forward=True, phieps=1.0e-10,
             w[p] = phi[p]
             infeascount += 1
         c = - pointresidual(mesh, w, ell, p) / diagonalentry(mesh, p)
-        c = max(c,phi[p] - w[p])
-        w[p] = w[p] + c
+        w[p] = max(w[p] + omega * c, phi[p])
     mesh.WU += 1
     return infeascount

@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 '''Solve a 1D obstacle problem by a multilevel constraint decomposition method.'''
 
+# best observed settings for generating solutions in 10 WU in exact solutions cases:
+#   for PROB in icelike parabola; do
+#     for JJ in 6 7 8 9 10 11 12 13 14 15 16 17; do
+#       ./obstacle.py -problem $PROB -jfine $JJ -ni -nicycles 2 -cyclemax 3 -omega 1.5
+#     done
+#   done
+# but in -random cases it seems better to use -omega 1.0 and allow more cycles
+
 import sys
 import argparse
 import numpy as np
@@ -74,6 +82,8 @@ parser.add_argument('-nicycles', type=int, default=1, metavar='N',
                     help='nested iteration: cycles on levels before finest (default N=1)')
 parser.add_argument('-o', metavar='FILE', type=str, default='',
                     help='save plot at end in image file, e.g. PDF or PNG')
+parser.add_argument('-omega', type=float, default=1.0, metavar='X',
+                    help='relaxation factor in PGS, thus PSOR (default X=1.0)')
 parser.add_argument('-parabolay', type=float, default=-1.0, metavar='X',
                     help='vertical location of obstacle in -problem parabola (default X=-1.0)')
 parser.add_argument('-pgsonly', action='store_true', default=False,
@@ -234,10 +244,10 @@ for ni in nirange:
                     break
         if args.pgsonly:
             # revert to sweeps of projected Gauss-Seidel on fine grid
-            infeascount += pgssweep(mesh, uu, ellfine, phifine,
+            infeascount += pgssweep(mesh, uu, ellfine, phifine, omega=args.omega,
                                     printwarnings=args.printwarnings)
             if args.symmetric:
-                infeascount += pgssweep(mesh, uu, ellfine, phifine,
+                infeascount += pgssweep(mesh, uu, ellfine, phifine, omega=args.omega,
                                         forward=False, printwarnings=args.printwarnings)
         else:
             # Tai (2003) constraint decomposition method; usually V(1,0)-cycles;
@@ -247,7 +257,7 @@ for ni in nirange:
             y, infeas = mcdlcycle(ni, hierarchy, ell,
                                   down=args.down, up=args.up, coarse=args.coarse,
                                   levels=levels, view=args.mgview,
-                                  symmetric=args.symmetric,
+                                  symmetric=args.symmetric, pgsomega=args.omega,
                                   printwarnings=args.printwarnings)
             uu += y
             infeascount += infeas

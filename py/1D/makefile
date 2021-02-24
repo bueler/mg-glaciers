@@ -7,7 +7,7 @@ testmodules:
 	python3 -m pytest
 
 runobstacle_1:
-	-@./../testit.sh obstacle.py "-problem parabola -jfine 3 -pgsonly -cyclemax 3" 1 1
+	-@./../testit.sh obstacle.py "-jfine 3 -pgsonly -omega 1.5 -cyclemax 3" 1 1
 
 runobstacle_2:
 	-@./../testit.sh obstacle.py "-problem parabola -parabolay -3.0 -jfine 1 -pgsonly -symmetric" 1 2

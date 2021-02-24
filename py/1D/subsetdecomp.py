@@ -20,17 +20,17 @@ def _coarsereport(indent, m, sweeps):
     _indentprint(indent, 'coarsest: %d sweeps over m=%d nodes' \
                          % (sweeps, m))
 
-def _smoother(s, mesh, v, ell, phi, forward=True, symmetric=False, printwarnings=False):
+def _smoother(s, mesh, v, ell, phi, omega=1.0, forward=True, symmetric=False, printwarnings=False):
     infeas = 0
     for _ in range(s):
-        infeas += pgssweep(mesh, v, ell, phi, forward=forward,
+        infeas += pgssweep(mesh, v, ell, phi, omega=omega, forward=forward,
                            printwarnings=printwarnings)
         if symmetric:
-            infeas += pgssweep(mesh, v, ell, phi, forward=not forward,
+            infeas += pgssweep(mesh, v, ell, phi, omega=omega, forward=not forward,
                                printwarnings=printwarnings)
     return infeas
 
-def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
+def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1, pgsomega=1.0,
               levels=None, view=False, symmetric=False, printwarnings=False):
     '''Apply one cycle of the multilevel subset decomposition method of
     Tai (2003), as stated in Alg. 4.7 in Graeser & Kornhuber (2009),
@@ -58,7 +58,7 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
             _levelreport(levels-1, k, hierarchy[k].m, down)
         hierarchy[k].y = hierarchy[k].zeros()
         infeas += _smoother(down, hierarchy[k], hierarchy[k].y, hierarchy[k].ell, phi,
-                            symmetric=symmetric, printwarnings=printwarnings)
+                            omega=pgsomega, symmetric=symmetric, printwarnings=printwarnings)
         # update and canonically-restrict the residual
         hierarchy[k-1].ell = - hierarchy[k].cR(residual(hierarchy[k],
                                                         hierarchy[k].y,
@@ -70,7 +70,7 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
     hierarchy[0].y = hierarchy[0].zeros()
     infeas += _smoother(coarse, hierarchy[0], hierarchy[0].y, hierarchy[0].ell,
                         hierarchy[0].chi,
-                        symmetric=symmetric, printwarnings=printwarnings)
+                        omega=pgsomega, symmetric=symmetric, printwarnings=printwarnings)
 
     # upward
     hierarchy[0].omega = hierarchy[0].y.copy()
@@ -93,7 +93,7 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
                 _levelreport(levels-1, k, hierarchy[k].m, up)
             hierarchy[k].y = hierarchy[k].zeros()
             infeas += _smoother(up, hierarchy[k], hierarchy[k].y, hierarchy[k].ell, phi,
-                                symmetric=symmetric, printwarnings=printwarnings,
+                                omega=pgsomega, symmetric=symmetric, printwarnings=printwarnings,
                                 forward=False)
             hierarchy[k].omega += hierarchy[k].y
 
