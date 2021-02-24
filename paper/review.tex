@@ -713,7 +713,7 @@ FIXME error norms for slash cycle on two problems; convergence rate difference b
 
 \begin{figure}
 \input{tikz/fcycle.tex}
-\caption{\emph{Left:} A slash cycle with down-smoother (dots), coarse solver (square), and accumulation of corrections back to the finest level (gray line).  \emph{Right:} Nested iteration prepends coarser slash cycles, using prolongation (double line) to create each initial iterate.}
+\caption{\emph{Left:} A four-level slash cycle with down-smoother (dots), coarse solver (square), and accumulation of corrections back to the finest level (gray line).  \emph{Right:} Nested iteration prepends shorter slash cycles, with prolongation (double lines) to create an initial iterate for the next cycle, yielding an F-cycle.}
 \label{fig:fcycle}
 \end{figure}
 
