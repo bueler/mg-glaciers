@@ -2,7 +2,24 @@
 #    Figure:  semilogx with N on x-axis and WU on y axis
 #    Figure:  loglog with N on x-axis and time on y axis;  result is time = O(N^xx)
 
-PERFORMANCE
+# see py/1D/study/convperf.sh which generated convergence.txt and performance.txt
+# columns:  solver obstacle J m cycles WU time
+# where:
+#    solver: 0 = V(1,0), 1 = V(2,0), 2 = NI+V(1,0), 3 = NIx2+V(1,0)
+#    obstacle: 0 = icelike, 1 = icelike+random
+#    m = 2^{J+1} - 1  (and h = 1/(m+1))
+
+0 0  6   127
+0 0  7   255
+0 0  8   511
+0 0  9  1023
+0 0 10  2047
+0 0 11  4095
+0 0 12  8191
+0 0 13 16383
+0 0 14 32767
+0 0 15 65535
+
 *** solver = '', obstacle = '' ****
 fine level 6 (m=127): using 26 V(1,0) cycles -> 51.594 WU:  |u-uexact|_2 = 1.6100e-03
 real 0.50
@@ -24,6 +41,18 @@ fine level 14 (m=32767): using 52 V(1,0) cycles -> 103.997 WU:  |u-uexact|_2 = 5
 real 28.54
 fine level 15 (m=65535): using 51 V(1,0) cycles -> 101.998 WU:  |u-uexact|_2 = 9.0027e-06
 real 56.03
+
+0 1  6   127
+0 1  7   255
+0 1  8   511
+0 1  9  1023
+0 1 10  2047
+0 1 11  4095
+0 1 12  8191
+0 1 13 16383
+0 1 14 32767
+0 1 15 65535
+
 *** solver = '', obstacle = '-random' ****
 fine level 6 (m=127): using 13 V(1,0) cycles -> 25.797 WU
 real 0.47
@@ -45,6 +74,18 @@ fine level 14 (m=32767): using 29 V(1,0) cycles -> 57.998 WU
 real 15.89
 fine level 15 (m=65535): using 30 V(1,0) cycles -> 59.999 WU
 real 33.30
+
+1 0  6   127
+1 0  7   255
+1 0  8   511
+1 0  9  1023
+1 0 10  2047
+1 0 11  4095
+1 0 12  8191
+1 0 13 16383
+1 0 14 32767
+1 0 15 65535
+
 *** solver = '-down 2', obstacle = '' ****
 fine level 6 (m=127): using 17 V(2,0) cycles -> 67.203 WU:  |u-uexact|_2 = 1.6105e-03
 real 0.50
@@ -66,6 +107,18 @@ fine level 14 (m=32767): using 34 V(2,0) cycles -> 135.994 WU:  |u-uexact|_2 = 5
 real 26.06
 fine level 15 (m=65535): using 33 V(2,0) cycles -> 131.997 WU:  |u-uexact|_2 = 8.9946e-06
 real 48.63
+
+1 1  6   127
+1 1  7   255
+1 1  8   511
+1 1  9  1023
+1 1 10  2047
+1 1 11  4095
+1 1 12  8191
+1 1 13 16383
+1 1 14 32767
+1 1 15 65535
+
 *** solver = '-down 2', obstacle = '-random' ****
 fine level 6 (m=127): using 9 V(2,0) cycles -> 35.578 WU
 real 0.46
@@ -87,6 +140,18 @@ fine level 14 (m=32767): using 20 V(2,0) cycles -> 79.996 WU
 real 15.02
 fine level 15 (m=65535): using 21 V(2,0) cycles -> 83.998 WU
 real 32.23
+
+2 0  6   127
+2 0  7   255
+2 0  8   511
+2 0  9  1023
+2 0 10  2047
+2 0 11  4095
+2 0 12  8191
+2 0 13 16383
+2 0 14 32767
+2 0 15 65535
+
 *** solver = '-ni', obstacle = '' ****
 fine level 6 (m=127): nested iter. & 12 V(1,0) cycles -> 25.688 WU:  |u-uexact|_2 = 1.6261e-03
 real 0.47
@@ -108,6 +173,18 @@ fine level 14 (m=32767): nested iter. & 25 V(1,0) cycles -> 51.997 WU:  |u-uexac
 real 14.58
 fine level 15 (m=65535): nested iter. & 33 V(1,0) cycles -> 67.998 WU:  |u-uexact|_2 = 8.9189e-06
 real 36.62
+
+2 1  6   127
+2 1  7   255
+2 1  8   511
+2 1  9  1023
+2 1 10  2047
+2 1 11  4095
+2 1 12  8191
+2 1 13 16383
+2 1 14 32767
+2 1 15 65535
+
 *** solver = '-ni', obstacle = '-random' ****
 fine level 6 (m=127): nested iter. & 9 V(1,0) cycles -> 19.734 WU
 real 0.46
@@ -129,6 +206,18 @@ fine level 14 (m=32767): nested iter. & 17 V(1,0) cycles -> 35.998 WU
 real 10.05
 fine level 15 (m=65535): nested iter. & 28 V(1,0) cycles -> 57.999 WU
 real 31.74
+
+3 0  6   127
+3 0  7   255
+3 0  8   511
+3 0  9  1023
+3 0 10  2047
+3 0 11  4095
+3 0 12  8191
+3 0 13 16383
+3 0 14 32767
+3 0 15 65535
+
 *** solver = '-ni -nicycles 2', obstacle = '' ****
 fine level 6 (m=127): nested iter. & 8 V(1,0) cycles -> 19.609 WU:  |u-uexact|_2 = 1.6299e-03
 real 0.47
@@ -150,6 +239,18 @@ fine level 14 (m=32767): nested iter. & 14 V(1,0) cycles -> 31.997 WU:  |u-uexac
 real 9.30
 fine level 15 (m=65535): nested iter. & 23 V(1,0) cycles -> 49.998 WU:  |u-uexact|_2 = 8.9200e-06
 real 28.66
+
+3 1  6   127
+3 1  7   255
+3 1  8   511
+3 1  9  1023
+3 1 10  2047
+3 1 11  4095
+3 1 12  8191
+3 1 13 16383
+3 1 14 32767
+3 1 15 65535
+
 *** solver = '-ni -nicycles 2', obstacle = '-random' ****
 fine level 6 (m=127): nested iter. & 12 V(1,0) cycles -> 27.547 WU
 real 0.52
