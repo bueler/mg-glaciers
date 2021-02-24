@@ -25,5 +25,3 @@ for OPTS in "" "-down 2" "-ni" "-ni -nicycles 2"; do
     done
 done
 
-# performance (WU) to get discretization error
-# FIXME need pre-runs above to compute target error values

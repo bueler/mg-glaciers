@@ -31,6 +31,10 @@ m = v[:,2]
 h = 1.0 / (m+1)
 err = v[:,4]
 
+# run to get values for py/1D/study/perfni.sh:
+#for j in range(2*N):
+#    print('%.5e' % (2.0*err[j]))
+
 # numerical error versus h
 plt.figure(figsize=(7,6))
 for p in range(2):
