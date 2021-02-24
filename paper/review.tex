@@ -430,11 +430,18 @@ Simply by choosing a source term $f(x)$ which is positive in the middle of the d
 
 % regenerate:
 %   $ cd py/1D/
-%   $ ./obstacle.py -plain -jfine 5 -o icelike.pdf
+%   $ ./obstacle.py -plain -jfine 7 -o icelike.pdf
+%   $ ./obstacle.py -plain -jfine 7 -o parabola.pdf -problem parabola
 %   $ pdfcrop icelike.pdf icelike.pdf
+%   $ pdfcrop parabola.pdf parabola.pdf
 \begin{figure}
-\includegraphics[width=0.7\textwidth]{fixfigs/icelike.pdf}
-\caption{An ice-like configuration of the classical obstacle problem.}
+\,\,\includegraphics[width=0.8\textwidth]{fixfigs/icelike.pdf}
+
+\bigskip\medskip
+\includegraphics[width=0.82\textwidth]{fixfigs/parabola.pdf}
+
+\medskip
+\caption{\emph{Top:} An ice-like configuration of the classical obstacle problem. \emph{Bottom:} A traditional configuration with a parabolic obstacle.}
 \label{fig:icelike}
 \end{figure}
 
@@ -691,26 +698,22 @@ for $j=J,\dots,1$.  As noted in section \ref{sec:subspace}, this loses residual 
 
 In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, noting that the FE method includes a subroutine which evaluates $a(w,v)$ as needed, the linear functional $\ell^{j-1}$ is passed as a (row) vector, from which $F^{j-1}$ is constructed.  That is, the implementation signatures are actually \pr{pgssweep}$(j,y^j,\ell^j,\phi^j)$ and \pr{mcdl-slash}$(J,\ell^J,\chi^J)$, with the understanding that \eqref{eq:residuallinearlevel} defines $F^j$.
 
-FIXME error norms for slash cycle on two problems: icelike and parabola; demonstrates convergence rate
-
-% regenerate:
-%   $ cd py/1D/
-%   $ ./obstacle.py -plain -jfine 7 -o parabola.pdf -problem parabola
-%   $ pdfcrop parabola.pdf parabola.pdf
-\begin{figure}
-\includegraphics[width=0.7\textwidth]{fixfigs/parabola.pdf}
-\caption{A classic configuration with a parabolic obstacle.}
-\label{fig:parabola}
-\end{figure}
+FIXME error norms for slash cycle on two problems; convergence rate difference because of regularity of $f$
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/convergence.pdf}
-\caption{Convergence of the numerical error norm $\|u-u_{\text{exact}}\|_2$ as a function of mesh spacing $h$ for the problems shown in Figures \ref{fig:icelike} and \ref{fig:parabola}.}
+\caption{Convergence of the numerical error norm $\|u-u_{\text{exact}}\|_2$ as a function of mesh spacing $h$ for the two problems shown in Figure \ref{fig:icelike}.}
 \label{fig:convergence}
 \end{figure}
 
 
 \subsection*{Nested iteration and performance results} FIXME describe nested iteration; give pseudocode \pr{mcdl-fcycle}; mention V(1,1) in Appendix B
+
+\begin{figure}
+\input{tikz/fcycle.tex}
+\caption{\emph{Left:} A slash cycle with down-smoother (dots), coarse solver (square), and accumulation of corrections back to the finest level (gray line).  \emph{Right:} Nested iteration prepends coarser slash cycles, using prolongation (double line) to create each initial iterate.}
+\label{fig:fcycle}
+\end{figure}
 
 FIXME explain WU
 

@@ -37,7 +37,7 @@ class VisObstacle():
         '''Generate plain graphic showing exact solution and obstacle.'''
         self.mesh.checklen(uex)
         xx = self.mesh.xx()
-        plt.figure(figsize=(15.0, 6.0))
+        plt.figure(figsize=(16.0, 4.0))
         plt.plot(xx, uex, 'k--', label=r'solution $u$', lw=3.0)
         plt.plot(xx, self.phi, 'k', label=r'obstacle $\varphi$', lw=3.0)
         plt.legend()
