@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 '''Solve a 1D obstacle problem by a multilevel constraint decomposition method.'''
 
+# FIXME add -nicascadic which has a model for decreasing numbers of cycles as the finest level is approached
+
 # best observed settings for generating solutions in 10 WU in exact solutions cases:
 #   for PROB in icelike parabola; do
 #     for JJ in 6 7 8 9 10 11 12 13 14 15 16 17; do
