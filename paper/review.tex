@@ -378,35 +378,31 @@ Before proceeding, the reader might ask what makes the above V-cycles ``geometri
 
 For comparison, in an \emph{algebraic multigrid} (AMG) \cite{Trottenbergetal2001} approach the prolongation $P$ would be constructed using operations on the entries of the linear system matrix $A$, and then AMG algorithms invariably define $R=P^\top$.  For linear elliptic problems the geometric and algebraic approaches are closely-related, in part because AMG has been ``tuned'' to generate prolongations $P$ with similar coefficients.  For our upcoming nonlinear and inequality-constrained problems, however, the geometric approach generalizes directly, while AMG can only be used within the linear steps in a separately-constructed iteration, e.g.~based on an outer Newton iteration.  Both approaches are potentially optimal, and natural competitors for the highest-performance solutions, but we persevere with the geometric approach.
 
-\subsection*{On restrictions and prolongations}  The operators $R$ and $P$ make no choices, which is the meaning of ``canonical'', but their application requires computational work because of how we represent functions and functionals on each level.  That work is implied by \eqref{eq:hatcombination} and \eqref{eq:nodalcoefficients}, which express each coarse-level hat function as a linear combination of fine-level hats.
-
-As linear operators, $R$ and $P$ may be represented as sparse rectangular matrices, and $P=R^\top$ (transpose), but storing them as matrices in memory is not necessary.  Both operators are applied using $O(m_j)$ work via our straightforward local-averaging formulas, also called \emph{full weighting} \cite{Briggsetal2000}.  In fact our formulas \eqref{eq:hatcombination}, \eqref{eq:nodalcoefficients}, \eqref{eq:canonicalrestrictionaction}, and \eqref{eq:canonicalprolongationaction} generalize verbatim to unstructured 2D and 3D meshes, where indices $p$ and $q$ denote the nodes of the mesh.
-
-However, the two operators differ in their invertibility.  If $y$ is in $\mathcal{V}^{j-1}$ then $y$ can be exactly recovered from $Py$.  Indeed, $y(x)$ and $(Py)(x)$ are the same piecewise-linear function, and we have made $P$ explicit in order to indicate a change in computer representation.  Saying the same thing a different way, as a linear operator $P$ is one-to-one, and thus it has a ``left'' inverse though it is not square.  By contrast, $\ell$ is not recoverable from $R\ell$; here $\ell$ is in $(\mathcal{V}^j)'$.  That is, the values of $\ell[\psi_p^j]$, the action of $\ell$ on the finer level hats, is averaged away.
-
-FIXME discuss four ops in Table \ref{tab:restrictionsprolongations}; in notation table point back to this table
+\subsection*{On transfer operators}  The operators $R$ and $P$ make no choices, which is the meaning of ``canonical''.  However, their application requires computation because of how we represent functions and functionals on each level.  In fact, full-weighting formulae \eqref{eq:canonicalrestrictionaction} and \eqref{eq:canonicalprolongationaction} arise from \eqref{eq:hatcombination} and \eqref{eq:nodalcoefficients}: each coarse-level hat function is a linear combination of fine-level hats.  These operators are two of the three mesh-level \emph{transfer} operators used in this paper (Table \ref{tab:restrictionsprolongations}).  The third, a critical component allowing us to use multilevel methods for problems involving inequality constraints, appears in the next section.
 
 \newcommand{\iP}{P^{\hookrightarrow}}
 \begin{table}
-\begin{tabular}{l|cccc}
-\emph{operator}              & \emph{domain}          & \emph{range}
+\begin{tabular}{l|ccccc}
+\emph{operator}              & \emph{equation}  & \emph{domain}          & \emph{range}
                   & \emph{one-to-one} & \emph{linear} \\ \hline
-canonical restriction $R$    & $(\mathcal{V}^j)'$     & $(\mathcal{V}^{j-1})'$
+canonical restriction $R$    & \eqref{eq:canonicalrestrictionaction} & $(\mathcal{V}^j)'$     & $(\mathcal{V}^{j-1})'$
                   &            & \checkmark \\
-monotone restriction $\mR$   & $\mathcal{V}^j$        & $\mathcal{V}^{j-1}$
+monotone restriction $\mR$   & \eqref{eq:monotonerestriction} & $\mathcal{V}^j$        & $\mathcal{V}^{j-1}$
                   &            &            \\
-canonical prolongation $P$   & $\mathcal{V}^{j-1}$    & $\mathcal{V}^j$
+canonical prolongation $P$   & \eqref{eq:canonicalprolongationaction} & $\mathcal{V}^{j-1}$    & $\mathcal{V}^j$
                   & \checkmark & \checkmark \\
-injection prolongation $\iP$ & $(\mathcal{V}^{j-1})'$ & $(\mathcal{V}^j)'$
-                  & \checkmark & \checkmark
 \end{tabular}
 
 \medskip
 \label{tab:restrictionsprolongations}
-\caption{We use various restriction and prolongation operators, which must be carefully distinguished!}
+\caption{We use three transfer operators in this paper.  The nonlinear monotone restriction operator $\mR$ is defined in section \ref{sec:obstacle}.}
 \end{table}
 
-We have now presented a basic geometric multigrid algorithm via a particular FE viewpoint, namely the subspace decomposition approach pioneered by Xu \cite{Xu1992} and others.  (Subspace decomposition is a foundation for multilevel, domain-decomposition, and a variety of other advanced algorithms \cite{Farrelletal2019}.)  Our natural next step might be to show computational results featuring the efficiency of the V-cycle algorithm, giving evidence of optimal $O(m_J)$ time to solve the problem, and indeed such results appear in all multigrid references \cite{Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.  However, we instead choose to introduce a less-standard ``obstacle'' problem in the next section, one which has the essential free-boundary character of the glacier geometry problem.  We provide computational results in each of the next three sections.
+As linear operators, $R$ and $P$ may be represented as sparse non-square matrices, and then they are transposes ($P=R^\top$), but using memory to store them as matrices is unnecessary.  They are applied in $O(m_j)$ operations via \eqref{eq:canonicalrestrictionaction} and \eqref{eq:canonicalprolongationaction}, formulae which generalize verbatim to unstructured 2D and 3D meshes \cite[Chapter V]{Braess2007} if the indices $p,q$ denote the nodes of the mesh.  However, the two operators differ in their invertibility.  A function $y$ in $\mathcal{V}^{j-1}$ can be exactly recovered from $Py$ because $y(x)$ and $(Py)(x)$ are the same piecewise-linear function, and in fact we only explicitly write $P$ when indicating a change in vector representation.  (Said differently, as a map $P$ is one-to-one, and thus it has a left inverse.)  By contrast, $\ell$ in $(\mathcal{V}^j)'$ is not recoverable from $R\ell$; the values $\ell[\psi_q^j]$, the action of $\ell$ on the finer level hats, are averaged onto the coarse level and thus lost.
+
+We have now presented a basic geometric multigrid algorithm for linear PDEs via a particular FE viewpoint, namely the subspace decomposition approach pioneered by Xu \cite{Xu1992} and others.  Subspace decomposition is a foundation for multilevel, domain-decomposition, and a variety of other advanced algorithms \cite{Braess2007,Farrelletal2019}.
+
+Our next step might be to show computational results demonstrating the efficiency of the V-cycle algorithm, giving evidence of optimal $O(m_J)$ time to solve the problem.  Indeed, such results appear in all multigrid references \cite{Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.  However, we first introduce a less-standard ``obstacle'' problem in the next section, one which has the essential free-boundary character of the glacier geometry problem.  Then computational results appear in each of the next three sections.
 
 
 \section{Constraint decomposition for the obstacle problem} \label{sec:obstacle}
