@@ -407,26 +407,26 @@ Our next step might be to show computational results demonstrating the efficienc
 
 \section{Constraint decomposition for the obstacle problem} \label{sec:obstacle}
 
-\subsection*{An ice-like model problem}  We now have a basic view of the geometric multigrid method from the multilevel subspace decomposition point of view.  However, as addressed in section \ref{sec:intro}, the main problem in glacier modeling, of how the ice geometry and velocity co-evolve in response to climatic inputs, needs an additional inequality constraint for well-posedness.  The fact that the ice surface elevation is above the bed generates the land-terminating boundary condition for the mass conservation problem, and this constraint, by itself, makes the problem nonlinear and reduces solution regularity, which is challenging to numerical methods.
+\subsection*{An ice-like model problem}  We now have a clear view of the geometric multigrid method from the multilevel subspace decomposition point of view.  However, as addressed in section \ref{sec:intro}, the main problem in glacier modeling, of how the ice geometry and velocity co-evolve in response to climatic inputs, needs an additional inequality constraint for well-posedness.  The fact that the ice surface elevation is above the bed generates the land-terminating boundary condition for the mass conservation problem, and this constraint, by itself, makes the problem nonlinear and reduces solution regularity, which is challenging to numerical methods.
 
-To address such inequality constraints, and before actually modeling glaciers in section \ref{sec:sia}, we introduce a specifically-relevant model problem, namely the \emph{classical obstacle problem} which adds an inequality constraint to the same linear Poisson equation in section \ref{sec:subspace}.  After stating the weak form, which is now solved over a convex \emph{subset} of the function space, we will modify the multilevel subspace decomposition approach to be a \emph{multilevel constraint decomposition} method.  Each mesh level will host an inequality-constrained problem, and together all the levels will capture the original constraint set.  Switching the differential equation to the nonlinear SIA model in section \ref{sec:sia} will then be a comparatively easy change.
+To address constraints before actually modeling glaciers in section \ref{sec:sia}, we introduce a specifically-relevant model problem, namely the \emph{classical obstacle problem} which adds an inequality constraint to the same linear Poisson equation in section \ref{sec:subspace}.  After stating the weak form, which is now solved over a convex \emph{subset} of the function space, we will modify the multilevel subspace decomposition approach to be a \emph{multilevel constraint decomposition} method.  Each mesh level will host an inequality-constrained problem, and together all the levels will capture the original constraint set.  Switching the differential equation to the nonlinear SIA model in section \ref{sec:sia} will then be a comparatively easy change.
 
-We use the same 1D domain and solution space $\mathcal{H}=H_0^1[0,1]$ as for the Poisson problem \eqref{eq:poisson}.  Let $\varphi(x)$ be a fixed function, also in $\mathcal{H}$, which is the obstacle.  The strong form of the obstacle problem is the following \emph{complementarity problem} (CP) \cite{Bueler2021,KinderlehrerStampacchia1980} which says that the differential equation applies whereever the solution $u(x)$ is strictly above the obstacle:
+We use the same 1D domain and solution space $\mathcal{H}=H_0^1[0,1]$ as for the Poisson problem \eqref{eq:poisson}.  Let $\varphi(x)$ be a fixed function, the obstacle, also in $\mathcal{H}$.  The strong form is the following \emph{complementarity problem} (CP) \cite{Bueler2021,KinderlehrerStampacchia1980} which says that the differential equation applies whereever the solution $u(x)$ is strictly above the obstacle:
 \begin{align}
   u - \varphi &\ge 0 \label{eq:obstaclecp} \\
   -(\alpha u')'-f &\ge 0 \notag \\
   (u-\varphi)(-(\alpha u')'-f) &= 0 \notag
 \end{align}
-The last condition, complementarity, implies that for each $x$ in $[0,1]$ the solution either coincides with the obstacle ($u(x)=\phi(x)$) or the Poisson equation holds.  (Or both, but in the generic \emph{nondegenerate} \cite{KinderlehrerStampacchia1980} case the obstacle does not itself solve the Poisson equation.)  Furthermore, where the solution coincides with the obstacle the source term is bounded above: $u=\varphi \implies f \le -(\alpha\varphi')'$.  In this $u=\varphi$ region the constraint is said to be \emph{active}, while the differential equation holds in the \emph{inactive} portion where $u>\varphi$.
+The last condition, complementarity, implies that for each $x$ in $[0,1]$ the solution either coincides with the obstacle ($u(x)=\varphi(x)$) or the Poisson equation holds.  (Or both, but in the generic \emph{nondegenerate} \cite{KinderlehrerStampacchia1980} case the obstacle does not itself solve the Poisson equation.)  Furthermore, where the solution coincides with the obstacle the source term is bounded above: $u=\varphi \implies f \le -(\alpha\varphi')'$.  In this $u=\varphi$ region the constraint is said to be \emph{active}, while the differential equation holds in the \emph{inactive} portion where $u>\varphi$.
 
-The glacier problem will also have such a CP formulation (section \ref{sec:sia}; see also \cite{Calvoetal2002}) in which the obstacle is the bed elevation, the solution the glacier surface elevation, and the source term is the surface mass balance.  In the inactive region, i.e.~on the glacier, the mass conservation equation will apply, but off the glacier, in the active-constraint region, the surface mass balance must be negative.
+The glacier problem will also have such a CP formulation (section \ref{sec:sia}; see also \cite{Calvoetal2002}) in which the obstacle is the bed elevation, the solution is the glacier surface elevation, and the source term is the surface mass balance.  In the inactive region, i.e.~on the glacier, the mass conservation equation will apply, but off the glacier, in the active-constraint region, we will see that the surface mass balance must be negative.
 
-Simply by choosing a source term $f(x)$ which is positive in the middle of the domain and negative near the boundaries, we get an ``ice-like'' solution to \eqref{eq:obstaclecp} as shown in Figure \ref{fig:icelike}.  In detail, the Figure shows the exact, piecewise-quadratic solution $u(x)$ for the following data:
+Returning to \eqref{eq:obstaclecp}, simply by choosing a source term $f(x)$ which is positive in the middle of the domain and negative near the boundaries, we get an ``ice-like'' solution.  For example, Figure \ref{fig:icelike} (top) shows the exact, piecewise-quadratic solution $u(x)$ for the following data:
 \begin{equation}
 \varphi(x) = x(1-x), \quad \alpha(x)=1, \quad f(x) = \begin{cases} 8, & 0.2 < x < 0.8, \\
                                                                  -16, & x<0.2 \text{ or } x>0.8. \end{cases}  \label{eq:icelikedetails}
 \end{equation}
-(Note that $f$ is in $L^2[0,1]$, and is defined almost everywhere.)  Finding the exact formula for $u(x)$, which smoothly-connects five quadratic pieces, is an exercise for the reader.\footnote{Find the solution in: \, \href{https://github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}{\texttt{github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}}.}
+(Note that $f$, in $L^2[0,1]$, is defined almost everywhere.)  Finding the exact formula for $u(x)$, which smoothly-connects five quadratic pieces, is an exercise for the reader.\footnote{See \, \href{https://github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}{\texttt{github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}}.}
 
 % regenerate:
 %   $ cd py/1D/
@@ -445,29 +445,29 @@ Simply by choosing a source term $f(x)$ which is positive in the middle of the d
 \label{fig:icelike}
 \end{figure}
 
-Unlike problem \eqref{eq:poisson}, the solution to \eqref{eq:obstaclecp} does \emph{not} depend linearly on the source function $f$.  For example, if $f(x)\le 0$ for all $x$ then the solution for the same obstacle $\varphi(x)$ as in \eqref{eq:icelikedetails} is $u=\varphi$.  Observe that if $\tilde u$ solves the problem for $\tilde f= -1$ then $2\tilde u$ \emph{does not} solve the problem for source term $2\tilde f = -2$.  In this sense the classical obstacle problem is nonlinear even though the corresponding differential equation is linear.  (The differential equation is the so-called \emph{interior condition} of the CP \cite{KinderlehrerStampacchia1980}.)
+Unlike problem \eqref{eq:poisson}, the solution to \eqref{eq:obstaclecp} does \emph{not} depend linearly on the source function $f$.  For example, if $f(x)\le 0$ for all $x$ then the solution for the same obstacle $\varphi(x)$ as in \eqref{eq:icelikedetails} is $u=\varphi$.  Observe that if $\tilde u$ solves the problem for $\tilde f= -1$ then $2\tilde u$ \emph{does not} solve the problem for source term $2\tilde f = -2$.  Thus the classical obstacle problem is nonlinear even though the corresponding differential equation, the so-called \emph{interior condition} of the CP \cite{KinderlehrerStampacchia1980}, is linear.
 
-\subsection*{Weak formulation with constraints}  In considering the weak form of \eqref{eq:obstaclecp} we observe that the solution and test functions must be in a closed subset which incorporates the constraint:
+\subsection*{Weak formulation with constraints}  To write the weak form of \eqref{eq:obstaclecp} we define a closed subset which incorporates the constraint:
 \begin{equation}
 \mathcal{K} = \left\{v \ge \varphi\right\} \subseteq \mathcal{H}.  \label{eq:Kdefine}
 \end{equation}
 This subset is not a vector space, but it is \emph{convex}.  That is, if $v,w$ are in $\mathcal{K}$ then any point on the line segment connecting them, namely $\theta v + (1-\theta) w$ for $0 \le \theta \le 1$, is also in $\mathcal{K}$.  If $v$ is in $\mathcal{K}$ then we say $v$ is \emph{admissible}.
 
-As before, derivation of the weak form of \eqref{eq:obstaclecp} involves multiplying by a test function and integrating by parts.  However, the inequalities enter nontrivially into the derivation; see \cite[Chapter 12]{Bueler2021}, \cite{JouvetBueler2012}, or \cite{KinderlehrerStampacchia1980}.  The result is a single \emph{variational inequality} (VI):
+As before, derivation of the weak form involves multiplying the strong form \eqref{eq:obstaclecp} by a test function and integrating by parts.  The inequalities enter nontrivially into the derivation; see \cite[Chapter 12]{Bueler2021}, \cite{JouvetBueler2012}, or \cite{KinderlehrerStampacchia1980} for details.  The result is a single \emph{variational inequality} (VI):
 \begin{equation}
   a(u,v-u) \ge \ip{f}{v-u} \quad \text{ for all } v \text{ in } \mathcal{K}. \label{eq:obstaclevi}
 \end{equation}
-The bilinear form $a$ and function $f$ are the same as in the linear weak form \eqref{eq:weakpoisson}, and thus the VI can be restated using the residual \eqref{eq:residual}:
+(The bilinear form $a$ is defined in \eqref{eq:weakpoissonearly}.)  The VI can be restated using the residual \eqref{eq:residual}:
 \begin{equation}
   F(u)[v-u] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}. \label{eq:obstacleviresidual}
 \end{equation}
 
-Formulations \eqref{eq:obstaclecp} and \eqref{eq:obstaclevi} are equivalent up to the same regularity concerns which relate the strong and weak forms of a PDE.  (See reference \cite{Evans2010} regarding the solution regularity of PDEs, and \cite{KinderlehrerStampacchia1980} for the corresponding VI concepts.)  However, some of the intuition behind a VI is needed for understanding, so, in an attempt to help, we provide another weak form.  Inequality \eqref{eq:obstaclevi} is precisely equivalent to \emph{constrained minimization}:
+Formulations \eqref{eq:obstaclecp} and \eqref{eq:obstacleviresidual} are equivalent up to the same regularity concerns which relate the strong and weak forms of a PDE.  (See reference \cite{Evans2010} regarding the solution regularity of PDEs, and \cite{KinderlehrerStampacchia1980} for the corresponding VI theory.)  However, some of the intuition behind a VI is needed for understanding, so, in an attempt to help, we provide another weak form.  Inequality \eqref{eq:obstacleviresidual} is precisely equivalent to \emph{constrained minimization}:
 \newcommand{\argmin}{\mathop{\mathrm{arg\text{-}min}}}
 \begin{equation}
   u = \argmin_{w \text{ in } \mathcal{K}} I(w) \quad \text{where} \quad I(w) = \frac{1}{2} a(w,w) - \ip{f}{w}. \label{eq:obstaclemin}
 \end{equation}
-That is, $u$ is the minimizer, over the constraint set $\mathcal{K}$, of the scalar, quadratic \emph{objective} functional $I$.  (The proof of equivalence is standard in continuous optimization.)  The (Gateaux) derivative of $I$ is a linear functional in $\mathcal{H}'$:
+That is, $u$ is the minimizer, over the constraint set $\mathcal{K}$, of the scalar, quadratic \emph{objective} functional $I$.  The (Gateaux) derivative of $I$ is a linear functional in $\mathcal{H}'$:
 \begin{equation}
   \grad I(w)[v] = \lim_{\eps\to 0} \frac{I(w+\eps v) - I(w)}{\eps} = a(u,v) - \ip{f}{v}.  \label{eq:gradobjective}
 \end{equation}
@@ -476,42 +476,40 @@ Noting $\nabla I = F$, the VI \eqref{eq:obstacleviresidual} can re-stated yet ag
   \nabla I(u)[v-u] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}. \label{eq:obstaclevigradient}
 \end{equation}
 
-Now we can propose a geometrical meaning for the VI formulation \eqref{eq:obstaclevigradient}.  The solution $u$ sits at a location in $\mathcal{K}$, possibly on the boundary of $\mathcal{K}$, where a vector pointing further into the constraint set, namely $v-u$ for $v$ in $\mathcal{K}$, points ``uphill'' on the graph of $I$.  If we think of $\nabla I(u)$ as a vector, instead of a linear functional, we could write \eqref{eq:obstaclevigradient} as $\ip{\nabla I(u)}{v-u} \ge 0$, which says that the angle between $\nabla I(u)$ and $v-u$ is at most 90 degrees.
+VI formulation \eqref{eq:obstaclevigradient} permits a clear, geometrical meaning.  The solution $u$ sits at a location in $\mathcal{K}$, often on the boundary of $\mathcal{K}$, where any vector pointing into the constraint set, namely $v-u$ for $v$ in $\mathcal{K}$, points ``uphill'' on the graph of $I$.  Using an identification of vectors and linear functionals we could write \eqref{eq:obstaclevigradient} as $\ip{\nabla I(u)}{v-u} \ge 0$, which says that the angle between $\nabla I(u)$ and $v-u$ is at most 90 degrees.
 
-On the other hand, $\mathcal{K} \subset \mathcal{H}$ is an infinite-dimensional set, so visualizing geometry is problematic.  To further aid the intuition we propose the following low-dimensional, but global, mental image.  Imagine $\mathcal{K}$ as analogous to the closed first quadrant $\mathcal{Q}$ in the two-dimensional plane, and $I$ as analogous to a smooth, concave-up (i.e.~\emph{coercive} \cite{Evans2010}), objective function $\gamma(x)$ defined on the plane.  The solution of the corresponding VI, say $\hat x$ in $\mathcal{Q}$, may not be a location where $\nabla \gamma$ is zero.  However, $\gamma$ will have as low a value as possible at $\hat x$, even if it is on the boundary of $\mathcal{Q}$.  At $\hat x$ all directions \emph{into} $\mathcal{Q}$ will increase (not decrease) the value of $\gamma$, as sketched by contours in Figure \ref{fig:cartoonplane}.  Note that the solution $u$ shown in Figure \ref{fig:icelike} is an infinite-dimensional version of the point $\hat x$ shown in the Figure \ref{fig:cartoonplane} cartoon view.  The fact that $u$ in Figure \ref{fig:icelike} coincides with the obstacle $\varphi$ on a part of the domain implies that $u$ is on the boundary of $\mathcal{K}$.  (That is, arbitrarily-small perturbations $\delta u$ from $\mathcal{H}$ exist which cause $u+\delta u$ to leave $\mathcal{K}$.)
+On the other hand, $\mathcal{K} \subset \mathcal{H}$ is an infinite-dimensional set, so visualizing geometry is problematic.  To further aid the intuition we propose the following low-dimensional mental image.  Imagine $\mathcal{K}$ as analogous to the closed first quadrant $\mathcal{Q}$ in the two-dimensional plane, and $I$ as analogous to a smooth, concave-up (i.e.~\emph{coercive} \cite{Evans2010}), objective function $\gamma(x)$ defined on the plane.  The solution of the corresponding VI, say $\hat x$ in $\mathcal{Q}$, may not be a location where $\nabla \gamma$ is zero.  However, $\gamma$ will have as low a value as possible at $\hat x$, even if it is on the boundary of $\mathcal{Q}$.  At $\hat x$ all directions \emph{into} $\mathcal{Q}$ will increase (i.e.~not decrease) the value of $\gamma$, as sketched by contours in Figure \ref{fig:cartoonplane}.  Note that the solutions $u$ shown in Figure \ref{fig:icelike} are infinite-dimensional versions of the point $\hat x$ shown in the Figure \ref{fig:cartoonplane} cartoon view.  (The fact that the solutions $u$ in Figure \ref{fig:icelike} coincide with the obstacle $\varphi$ on a part of the domain implies that $u$ is on the boundary of $\mathcal{K}$.  That is, arbitrarily-small perturbations $\delta u$ from $\mathcal{H}$ exist which cause $u+\delta u$ to leave $\mathcal{K}$.)
 
 \begin{figure}
 \includegraphics[width=0.35\textwidth]{genfigs/cartoonplane.pdf}
-\caption{For analogy only:  A 2-dimensional constrained-minimization or VI solution, in a planar quadrant $\mathcal{Q}$, with contours of a scalar function $\gamma(x)$.}
+\caption{For analogy only:  A 2-dimensional constrained-minimization, or VI solution, in a planar quadrant $\mathcal{Q}$, with contours of a scalar objective $\gamma(x)$.}
 \label{fig:cartoonplane}
 \end{figure}
 
-The glacier problem in section \ref{sec:sia} will be formulated both as a CP like \eqref{eq:obstaclecp} and a VI like \eqref{eq:obstaclevi} or \eqref{eq:obstacleviresidual}.  However, for general bed elevation functions (obstacles) the glacier problem has no constrained minimization formulation like \eqref{eq:obstaclemin}, and thus no interpretation like \eqref{eq:obstaclevigradient}.  (The essential reason is the lack of a symmetry of the weak form \cite{JouvetBueler2012}.)  For the glacier problem we possess a map like $F$, from $\mathcal{K}$ to $\mathcal{H}'$, but not a scalar objective like $I$ itself; the glacier $F$ is \emph{not} a gradient.  We will return to this point in section \ref{sec:sia}.
+The glacier problem in section \ref{sec:sia} will be formulated both as a CP like \eqref{eq:obstaclecp} and a VI like \eqref{eq:obstacleviresidual}.  However, for general bed elevation functions (obstacles) the glacier problem has no constrained minimization formulation like \eqref{eq:obstaclemin}, and thus no interpretation like \eqref{eq:obstaclevigradient}.  (The essential reason is the lack of a symmetry of the weak form \cite{JouvetBueler2012}.)  For the glacier problem we possess a map $F$ from $\mathcal{K}$ to $\mathcal{H}'$, but not a scalar objective like $I$ itself; $F$ in the glacier problem is \emph{not} a gradient.  We will return to this point in section \ref{sec:sia}.
 
-Regardless of how the classical obstacle problem is formulated, a \emph{free boundary} generally arises in the interior of the domain.  For example, as we move away from the midpoint in Figure \ref{fig:icelike} there are locations, near the ends of $[0,1]$, where the solution first becomes fully in contact with the obstacle.  At these locations both $u=\varphi$ and $u'=\varphi'$ hold, that is, the solution is tangent to the obstacle at the free boundary.  (The analogous facts for the glacier problem are that both the ice thickness and the horizontal ice flux go to zero at a grounded glacier margin.)  These simultaneous Dirichlet and Neumann ``conditions'' occur at a location which must be found as part of the solution.
+Regardless of how the classical obstacle problem is formulated, a \emph{free boundary} generally arises in the interior of the domain.  For example, as we move away from the midpoint in Figure \ref{fig:icelike} (top) there are locations, in fact exactly at $x=0.1,0.9$ in that particular case, where the solution first becomes fully in contact with the obstacle.  At these locations both $u=\varphi$ and $u'=\varphi'$ hold, that is, the solution is tangent to the obstacle at the free boundary.  (The analogous conditions in the glacier problem are that both the ice thickness and the horizontal ice flux go to zero at a grounded glacier margin.)  These simultaneous Dirichlet and Neumann conditions occur at a location which must be found as part of the solution.
 
-The solution of the classical obstacle problem can be non-smooth at a free boundary even when the data is arbitrarily smooth.  For example, smoothing the source term $f$ in \eqref{eq:icelikedetails} would give a solution nearly the same as shown in Figure \ref{fig:icelike}.  One could make the source term $f$ into a smooth function by ``mollification'' \cite{Evans2010} so that the transition between positive and negative values would be $C^\infty$.  However, the free boundary would remain, and at that free boundary the second derivative $u''$ would jump from value $+16=-f$ to value $-2=\varphi''$.  In general it is known that for smooth $C^\infty$ data $f$ and $\phi$ the obstacle problem solution $u$ is limited to the Sobolev space $W^{2,\infty}$ \cite[section IV.6]{KinderlehrerStampacchia1980}, and not smoother.
+The solution of the classical obstacle problem will generally be non-smooth at a free boundary even when the data is arbitrarily smooth.  For example, smoothing the source term $f$ in \eqref{eq:icelikedetails} by ``mollification'' \cite{Evans2010}, so that the transition between positive and negative values would be $C^\infty$, would give a solution nearly the same as shown in Figure \ref{fig:icelike}.  However, the free boundary would remain, and at that free boundary the second derivative $u''$ would jump from value $+16=-f$ to value $-2=\varphi''$.  In general it is known that for smooth $C^\infty$ data ($f,\varphi$) the obstacle problem solution $u$ is in the Sobolev space $W^{2,\infty}$ \cite[section IV.6]{KinderlehrerStampacchia1980}, and not smoother.
 
-\subsection*{Projected Gauss-Seidel}  Now consider the FE method for VI \eqref{eq:obstacleviresidual}.  On the $j$th level we will define an obstacle $\phi^j$ in $\mathcal{V}^j$, a constraint set $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j$, and a residual function $F^j$.  Then the FE method seeks $y^j$ in $\mathcal{K}^j$ so that a finite-dimensional VI holds:
+\subsection*{Projected Gauss-Seidel}  Now consider the FE method for VI \eqref{eq:obstacleviresidual}.  On each level we will define an obstacle $\phi^j$ in $\mathcal{V}^j$, a constraint set $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j$, and a residual function $F^j$.  (Recall $\mathcal{V}^j$ is the vector space spanned by the $j$th-level hats $\psi_p^j$; see section \ref{sec:subspace}.)  The FE method seeks $y^j$ in $\mathcal{K}^j$ so that a finite-dimensional VI holds:
 \begin{equation}
   F^j(y^j)[v-y^j] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}^j. \label{eq:feobstacleviresidual}
 \end{equation}
 
-If we were to solve on the fine-level only, in a single-level method, then we would choose the obstacle $\phi^J=\varphi^J$ to be the piecewise-linear interpolant of the continuum obstacle $\varphi$, and $F^J$ as the original residual $F^J(w)[\cdot] = a(w,\cdot) - \ip{f}{\cdot}$.  However, in a multilevel method the constructions of $\phi^j$ and $F^j$ are nontrivial, including on the finest level.  For the classical obstacle problem we will always be able to write $F^j(w)[\cdot] = a(w,\cdot) - \ell^j[\cdot]$ for some linear functional $\ell^j$ in $(\mathcal{V}^j)'$, but we will have more to say regarding the obstacle $\phi^j$.
+If we were to solve on the fine-level only, in a single-level method, then we would choose the obstacle $\phi^J$ to be the piecewise-linear interpolant of the continuum obstacle $\varphi$, i.e.~$\phi^J=\varphi^J$, and $F^J$ as the original residual $F^J(w)[\cdot] = a(w,\cdot) - \ip{f}{\cdot}$.  In a multilevel method the constructions of $\phi^j$ and $F^j$ are nontrivial, including on the finest level, but for the classical obstacle problem we will always be able to write $F^j(w)[\cdot] = a(w,\cdot) - \ell^j[\cdot]$ for some linear functional $\ell^j$ in $(\mathcal{V}^j)'$.  We will have much more to say regarding the obstacle $\phi^j$.
 
-As with the linear Poisson problem, we can immediately propose an iterative method for solving \eqref{eq:feobstacleviresidual}, namely \emph{projected Gauss-Seidel} (PGS).  Supposing $w$ in $\mathcal{K}^j$ is any iterate, we will modify $w$ at the $p$th node so that \eqref{eq:feobstacleviresidual} holds ``at'' that node.  Note that if $w$ is admissible then $w+c\psi_p^j$ is admissible if and only if $w_p + c \ge \phi_p$ where $\phi_p = \phi^j(x_p^j)$.  (\emph{Warning.}  This equivalence holds for piecewise-linear elements, but not for higher-order polynomial elements.)
-
-For clarity we describe PGS using the constrained minimization form \eqref{eq:obstaclemin}.  We define a convex scalar function based on the objective functional,
+As with the linear Poisson problem, we can immediately propose an iterative method for solving \eqref{eq:feobstacleviresidual}, namely \emph{projected Gauss-Seidel} (PGS).  Supposing $w$ in $\mathcal{K}^j$ is any iterate, we modify $w$ at the $p$th node so that \eqref{eq:feobstacleviresidual} holds ``at'' that node.  Note that if $w$ is admissible then $w+c\psi_p^j$ is admissible if and only if $w_p + c \ge \phi_p$ where $\phi_p = \phi^j(x_p^j)$.  (\emph{Warning.}  This equivalence holds for piecewise-linear elements, but not for higher-order polynomial elements.)  For clarity we describe the steps of PGS using the constrained minimization form \eqref{eq:obstaclemin}, using a convex scalar function based on the objective functional,
 \begin{equation}
 i(b) = I^j(w+b\psi_p^j),
 \end{equation}
-where $b$ is a real number and $I^j(w) = \frac{1}{2} a(w,w) - \ell^j[w]$, and we seek its minimizer over admissible perturbations,
+where $I^j(w) = \frac{1}{2} a(w,w) - \ell^j[w]$ and $b$ is a real number.  At each point $p$ we seek the minimizer over admissible perturbations,
 \begin{equation}
   c = \argmin_{b \ge \phi_p - w_p} \, i(b).  \label{eq:pgsminimization}
 \end{equation}
-The minimum of $i(b)$ on the interval $\phi_p - w_p \le b < \infty$ occurs at either the critical point $i'(b)=0$ or at the left end of the interval.  Since $i'(b) = F^j(w)[\psi_p^j] + b a(\psi_p^j,\psi_p^j)$, we have
+The minimum of $i(b)$ on the interval $\phi_p - w_p \le b < \infty$ occurs at either the critical point $i'(b)=0$, if that is in the interval, or at the left end of the interval.  Since $i'(b) = F^j(w)[\psi_p^j] + b a(\psi_p^j,\psi_p^j)$, we have
 \begin{equation}
-  c = \max\{-F^j(w)[\psi_p^j]/a(\psi_p^j,\psi_p^j), \phi_p - w_p\}  \label{eq:pgsformula}
+  c = \max\left\{-\frac{F^j(w)[\psi_p^j]}{a(\psi_p^j,\psi_p^j)}, \phi_p - w_p\right\}  \label{eq:pgsformula}
 \end{equation}
 as the solution of \eqref{eq:pgsminimization}.  Then we update $w \gets w + c\psi_p^j$ and proceed to the next point.
 
@@ -519,7 +517,7 @@ The minimization view is not essential, however, and we can derive \eqref{eq:pgs
 \begin{equation}
   F^j(w+c\psi_p^j)[(w+\tilde c\psi_p^j) - (w+c\psi_p^j)] = (\tilde c - c) F^j(w+c\psi_p^j)[\psi_p^j] \ge 0,  \label{eq:pgspointwisevi}
 \end{equation}
-for all $\tilde c\ge \phi_p-w_p$.  Inequality \eqref{eq:pgspointwisevi} is a one-dimensional VI of form $(\tilde c - c)g(c) \ge 0$, on an interval, thus $g(c)=0$ or $c$ is at the end of the interval, which yields \eqref{eq:pgsformula}.
+for all $\tilde c\ge \phi_p-w_p$.  Inequality \eqref{eq:pgspointwisevi} is a one-dimensional VI of form $(\tilde c - c)g(c) \ge 0$, on an interval, thus $g(c)=0$, or otherwise $c$ is at the end of the interval, thus \eqref{eq:pgsformula}.
 
 The following pseudocode, a small modification of \pr{gssweep}, implements PGS.
 \begin{pseudo*}
@@ -529,16 +527,19 @@ The following pseudocode, a small modification of \pr{gssweep}, implements PGS.
         $c = \max\{-F(w)[\psi_p^j] \,\big/\, a(\psi_p^j,\psi_p^j),\, \phi(x_p^j)-w(x_p^j)\}$ \\
         $w \gets w + c \psi_p^j$
 \end{pseudo*}
-PGS converges to the solution $y^j$ of problem \eqref{eq:feobstacleviresidual} \cite[Proposition 4.5]{GraeserKornhuber2009}, but slowly on fine meshes.
+Because the evaluation of each residual value $F(w)[\psi_p^j]$ is an $O(1)$ operation in the $j$th-level representation, \pr{pgssweep} is an $O(m_j)$ operation.  This algorithm is known to converge to the solution $y^j$ of problem \eqref{eq:feobstacleviresidual} \cite[Proposition 4.5]{GraeserKornhuber2009}, but slowly on fine meshes.
 
-However, note that $\|F(w)\|$ does not go to zero (in general) at PGS convergence.  Recalling the CP formulation of the problem \eqref{eq:obstaclecp}, at convergence we have $F(w)[\psi_p^j] = 0$ where $w(x_p^j) > \phi(x_p^j)$ (inactive points), but if $w(x_p^j) = \phi(x_p^j)$ (active points) then $F(w)[\psi_p^j]$ is only required to be nonnegative.  Thus the convergence criterion for iterated PGS sweeps is that the norm of the \emph{CP residual}, the vector
+However, note that $\|F(w)\|_2$ does not go to zero (in general) at PGS convergence.  Recalling the CP formulation of the problem \eqref{eq:obstaclecp}, at convergence we have $F(w)[\psi_p^j] = 0$ where $w(x_p^j) > \phi(x_p^j)$ (inactive points), but if $w(x_p^j) = \phi(x_p^j)$ (active points) then $F(w)[\psi_p^j]$ is only required to be nonnegative.  Thus the convergence criterion for iterated PGS sweeps is that the norm of the \emph{CP residual}, the vector
 \begin{equation}
   (\hat \bF(w))_p = \begin{cases} F(w)[\psi_p^j], & w(x_p^j) > \phi(x_p^j), \\
                                   \min\{F(w)[\psi_p^j],0\}, & \text{otherwise}, \end{cases} \label{eq:cpresidual}
 \end{equation}
-in $\RR^{m_j}$, should be small: $\|\hat\bF(w)\| < \text{\texttt{rtol}}$.
+in $\RR^{m_j}$, should be small: $\|\hat\bF(w)\|_2 < \text{\texttt{rtol}}$.
 
-PGS will serve as our smoother and coarse-level solver, applied one or two times on each level.  However, we are not yet prepared to build a multilevel method for problem \eqref{eq:feobstacleviresidual} because the construction of the obstacles $\phi^j$ and residuals $F^j$ on each mesh level is nontrivial.  In particular, we will \emph{not} choose $\phi^j$ to be the $j$th-level interpolant of the continuum obstacle $\varphi$, but instead decompose a fine-level constraint across the mesh-level hierarchy.
+PGS will serve as our smoother and coarse-level solver, applied one or two times on each level.  However, we are not yet prepared to build a multilevel method for problem \eqref{eq:feobstacleviresidual} because the nontrivial construction of the obstacles $\phi^j$ and residuals $F^j$ remains.  We need to decompose the continuum constraint $\varphi$ across the mesh-level hierarchy.
+
+FIXME compare to diffusion-limited explicit time stepping on
+   $$u_t = (\alpha u_x)_x + f(x), \qquad u(t,x)\ge \varphi$$
 
 \subsection*{Multilevel constraint decomposition (MCD)}  Consider the coarse-level correction $e^{j-1}$ in a linear V-cycle (section \ref{sec:subspace}, equation \eqref{eq:coarsecorrection}), which is prolonged onto the $j$th level.  In the obstacle problem the resulting iterate ($w+Pe^{j-1}$) would need to be admissible, that is, above $\phi^j$.  However, as illustrated in Figure \ref{fig:prolongobstacle}, an iterate which is admissible on the $j-1$ level is \emph{not} necessarily admissible on the $j$ level if the obstacles are interpolants of a (common) continuum obstacle $\varphi$.  (In the glacier context, an admissible coarse-mesh ice surface may be breached by the fine-mesh bed topography.)  To resolve this issue we might try an ad hoc fix, namely overwriting $\tilde w = w+Pe^{j-1}$ with $\max\{\tilde w,\phi^j\}$, that is, enforce admissibility by \emph{truncation}.  However, this may reintroduce high frequencies, requiring additional smoother effort to remove.
 
@@ -548,7 +549,7 @@ PGS will serve as our smoother and coarse-level solver, applied one or two times
 \label{fig:prolongobstacle}
 \end{figure}
 
-So, how do we maintain admissibility throughout the V-cycle while not introducing high-frequencies?  One way forward is the \emph{multilevel constraint decomposition} (MCD) method of Tai \cite{Tai2003}, which can be formulated as a slash-cycle \cite[Algorithm 4.7]{GraeserKornhuber2009} or a V-cycle.
+So, how do we maintain admissibility throughout the V-cycle while not introducing high-frequencies?  One way forward is the \emph{multilevel constraint decomposition} (MCD) method of Tai \cite{Tai2003}, which can be formulated as a slash-cycle \cite[Algorithm 4.7]{GraeserKornhuber2009}.
 
 Start with $w^J$ in $\mathcal{V}^J$, on the finest level, which is admissible in the original sense, namely
 \begin{equation}
@@ -558,7 +559,7 @@ Start with $w^J$ in $\mathcal{V}^J$, on the finest level, which is admissible in
 \begin{equation}
   \chi^J = \varphi^J - w^J,  \label{eq:defectconstraint}
 \end{equation}
-which is nonpositive ($\chi^J\le 0$).  The idea behind defining the defect constraint is that if we modify $w^J$ by adding $y$ then the result is admissible if and only if $y$ is above it:
+which is nonpositive ($\chi^J\le 0$).  The idea here is that if we modify $w^J$ by adding $y$ then the result is admissible if and only if $y$ is above $\chi^J$:
 \begin{equation}
   w^J + y \ge \varphi^J  \qquad \iff \qquad y \ge \chi^J.  \label{eq:defectmeaning}
 \end{equation}
@@ -567,7 +568,7 @@ Now our intention is to \emph{put as much as possible of $\chi^J$ into the coars
 \begin{equation}
   \mR z = \sum_{p=1}^{m_{j-1}} \zeta_p \psi_p^{j-1} \qquad \text{where} \qquad \zeta_p = \max \{z_q \,:\, \psi_p^{j-1}(x_q^j) > 0\}.  \label{eq:monotonerestriction}
 \end{equation}
-Observe that $\mR z \ge z$ and that $\mR$ acts on functions $\mathcal{V}^j$ while canonical restriction $R$ acts on linear functionals $(\mathcal{V}^j)'$.
+Observe that $\mR z \ge z$ and that $\mR$ acts on functions $\mathcal{V}^j$ while canonical restriction $R$ acts on linear functionals $(\mathcal{V}^j)'$; see Table \ref{tab:restrictionsprolongations}.
 
 We then define the \emph{$j$th-level defect constraint} inductively by
 \begin{equation}
@@ -583,7 +584,7 @@ We have now decomposed the defect constraint $\chi^J$ via a ``telescoping'' sum:
 \begin{equation}
   \sum_{j=0}^J \phi^j = \chi^0 + (\chi^1 - \chi^0) + (\chi^2 - \chi^1) + \dots + (\chi^J - \chi^{J-1}) = \chi^J.  \label{eq:telescopingdecomposition}
 \end{equation}
-(Note that this sum does \emph{not} decompose the original obstacle $\varphi^J$.)  An example is shown in Figure \ref{fig:gooddecomposition}; compare Figure 1 in \cite{GraeserKornhuber2009}.  The obstacles $\phi^j$ are the gaps between the plotted defect constraints $\chi^j$.
+An example is shown in Figure \ref{fig:gooddecomposition}; compare Figure 1 in \cite{GraeserKornhuber2009}.  The obstacles $\phi^j$ are the gaps between the plotted defect constraints $\chi^j$.
 
 %REGENERATE Figures \ref{fig:gooddecomposition} and \ref{fig:icelikedecomposition}:
 %$ ./obstacle.py -jfine 5 -jcoarse 1 -irtol 1.0e-7 -random -randommodes 8 -diagnostics -up 0 -o defect.pdf
@@ -601,9 +602,9 @@ From the obstacles $\phi^j$ we finally define the closed, convex \emph{constrain
 \begin{equation}
 \mathcal{K}^j = \left\{v \ge \phi^j\right\} \subseteq \mathcal{V}^j \label{eq:defineKj}
 \end{equation}
-for $j=0,1,\dots,J$.  Because $\phi^j \le 0$, the zero function is in each $\mathcal{K}^j$.  On the finest level, note that $\phi^J$ is not the same as $\varphi^J$, and so $\mathcal{K}^J$ does not approximate $\mathcal{K}$.  Instead, as suggested by Figure \ref{fig:gooddecomposition}, if the $J$th level is a high-resolution mesh and the defect constraint $\chi^J$ is smooth then $\phi^J\approx 0$, because $\chi^J$ is well-approximated on the $J-1$ level.
+for $j=0,1,\dots,J$.  Because $\phi^j \le 0$, the zero function is admissible on every level.  On the finest level, note that $\phi^J$ is not the same as $\varphi^J$, and so $\mathcal{K}^J$ does not approximate $\mathcal{K}$.  Instead, as suggested by Figure \ref{fig:gooddecomposition}, if the $J$th level is a high-resolution mesh and the defect constraint $\chi^J$ is smooth then $\phi^J\approx 0$, because $\chi^J$ is well-approximated on the $J-1$ level.
 
-Corresponding to the defect constraint $\chi^J$ on the fine level, we also define the fine-level \emph{defect constraint set}
+We also define the fine-level \emph{defect constraint set}
 \begin{equation}
   \mathcal{D}^J = \left\{v \ge \chi^J\right\} \subset \mathcal{V}^J.
 \end{equation}
@@ -611,9 +612,9 @@ The sets $\mathcal{K}^j$ decompose $\mathcal{D}^J$:
 \begin{equation}
   \mathcal{D}^J = \mathcal{K}^0 + \mathcal{K}^1 + \dots + \mathcal{K}^J. \label{eq:constraintdecomposition}
 \end{equation}
-(The proof uses the telescoping sum \eqref{eq:telescopingdecomposition}.)  That is, every admissible modification of the current fine-mesh iterate, i.e.~every $y$ from $\mathcal{V}^J$ for which $y\ge \chi^J$, can be built by choosing a function from each of the mesh-level constraint sets $\mathcal{K}^j$.  As with \eqref{eq:subspacedecomposition}, wherein the mesh-level subspaces $\mathcal{V}^j$ decompose the whole FE space $\mathcal{V}^h$, this representation is usually not unique.  Note that constraint decomposition \eqref{eq:constraintdecomposition} is fundamental to any application of the MCD method in \cite{Tai2003}, but our specific choices follow \cite{GraeserKornhuber2009} in determining $\mathcal{K}^j$.
+(The proof uses the telescoping sum \eqref{eq:telescopingdecomposition}.)  That is, every admissible modification of the current fine-mesh iterate, i.e.~every $y$ from $\mathcal{V}^J$ for which $y\ge \chi^J$, can be built by choosing a function from each of the mesh-level constraint sets $\mathcal{K}^j$.  As with \eqref{eq:subspacedecomposition}, where the subspaces $\mathcal{V}^j$ decompose the FE space $\mathcal{V}^h$, this representation is usually not unique.  Set decomposition \eqref{eq:constraintdecomposition} is fundamental to any application of the MCD method in \cite{Tai2003}, but our specific choices follow \cite{GraeserKornhuber2009} in determining $\mathcal{K}^j$.
 
-In the glacier context (section \ref{sec:sia}) the fine-mesh obstacle $\varphi^J$ will be the bed elevation and $w^J$ will be a candidate ice surface elevation, so $-\chi^J$ will be an ice thickness.  Figure \ref{fig:icelikedecomposition} illustrates the same constraint decomposition as in Figure \ref{fig:gooddecomposition}, but pictured as a decomposition of the ice into layers.  (Compared to Figure \ref{fig:icelike}, this bed elevation $\phi^J$ has bumpy bed topography.)  However, Figure \ref{fig:gooddecomposition} plots the decomposition in the \emph{correct} sense, such that each defect constraint $\chi^j$ and obstacle $\phi^j$ is piecewise-linear (i.e.~in $\mathcal{V}^j$); Figure \ref{fig:icelikedecomposition} is merely heuristic.
+Looking forward to our glacier context (section \ref{sec:sia}), the fine-mesh obstacle $\varphi^J$ will be the bed elevation and $w^J$ will be a candidate ice surface elevation, so $-\chi^J$ will be the corresponding ice thickness.  With this in mind, Figure \ref{fig:icelikedecomposition} illustrates the same constraint decomposition as in Figure \ref{fig:gooddecomposition}, but pictured as a decomposition of the ice into layers.  (Compared to Figure \ref{fig:icelike} (top), this bed elevation $\varphi^J$ has bumpy bed topography.)  However, Figure \ref{fig:gooddecomposition} plots the decomposition in the \emph{correct} sense, such that each defect constraint $\chi^j$ and obstacle $\phi^j$ is piecewise-linear (i.e.~in $\mathcal{V}^j$); Figure \ref{fig:icelikedecomposition} is merely heuristic.
 
 \begin{figure}
 \includegraphics[width=0.7\textwidth]{fixfigs/icedec_defect.pdf}
@@ -621,7 +622,7 @@ In the glacier context (section \ref{sec:sia}) the fine-mesh obstacle $\varphi^J
 \label{fig:icelikedecomposition}
 \end{figure}
 
-We can now write the obstacle problem on the $j$th level in three forms, which are equivalent for the classical obstacle problem.  Recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the original residual \eqref{eq:residual}, and $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function.  As above, $w^J$ is an admissible iterate on the fine level: $w^J\ge \varphi^J$.  The $j$th-level forms below assume that we have already descended from the fine level $J$ to some level $j+1$, computing admissible corrections $y^k$ from the constraint set $\mathcal{K}^k$ for $k=j+1,\dots,J$.  By  \eqref{eq:defectmeaning} and the constraint decomposition \eqref{eq:constraintdecomposition}, observe that $z = w^J+y^J+\dots+y^{j+1}$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.
+We will now write the obstacle problem on the $j$th level in three forms; they are equivalent for the classical obstacle problem.  Recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the original residual \eqref{eq:residual}, and $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function.  As above, $w^J$ is an admissible iterate on the fine level: $w^J\ge \varphi^J$.  Let us assume that we have already descended from the fine level $J$ to some level $j+1$, computing admissible corrections $y^k$ from each constraint set $\mathcal{K}^k$ for $k>j$.  By  \eqref{eq:defectmeaning} and decomposition \eqref{eq:constraintdecomposition}, observe that $z = w^J+y^J+\dots+y^{j+1}$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.
 
 We seek a $j$th-level correction $y^j$ in $\mathcal{K}^j$, i.e.~$y^j\ge \phi^j$, such that:
 \begin{itemize}
@@ -639,7 +640,7 @@ We seek a $j$th-level correction $y^j$ in $\mathcal{K}^j$, i.e.~$y^j\ge \phi^j$,
 \end{equation}
 \end{itemize}
 
-In form \eqref{eq:mcdvilinear} we have used linearity to define $F^j$:
+In the third form \eqref{eq:mcdvilinear} we have used linearity and induction to define $F^j$:
 \begin{align}
   F^j(z)[\cdot] &= F(w^J+y^J+\dots+y^{j+1}+z)[\cdot] \label{eq:residuallinearlevelderive} \\
                 &= a(w^J+y^J+\dots+y^{j+1}+z,\cdot) - \ip{f}{\cdot} \notag \\
@@ -649,16 +650,16 @@ That is, on each level we have a residual functional,
 \begin{equation}
   F^j(z)[\cdot] = a(z,\cdot) - \ell^j[\cdot],  \label{eq:residuallinearlevel}
 \end{equation}
-with an inductively-defined source:
+and a new source,
 \begin{equation}
   \ell^j[\cdot] = \begin{cases} - F^{j+1}(y^{j+1})[\cdot], & j < J, \\
                                 - F(w^J)[\cdot], & j = J. \end{cases} \label{eq:rhslinearlevel}
 \end{equation}
-Note that each $F^j$ here acts on $\mathcal{V}^h$, that is, on whole the FE space, and all its nested subspaces, and $\ell^j$ is in $(\mathcal{V}^h)'$.  However, in an implemented multigrid cycle (below) we will approximate $\ell^j$ by $\tilde \ell^j$ in $(\mathcal{V}^j)'$, using a representation in $j$th-level values $\{\ell^j[\psi_p^j]\}$.
+Note that each $F^j$ here acts on $\mathcal{V}^h$, that is, on the whole FE space, and $\ell^j$ is likewise in $(\mathcal{V}^h)'$.  However, in an implemented multigrid cycle (below) we will approximate $\ell^j$ by $\tilde \ell^j$ in $(\mathcal{V}^j)'$, using a representation in $j$th-level values $\{\ell^j[\psi_p^j]\}$ in $\RR^{m_j}$.
 
-For the classical obstacle problem, wherein the (continuum) residual $F(w)[v]$ is built from a symmetric bilinear form $a(w,v)$, the three problems \eqref{eq:mcdvi}--\eqref{eq:mcdvilinear} are equivalent.  However, the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdminimization} depends on symmetry, i.e.~such that $F$ is a gradient, and the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdvilinear} depends on bilinearity, and both fail for the glacier problem (section \ref{sec:sia}):
+For the classical obstacle problem, wherein the (continuum) residual $F(w)[v]$ is built from a symmetric bilinear form $a(w,v)$, the three problems \eqref{eq:mcdvi}--\eqref{eq:mcdvilinear} are equivalent.  However, the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdminimization} depends on symmetry, i.e.~$F$ needs to be a gradient, and the equivalence of \eqref{eq:mcdvi} and \eqref{eq:mcdvilinear} depends on bilinearity:
    $$\eqref{eq:mcdvilinear} \quad \stackrel{a \text{ bilinear}}{\iff\strut} \quad \eqref{eq:mcdvi} \quad \stackrel{F=\grad I}{\iff\strut} \quad \eqref{eq:mcdminimization}.$$
-The nonlinear VI form \eqref{eq:mcdvi} is the most general, but note that if $F$ is not the gradient of a coercive objective function then additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,KinderlehrerStampacchia1980}).
+The nonlinear VI form \eqref{eq:mcdvi} is thus the most general, but note that when $F$ is not the gradient of a coercive objective function then additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,KinderlehrerStampacchia1980}).  Both bilinearity and the gradient symmetry fail for the general-bed glacier problem, thus we will solve the general VI form \eqref{eq:mcdvi}.
 
 \subsection*{MCD cycles and convergence results}  We are now ready to implement a multilevel solver for the classical obstacle problem.  The following pseudocode solves \eqref{eq:mcdvilinear}.  Here \pr{MCDL} stands for ``multilevel constraint decomposition (linear)'', and this procedure is analogous to \pr{msd-solver} in section \ref{sec:subspace}.  This outer loop sets up the fine-level defect constraint and residual.  Checks for convergence occur after calling the inner solver, addressed next.
 \begin{pseudo*}
@@ -718,6 +719,8 @@ FIXME error norms for slash cycle on two problems; convergence rate difference b
 FIXME explain WU
 
 FIXME give figure with WU on $y$-axis and $N$ on $x$-axis for PGS only, slash cycle, V(2,0), F-cycle, and 2-iterations-on-way-up-F-cycle (5 solvers) on two problems: icelike and icelike-with-random-bed
+
+FIXME \cite{Blumetal2004} on cascadic and CG variants
 
 FIXME run time per degree of freedom for same runs
 
@@ -848,23 +851,17 @@ for $p=1,\dots,m_{j-1}$, where $c_{pq} = \psi_p^{j-1}(x_q^j)$.  Equation \eqref{
 \end{equation}
 In other words, we keep the values of $\ell$ on the coarser-level nodes and just fill-in with zero.  Using this prolongation gives a $j$th-level residual that is not smooth, but the solution of the equation on the $j$th level (i.e.~$\tilde F^j(y^j)[v]=0$ for all $v$ in $\mathcal{K}^j$) will be relatively smooth by ellipticity.  These ideas come together in the following pseudocode.
 \begin{pseudo*}
-\pr{mcdl-vcycle}(J,F^J,\chi^J,\id{down}=1,\id{up}=1,\id{coarse}=1)\text{:} \\+
+\pr{mcdl-vcycle}(J,\ell^J,\chi^J,\id{down}=1,\id{up}=1,\id{coarse}=1)\text{:} \\+
     for $j=J$ downto $j=1$ \\+
-      $\chi^{j-1} = \mR \chi^j$ \\
-      $\phi_V^j = \frac{1}{2}(\chi^j - P\chi^{j-1})$ \qquad\qquad\quad  \ct{define obstacle} \\
-      $y^j = 0$ \\
-      $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,y^j,F^j,\phi_V^j)$ \\
-      $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad \ct{update and restrict residual} \\
-      $F^{j-1}(z)[\cdot] := a(z,\cdot) - \ell^{j-1}[\cdot]$ \\-
-    $y^0 = 0$ \\
-    $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \\
+      $\chi^{j-1} = \mR \chi^j$; \quad $\phi_V^j = \frac{1}{2}(\chi^j - P\chi^{j-1})$ \qquad  \ct{define obstacle} \\
+      $y^j = 0$; \quad $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,y^j,\ell^j,\phi_V^j)$ \\
+      $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad\qquad\quad \ct{update and restrict residual} \\-
+    $y^0 = 0$; \quad $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,\ell^0,\chi^0)$ \\
     $\omega^0 = y^0$ \\
     for $j=1$ to $j=J$ \\+
-      $\ell^{j}[\cdot] := - \iP(\tilde F^{j-1}(\omega^{j-1}))[\cdot]$ \qquad\quad \ct{update and prolong residual} \\
-      $\tilde F^{j}(z)[\cdot] := a(z,\cdot) - \ell^{j}[\cdot]$ \\
-      $\eta^j = 0$ \\
-      $\text{\pr{pgssweep}}^{\text{\id{up}}}(j,\eta^j,\tilde F^j,\phi_V^j)$ \\
-      $\omega^j = y^j + \eta^j + P \omega^{j-1}$ \qquad\qquad\quad \ct{accumulate corrections} \\-
+      $\ell^{j}[\cdot] := - \iP(\tilde F^{j-1}(\omega^{j-1}))[\cdot]$ \qquad\qquad\quad \ct{update and prolong residual} \\
+      $\eta^j = 0$; \quad $\text{\pr{pgssweep}}^{\text{\id{up}}}(j,\eta^j,\ell^j,\phi_V^j)$ \\
+      $\omega^j = y^j + \eta^j + P \omega^{j-1}$ \qquad\qquad\qquad\qquad \ct{accumulate corrections} \\-
     return $w^J$
 \end{pseudo*}
 Note that the vectors $\omega^j$ in the second \kw{for} loop are used to add-up (accumulate) the corrections in \eqref{eq:residuallinearlevelv}, $y^j$ from the way down and $\eta^j$ from the way up.  The procedure returns an iterate in $\mathcal{V}^J$,
