@@ -30,7 +30,8 @@ def _smoother(s, mesh, v, ell, phi, omega=1.0, forward=True, symmetric=False, pr
                                printwarnings=printwarnings)
     return infeas
 
-def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1, pgsomega=1.0,
+def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
+              pgsomega=1.0, pgscoarsestomega=1.0,
               levels=None, view=False, symmetric=False, printwarnings=False):
     '''Apply one cycle of the multilevel subset decomposition method of
     Tai (2003), as stated in Alg. 4.7 in Graeser & Kornhuber (2009),
@@ -64,13 +65,13 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1, pgsomega=1.0,
                                                         hierarchy[k].y,
                                                         hierarchy[k].ell))
 
-    # coarse mesh solver = PGS sweeps
+    # coarse mesh solver = PGS sweeps; consider using overrelaxation omega here
     if view:
         _coarsereport(levels-1, hierarchy[0].m, coarse)
     hierarchy[0].y = hierarchy[0].zeros()
     infeas += _smoother(coarse, hierarchy[0], hierarchy[0].y, hierarchy[0].ell,
                         hierarchy[0].chi,
-                        omega=pgsomega, symmetric=symmetric, printwarnings=printwarnings)
+                        omega=pgscoarsestomega, symmetric=symmetric, printwarnings=printwarnings)
 
     # upward
     hierarchy[0].omega = hierarchy[0].y.copy()

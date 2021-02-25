@@ -54,6 +54,8 @@ References:
 ''', formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-coarse', type=int, default=1, metavar='N',
                     help='PGS sweeps on coarsest grid (default=1)')
+parser.add_argument('-coarsestomega', type=float, default=1.0, metavar='X',
+                    help='relaxation factor in PGS, thus PSOR, on coarsest level (default X=1.0)')
 parser.add_argument('-cyclemax', type=int, default=100, metavar='N',
                     help='maximum number of multilevel cycles (default=100)')
 parser.add_argument('-diagnostics', action='store_true', default=False,
@@ -257,7 +259,8 @@ for ni in nirange:
             y, infeas = mcdlcycle(ni, hierarchy, ell,
                                   down=args.down, up=args.up, coarse=args.coarse,
                                   levels=levels, view=args.mgview,
-                                  symmetric=args.symmetric, pgsomega=args.omega,
+                                  symmetric=args.symmetric,
+                                  pgsomega=args.omega, pgscoarsestomega=args.coarsestomega,
                                   printwarnings=args.printwarnings)
             uu += y
             infeascount += infeas
