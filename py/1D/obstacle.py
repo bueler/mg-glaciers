@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 '''Solve a 1D obstacle problem by a multilevel constraint decomposition method.'''
 
-# FIXME add -nicascadic which has a model for decreasing numbers of cycles as the finest level is approached
-
 # best observed settings for generating solutions in 10 WU in exact solutions cases:
 #   for PROB in icelike parabola; do
 #     for JJ in 6 7 8 9 10 11 12 13 14 15 16 17; do
@@ -82,6 +80,8 @@ parser.add_argument('-monitorerr', action='store_true', default=False,
                     help='print the error (if available) after each cycle')
 parser.add_argument('-ni', action='store_true', default=False,
                     help='use nested iteration for initial iterates (= F-cycle)')
+parser.add_argument('-nicascadic', action='store_true', default=False,
+                    help='scheduled nested iteration (implies -ni)')
 parser.add_argument('-nicycles', type=int, default=1, metavar='N',
                     help='nested iteration: cycles on levels before finest (default N=1)')
 parser.add_argument('-o', metavar='FILE', type=str, default='',
@@ -130,6 +130,8 @@ if args.monitorerr and not exactavailable:
 if args.errtol is not None and not exactavailable:
     print('usage ERROR: -errtol but exact solution and error not available')
     sys.exit(4)
+if args.nicascadic:
+    args.ni = True
 
 # fix the random seed for repeatability
 np.random.seed(args.randomseed)
@@ -206,6 +208,7 @@ else:
 # nested iteration outer loop
 wusum = 0.0
 infeascount = 0
+actualits = 0
 for ni in nirange:
     # evaluate data varphi(x), ell[v] = <f,v> on (current) fine level
     mesh = hierarchy[ni]
@@ -230,7 +233,12 @@ for ni in nirange:
 
     # how many cycles
     if args.ni and ni < levels-1:
-        iters = args.nicycles
+        if args.nicascadic:
+            # very simple model for number of cycles before finest
+            # compare Blum et al 2004
+            iters = args.nicycles * int(np.ceil(1.5**(levels-1-ni)))
+        else:
+            iters = args.nicycles
     else:
         iters = args.cyclemax
 
@@ -244,6 +252,8 @@ for ni in nirange:
         else:
             # generally stop based on irtol condition
             if s == 0:
+                if irnorm == 0.0:
+                    break
                 irnorm0 = irnorm
             else:
                 if irnorm <= args.irtol * irnorm0:
@@ -268,14 +278,11 @@ for ni in nirange:
                                   printwarnings=args.printwarnings)
             uu += y
             infeascount += infeas
-
-    # finalize iterations and monitor (see stopping criterion above)
-    its = s
-    if s == iters - 1:
+        actualits = s+1
+    else: # if break not called
         mon.irerr(uu, indent=levels-1-ni)
-        its = s+1
 
-    # accumulate work units from this slash
+    # accumulate work units from this cycle
     for j in range(ni+1):
         wusum += hierarchy[j].WU / 2**(levels - 1 - j)
         hierarchy[j].WU = 0    # avoids double-counting in nested iteration
@@ -286,9 +293,9 @@ if args.ni:
     method = 'nested iter. & '
 symstr = 'sym. ' if args.symmetric else ''
 if args.pgsonly:
-    method += '%d applications of %sPGS' % (its, symstr)
+    method += '%d applications of %sPGS' % (actualits, symstr)
 else:
-    method += '%d %sV(%d,%d) cycles' % (its, symstr, args.down, args.up)
+    method += '%d %sV(%d,%d) cycles' % (actualits, symstr, args.down, args.up)
 if exactavailable:
     uex = uexact(hierarchy[-1].xx())
     error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
