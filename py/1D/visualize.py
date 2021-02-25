@@ -33,12 +33,14 @@ class VisObstacle():
         self.hierarchy = None
         self.chi = None
 
-    def plain(self, uex, filename=''):
-        '''Generate plain graphic showing exact solution and obstacle.'''
-        self.mesh.checklen(uex)
+    def plain(self, uex=None, filename=''):
+        '''Generate plain graphic showing obstacle and exact solution (if
+        available).'''
         xx = self.mesh.xx()
         plt.figure(figsize=(16.0, 4.0))
-        plt.plot(xx, uex, 'k--', label=r'solution $u$', lw=3.0)
+        if uex is not None:
+            self.mesh.checklen(uex)
+            plt.plot(xx, uex, 'k--', label=r'solution $u$', lw=3.0)
         plt.plot(xx, self.phi, 'k', label=r'obstacle $\varphi$', lw=3.0)
         plt.legend()
         plt.xlabel('x')

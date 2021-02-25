@@ -197,40 +197,44 @@ hierarchy = [None] * (levels)             # list [None,...,None]
 for j in range(levels):
     hierarchy[j] = MeshLevel1D(j=j+args.jcoarse)
 
+# set up nested iteration
+if args.ni:
+    nirange = range(levels)   # hierarchy[j] for j=0,...,levels-1
+else:
+    nirange = [levels-1,]     # just run on finest level
+
 # nested iteration outer loop
 wusum = 0.0
 infeascount = 0
-if args.ni:
-    nirange = range(levels)
-else:
-    nirange = [levels-1,]     # not nested iteration; just run on finest level
 for ni in nirange:
     # evaluate data varphi(x), ell[v] = <f,v> on (current) fine level
     mesh = hierarchy[ni]
     phifine = phi(mesh.xx())                   # obstacle
     ellfine = mesh.ellf(fsource(mesh.xx()))    # source functional
 
+    # feasible initial iterate
     if args.ni and ni > 0:
-        # in nested iteration, prolong solution from previous coarser level,
-        #   and truncate for feasible initial iterate
+        # prolong and truncate solution from previous coarser level
         uu = np.maximum(phifine, hierarchy[ni].cP(uu))
     else:
-        # default initial iterate; sometimes better than phifine when phifine
+        # default; sometimes better than phifine when phifine
         #   is negative in places (e.g. -problem parabola)
         uu = np.maximum(phifine, mesh.zeros())
 
-    # create monitor; use exact solution if available
+    # create monitor using exact solution if available
     uex = None
     if exactavailable:
         uex = uexact(mesh.xx())
     mon = ObstacleMonitor(mesh, ellfine, phifine, uex=uex,
                           printresiduals=args.monitor, printerrors=args.monitorerr)
 
-    # multigrid slash-cycles or V-cycles inner loop
+    # how many cycles
     if args.ni and ni < levels-1:
         iters = args.nicycles
     else:
         iters = args.cyclemax
+
+    # multigrid cycles inner loop
     for s in range(iters):
         irnorm, errnorm = mon.irerr(uu, indent=levels-1-ni)
         if errnorm is not None and args.errtol is not None and ni == levels-1:
@@ -239,23 +243,21 @@ for ni in nirange:
                 break
         else:
             # generally stop based on irtol condition
-            if irnorm < 1.0e-50:
-                break
             if s == 0:
                 irnorm0 = irnorm
             else:
-                if irnorm < args.irtol * irnorm0:
+                if irnorm <= args.irtol * irnorm0:
                     break
         if args.pgsonly:
-            # revert to sweeps of projected Gauss-Seidel on fine grid
+            # sweeps of projected Gauss-Seidel on fine grid
             infeascount += pgssweep(mesh, uu, ellfine, phifine, omega=args.omega,
                                     printwarnings=args.printwarnings)
             if args.symmetric:
                 infeascount += pgssweep(mesh, uu, ellfine, phifine, omega=args.omega,
                                         forward=False, printwarnings=args.printwarnings)
         else:
-            # Tai (2003) constraint decomposition method; usually V(1,0)-cycles;
-            #   Alg. 4.7 in G&K (2009); next lines are "mcdl-solver()" in paper
+            # Tai (2003) constraint decomposition method cycles; default=V(1,0);
+            #   Alg. 4.7 in G&K (2009); see mcdl-solver and mcdl-slash in paper
             mesh.chi = phifine - uu                # defect obstacle
             ell = - residual(mesh,uu,ellfine)      # base residual
             y, infeas = mcdlcycle(ni, hierarchy, ell,
@@ -278,7 +280,7 @@ for ni in nirange:
         wusum += hierarchy[j].WU / 2**(levels - 1 - j)
         hierarchy[j].WU = 0    # avoids double-counting in nested iteration
 
-# report on computation; includes numerical error, WU, infeasibles
+# report on computation including numerical error, WU, infeasibles
 method = 'using '
 if args.ni:
     method = 'nested iter. & '
@@ -302,23 +304,18 @@ if args.show or args.o or args.diagnostics:
     vis = VisObstacle(mesh, phifine)
     if args.show or args.o:
         if args.plain:
-            if exactavailable:
-                vis.plain(uex, filename=args.o)
-            else:
-                raise ValueError('graphic (-plain) not available if no exact solution')
+            vis.plain(uex=uex, filename=args.o)
         else:
-            vis.final(uu, filename=args.o, uex=uex)
+            vis.final(uu, uex=uex, filename=args.o)
     if args.diagnostics:
+        rname = ''
         if len(args.o) > 0:
             rname = 'resid_' + args.o
-        else:
-            rname = ''
         vis.residuals(uu, ellfine, filename=rname)
         if not args.pgsonly:
+            dname, iname = '', ''
             if len(args.o) > 0:
                 dname = 'decomp_' + args.o
                 iname = 'icedec_' + args.o
-            else:
-                dname, iname = '', ''
             vis.decomposition(hierarchy, up=args.up, filename=dname)
             vis.icedecomposition(hierarchy, phifine, up=args.up, filename=iname)
