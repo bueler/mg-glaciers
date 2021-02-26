@@ -14,7 +14,7 @@ import argparse
 import numpy as np
 
 from meshlevel import MeshLevel1D
-from pgs import residual, pgssweep
+from pgspoisson import residual, pgssweep
 from subsetdecomp import mcdlcycle
 from monitor import ObstacleMonitor
 from visualize import VisObstacle

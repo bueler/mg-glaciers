@@ -1,7 +1,7 @@
 '''Module for the ObstacleMonitor class suitable for obstacle problems.'''
 
 import numpy as np
-from poisson import residual
+from pgspoisson import residual
 
 __all__ = ['inactiveresidual', 'ObstacleMonitor']
 

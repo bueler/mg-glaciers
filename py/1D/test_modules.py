@@ -3,8 +3,7 @@ directory, or via "make test".'''
 
 import numpy as np
 from meshlevel import MeshLevel1D
-from poisson import pointresidual, residual
-from pgs import pgssweep
+from pgspoisson import pointresidual, residual, pgssweep
 
 def test_ml_basics():
     '''Basic MeshLevel1D functionality.'''
@@ -72,7 +71,7 @@ def test_ml_hierarchy():
     Psi2 = chi2 - ml2.cP(chi1)
     assert all(Psi0 + Psi1 + Psi2 == phi)
 
-def test_po_pointresidual():
+def test_pgsr_pointresidual():
     '''Point-wise residual for Poisson.'''
     ml = MeshLevel1D(j=1)
     f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
@@ -80,7 +79,7 @@ def test_po_pointresidual():
     assert pointresidual(ml, w, ml.ellf(f), 1) == - 0.5 * ml.h
     assert pointresidual(ml, w, ml.ellf(f), 2) == - 4.0
 
-def test_po_residual():
+def test_pgsr_residual():
     '''Residual for Poisson.'''
     ml = MeshLevel1D(j=1)
     f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
@@ -88,7 +87,7 @@ def test_po_residual():
     Fcorrect = - np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
     assert all(residual(ml, w, ml.ellf(f)) == Fcorrect)
 
-def test_pgs_pgssweep1():
+def test_pgsr_pgssweep():
     '''Projected Gauss-Seidel sweep.'''
     ml = MeshLevel1D(j=0)
     f = np.array([0.0, 1.0, 0.0])

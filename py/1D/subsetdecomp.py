@@ -1,8 +1,7 @@
 '''Module implementing the multilevel constraint decomposition (MCD) method
 of the Tai (2003).'''
 
-from poisson import residual
-from pgs import pgssweep
+from pgspoisson import residual, pgssweep
 
 __all__ = ['mcdlcycle']
 
@@ -99,4 +98,3 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
             hierarchy[k].omega += hierarchy[k].y
 
     return hierarchy[J].omega, infeas
-

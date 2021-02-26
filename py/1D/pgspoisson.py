@@ -1,8 +1,36 @@
-'''Module to implement the projected Gauss-Seidel (PGS) algorithm.'''
+'''Module to implement the projected Gauss-Seidel (PGS) algorithm
+for the linear Poisson equation -u''=f with u(0)=u(1)=0.'''
 
-from poisson import residual, diagonalentry, pointresidual
+__all__ = ['pointresidual','residual','pgssweep']
 
-__all__ = ['pgssweep']
+def diagonalentry(mesh, p):
+    '''Compute the diagonal value of a(.,.) at hat function psi_p^j:
+       a(psi_p,psi_p) = int_0^1 (psi_p^j)'(x)^2 dx
+    Input mesh is of class MeshLevel1D.'''
+    assert 1 <= p <= mesh.m
+    return 2.0 / mesh.h
+
+def pointresidual(mesh, w, ell, p):
+    '''Compute the value of the residual linear functional, in V^j', for given
+    iterate w, at one interior hat function psi_p^j:
+       F(w)[psi_p^j] = int_0^1 w'(x) (psi_p^j)'(x) dx - ell(psi_p^j)
+    Input ell is in V^j'.  Input mesh is of class MeshLevel1D.'''
+    mesh.checklen(w)
+    mesh.checklen(ell)
+    assert 1 <= p <= mesh.m
+    return (1.0/mesh.h) * (2.0*w[p] - w[p-1] - w[p+1]) - ell[p]
+
+def residual(mesh, w, ell):
+    '''Compute the residual linear functional, in V^j', for given iterate w:
+       F(w)[v] = int_0^1 w'(x) v'(x) dx - ell(v)
+    The returned F = F(w) satisfies F[p] = F(w)[psi_p^j] and F[0]=F[m+1]=0.
+    See above pointresidual().'''
+    mesh.checklen(w)
+    mesh.checklen(ell)
+    F = mesh.zeros()
+    for p in range(1, mesh.m+1):
+        F[p] = pointresidual(mesh, w, ell, p)
+    return F
 
 def pgssweep(mesh, w, ell, phi, forward=True, omega=1.0, phieps=1.0e-10,
              printwarnings=False):

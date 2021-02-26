@@ -4,7 +4,7 @@ __all__ = ['VisObstacle']
 
 import matplotlib
 import matplotlib.pyplot as plt
-from poisson import residual
+from pgspoisson import residual
 from monitor import inactiveresidual
 
 # better defaults for graphs
