@@ -5,7 +5,7 @@ __all__ = ['VisObstacle']
 import matplotlib
 import matplotlib.pyplot as plt
 from poisson import residual
-from pgs import inactiveresidual
+from monitor import inactiveresidual
 
 # better defaults for graphs
 font = {'size' : 20}

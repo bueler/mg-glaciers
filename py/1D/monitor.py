@@ -1,8 +1,18 @@
 '''Module for the ObstacleMonitor class suitable for obstacle problems.'''
 
-from pgs import inactiveresidual
+import numpy as np
+from poisson import residual
 
-__all__ = ['ObstacleMonitor']
+__all__ = ['inactiveresidual', 'ObstacleMonitor']
+
+def inactiveresidual(mesh, w, ell, phi, ireps=1.0e-10):
+    '''Compute the values of the residual for w at nodes where the constraint
+    is NOT active.  Note that where the constraint is active the residual F(w)
+    in the complementarity problem is allowed to have any positive value, and
+    only the residual at inactive nodes is relevant to convergence.'''
+    F = residual(mesh, w, ell)
+    F[w < phi + ireps] = np.minimum(F[w < phi + ireps], 0.0)
+    return F
 
 class ObstacleMonitor():
     '''The monitor has an internal state so it is a class.'''
