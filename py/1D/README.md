@@ -1,6 +1,6 @@
 # mg-glaciers/py/1D
 
-Program `obstacle.py` solves a 1D obstacle problem on [0,1] for the Poisson equation, i.e. a classical obstacle problem, with default "ice-like" geometry.  For now the available algorithms are
+Program `obstacle.py` solves a 1D obstacle problem on [0,1] for the Poisson equation, i.e. a classical obstacle problem, with default "ice-like" geometry.  For now the available solver algorithms are
 
   * sweeps of projected Gauss-Seidel (pGS) on the fine grid
   * slash-cycles of the Tai (2003) multilevel subset decomposition method using pGS as a smoother

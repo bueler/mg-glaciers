@@ -5,9 +5,9 @@ import numpy as np
 __all__ = ['MeshLevel1D']
 
 class MeshLevel1D():
-    '''Encapsulate a mesh level for the interval [0,1], suitable for
+    '''Encapsulate a mesh level for the interval [0,L], suitable for
     obstacle problems.  MeshLevel1D(j=j) has m = 2^{j+1} - 1 interior nodes,
-    m+1=2^{j+1} equal subintervals (elements) of length h = 1/(m+1), and
+    m+1=2^{j+1} equal subintervals (elements) of length h = L / (m+1), and
     m+2 total points.  Indices j = 0,...,m+1 give all nodes, with
     j = 1,...,m giving the interior nodes:
         *---*---*---*---*---*---*---*
@@ -20,14 +20,15 @@ class MeshLevel1D():
     ((V^j)' to (V^{j-1})'), and monotone restriction of functions
     (V^j to V^{j-1}; see Graeser&Kornhuber 2009).'''
 
-    def __init__(self, j=None):
+    def __init__(self, L=1, j=None):
+        self.L = L
         self.j = j
         self.m = 2**(self.j+1) - 1
         if j > 0:
             self.mcoarser = 2**self.j - 1
         else:
             self.mcoarser = None
-        self.h = 1.0 / (self.m + 1)
+        self.h = self.L / (self.m + 1)
         self.WU = 0
 
     def checklen(self, v, coarser=False):
@@ -45,7 +46,7 @@ class MeshLevel1D():
         return np.linspace(0.0, 1.0, self.m+2)
 
     def l2norm(self, u):
-        '''L^2[0,1] norm of a function, computed with trapezoid rule.'''
+        '''L^2[0,L] norm of a function, computed with trapezoid rule.'''
         self.checklen(u)
         return np.sqrt(self.h * (0.5*u[0]*u[0] + np.sum(u[1:-1]*u[1:-1]) \
                                  + 0.5*u[-1]*u[-1]))
@@ -53,7 +54,7 @@ class MeshLevel1D():
     def ellf(self, f):
         '''Represent the linear functional (in (V^j)') which is the inner
         product with a function f (in V^j):
-           ellf[v] = <f,v> = int_0^1 f(x) v(x) dx
+           ellf[v] = <f,v> = int_0^L f(x) v(x) dx
         The values are  ellf[p] = ellf[psi_p^j]  for p=1,...,m_j, and
         ellf[0]=ellf[m+1]=0.  Uses trapezoid rule to evaluate the integrals
         ellf[psi_p^j].'''
