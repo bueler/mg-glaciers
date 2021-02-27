@@ -14,7 +14,7 @@ import argparse
 import numpy as np
 
 from meshlevel import MeshLevel1D
-from pgspoisson import residual, pgssweep
+from smoother import PGSPoisson
 from subsetdecomp import mcdlcycle
 from monitor import ObstacleMonitor
 from visualize import VisObstacle
@@ -147,9 +147,9 @@ def phi(x):
         raise ValueError
     if args.random:
         perturb = np.zeros(len(x))
-        for j in range(args.randommodes):
-            perturb += np.random.randn(1) * np.sin((j+1)*np.pi*x)
-        perturb *= args.randomscale * 0.03 * np.exp(-10*(x-0.5)**2)
+        for jj in range(args.randommodes):
+            perturb += np.random.randn(1) * np.sin((jj+1) * np.pi * x)
+        perturb *= args.randomscale * 0.03 * np.exp(-10 * (x-0.5)**2)
         ph += perturb
     ph[[0, -1]] = [0.0, 0.0]  # always force zero boundary conditions
     return ph
@@ -199,6 +199,10 @@ hierarchy = [None] * (levels)             # list [None,...,None]
 for j in range(levels):
     hierarchy[j] = MeshLevel1D(j=j+args.jcoarse)
 
+# set up obstacle problem and smoother
+#FIXME choose between derived classes of SmootherObstacleProblem
+obsprob = PGSPoisson(printwarnings=args.printwarnings)
+
 # set up nested iteration
 if args.ni:
     nirange = range(levels)   # hierarchy[j] for j=0,...,levels-1
@@ -228,7 +232,7 @@ for ni in nirange:
     uex = None
     if exactavailable:
         uex = uexact(mesh.xx())
-    mon = ObstacleMonitor(mesh, ellfine, phifine, uex=uex,
+    mon = ObstacleMonitor(obsprob, mesh,
                           printresiduals=args.monitor, printerrors=args.monitorerr)
 
     # how many cycles
@@ -244,7 +248,7 @@ for ni in nirange:
 
     # multigrid cycles inner loop
     for s in range(iters):
-        irnorm, errnorm = mon.irerr(uu, indent=levels-1-ni)
+        irnorm, errnorm = mon.irerr(uu, ellfine, phifine, uex=uex, indent=levels-1-ni)
         if errnorm is not None and args.errtol is not None and ni == levels-1:
             # special case: check numerical error on finest level
             if errnorm < args.errtol:
@@ -259,28 +263,27 @@ for ni in nirange:
                 if irnorm <= args.irtol * irnorm0:
                     break
         if args.pgsonly:
-            # sweeps of projected Gauss-Seidel on fine grid
-            infeascount += pgssweep(mesh, uu, ellfine, phifine, omega=args.omega,
-                                    printwarnings=args.printwarnings)
+            # smoother sweeps on finest level
+            infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine,
+                                                 omega=args.omega)
             if args.symmetric:
-                infeascount += pgssweep(mesh, uu, ellfine, phifine, omega=args.omega,
-                                        forward=False, printwarnings=args.printwarnings)
+                infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine,
+                                                     omega=args.omega, forward=False)
         else:
             # Tai (2003) constraint decomposition method cycles; default=V(1,0);
             #   Alg. 4.7 in G&K (2009); see mcdl-solver and mcdl-slash in paper
             mesh.chi = phifine - uu                # defect obstacle
-            ell = - residual(mesh,uu,ellfine)      # base residual
-            y, infeas = mcdlcycle(ni, hierarchy, ell,
+            ell = - obsprob.residual(mesh, uu, ellfine)      # base residual
+            y, infeas = mcdlcycle(obsprob, ni, hierarchy, ell,
                                   down=args.down, up=args.up, coarse=args.coarse,
                                   levels=levels, view=args.mgview,
                                   symmetric=args.symmetric,
-                                  pgsomega=args.omega, pgscoarsestomega=args.coarsestomega,
-                                  printwarnings=args.printwarnings)
+                                  pgsomega=args.omega, pgscoarsestomega=args.coarsestomega)
             uu += y
             infeascount += infeas
         actualits = s+1
     else: # if break not called
-        mon.irerr(uu, indent=levels-1-ni)
+        mon.irerr(uu, ellfine, phifine, uex=uex, indent=levels-1-ni)
 
     # accumulate work units from this cycle
     for j in range(ni+1):
@@ -308,7 +311,7 @@ print('fine level %d (m=%d): %s -> %.3f WU%s%s' \
 
 # graphical output if desired
 if args.show or args.o or args.diagnostics:
-    vis = VisObstacle(mesh, phifine)
+    vis = VisObstacle(obsprob, mesh, phifine)
     if args.show or args.o:
         if args.plain:
             vis.plain(uex=uex, filename=args.o)

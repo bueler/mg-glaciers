@@ -1,8 +1,6 @@
 '''Module implementing the multilevel constraint decomposition (MCD) method
 of the Tai (2003).'''
 
-from pgspoisson import residual, pgssweep
-
 __all__ = ['mcdlcycle']
 
 def _indentprint(n, s):
@@ -19,19 +17,17 @@ def _coarsereport(indent, m, sweeps):
     _indentprint(indent, 'coarsest: %d sweeps over m=%d nodes' \
                          % (sweeps, m))
 
-def _smoother(s, mesh, v, ell, phi, omega=1.0, forward=True, symmetric=False, printwarnings=False):
+def _smoother(obsprob, s, mesh, v, ell, phi, omega=1.0, forward=True, symmetric=False):
     infeas = 0
     for _ in range(s):
-        infeas += pgssweep(mesh, v, ell, phi, omega=omega, forward=forward,
-                           printwarnings=printwarnings)
+        infeas += obsprob.smoothersweep(mesh, v, ell, phi, omega=omega, forward=forward)
         if symmetric:
-            infeas += pgssweep(mesh, v, ell, phi, omega=omega, forward=not forward,
-                               printwarnings=printwarnings)
+            infeas += obsprob.smoothersweep(mesh, v, ell, phi, omega=omega, forward=not forward)
     return infeas
 
-def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
+def mcdlcycle(obsprob, J, hierarchy, ell, down=1, up=1, coarse=1,
               pgsomega=1.0, pgscoarsestomega=1.0,
-              levels=None, view=False, symmetric=False, printwarnings=False):
+              levels=None, view=False, symmetric=False):
     '''Apply one cycle of the multilevel subset decomposition method of
     Tai (2003), as stated in Alg. 4.7 in Graeser & Kornhuber (2009),
     either as a slash cycle (up=0) or as a V-cycle (up>0).
@@ -41,13 +37,13 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
     thus not exact.'''
 
     # set up
-    assert down >= 0 and up >=0 and coarse >= 0
+    assert down >= 0 and up >= 0 and coarse >= 0
     assert len(ell) == hierarchy[J].m + 2
     infeas = 0
     hierarchy[J].ell = ell
 
     # downward
-    for k in range(J,0,-1):
+    for k in range(J, 0, -1):
         # update defect constraint and define obstacle
         hierarchy[k-1].chi = hierarchy[k].mR(hierarchy[k].chi)
         phi = hierarchy[k].chi - hierarchy[k].cP(hierarchy[k-1].chi)
@@ -57,24 +53,24 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
         if view:
             _levelreport(levels-1, k, hierarchy[k].m, down)
         hierarchy[k].y = hierarchy[k].zeros()
-        infeas += _smoother(down, hierarchy[k], hierarchy[k].y, hierarchy[k].ell, phi,
-                            omega=pgsomega, symmetric=symmetric, printwarnings=printwarnings)
+        infeas += _smoother(obsprob, down, hierarchy[k], hierarchy[k].y, hierarchy[k].ell, phi,
+                            omega=pgsomega, symmetric=symmetric)
         # update and canonically-restrict the residual
-        hierarchy[k-1].ell = - hierarchy[k].cR(residual(hierarchy[k],
-                                                        hierarchy[k].y,
-                                                        hierarchy[k].ell))
+        hierarchy[k-1].ell = - hierarchy[k].cR(obsprob.residual(hierarchy[k],
+                                                                hierarchy[k].y,
+                                                                hierarchy[k].ell))
 
     # coarse mesh solver = PGS sweeps; consider using overrelaxation omega here
     if view:
         _coarsereport(levels-1, hierarchy[0].m, coarse)
     hierarchy[0].y = hierarchy[0].zeros()
-    infeas += _smoother(coarse, hierarchy[0], hierarchy[0].y, hierarchy[0].ell,
+    infeas += _smoother(obsprob, coarse, hierarchy[0], hierarchy[0].y, hierarchy[0].ell,
                         hierarchy[0].chi,
-                        omega=pgscoarsestomega, symmetric=symmetric, printwarnings=printwarnings)
+                        omega=pgscoarsestomega, symmetric=symmetric)
 
     # upward
     hierarchy[0].omega = hierarchy[0].y.copy()
-    for k in range(1,J+1):
+    for k in range(1, J+1):
         # accumulate corrections
         hierarchy[k].omega = hierarchy[k].cP(hierarchy[k-1].omega) + hierarchy[k].y
         if up > 0:
@@ -85,16 +81,15 @@ def mcdlcycle(J, hierarchy, ell, down=1, up=1, coarse=1,
             #hierarchy[k].ell = - hierarchy[k].injectP(residual(hierarchy[k-1],
             #                                                   hierarchy[k-1].y,
             #                                                   hierarchy[k-1].ell))
-            hierarchy[k].ell = - residual(hierarchy[k],
-                                          hierarchy[k].cP(hierarchy[k-1].y),
-                                          hierarchy[k].injectP(hierarchy[k-1].ell))
+            hierarchy[k].ell = - obsprob.residual(hierarchy[k],
+                                                  hierarchy[k].cP(hierarchy[k-1].y),
+                                                  hierarchy[k].injectP(hierarchy[k-1].ell))
             # up smoother = PGS sweeps
             if view:
                 _levelreport(levels-1, k, hierarchy[k].m, up)
             hierarchy[k].y = hierarchy[k].zeros()
-            infeas += _smoother(up, hierarchy[k], hierarchy[k].y, hierarchy[k].ell, phi,
-                                omega=pgsomega, symmetric=symmetric, printwarnings=printwarnings,
-                                forward=False)
+            infeas += _smoother(obsprob, up, hierarchy[k], hierarchy[k].y, hierarchy[k].ell, phi,
+                                omega=pgsomega, symmetric=symmetric, forward=False)
             hierarchy[k].omega += hierarchy[k].y
 
     return hierarchy[J].omega, infeas

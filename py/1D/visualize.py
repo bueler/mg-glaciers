@@ -4,8 +4,7 @@ __all__ = ['VisObstacle']
 
 import matplotlib
 import matplotlib.pyplot as plt
-from pgspoisson import residual
-from monitor import inactiveresidual
+from monitor import ObstacleMonitor
 
 # better defaults for graphs
 font = {'size' : 20}
@@ -13,21 +12,23 @@ matplotlib.rc('font', **font)
 lines = {'linewidth': 2}
 matplotlib.rc('lines', **lines)
 
-def _output(filename,description):
+def _output(filename, description):
     '''Either save result to an image file or use show().  Supply '' as filename
     to use show().'''
     if len(filename) == 0:
         plt.show()
     else:
-        print('saving %s to %s ...' % (description,filename))
+        print('saving %s to %s ...' % (description, filename))
         plt.savefig(filename, bbox_inches='tight')
 
 class VisObstacle():
-    '''Specialized class for visualizing obstacle problem results.
+    '''Class for visualizing obstacle problem results.
     Initialize with a mesh and an obstacle on that mesh.'''
 
-    def __init__(self, mesh, phi):
-        self.mesh = mesh
+    def __init__(self, obsprob, mesh, phi):
+        self.obsprob = obsprob  # Class SmootherObstacleProblem
+        self.mesh = mesh        # Class MeshLevel1D
+        self.monitor = ObstacleMonitor(self.obsprob, self.mesh)
         self.mesh.checklen(phi)
         self.phi = phi
         self.hierarchy = None
@@ -44,7 +45,7 @@ class VisObstacle():
         plt.plot(xx, self.phi, 'k', label=r'obstacle $\varphi$', lw=3.0)
         plt.legend()
         plt.xlabel('x')
-        _output(filename,'exact solution and obstacle')
+        _output(filename, 'exact solution and obstacle')
 
     def final(self, ufinal, filename='', uex=None):
         '''Generate graphic showing final iterate, obstacle, and exact
@@ -60,25 +61,25 @@ class VisObstacle():
         plt.axis('tight')
         plt.legend()
         plt.xlabel('x')
-        _output(filename,'final iterate and obstacle')
+        _output(filename, 'final iterate and obstacle')
 
     def residuals(self, ufinal, ell, filename=''):
         '''Generate graphic showing residual and inactive residual vectors.'''
         xx = self.mesh.xx()
         plt.figure(figsize=(15.0, 10.0))
         plt.subplot(2, 1, 1)
-        r = residual(self.mesh, ufinal, ell)
-        ir = inactiveresidual(self.mesh, ufinal, ell, self.phi)
+        r = self.obsprob.residual(self.mesh, ufinal, ell)
+        ir = self.monitor.inactiveresidual(ufinal, ell, self.phi)
         plt.plot(xx, r, 'k', label='residual')
         plt.plot(xx, ir, 'r', label='inactive residual')
         plt.legend()
-        plt.gca().set_xticks([],minor=False)
+        plt.gca().set_xticks([], minor=False)
         plt.subplot(2, 1, 2)
         plt.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
         plt.plot(xx, ir, 'r', label='inactive residual')
         plt.legend()
         plt.xlabel('x')
-        _output(filename,'residual and inactive residual')
+        _output(filename, 'residual and inactive residual')
 
     def decomposition(self, hierarchy, up=0, filename=''):
         '''Hierarchical defect decomposition.'''
@@ -90,14 +91,12 @@ class VisObstacle():
                 plt.plot(hierarchy[j].xx(), hierarchy[j].chi, 'k.--', ms=10.0,
                          label=r'$\chi^{%d}$' % j)
             plt.plot(hierarchy[-1].xx(), hierarchy[-1].chi, 'k.-', ms=14.0, linewidth=3.0,
-                     label=r'$\chi^{%d} = \varphi^{%d} - w^{%d}$' % (J,J,J))
+                     label=r'$\chi^{%d} = \varphi^{%d} - w^{%d}$' % (J, J, J))
         else:
-            #FIXME
-            raise NotImplementedError
-        plt.legend(fontsize=24.0,frameon=False)
-        #plt.title('decomposition of defect obstacle')
+            raise NotImplementedError('hierarchical defect decomposition not available when up>1')
+        plt.legend(fontsize=24.0, frameon=False)
         plt.xlabel('x')
-        _output(filename,'hierarchical decomposition')
+        _output(filename, 'hierarchical decomposition')
 
     def icedecomposition(self, hierarchy, phi, up=0, filename=''):
         '''Multilevel "ice-like" decomposition.'''
@@ -105,9 +104,9 @@ class VisObstacle():
         plt.figure(figsize=(15.0, 10.0))
         J = len(hierarchy) - 1
         if up == 0:
-            for j in range(J,-1,-1):
+            for j in range(J, -1, -1):
                 z = hierarchy[j].chi
-                for k in range(j,J):
+                for k in range(j, J):
                     z = hierarchy[k+1].cP(z)
                 if j == J:
                     chilabel = r'$w^{%d}$' % J
@@ -117,10 +116,8 @@ class VisObstacle():
                     chistyle = 'k--'
                 plt.plot(hierarchy[-1].xx(), phi - z, chistyle, label=chilabel)
         else:
-            #FIXME
-            raise NotImplementedError
+            raise NotImplementedError('ice-like decomposition not available when up>1')
         plt.plot(hierarchy[-1].xx(), phi, 'k', label=r'$\varphi^{%d}$' % J, linewidth=4.0)
-        plt.legend(fontsize=24.0,frameon=False)
-        #plt.title('"ice-like" multilevel decomposition')
+        plt.legend(fontsize=24.0, frameon=False)
         plt.xlabel('x')
-        _output(filename,'"ice-like" decomposition')
+        _output(filename, '"ice-like" decomposition')

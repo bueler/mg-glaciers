@@ -3,7 +3,7 @@ directory, or via "make test".'''
 
 import numpy as np
 from meshlevel import MeshLevel1D
-from pgspoisson import pointresidual, residual, pgssweep
+from smoother import PGSPoisson
 
 def test_ml_basics():
     '''Basic MeshLevel1D functionality.'''
@@ -71,30 +71,33 @@ def test_ml_hierarchy():
     Psi2 = chi2 - ml2.cP(chi1)
     assert all(Psi0 + Psi1 + Psi2 == phi)
 
-def test_pgsr_pointresidual():
-    '''Point-wise residual for Poisson.'''
-    ml = MeshLevel1D(j=1)
-    f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
-    w = f.copy()
-    assert pointresidual(ml, w, ml.ellf(f), 1) == - 0.5 * ml.h
-    assert pointresidual(ml, w, ml.ellf(f), 2) == - 4.0
-
-def test_pgsr_residual():
+def test_poisson_residual():
     '''Residual for Poisson.'''
     ml = MeshLevel1D(j=1)
+    prob = PGSPoisson(printwarnings=True)
     f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
     w = f.copy()
     Fcorrect = - np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
-    assert all(residual(ml, w, ml.ellf(f)) == Fcorrect)
+    assert all(prob.residual(ml, w, ml.ellf(f)) == Fcorrect)
 
-def test_pgsr_pgssweep():
-    '''Projected Gauss-Seidel sweep.'''
+def test_poisson_pointresidual():
+    '''Point-wise residual for Poisson.'''
+    ml = MeshLevel1D(j=1)
+    prob = PGSPoisson(printwarnings=True)
+    f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
+    w = f.copy()
+    assert prob.pointresidual(ml, w, ml.ellf(f), 1) == - 0.5 * ml.h
+    assert prob.pointresidual(ml, w, ml.ellf(f), 2) == - 4.0
+
+def test_poisson_pgssweep():
+    '''Projected Gauss-Seidel sweep for Poisson.'''
     ml = MeshLevel1D(j=0)
+    prob = PGSPoisson(printwarnings=True)
     f = np.array([0.0, 1.0, 0.0])
     ell = ml.ellf(f)
     assert all(ell == ml.h * f)
     w = ml.zeros()
-    assert all(residual(ml, w, ell) == - ml.h * f)
+    assert all(prob.residual(ml, w, ell) == - ml.h * f)
     phi = np.array([-2.0, -2.0, -2.0])  # thus unconstrained
-    pgssweep(ml, w, ell, phi, omega=1.0, forward=True)
-    assert all(residual(ml, w, ell) == ml.zeros())
+    prob.smoothersweep(ml, w, ell, phi, omega=1.0, forward=True)
+    assert all(prob.residual(ml, w, ell) == ml.zeros())
