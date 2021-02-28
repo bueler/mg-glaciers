@@ -1,6 +1,6 @@
 '''Module for PNGSSIA class, a derived class of SmootherObstacleProblem,
 which is the smoother and coarse-level solver for the Shallow Ice Approximation
-(SIA) model.'''
+(SIA) ice flow model.'''
 
 # TODO:
 #   * draft implementation of pointresidual(), smoothersweep() below
