@@ -123,8 +123,8 @@ class PGSPoisson(SmootherObstacleProblem):
 
     # **** problem-specific; other obstacle problems may not have these ****
 
-    def fsource(self, x):
-        '''The source term in the interior condition -u'' = f.'''
+    def source(self, x):
+        '''The source term f in the interior condition -u'' = f.'''
         if self.args.problem == 'icelike':
             f = 8.0 * np.ones(np.shape(x))
             f[x < 0.2] = -16.0
@@ -134,7 +134,7 @@ class PGSPoisson(SmootherObstacleProblem):
         return self.args.fscale * f
 
     def exact(self, x):
-        '''Assumes x is a numpy array.'''
+        '''Exact solution u(x), if available.  Assumes x is a numpy array.'''
         assert self.exact_available()
         if self.args.problem == 'icelike':
             u = self.phi(x)

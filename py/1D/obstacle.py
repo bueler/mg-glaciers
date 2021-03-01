@@ -158,7 +158,7 @@ for ni in nirange:
     # evaluate data varphi(x), ell[v] = <f,v> on (current) fine level
     mesh = hierarchy[ni]
     phifine = obsprob.phi(mesh.xx())                   # obstacle
-    ellfine = mesh.ellf(obsprob.fsource(mesh.xx()))    # source functional
+    ellfine = mesh.ellf(obsprob.source(mesh.xx()))     # source functional
 
     # feasible initial iterate
     if args.ni and ni > 0:
