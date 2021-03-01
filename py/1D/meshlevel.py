@@ -5,7 +5,7 @@ import numpy as np
 __all__ = ['MeshLevel1D']
 
 class MeshLevel1D():
-    '''Encapsulate a mesh level for the interval [0,L], suitable for
+    '''Encapsulate a mesh level for the interval [0,xmax], suitable for
     obstacle problems.  MeshLevel1D(j=j) has m = 2^{j+1} - 1 interior nodes,
     m+1=2^{j+1} equal subintervals (elements) of length h = L / (m+1), and
     m+2 total points.  Indices j = 0,...,m+1 give all nodes, with
@@ -20,15 +20,15 @@ class MeshLevel1D():
     ((V^j)' to (V^{j-1})'), and monotone restriction of functions
     (V^j to V^{j-1}; see Graeser&Kornhuber 2009).'''
 
-    def __init__(self, L=1, j=None):
-        self.L = L
+    def __init__(self, xmax=1, j=None):
+        self.xmax = xmax
         self.j = j
         self.m = 2**(self.j+1) - 1
         if j > 0:
             self.mcoarser = 2**self.j - 1
         else:
             self.mcoarser = None
-        self.h = self.L / (self.m + 1)
+        self.h = self.xmax / (self.m + 1)
         self.WU = 0
 
     def checklen(self, v, coarser=False):
@@ -43,7 +43,7 @@ class MeshLevel1D():
 
     def xx(self):
         '''Generate a vector of mesh node coordinates.'''
-        return np.linspace(0.0, 1.0, self.m+2)
+        return np.linspace(0.0, self.xmax, self.m+2)
 
     def l2norm(self, u):
         '''L^2[0,L] norm of a function, computed with trapezoid rule.'''
