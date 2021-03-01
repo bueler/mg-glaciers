@@ -114,9 +114,6 @@ parser.add_argument('-up', type=int, default=0, metavar='N',
                     help='PGS sweeps after coarse-mesh correction (default=0; up>0 is V-cycle)')
 args, unknown = parser.parse_known_args()
 
-exactavailable = (not args.random) and (args.fscale == 1.0) \
-                 and (args.parabolay == -1.0 or args.parabolay <= -2.25)
-
 # provide usage help
 if unknown:
     print('usage ERROR: unknown arguments ... try -h or --help for usage')
@@ -124,72 +121,8 @@ if unknown:
 if args.show and args.o:
     print('usage ERROR: use either -show or -o FILE but not both')
     sys.exit(2)
-if args.monitorerr and not exactavailable:
-    print('usage ERROR: -monitorerr but exact solution and error not available')
-    sys.exit(3)
-if args.errtol is not None and not exactavailable:
-    print('usage ERROR: -errtol but exact solution and error not available')
-    sys.exit(4)
 if args.nicascadic:
     args.ni = True
-
-# fix the random seed for repeatability
-np.random.seed(args.randomseed)
-
-def phi(x):
-    '''The obstacle:  u >= phi.'''
-    if args.problem == 'icelike':
-        ph = x * (1.0 - x)
-    elif args.problem == 'parabola':
-        # maximum is at  2.0 + args.parabolay
-        ph = 8.0 * x * (1.0 - x) + args.parabolay
-    else:
-        raise ValueError
-    if args.random:
-        perturb = np.zeros(len(x))
-        for jj in range(args.randommodes):
-            perturb += np.random.randn(1) * np.sin((jj+1) * np.pi * x)
-        perturb *= args.randomscale * 0.03 * np.exp(-10 * (x-0.5)**2)
-        ph += perturb
-    ph[[0, -1]] = [0.0, 0.0]  # always force zero boundary conditions
-    return ph
-
-def fsource(x):
-    '''The source term in the interior condition -u'' = f.'''
-    if args.problem == 'icelike':
-        f = 8.0 * np.ones(np.shape(x))
-        f[x < 0.2] = -16.0
-        f[x > 0.8] = -16.0
-    else:
-        f = -2.0 * np.ones(np.shape(x))
-    return args.fscale * f
-
-def uexact(x):
-    '''Assumes x is a numpy array.'''
-    assert exactavailable, 'exact solution not available'
-    assert args.fscale == 1.0
-    if args.problem == 'icelike':
-        u = phi(x)
-        a, c0, c1, d0, d1 = 0.1, -0.8, 0.09, 4.0, -0.39  # exact values
-        mid = (x > 0.2) * (x < 0.8) # logical and
-        left = (x > a) * (x < 0.2)
-        right = (x > 0.8) * (x < 1.0-a)
-        u[mid] = -4.0*x[mid]**2 + d0*x[mid] + d1
-        u[left] = 8.0*x[left]**2 + c0*x[left] + c1
-        u[right] = 8.0*(1.0-x[right])**2 + c0*(1.0-x[right]) + c1
-    else:  # problem == 'parabola'
-        if args.parabolay == -1.0:
-            a = 1.0/3.0
-            def upoisson(x):
-                return x * (x - 18.0 * a + 8.0)
-            u = phi(x)
-            u[x < a] = upoisson(x[x < a])
-            u[x > 1.0-a] = upoisson(1.0 - x[x > 1.0-a])
-        elif args.parabolay <= -2.25:
-            u = x * (x - 1.0)   # solution without obstruction
-        else:
-            raise NotImplementedError
-    return u
 
 # hierarchy is a list of MeshLevel1D with indices [0,..,levels-1]
 assert args.jcoarse >= 0
@@ -202,6 +135,15 @@ for j in range(levels):
 # set up obstacle problem and smoother
 #FIXME choose between derived classes of SmootherObstacleProblem
 obsprob = PGSPoisson(printwarnings=args.printwarnings)
+obsprob.set_problem(args)
+
+# more usage help
+if args.monitorerr and not obsprob.exact_available():
+    print('usage ERROR: -monitorerr but exact solution and error not available')
+    sys.exit(3)
+if args.errtol is not None and not obsprob.exact_available():
+    print('usage ERROR: -errtol but exact solution and error not available')
+    sys.exit(4)
 
 # set up nested iteration
 if args.ni:
@@ -216,8 +158,8 @@ actualits = 0
 for ni in nirange:
     # evaluate data varphi(x), ell[v] = <f,v> on (current) fine level
     mesh = hierarchy[ni]
-    phifine = phi(mesh.xx())                   # obstacle
-    ellfine = mesh.ellf(fsource(mesh.xx()))    # source functional
+    phifine = obsprob.phi(mesh.xx())                   # obstacle
+    ellfine = mesh.ellf(obsprob.fsource(mesh.xx()))    # source functional
 
     # feasible initial iterate
     if args.ni and ni > 0:
@@ -230,8 +172,8 @@ for ni in nirange:
 
     # create monitor using exact solution if available
     uex = None
-    if exactavailable:
-        uex = uexact(mesh.xx())
+    if obsprob.exact_available():
+        uex = obsprob.uexact(mesh.xx())
     mon = ObstacleMonitor(obsprob, mesh,
                           printresiduals=args.monitor, printerrors=args.monitorerr)
 
@@ -299,8 +241,8 @@ if args.pgsonly:
     method += '%d applications of %sPGS' % (actualits, symstr)
 else:
     method += '%d %sV(%d,%d) cycles' % (actualits, symstr, args.down, args.up)
-if exactavailable:
-    uex = uexact(hierarchy[-1].xx())
+if obsprob.exact_available():
+    uex = obsprob.uexact(hierarchy[-1].xx())
     error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
 else:
     uex = None
