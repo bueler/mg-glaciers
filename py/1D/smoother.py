@@ -9,9 +9,12 @@ class SmootherObstacleProblem(ABC):
     '''Abstact base class for a smoother on an obstacle problem.  Works on
     any mesh of class MeshLevel1D.'''
 
-    def __init__(self, admissibleeps=1.0e-10, printwarnings=False):
+    def __init__(self, args, admissibleeps=1.0e-10, printwarnings=False):
+        self.args = args
         self.admissibleeps = admissibleeps
         self.printwarnings = printwarnings
+        # fix the random seed for repeatability
+        np.random.seed(self.args.randomseed)
 
     def _checkrepairadmissible(self, mesh, w, phi):
         '''Check and repair feasibility.'''
@@ -43,6 +46,13 @@ class SmootherObstacleProblem(ABC):
     def smoothersweep(self, mesh, w, ell, phi, forward=True, omega=1.0):
         '''Apply obstacle-problem smoother on mesh to modify w in place.'''
 
+    @abstractmethod
+    def phi(self, x):
+        '''Evaluate obstacle at location(s) x.'''
+
+    @abstractmethod
+    def exact_available(self):
+        '''Returns True if there is a valid uexact(x) method.'''
 
 class PGSPoisson(SmootherObstacleProblem):
     '''Class for the projected Gauss-Seidel (PGS) algorithm as a smoother
@@ -89,17 +99,6 @@ class PGSPoisson(SmootherObstacleProblem):
         mesh.WU += 1
         return infeascount
 
-    # ********* problem-specific methods **********
-
-    def set_problem(self, args):
-        self.args = args
-        # fix the random seed for repeatability
-        np.random.seed(self.args.randomseed)
-
-    def exact_available(self):
-        return (not self.args.random) and (self.args.fscale == 1.0) \
-                 and (self.args.parabolay == -1.0 or self.args.parabolay <= -2.25)
-
     def phi(self, x):
         '''The obstacle:  u >= phi.'''
         if self.args.problem == 'icelike':
@@ -117,6 +116,12 @@ class PGSPoisson(SmootherObstacleProblem):
             ph += perturb
         ph[[0, -1]] = [0.0, 0.0]  # always force zero boundary conditions
         return ph
+
+    def exact_available(self):
+        return (not self.args.random) and (self.args.fscale == 1.0) \
+                 and (self.args.parabolay == -1.0 or self.args.parabolay <= -2.25)
+
+    # **** problem-specific; other obstacle problems may not have these ****
 
     def fsource(self,x):
         '''The source term in the interior condition -u'' = f.'''

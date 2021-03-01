@@ -72,10 +72,17 @@ def test_ml_hierarchy():
     Psi2 = chi2 - ml2.cP(chi1)
     assert all(Psi0 + Psi1 + Psi2 == phi)
 
+# create a testargs object that mimics args returned by the ArgParse parser
+class Namespace:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+testargs = Namespace(randomseed=1)
+
 def test_poisson_pointresidual():
     '''Point-wise residual for Poisson.'''
     ml = MeshLevel1D(j=1)
-    prob = PGSPoisson(printwarnings=True)
+    prob = PGSPoisson(testargs, printwarnings=True)
     f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
     w = f.copy()
     assert prob.pointresidual(ml, w, ml.ellf(f), 1) == - 0.5 * ml.h
@@ -84,7 +91,7 @@ def test_poisson_pointresidual():
 def test_poisson_residual():
     '''Residual for Poisson.'''
     ml = MeshLevel1D(j=1)
-    prob = PGSPoisson(printwarnings=True)
+    prob = PGSPoisson(testargs, printwarnings=True)
     f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
     w = f.copy()
     Fcorrect = - np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
@@ -93,7 +100,7 @@ def test_poisson_residual():
 def test_poisson_pgssweep():
     '''Projected Gauss-Seidel sweep for Poisson.'''
     ml = MeshLevel1D(j=0)
-    prob = PGSPoisson(printwarnings=True)
+    prob = PGSPoisson(testargs, printwarnings=True)
     f = np.array([0.0, 1.0, 0.0])
     ell = ml.ellf(f)
     assert all(ell == ml.h * f)
@@ -106,7 +113,7 @@ def test_poisson_pgssweep():
 def test_sia_pointresidual():
     '''Point-wise residual for SIA.'''
     ml = MeshLevel1D(j=1, L=1800.0e3)   # [0,L] has length 1800 km
-    prob = PNGSSIA(printwarnings=True)
+    prob = PNGSSIA(testargs, printwarnings=True)
     ml.phi = ml.zeros()                 # must attach obstacle to mesh
     f = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
     s = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
@@ -116,7 +123,7 @@ def test_sia_pointresidual():
 def test_sia_residual():
     '''Residual for SIA.'''
     ml = MeshLevel1D(j=1, L=1800.0e3)   # [0,L] has length 1800 km
-    prob = PNGSSIA(printwarnings=True)
+    prob = PNGSSIA(testargs, printwarnings=True)
     ml.phi = ml.zeros()                 # must attach obstacle to mesh
     f = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
     s = np.array([1.0, 0.5, 0.0, 0.5, 1.0])

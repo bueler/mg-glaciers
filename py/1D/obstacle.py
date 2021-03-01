@@ -134,8 +134,7 @@ for j in range(levels):
 
 # set up obstacle problem and smoother
 #FIXME choose between derived classes of SmootherObstacleProblem
-obsprob = PGSPoisson(printwarnings=args.printwarnings)
-obsprob.set_problem(args)
+obsprob = PGSPoisson(args, printwarnings=args.printwarnings)
 
 # more usage help
 if args.monitorerr and not obsprob.exact_available():

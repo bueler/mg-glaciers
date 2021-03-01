@@ -19,9 +19,9 @@ class PNGSSIA(SmootherObstacleProblem):
     time-independent.  Function s(x) is the solution surface elevation.
     Parameters n and Gamma are set at object construction.'''
 
-    def __init__(self, admissibleeps=1.0e-10, printwarnings=False,
+    def __init__(self, args, admissibleeps=1.0e-10, printwarnings=False,
                  g=9.81, rhoi=910.0, nglen=3.0, A=1.0e-16/31556926.0):
-        super().__init__(admissibleeps=admissibleeps, printwarnings=printwarnings)
+        super().__init__(args, admissibleeps=admissibleeps, printwarnings=printwarnings)
         self.secpera = 31556926.0   # seconds per year
         self.g = g                  # m s-2
         self.rhoi = rhoi            # kg m-3
@@ -55,4 +55,10 @@ class PNGSSIA(SmootherObstacleProblem):
         '''Do in-place projected nonlinear Gauss-Seidel sweep over the interior
         points p=1,...,m, for the SIA problem.  Fixed number of steps of the
         Newton method.  FIXME ADD DOC'''
+        raise NotImplementedError
+
+    def phi(self, x):
+        raise NotImplementedError
+
+    def exact_available(self):
         raise NotImplementedError
