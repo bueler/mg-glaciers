@@ -54,6 +54,13 @@ class SmootherObstacleProblem(ABC):
     def exact_available(self):
         '''Returns True if there is a valid uexact(x) method.'''
 
+def _poissondiagonalentry(mesh, p):
+    '''Compute the diagonal value of a(.,.) at hat function psi_p^j:
+       a(psi_p,psi_p) = int_0^1 (psi_p^j)'(x)^2 dx
+    Input mesh is of class MeshLevel1D.'''
+    assert 1 <= p <= mesh.m
+    return 2.0 / mesh.h
+
 class PGSPoisson(SmootherObstacleProblem):
     '''Class for the projected Gauss-Seidel (PGS) algorithm as a smoother
     for the linear Poisson equation -u''=f with u(0)=u(1)=0.'''
@@ -67,13 +74,6 @@ class PGSPoisson(SmootherObstacleProblem):
         mesh.checklen(ell)
         assert 1 <= p <= mesh.m
         return (1.0/mesh.h) * (2.0*w[p] - w[p-1] - w[p+1]) - ell[p]
-
-    def _diagonalentry(self, mesh, p):
-        '''Compute the diagonal value of a(.,.) at hat function psi_p^j:
-           a(psi_p,psi_p) = int_0^1 (psi_p^j)'(x)^2 dx
-        Input mesh is of class MeshLevel1D.'''
-        assert 1 <= p <= mesh.m
-        return 2.0 / mesh.h
 
     def smoothersweep(self, mesh, w, ell, phi, forward=True, omega=1.0):
         '''Do in-place projected Gauss-Seidel sweep, with relaxation factor
@@ -94,7 +94,7 @@ class PGSPoisson(SmootherObstacleProblem):
         else:
             indices = range(mesh.m, 0, -1)  # m,...,1
         for p in indices:
-            c = - self.pointresidual(mesh, w, ell, p) / self._diagonalentry(mesh, p)
+            c = - self.pointresidual(mesh, w, ell, p) / _poissondiagonalentry(mesh, p)
             w[p] = max(w[p] + omega * c, phi[p])
         mesh.WU += 1
         return infeascount
@@ -123,7 +123,7 @@ class PGSPoisson(SmootherObstacleProblem):
 
     # **** problem-specific; other obstacle problems may not have these ****
 
-    def fsource(self,x):
+    def fsource(self, x):
         '''The source term in the interior condition -u'' = f.'''
         if self.args.problem == 'icelike':
             f = 8.0 * np.ones(np.shape(x))
@@ -133,7 +133,7 @@ class PGSPoisson(SmootherObstacleProblem):
             f = -2.0 * np.ones(np.shape(x))
         return self.args.fscale * f
 
-    def uexact(self,x):
+    def uexact(self, x):
         '''Assumes x is a numpy array.'''
         assert self.exact_available()
         if self.args.problem == 'icelike':

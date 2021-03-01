@@ -178,12 +178,12 @@ for ni in nirange:
 
     # how many cycles
     if args.ni and ni < levels-1:
+        iters = args.nicycles  # use this value if doing nested iteration and
+                               #   not yet on finest level
         if args.nicascadic:
             # very simple model for number of cycles before finest
             # compare Blum et al 2004
-            iters = args.nicycles * int(np.ceil(1.5**(levels-1-ni)))
-        else:
-            iters = args.nicycles
+            iters *= int(np.ceil(1.5**(levels-1-ni)))
     else:
         iters = args.cyclemax
 
@@ -223,7 +223,7 @@ for ni in nirange:
             uu += y
             infeascount += infeas
         actualits = s+1
-    else: # if break not called
+    else: # if break not called (for loop else)
         mon.irerr(uu, ellfine, phifine, uex=uex, indent=levels-1-ni)
 
     # accumulate work units from this cycle

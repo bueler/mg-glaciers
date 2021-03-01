@@ -129,6 +129,7 @@ class VisObstacle():
         _output(filename, '"ice-like" decomposition')
 
     def generate(self):
+        '''Generate figures according to arguments in args.'''
         if self.args.show or self.args.o:
             if self.args.plain:
                 self.plain(filename=self.args.o)

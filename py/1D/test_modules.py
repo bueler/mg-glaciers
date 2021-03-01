@@ -74,6 +74,7 @@ def test_ml_hierarchy():
 
 # create a testargs object that mimics args returned by the ArgParse parser
 class Namespace:
+    '''Dummy class.'''
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
