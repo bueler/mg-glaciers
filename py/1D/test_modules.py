@@ -4,6 +4,7 @@ directory, or via "make test".'''
 import numpy as np
 from meshlevel import MeshLevel1D
 from smoother import PGSPoisson
+from siasmoother import PNGSSIA
 
 def test_ml_basics():
     '''Basic MeshLevel1D functionality.'''
@@ -71,15 +72,6 @@ def test_ml_hierarchy():
     Psi2 = chi2 - ml2.cP(chi1)
     assert all(Psi0 + Psi1 + Psi2 == phi)
 
-def test_poisson_residual():
-    '''Residual for Poisson.'''
-    ml = MeshLevel1D(j=1)
-    prob = PGSPoisson(printwarnings=True)
-    f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
-    w = f.copy()
-    Fcorrect = - np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
-    assert all(prob.residual(ml, w, ml.ellf(f)) == Fcorrect)
-
 def test_poisson_pointresidual():
     '''Point-wise residual for Poisson.'''
     ml = MeshLevel1D(j=1)
@@ -88,6 +80,15 @@ def test_poisson_pointresidual():
     w = f.copy()
     assert prob.pointresidual(ml, w, ml.ellf(f), 1) == - 0.5 * ml.h
     assert prob.pointresidual(ml, w, ml.ellf(f), 2) == - 4.0
+
+def test_poisson_residual():
+    '''Residual for Poisson.'''
+    ml = MeshLevel1D(j=1)
+    prob = PGSPoisson(printwarnings=True)
+    f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
+    w = f.copy()
+    Fcorrect = - np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
+    assert all(prob.residual(ml, w, ml.ellf(f)) == Fcorrect)
 
 def test_poisson_pgssweep():
     '''Projected Gauss-Seidel sweep for Poisson.'''
@@ -101,3 +102,25 @@ def test_poisson_pgssweep():
     phi = np.array([-2.0, -2.0, -2.0])  # thus unconstrained
     prob.smoothersweep(ml, w, ell, phi, omega=1.0, forward=True)
     assert all(prob.residual(ml, w, ell) == ml.zeros())
+
+def test_sia_pointresidual():
+    '''Point-wise residual for SIA.'''
+    ml = MeshLevel1D(j=1, L=1800.0e3)   # [0,L] has length 1800 km
+    prob = PNGSSIA(printwarnings=True)
+    ml.phi = ml.zeros()                 # must attach obstacle to mesh
+    f = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
+    s = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
+    assert np.isreal(prob.pointresidual(ml, s, ml.ellf(f), 1))
+    #FIXME assert prob.pointresidual(ml, s, ml.ellf(f), 1) == VALUE
+
+def test_sia_residual():
+    '''Residual for SIA.'''
+    ml = MeshLevel1D(j=1, L=1800.0e3)   # [0,L] has length 1800 km
+    prob = PNGSSIA(printwarnings=True)
+    ml.phi = ml.zeros()                 # must attach obstacle to mesh
+    f = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
+    s = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
+    ml.checklen(prob.residual(ml, s, ml.ellf(f)))
+    assert all(np.isreal(prob.residual(ml, s, ml.ellf(f))))
+    #FIXME Fcorrect = - np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
+    #FIXME assert all(prob.residual(ml, w, ml.ellf(f)) == Fcorrect)
