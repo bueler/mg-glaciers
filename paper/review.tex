@@ -778,14 +778,22 @@ FIXME there are other fast solution methods, e.g.~PFAS in \cite{BrandtCryer1983}
 
 \section{Multigrid for the shallow-ice mass conservation problem} \label{sec:sia}
 
-FIXME model problem in previous section has the wrong ``physics'' but correctly addresses the free boundary and obstacle nature of the glacier problem; cite for glaciers as obstacle problems \cite{Bueler2016,Bueler2020,Calvoetal2002,JouvetBueler2012,Jouvetetal2013}
+FIXME model problem in previous section has the wrong ``physics'' but correctly addresses the free boundary and obstacle nature of the glacier problem; glaciers as obstacle problems introduced by \cite{Calvoetal2002}; extended by \cite{Bueler2016,Bueler2020,JouvetBueler2012}, but these do not use multigrid; multigrid is applied to SIA in \cite{Jouvetetal2013,JouvetGraeser2013} with similar algorithm
 
-FIXME for 2D domains the coarse mesh construction needs reconsideration
+FIXME SIA model equations \cite{Bueler2016} with constants from \cite{Huybrechtsetal1996}
+
+FIXME SIA modifications to smoother in 1D case
+
+FIXME 1D results
+
+FIXME for 2D domains use Firedrake
 
 
 \section{Multigrid for Glen-Stokes glacier flow} \label{sec:stokes}
 
-FIXME multigrid already used for Blatter-Pattyn model \cite{BrownSmithAhmadia2013} and for hybrid \cite{Jouvetetal2013}; one goal of this section is to make these approaches more understandable
+FIXME multigrid already used for Blatter-Pattyn model \cite{BrownSmithAhmadia2013}; for hybrid \cite{Jouvetetal2013,JouvetGraeser2013}; for Stokes \cite{IsaacStadlerGhattas2015} and \cite{Tuminaroetal2016} using AMG; one goal of this section is to make these approaches more understandable
+
+FIXME obstacle problem view extended to Stokes by \cite{WirbelJarosch2020}
 
 FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to Vanka monolithic smoother \cite{Farrelletal2019}
 
