@@ -311,21 +311,6 @@ print('fine level %d (m=%d): %s -> %.3f WU%s%s' \
 
 # graphical output if desired
 if args.show or args.o or args.diagnostics:
-    vis = VisObstacle(obsprob, mesh, phifine)
-    if args.show or args.o:
-        if args.plain:
-            vis.plain(uex=uex, filename=args.o)
-        else:
-            vis.final(uu, uex=uex, filename=args.o)
-    if args.diagnostics:
-        rname = ''
-        if len(args.o) > 0:
-            rname = 'resid_' + args.o
-        vis.residuals(uu, ellfine, filename=rname)
-        if not args.pgsonly:
-            dname, iname = '', ''
-            if len(args.o) > 0:
-                dname = 'decomp_' + args.o
-                iname = 'icedec_' + args.o
-            vis.decomposition(hierarchy, up=args.up, filename=dname)
-            vis.icedecomposition(hierarchy, phifine, up=args.up, filename=iname)
+    vis = VisObstacle(args, obsprob, hierarchy,
+                      u=uu, phi=phifine, ell=ellfine, uex=uex)
+    vis.generate()
