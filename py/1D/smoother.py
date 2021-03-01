@@ -133,7 +133,7 @@ class PGSPoisson(SmootherObstacleProblem):
             f = -2.0 * np.ones(np.shape(x))
         return self.args.fscale * f
 
-    def uexact(self, x):
+    def exact(self, x):
         '''Assumes x is a numpy array.'''
         assert self.exact_available()
         if self.args.problem == 'icelike':

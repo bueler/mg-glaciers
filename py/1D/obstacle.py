@@ -172,7 +172,7 @@ for ni in nirange:
     # create monitor using exact solution if available
     uex = None
     if obsprob.exact_available():
-        uex = obsprob.uexact(mesh.xx())
+        uex = obsprob.exact(mesh.xx())
     mon = ObstacleMonitor(obsprob, mesh,
                           printresiduals=args.monitor, printerrors=args.monitorerr)
 
@@ -241,7 +241,7 @@ if args.pgsonly:
 else:
     method += '%d %sV(%d,%d) cycles' % (actualits, symstr, args.down, args.up)
 if obsprob.exact_available():
-    uex = obsprob.uexact(hierarchy[-1].xx())
+    uex = obsprob.exact(hierarchy[-1].xx())
     error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
 else:
     uex = None
