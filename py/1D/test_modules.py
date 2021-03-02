@@ -113,7 +113,7 @@ def test_poisson_pgssweep():
 
 def test_sia_pointresidual():
     '''Point-wise residual for SIA.'''
-    ml = MeshLevel1D(j=1, L=1800.0e3)   # [0,L] has length 1800 km
+    ml = MeshLevel1D(j=1, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
     prob = PNGSSIA(testargs, printwarnings=True)
     ml.phi = ml.zeros()                 # must attach obstacle to mesh
     f = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
@@ -123,7 +123,7 @@ def test_sia_pointresidual():
 
 def test_sia_residual():
     '''Residual for SIA.'''
-    ml = MeshLevel1D(j=1, L=1800.0e3)   # [0,L] has length 1800 km
+    ml = MeshLevel1D(j=1, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
     prob = PNGSSIA(testargs, printwarnings=True)
     ml.phi = ml.zeros()                 # must attach obstacle to mesh
     f = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
@@ -132,3 +132,20 @@ def test_sia_residual():
     assert all(np.isreal(prob.residual(ml, s, ml.ellf(f))))
     #FIXME Fcorrect = - np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
     #FIXME assert all(prob.residual(ml, w, ml.ellf(f)) == Fcorrect)
+
+def test_sia_exact():
+    '''Exact solution for SIA.'''
+    ml = MeshLevel1D(j=2, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
+    prob = PNGSSIA(testargs, printwarnings=True)
+    assert prob.exact_available()
+    x = ml.xx()
+    b = prob.phi(x)
+    m = prob.source(x)
+    s = prob.exact(x)
+    assert all(b == 0.0)                                   # check flat bed
+    assert max(s) == prob.buelerH0                         # check height
+    assert max(x[s > 0.0]) - prob.buelerxc < prob.buelerL  # check margin pos
+    assert min(m) < 0.0                                    # check mass balance
+    assert max(m) > 0.0                                    #   changes sign
+    # generate siadatafigure.pdf using j=7 levels above:
+    # prob.datafigure(ml)
