@@ -28,6 +28,14 @@ class SmootherObstacleProblem(ABC):
                 infeascount += 1
         return infeascount
 
+    def _sweepindices(self, mesh, forward=True):
+        '''Generate indices for sweep.'''
+        if forward:
+            ind = range(1, mesh.m+1)    # 1,...,m
+        else:
+            ind = range(mesh.m, 0, -1)  # m,...,1
+        return ind
+
     @abstractmethod
     def pointresidual(self, mesh, w, ell, p):
         '''Compute the residual functional for given iterate w at a point p.'''
@@ -89,11 +97,7 @@ class PGSPoisson(SmootherObstacleProblem):
         Input mesh is of class MeshLevel1D.  Returns the number of pointwise
         feasibility violations.'''
         infeascount = self._checkrepairadmissible(mesh, w, phi)
-        if forward:
-            indices = range(1, mesh.m+1)    # 1,...,m
-        else:
-            indices = range(mesh.m, 0, -1)  # m,...,1
-        for p in indices:
+        for p in self._sweepindices(mesh, forward=forward):
             c = - self.pointresidual(mesh, w, ell, p) / _poissondiagonalentry(mesh, p)
             w[p] = max(w[p] + omega * c, phi[p])
         mesh.WU += 1
