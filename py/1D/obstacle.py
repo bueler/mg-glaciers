@@ -20,32 +20,46 @@ from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
 parser = argparse.ArgumentParser(description='''
-Solve a 1D obstacle problem:  Find u in
-    K = {v in H_0^1[0,1] | v >= phi}
-such that the variational inequality holds,
-    a(u,v-u) - <f,v-u> >= 0   for all v in K,
-where phi is in H_0^1[0,1], f is in L^2[0,1], and
-             /1
-    a(u,v) = |  u'(x) v'(x) dx.
-             /0
-Note that the interior condition (PDE) is the Poisson equation  - u'' = f.
+Solve 1D obstacle problems:  For given Banach space X and phi in X,
+find u in the closed, convex subset
+    K = {v in X | v >= phi}
+so that the variational inequality holds,
+    F(u)[v-u] >= ell[v-u]   for all v in K.
+Where the constraint is inactive (u(x) > phi(x)), u solves an
+interior PDE.  We solve two particular problems:
+
+1. For classical obstacle problem in smoother.py:
+    X = H_0^1[0,1]
+    phi (obstacle) is in X
+    f (source) is in L^2[0,1] (or X')
+    ell[v] = <f,v>
+                       /1
+    F(u)[v] = a(u,v) = |  u'(x) v'(x) dx   (bilinear form)
+                       /0
+    interior PDE: Poisson equation  - u'' = f
+
+2. For shallow ice approximation (SIA) obstacle problem (Bueler 2016) in
+   siasmoother.py:
+    X = W_0^{1,p}[0,xmax]  where p = n + 1
+    b = phi (bed elevation) is in X
+    m (mass balance) is in L^2[0,xmax] (or X')
+    ell[v] = <m,v>
+              /xmax
+    F(s)[v] = |     Gamma (s-b)^{n+2} |s'|^{n-1} s' v dx
+              /0
+    interior PDE: SIA equation  - (Gamma (s-b)^{n+2} |s'|^{n-1} s')' = m
 
 Solution is by Alg. 4.7 in Gräser & Kornhuber (2009), namely the multilevel
 constraint decomposition slash-cycle method by Tai (2003) in which a monotone
 restriction operator decomposes the defect obstacle.  The smoother and the
-coarse-mesh solver are projected Gauss-Seidel (PGS).
+coarse-mesh solver are projected Gauss-Seidel (PGS), which is nonlinear (PNGS)
+for problem 2.  Option -pgsonly reverts to single-level PGS.
 
-Option -pgsonly reverts to single-level PGS.
-
-Choose the problem with "-problem icelike" (the default) or "-problem
-parabola".  The obstacle can be randomly perturbed with -random.  Choose
-the fine-mesh resolution with -kmesh.  Monitor the solution process with
--monitor, -monitorerr, and -mgview.  Get graphical output with -show,
--diagnostics, and -o.
-
-Get other usage help with -h or --help.
+Get usage help with -h or --help.
 
 References:
+  * Bueler, E. (2016). Stable finite volume element schemes for the
+    shallow ice approximation. J. Glaciol. 62, 230--242.
   * Gräser, C., & Kornhuber, R. (2009). Multigrid methods for
     obstacle problems. J. Comput. Math. 27 (1), 1--44.
   * Tai, X.-C. (2003). Rate of convergence for some constraint
