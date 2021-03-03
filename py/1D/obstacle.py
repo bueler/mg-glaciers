@@ -14,10 +14,12 @@ import argparse
 import numpy as np
 
 from meshlevel import MeshLevel1D
-from smoother import PGSPoisson
 from subsetdecomp import mcdlcycle
 from monitor import ObstacleMonitor
 from visualize import VisObstacle
+
+from smoother import PGSPoisson
+from siasmoother import PNGSSIA
 
 parser = argparse.ArgumentParser(description='''
 Solve 1D obstacle problems:  For given Banach space X and phi in X,
@@ -78,6 +80,8 @@ parser.add_argument('-down', type=int, default=1, metavar='N',
                     help='PGS sweeps before coarse-mesh correction (default=1)')
 parser.add_argument('-errtol', type=float, default=None, metavar='X',
                     help='stop if numerical error (if available) below X (default=None)')
+parser.add_argument('-exactinitial', action='store_true', default=False,
+                    help='initialize using exact solution')
 parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
                     help='in Poisson equation -u"=f this multiplies f (default X=1.0)')
 parser.add_argument('-irtol', type=float, default=1.0e-3, metavar='X',
@@ -108,10 +112,12 @@ parser.add_argument('-pgsonly', action='store_true', default=False,
                     help='do projected Gauss-Seidel as cycles (instead of multilevel)')
 parser.add_argument('-plain', action='store_true', default=False,
                     help='when used with -show or -o, only show exact solution and obstacle')
+parser.add_argument('-poissoncase', choices=['icelike', 'parabola'], metavar='X', default='icelike',
+                    help='determines obstacle and source function (default: %(default)s)')
 parser.add_argument('-printwarnings', action='store_true', default=False,
                     help='print pointwise feasibility warnings')
-parser.add_argument('-problem', choices=['icelike', 'parabola'], metavar='X', default='icelike',
-                    help='determines obstacle and source function (default: %(default)s)')
+parser.add_argument('-problem', choices=['poisson', 'sia'], metavar='X', default='poisson',
+                    help='determines entire obstacle problem (default: %(default)s)')
 parser.add_argument('-random', action='store_true', default=False,
                     help='make a smooth random perturbation the obstacle')
 parser.add_argument('-randomscale', type=float, default=1.0, metavar='X',
@@ -122,6 +128,8 @@ parser.add_argument('-randommodes', type=int, default=30, metavar='N',
                     help='number of sinusoid modes in -random perturbation (default N=30)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
+parser.add_argument('-siaintervallength', type=float, default=1800.0e3, metavar='L',
+                    help='solve SIA on [0,L] (default L=1800 km)')
 parser.add_argument('-symmetric', action='store_true', default=False,
                     help='use symmetric projected Gauss-Seidel sweeps (forward then backward)')
 parser.add_argument('-up', type=int, default=0, metavar='N',
@@ -138,17 +146,27 @@ if args.show and args.o:
 if args.nicascadic:
     args.ni = True
 
-# hierarchy is a list of MeshLevel1D with indices [0,..,levels-1]
+# hierarchy will be a list of MeshLevel1D with indices [0,..,levels-1]
 assert args.jcoarse >= 0
 assert args.jfine >= args.jcoarse
 levels = args.jfine - args.jcoarse + 1
 hierarchy = [None] * (levels)             # list [None,...,None]
-for j in range(levels):
-    hierarchy[j] = MeshLevel1D(j=j+args.jcoarse)
 
-# set up obstacle problem and smoother
-#FIXME choose between derived classes of SmootherObstacleProblem
-obsprob = PGSPoisson(args, printwarnings=args.printwarnings)
+# set up obstacle problem with smoother (class SmootherObstacleProblem)
+#   and meshes on correct interval
+if args.problem == 'poisson':
+    obsprob = PGSPoisson(args)
+    for j in range(levels):
+        hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=1.0)
+elif args.problem == 'sia':
+    obsprob = PNGSSIA(args)
+    for j in range(levels):
+        hierarchy[j] = MeshLevel1D(j=j+args.jcoarse,
+                                   xmax=args.siaintervallength)
+    # attach obstacle to mesh
+    # FIXME o.k for single level but NOT for multilevel
+    mesh = hierarchy[-1]
+    mesh.phi = obsprob.phi(mesh.xx())
 
 # more usage help
 if args.monitorerr and not obsprob.exact_available():
@@ -163,6 +181,21 @@ if args.ni:
     nirange = range(levels)   # hierarchy[j] for j=0,...,levels-1
 else:
     nirange = [levels-1,]     # just run on finest level
+
+# fine-mesh initialization
+def initial(fmesh, phi, ell):
+    if args.exactinitial:
+        return obsprob.exact(fmesh.xx())
+    else:
+        # FIXME create a obsprob method for generating a default initial
+        if args.problem == 'poisson':
+            # default; sometimes better than phifine when phifine
+            #   is negative in places (e.g. -problem parabola)
+            return np.maximum(phi, fmesh.zeros())
+        elif args.problem == 'sia':
+            # FIXME nonzero-thickness initial iterate scheme using
+            #   ell (i.e. mass balance)
+            return fmesh.zeros()
 
 # nested iteration outer loop
 wusum = 0.0
@@ -179,9 +212,7 @@ for ni in nirange:
         # prolong and truncate solution from previous coarser level
         uu = np.maximum(phifine, hierarchy[ni].cP(uu))
     else:
-        # default; sometimes better than phifine when phifine
-        #   is negative in places (e.g. -problem parabola)
-        uu = np.maximum(phifine, mesh.zeros())
+        uu = initial(mesh, phifine, ellfine)
 
     # create monitor using exact solution if available
     uex = None
@@ -225,6 +256,8 @@ for ni in nirange:
                 infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine,
                                                      omega=args.omega, forward=False)
         else:
+            if args.problem == 'sia':
+                raise NotImplementedError('The constraint decomposition theory is not ready for this case.  Use -pgsonly.')
             # Tai (2003) constraint decomposition method cycles; default=V(1,0);
             #   Alg. 4.7 in G&K (2009); see mcdl-solver and mcdl-slash in paper
             mesh.chi = phifine - uu                # defect obstacle

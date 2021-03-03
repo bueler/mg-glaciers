@@ -18,11 +18,20 @@ class PNGSSIA(SmootherObstacleProblem):
     the bed topography, i.e. the obstacle, also with boundary values b(0) =
     b(L) = 0, and m(x) is the surface mass balance.  These data are assumed
     time-independent.  Function s(x) is the solution surface elevation.
-    Parameters n and Gamma are set at object construction.'''
+    Parameters n and Gamma are set at object construction.
 
-    def __init__(self, args, admissibleeps=1.0e-10, printwarnings=False,
+    The PNGS smoother sweep uses a fixed number of Newton iterations at each
+    point.  The Newton step involves three parameters associated to the
+    degeneracy of the diffusion:
+      * Hmin, slopemin:  protect against division by zero in computing
+                         Newton step
+      * newtondmax:      when mass balance is positive at an ice-free
+                         location then the Newton step is formally
+                         infinite, so we limit the step.'''
+
+    def __init__(self, args, admissibleeps=1.0e-10,
                  g=9.81, rhoi=910.0, nglen=3.0, A=1.0e-16/31556926.0):
-        super().__init__(args, admissibleeps=admissibleeps, printwarnings=printwarnings)
+        super().__init__(args, admissibleeps=admissibleeps)
         self.secpera = 31556926.0   # seconds per year
         self.g = g                  # m s-2
         self.rhoi = rhoi            # kg m-3
@@ -35,10 +44,16 @@ class PNGSSIA(SmootherObstacleProblem):
         self.buelerL = 750.0e3      # half-width of sheet
         self.buelerH0 = 3600.0      # center thickness
         self.buelerxc = 900.0e3     # x coord of center in [0,xmax] = [0,1800] km
+        # numerical parameters in smoother
+        self.newtonits = 2          # number of Newton its
+        self.newtondtol = 1.0e-8    # don't continue Newton if d is this small
+        self.newtondmax = 1000.0    # never move surface by more than this amount
+        self.newtonHmin = 100.0     # protect divide by zero in smoother
+        self.newtonslopemin = 1.0e-4 # protect divide by zero in smoother
 
     def pointresidual(self, mesh, s, ell, p):
-        '''Compute the value of the residual linear functional, in V^j', for given
-        iterate s(x) in V^j, at one interior hat function psi_p^j:
+        '''Compute the value of the residual linear functional, in V^j', for
+        given iterate s(x) in V^j, at one interior hat function psi_p^j:
            F(s)[psi_p^j] = int_0^L Gamma (s(x) - phi(x))^{n+2} |s'(x)|^{n-1} s'(x) dx
                            - ell(psi_p^j)
         Input ell is in V^j'.  Input mesh is of class MeshLevel1D, with attached
@@ -50,18 +65,44 @@ class PNGSSIA(SmootherObstacleProblem):
         mesh.checklen(b)
         assert 1 <= p <= mesh.m
         C = self.Gamma / (2.0 * mesh.h**self.nglen)
-        H = (s[p-1:p+2] - b[p-1:p+2])**(self.nglen + 2.0)     # 3 thicknesses
-        ds = s[p:p+2] - s[p-1:p+1]                            # 2 delta s
-        np1 = self.nglen + 1.0
-        meat = (H[0] + H[1]) * abs(ds[0])**np1 * ds[0] \
-               + (H[1] + H[2]) * abs(ds[1])**np1 * ds[1]
+        HP = (s[p-1:p+2] - b[p-1:p+2])**(self.nglen + 2.0)  # 3 thickness powers
+        ds = s[p:p+2] - s[p-1:p+1]                          # 2 delta s
+        mu = abs(ds)**(self.nglen - 1.0) * ds
+        meat = (HP[0] + HP[1]) * mu[0] - (HP[1] + HP[2]) * mu[1]
         return C * meat - ell[p]
 
-    def smoothersweep(self, mesh, w, ell, phi, forward=True):
+    def _pointjacobian(self, mesh, s, p):
+        '''The derivative of pointresidual() with respect to s[p].'''
+        mesh.checklen(s)
+        assert hasattr(mesh, 'phi')
+        b = mesh.phi
+        mesh.checklen(b)
+        assert 1 <= p <= mesh.m
+        C = self.Gamma / (2.0 * mesh.h**self.nglen)
+        # protects divide by zero in smoother:
+        Hpos = np.maximum(s[p-1:p+2] - b[p-1:p+2], self.newtonHmin)
+        HP = Hpos**(self.nglen + 2.0)
+        # protects divide by zero in smoother:
+        ads = np.maximum(abs(s[p:p+2] - s[p-1:p+1]), mesh.h * self.newtonslopemin)
+        dmu = self.nglen * ads**(self.nglen - 1.0)
+        return C * ( (HP[0] + HP[1]) * dmu[0] + (HP[1] + HP[2]) * dmu[1] )
+
+    def smoothersweep(self, mesh, s, ell, phi, forward=True, omega=1.0):
         '''Do in-place projected nonlinear Gauss-Seidel sweep over the interior
         points p=1,...,m, for the SIA problem.  Fixed number of steps of the
         Newton method.  FIXME ADD DOC'''
-        raise NotImplementedError
+        infeascount = self._checkrepairadmissible(mesh, s, phi)
+        for p in self._sweepindices(mesh, forward=forward):
+            for k in range(self.newtonits):
+                d = - self.pointresidual(mesh, s, ell, p) / self._pointjacobian(mesh, s, p)
+                d = max(d, phi[p] - s[p])                     # require admissible
+                d = np.sign(d) * min(abs(d), self.newtondmax) # limit huge steps
+                s[p] += omega * d                             # take step
+                # if did not move, no need to iterate further
+                if abs(omega * d) < self.newtondtol:
+                    break
+        mesh.WU += self.newtonits  # overcount WU if lots of points are active
+        return infeascount
 
     def phi(self, x):
         '''Generally the bed elevations depend on self.args, but for now we

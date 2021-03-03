@@ -9,10 +9,9 @@ class SmootherObstacleProblem(ABC):
     '''Abstact base class for a smoother on an obstacle problem.  Works on
     any mesh of class MeshLevel1D.'''
 
-    def __init__(self, args, admissibleeps=1.0e-10, printwarnings=False):
+    def __init__(self, args, admissibleeps=1.0e-10):
         self.args = args
         self.admissibleeps = admissibleeps
-        self.printwarnings = printwarnings
         # fix the random seed for repeatability
         np.random.seed(self.args.randomseed)
 
@@ -21,7 +20,7 @@ class SmootherObstacleProblem(ABC):
         infeascount = 0
         for p in range(1, mesh.m+1):
             if w[p] < phi[p] - self.admissibleeps:
-                if self.printwarnings:
+                if self.args.printwarnings:
                     print('WARNING: repairing nonfeasible w[%d]=%e < phi[%d]=%e on level %d (m=%d)' \
                           % (p, w[p], p, phi[p], mesh.j, mesh.m))
                 w[p] = phi[p]
@@ -105,9 +104,9 @@ class PGSPoisson(SmootherObstacleProblem):
 
     def phi(self, x):
         '''The obstacle:  u >= phi.'''
-        if self.args.problem == 'icelike':
+        if self.args.poissoncase == 'icelike':
             ph = x * (1.0 - x)
-        elif self.args.problem == 'parabola':
+        elif self.args.poissoncase == 'parabola':
             # maximum is at  2.0 + args.parabolay
             ph = 8.0 * x * (1.0 - x) + self.args.parabolay
         else:
@@ -129,7 +128,7 @@ class PGSPoisson(SmootherObstacleProblem):
 
     def source(self, x):
         '''The source term f in the interior condition -u'' = f.'''
-        if self.args.problem == 'icelike':
+        if self.args.poissoncase == 'icelike':
             f = 8.0 * np.ones(np.shape(x))
             f[x < 0.2] = -16.0
             f[x > 0.8] = -16.0
@@ -140,7 +139,7 @@ class PGSPoisson(SmootherObstacleProblem):
     def exact(self, x):
         '''Exact solution u(x), if available.  Assumes x is a numpy array.'''
         assert self.exact_available()
-        if self.args.problem == 'icelike':
+        if self.args.poissoncase == 'icelike':
             u = self.phi(x)
             a, c0, c1, d0, d1 = 0.1, -0.8, 0.09, 4.0, -0.39  # exact values
             mid = (x > 0.2) * (x < 0.8) # logical and
@@ -149,7 +148,7 @@ class PGSPoisson(SmootherObstacleProblem):
             u[mid] = -4.0*x[mid]**2 + d0*x[mid] + d1
             u[left] = 8.0*x[left]**2 + c0*x[left] + c1
             u[right] = 8.0*(1.0-x[right])**2 + c0*(1.0-x[right]) + c1
-        else:  # problem == 'parabola'
+        else:  # poissoncase == 'parabola'
             if self.args.parabolay == -1.0:
                 a = 1.0/3.0
                 def upoisson(x):
