@@ -78,12 +78,12 @@ class Namespace:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
-testargs = Namespace(randomseed=1)
+testargs = Namespace(randomseed=1, printwarnings=False)
 
 def test_poisson_pointresidual():
     '''Point-wise residual for Poisson.'''
     ml = MeshLevel1D(j=1)
-    prob = PGSPoisson(testargs, printwarnings=True)
+    prob = PGSPoisson(testargs)
     f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
     w = f.copy()
     assert prob.pointresidual(ml, w, ml.ellf(f), 1) == - 0.5 * ml.h
@@ -92,7 +92,7 @@ def test_poisson_pointresidual():
 def test_poisson_residual():
     '''Residual for Poisson.'''
     ml = MeshLevel1D(j=1)
-    prob = PGSPoisson(testargs, printwarnings=True)
+    prob = PGSPoisson(testargs)
     f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
     w = f.copy()
     Fcorrect = - np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
@@ -101,7 +101,7 @@ def test_poisson_residual():
 def test_poisson_pgssweep():
     '''Projected Gauss-Seidel sweep for Poisson.'''
     ml = MeshLevel1D(j=0)
-    prob = PGSPoisson(testargs, printwarnings=True)
+    prob = PGSPoisson(testargs)
     f = np.array([0.0, 1.0, 0.0])
     ell = ml.ellf(f)
     assert all(ell == ml.h * f)
@@ -114,8 +114,8 @@ def test_poisson_pgssweep():
 def test_sia_pointresidual():
     '''Point-wise residual for SIA.'''
     ml = MeshLevel1D(j=1, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
-    prob = PNGSSIA(testargs, printwarnings=True)
-    ml.phi = ml.zeros()                 # must attach obstacle to mesh
+    prob = PNGSSIA(testargs)
+    ml.phi = ml.zeros()                    # attach obstacle to mesh
     f = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
     s = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
     assert np.isreal(prob.pointresidual(ml, s, ml.ellf(f), 1))
@@ -124,19 +124,18 @@ def test_sia_pointresidual():
 def test_sia_residual():
     '''Residual for SIA.'''
     ml = MeshLevel1D(j=1, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
-    prob = PNGSSIA(testargs, printwarnings=True)
-    ml.phi = ml.zeros()                 # must attach obstacle to mesh
-    f = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
-    s = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
-    ml.checklen(prob.residual(ml, s, ml.ellf(f)))
-    assert all(np.isreal(prob.residual(ml, s, ml.ellf(f))))
-    #FIXME Fcorrect = - np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
-    #FIXME assert all(prob.residual(ml, w, ml.ellf(f)) == Fcorrect)
+    prob = PNGSSIA(testargs)
+    ml.phi = ml.zeros()                    # attach obstacle to mesh
+    m = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
+    s = np.array([0.0, 2500.0, 3100.0, 2500.0, 0.0])  # hand-adjusted so res is small!
+    res = prob.residual(ml, s, ml.ellf(m))
+    ml.checklen(res)
+    assert all(abs(res) < 1.0e-2)
 
 def test_sia_exact():
     '''Exact solution for SIA.'''
     ml = MeshLevel1D(j=2, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
-    prob = PNGSSIA(testargs, printwarnings=True)
+    prob = PNGSSIA(testargs)
     assert prob.exact_available()
     x = ml.xx()
     b = prob.phi(x)
@@ -149,3 +148,17 @@ def test_sia_exact():
     assert max(m) > 0.0                                    #   changes sign
     # generate siadatafigure.pdf using j=7 levels above:
     # prob.datafigure(ml)
+
+def test_sia_smoothersweep():
+    '''Smoother for SIA.'''
+    ml = MeshLevel1D(j=1, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
+    prob = PNGSSIA(testargs)
+    ml.phi = ml.zeros()                    # attach obstacle to mesh
+    m = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
+    s = np.array([0.0, 2500.0, 3100.0, 2500.0, 0.0])  # hand-adjusted so res is small!
+    ell = ml.ellf(m)
+    res = prob.residual(ml, s, ell)
+    prob.smoothersweep(ml, s, ell, ml.phi)
+    prob.smoothersweep(ml, s, ell, ml.phi)
+    newres = prob.residual(ml, s, ell)
+    assert ml.l2norm(newres) < ml.l2norm(res)
