@@ -41,13 +41,18 @@ class VisObstacle():
         '''Generate plain graphic showing obstacle and exact solution
         (if available) on finest mesh.'''
         xx = self.mesh.xx()
+        xname, yname = 'x', ''
+        if max(xx) > 1.0e4:
+            xx /= 1000.0
+            xname, yname = 'x (km)', 'elevation (m)'
         plt.figure(figsize=(16.0, 4.0))
         if self.uex is not None:
             self.mesh.checklen(self.uex)
             plt.plot(xx, self.uex, 'k--', label=r'solution $u$', lw=3.0)
         plt.plot(xx, self.phi, 'k', label=r'obstacle $\varphi$', lw=3.0)
         plt.legend()
-        plt.xlabel('x')
+        plt.xlabel(xname)
+        plt.ylabel(yname)
         _output(filename, 'exact solution and obstacle')
 
     def final(self, filename=''):
