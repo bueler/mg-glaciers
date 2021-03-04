@@ -22,19 +22,22 @@ runobstacle_5:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jfine 4 -monitorerr -errtol 5.0e-3 -ni" 1 5
 
 runobstacle_6:
-	-@./../testit.sh obstacle.py "-problem sia -pgsonly -jfine 2 -monitor -irtol 1.0e-1" 1 6
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jacobi -omega 0.85 -monitor -irtol 1.0e-2" 1 6
 
 runobstacle_7:
-	-@./../testit.sh obstacle.py "-problem sia -exactinitial -pgsonly -jfine 3 -monitor -cyclemax 2" 1 7
+	-@./../testit.sh obstacle.py "-problem sia -pgsonly -jfine 2 -monitor -irtol 1.0e-1" 1 7
 
-test_obstacle: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7
+runobstacle_8:
+	-@./../testit.sh obstacle.py "-problem sia -exactinitial -pgsonly -jfine 3 -monitor -cyclemax 2" 1 8
+
+test_obstacle: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8
 
 testbanner:
 	@echo "**** TESTING obstacle.py ****"
 
 test: testmodules testbanner test_obstacle
 
-.PHONY: clean runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 test_obstacle testmodules test testbanner
+.PHONY: clean runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 test_obstacle testmodules test testbanner
 
 clean:
 	@rm -f maketmp tmp difftmp *.png *.pdf
