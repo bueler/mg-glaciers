@@ -18,7 +18,7 @@ from subsetdecomp import mcdlcycle
 from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
-from smoother import PGSPoisson
+from smoother import PGSPoisson, PGSPoissonJacobi
 from siasmoother import PNGSSIA
 
 parser = argparse.ArgumentParser(description='''
@@ -86,10 +86,12 @@ parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
                     help='in Poisson equation -u"=f this multiplies f (default X=1.0)')
 parser.add_argument('-irtol', type=float, default=1.0e-3, metavar='X',
                     help='norm of inactive residual is reduced by this factor (default X=1.0e-3)')
-parser.add_argument('-jfine', type=int, default=3, metavar='J',
-                    help='fine mesh is jth level (default jfine=3)')
+parser.add_argument('-jacobi', action='store_true', default=False,
+                    help='use Jacobi (additive) instead of Gauss-Seidel (multiplicative) for smoothing')
 parser.add_argument('-jcoarse', type=int, default=0, metavar='J',
                     help='coarse mesh is jth level (default jcoarse=0 gives 1 node)')
+parser.add_argument('-jfine', type=int, default=3, metavar='J',
+                    help='fine mesh is jth level (default jfine=3)')
 parser.add_argument('-mgview', action='store_true', default=False,
                     help='view multigrid cycles by indented print statements')
 parser.add_argument('-monitor', action='store_true', default=False,
@@ -155,16 +157,24 @@ hierarchy = [None] * (levels)             # list [None,...,None]
 # set up obstacle problem with smoother (class SmootherObstacleProblem)
 #   and meshes on correct interval
 if args.problem == 'poisson':
-    obsprob = PGSPoisson(args)
+    if args.jacobi:
+        obsprob = PGSPoissonJacobi(args)
+    else:
+        obsprob = PGSPoisson(args)
     for j in range(levels):
         hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=1.0)
 elif args.problem == 'sia':
+    if args.jacobi:
+        raise NotImplementedError
     obsprob = PNGSSIA(args)
     for j in range(levels):
         hierarchy[j] = MeshLevel1D(j=j+args.jcoarse,
                                    xmax=args.siaintervallength)
     # attach obstacle to mesh
     # FIXME o.k for single level but NOT for multilevel
+    if not args.pgsonly:
+        raise NotImplementedError( \
+            'The constraint decomposition theory is not ready for SIA.  Use -pgsonly.')
     mesh = hierarchy[-1]
     mesh.phi = obsprob.phi(mesh.xx())
 
@@ -259,8 +269,6 @@ for ni in nirange:
                 infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine,
                                                      omega=args.omega, forward=False)
         else:
-            if args.problem == 'sia':
-                raise NotImplementedError('The constraint decomposition theory is not ready for this case.  Use -pgsonly.')
             # Tai (2003) constraint decomposition method cycles; default=V(1,0);
             #   Alg. 4.7 in G&K (2009); see mcdl-solver and mcdl-slash in paper
             mesh.chi = phifine - uu                # defect obstacle

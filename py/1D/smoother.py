@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 
-__all__ = ['SmootherObstacleProblem', 'PGSPoisson']
+__all__ = ['SmootherObstacleProblem', 'PGSPoisson', 'PGSPoissonJacobi']
 
 class SmootherObstacleProblem(ABC):
     '''Abstact base class for a smoother on an obstacle problem.  Works on
@@ -161,3 +161,19 @@ class PGSPoisson(SmootherObstacleProblem):
             else:
                 raise NotImplementedError
         return u
+
+class PGSPoissonJacobi(PGSPoisson):
+
+    def smoothersweep(self, mesh, w, ell, phi, forward=True, omega=1.0):
+        '''Do in-place projected Jacobi sweep, with relaxation factor
+        omega, over the interior points p=1,...,m, for the classical obstacle
+        problem.  Same as Gauss-Seidel but the new iterate values are NOT
+        fed in when updating the next point.  As suggested by Tai (2003),
+        underrelaxation is expected; omega = 0.8 seems to work o.k.'''
+        infeascount = self._checkrepairadmissible(mesh, w, phi)
+        wold = w.copy()
+        for p in self._sweepindices(mesh, forward=forward):
+            c = - self.pointresidual(mesh, wold, ell, p) / _poissondiagonalentry(mesh, p)
+            w[p] = max(wold[p] + omega * c, phi[p])
+        mesh.WU += 1
+        return infeascount
