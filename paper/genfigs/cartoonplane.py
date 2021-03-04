@@ -7,8 +7,7 @@ from matplotlib.patches import Arc
 plt.rcParams["font.family"] = "serif"
 plt.rcParams["mathtext.fontset"] = "cm"
 
-fsize=16.0
-bigfsize=20.0
+fsize=15.0
 
 debug = False
 def figsave(name):
@@ -34,12 +33,20 @@ plt.fill([phix,1.2,1.2,phix,phix],[phiy,phiy,0.8,0.8,phiy],'k',alpha=0.3)
 xhat = phix + 0.25
 yhat = phiy
 yc = phiy - 0.3
-plt.plot(phix,phiy,'k.',ms=12.0)
-plt.text(phix-0.05,phiy-0.08,r'$\varphi$',fontsize=bigfsize)
-plt.plot(xhat,yhat,'k.',ms=12.0)
-plt.text(xhat,yhat-0.08,r'$u$',fontsize=bigfsize)
+plt.plot(phix,phiy,'k.',ms=10.0)
+plt.text(phix-0.05,phiy-0.08,r'$\varphi$',fontsize=fsize)
+plt.plot(xhat,yhat,'k.',ms=10.0)
+plt.text(xhat,yhat-0.08,r'$u$',fontsize=fsize)
+plt.plot(xhat+0.2,yhat+0.2,'k.',ms=10.0)
+plt.text(xhat+0.15,yhat+0.22,r'$v$',fontsize=fsize)
+plt.gca().annotate('', xy=(xhat+0.2, yhat+0.2), xytext=(xhat, yhat),
+                   arrowprops=dict(arrowstyle='->, head_length=0.8, head_width=0.5'))
+plt.text(xhat+0.1,yhat+0.05,r'$v-u$',fontsize=fsize)
+plt.gca().annotate('', xy=(xhat, yhat+0.38), xytext=(xhat, yhat),
+                   arrowprops=dict(arrowstyle='->, head_length=0.8, head_width=0.5'))
+plt.text(xhat-0.2,yhat+0.21,r'$\nabla I(u)$',fontsize=fsize)
 plt.plot(xhat,yc+0.06,'ko',ms=8.0,mfc='w')
-plt.text(xhat+0.05,yc+0.05,'$\it{unconstrained}\,\, \it{minimizer}$',fontsize=14.0)
+plt.text(xhat+0.05,yc+0.05,'$\it{unconstrained}\,\, \it{minimizer}$',fontsize=12.0)
 ax = plt.gca()
 for r in [0.4, 0.5, 0.6, 0.7]:
     alpha = (180.0/np.pi) * np.arcsin(0.3/r)
@@ -48,8 +55,8 @@ for r in [0.4, 0.5, 0.6, 0.7]:
     arc = Arc((xhat,yc), 2.0*r, 2.0*r, angle=0.0, theta1=alpha, theta2=beta,
               color='k', lw=0.75)
     ax.add_patch(arc)
-plt.text(-0.1,0.6,r'$\mathcal{H}$',fontsize=bigfsize)
-plt.text(0.9,0.6,r'$\mathcal{K}$',fontsize=bigfsize)
+plt.text(-0.2,0.7,r'$\mathcal{H}$',fontsize=fsize)
+plt.text(0.9,0.6,r'$\mathcal{K}$',fontsize=fsize)
 plt.axis('tight')
 plt.axis('off')
 plt.axis('equal')

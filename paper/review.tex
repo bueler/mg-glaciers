@@ -481,8 +481,8 @@ VI formulation \eqref{eq:obstaclevigradient} permits a clear, geometrical meanin
 FIXME On the other hand, $\mathcal{K} \subset \mathcal{H}$ is an infinite-dimensional set, so visualizing geometry is problematic.  To further aid the intuition we propose the following low-dimensional mental image.  Imagine $\mathcal{K}$ as analogous to the closed first quadrant $\mathcal{Q}$ in the two-dimensional plane, and $I$ as analogous to a smooth, concave-up (i.e.~\emph{coercive} \cite{Evans2010}), objective function $\gamma(x)$ defined on the plane.  The solution of the corresponding VI, say $\hat x$ in $\mathcal{Q}$, may not be a location where $\nabla \gamma$ is zero.  However, $\gamma$ will have as low a value as possible at $\hat x$, even if it is on the boundary of $\mathcal{Q}$.  At $\hat x$ all directions \emph{into} $\mathcal{Q}$ will increase (i.e.~not decrease) the value of $\gamma$, as sketched by contours in Figure \ref{fig:cartoonplane}.  Note that the solutions $u$ shown in Figure \ref{fig:icelike} are infinite-dimensional versions of the point $\hat x$ shown in the Figure \ref{fig:cartoonplane} cartoon view.  (The fact that the solutions $u$ in Figure \ref{fig:icelike} coincide with the obstacle $\varphi$ on a part of the domain implies that $u$ is on the boundary of $\mathcal{K}$.  That is, arbitrarily-small perturbations $\delta u$ from $\mathcal{H}$ exist which cause $u+\delta u$ to leave $\mathcal{K}$.)
 
 \begin{figure}
-\includegraphics[width=0.5\textwidth]{genfigs/cartoonplane.pdf}
-\caption{FIXME For analogy only:  A 2-dimensional constrained-minimization, or VI solution, in a planar quadrant $\mathcal{Q}$, with contours of a scalar objective $\gamma(x)$.}
+\includegraphics[width=0.6\textwidth]{genfigs/cartoonplane.pdf}
+\caption{Variational inequality \eqref{eq:obstaclevigradient} says that the minimum of $I(w)$ over $w$ in $\mathcal{K}$, namely the solution $u$, is where any vector $v-u$ for $v$ in $\mathcal{K}$ points into $\mathcal{K}$, that is, within $90^\circ$ of the $\grad I(u)$.  (This is slightly informal; see text.)}
 \label{fig:cartoonplane}
 \end{figure}
 
