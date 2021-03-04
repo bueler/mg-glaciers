@@ -18,7 +18,7 @@ from subsetdecomp import mcdlcycle
 from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
-from smoother import PGSPoisson, PGSPoissonJacobi
+from smoother import PGSPoisson, PJacobiPoisson
 from siasmoother import PNGSSIA
 
 parser = argparse.ArgumentParser(description='''
@@ -158,7 +158,7 @@ hierarchy = [None] * (levels)             # list [None,...,None]
 #   and meshes on correct interval
 if args.problem == 'poisson':
     if args.jacobi:
-        obsprob = PGSPoissonJacobi(args)
+        obsprob = PJacobiPoisson(args)
     else:
         obsprob = PGSPoisson(args)
     for j in range(levels):
