@@ -10,4 +10,4 @@
   9:  |ir(u)|_2 = 6.9618e-01  (rate 0.7647)
   10:  |ir(u)|_2 = 5.2154e-01  (rate 0.7491)
   11:  |ir(u)|_2 = 3.8458e-01  (rate 0.7374)
-fine level 2 (m=7): using 11 applications of PGS -> 22.000 WU:  |u-uexact|_2 = 1.0559e+06
+fine level 2 (m=7): using 11 applications of smoother -> 22.000 WU:  |u-uexact|_2 = 1.0559e+06

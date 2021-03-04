@@ -7,10 +7,10 @@ testmodules:
 	python3 -m pytest
 
 runobstacle_1:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jfine 3 -pgsonly -omega 1.5 -cyclemax 3" 1 1
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jfine 3 -sweepsonly -omega 1.5 -cyclemax 3" 1 1
 
 runobstacle_2:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase parabola -parabolay -3.0 -jfine 1 -pgsonly -symmetric" 1 2
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase parabola -parabolay -3.0 -jfine 1 -sweepsonly -symmetric" 1 2
 
 runobstacle_3:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jfine 3 -monitorerr -diagnostics -o test3.png" 1 3
@@ -25,10 +25,10 @@ runobstacle_6:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jacobi -omega 0.85 -monitor -irtol 1.0e-2" 1 6
 
 runobstacle_7:
-	-@./../testit.sh obstacle.py "-problem sia -pgsonly -jfine 2 -monitor -irtol 1.0e-1" 1 7
+	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -jfine 2 -monitor -irtol 1.0e-1" 1 7
 
 runobstacle_8:
-	-@./../testit.sh obstacle.py "-problem sia -exactinitial -pgsonly -jfine 3 -monitor -cyclemax 2" 1 8
+	-@./../testit.sh obstacle.py "-problem sia -exactinitial -sweepsonly -jfine 3 -monitor -cyclemax 2" 1 8
 
 test_obstacle: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8
 
