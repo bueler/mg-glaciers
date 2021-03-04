@@ -248,6 +248,9 @@ for ni in nirange:
             else:
                 if irnorm <= args.irtol * irnorm0:
                     break
+                if irnorm > 100.0 * irnorm0:
+                    print('DIVERGED:  irnorm > 100 irnorm0')
+                    break
         if args.pgsonly:
             # smoother sweeps on finest level
             infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine,
