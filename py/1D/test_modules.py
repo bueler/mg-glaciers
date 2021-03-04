@@ -78,7 +78,7 @@ class Namespace:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
-testargs = Namespace(jacobi=False, randomseed=1, printwarnings=False)
+testargs = Namespace(jacobi=False, omega=1.0, printwarnings=False, randomseed=1)
 
 def test_poisson_pointresidual():
     '''Point-wise residual for Poisson.'''
@@ -108,7 +108,7 @@ def test_poisson_pgssweep():
     w = ml.zeros()
     assert all(prob.residual(ml, w, ell) == - ml.h * f)
     phi = np.array([-2.0, -2.0, -2.0])  # thus unconstrained
-    prob.smoothersweep(ml, w, ell, phi, omega=1.0, forward=True)
+    prob.smoothersweep(ml, w, ell, phi, forward=True)
     assert all(prob.residual(ml, w, ell) == ml.zeros())
 
 def test_sia_pointresidual():

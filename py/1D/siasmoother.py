@@ -2,10 +2,7 @@
 which is the smoother and coarse-level solver for the Shallow Ice Approximation
 (SIA) ice flow model.'''
 
-# TODO:
-#   * draft implementation of smoothersweep()
-#   * test in test_modules.py
-#   * deploy into obstacle.py
+__all__ = ['PNGSSIA', 'PNJacobiSIA']
 
 import numpy as np
 from smoother import SmootherObstacleProblem
@@ -87,21 +84,22 @@ class PNGSSIA(SmootherObstacleProblem):
         dmu = self.nglen * ads**(self.nglen - 1.0)
         return C * ( (HP[0] + HP[1]) * dmu[0] + (HP[1] + HP[2]) * dmu[1] )
 
-    def smoothersweep(self, mesh, s, ell, phi, forward=True, omega=1.0):
+    def smoothersweep(self, mesh, s, ell, phi, forward=True):
         '''Do in-place projected nonlinear Gauss-Seidel sweep over the interior
         points p=1,...,m, for the SIA problem.  Fixed number of steps of the
-        Newton method.  FIXME ADD DOC'''
+        Newton method (newtonits).  Protection against taking huge steps
+        (newtondmax).  Avoids further iteration if first step is small
+        (newtondtol).'''
         infeascount = self._checkrepairadmissible(mesh, s, phi)
         for p in self._sweepindices(mesh, forward=forward):
             for k in range(self.newtonits):
                 d = - self.pointresidual(mesh, s, ell, p) / self._pointjacobian(mesh, s, p)
                 d = max(d, phi[p] - s[p])                     # require admissible
                 d = np.sign(d) * min(abs(d), self.newtondmax) # limit huge steps
-                s[p] += omega * d                             # take step
-                # if did not move, no need to iterate further
-                if abs(omega * d) < self.newtondtol:
+                s[p] += self.args.omega * d                   # take step
+                if abs(self.args.omega * d) < self.newtondtol: # tiny step
                     break
-        mesh.WU += self.newtonits  # overcount WU if lots of points are active
+        mesh.WU += self.newtonits  # overcount WU if many points are active
         return infeascount
 
     def phi(self, x):
@@ -180,3 +178,35 @@ class PNGSSIA(SmootherObstacleProblem):
         plt.xticks(fontsize=12.0)
         plt.yticks(fontsize=12.0)
         plt.savefig('siadatafigure.pdf', bbox_inches='tight')
+
+
+class PNJacobiSIA(PNGSSIA):
+
+    def _jacobian(self, mesh, s, ell):
+        '''Compute the Jacobian at each point, returning a vector.  Calls
+        _pointjacobian() for values.'''
+        mesh.checklen(s)
+        mesh.checklen(ell)
+        J = mesh.zeros()
+        for p in range(1, mesh.m+1):
+            J[p] = self._pointjacobian(mesh, s, p)
+        return J
+
+    def smoothersweep(self, mesh, s, ell, phi, forward=True):
+        '''Do in-place projected nonlinear Jacobi sweep over the interior
+        points p=1,...,m, for the SIA problem.  Compare PNGSSIA.smoothersweep()
+        and PJacobiPoisson.smoothersweep().  Underrelaxation is expected;
+        try omega = 0.8.'''
+        infeascount = self._checkrepairadmissible(mesh, s, phi)
+        res = self.residual(mesh, s, ell)
+        Jac = self._jacobian(mesh, s)
+        for p in self._sweepindices(mesh, forward=forward):
+            for k in range(self.newtonits):
+                d = - res[p] / Jac[p]
+                d = max(d, phi[p] - s[p])                     # require admissible
+                d = np.sign(d) * min(abs(d), self.newtondmax) # limit huge steps
+                s[p] += self.args.omega * d                   # take step
+                if abs(self.args.omega * d) < self.newtondtol: # tiny step
+                    break
+        mesh.WU += self.newtonits  # overcount WU if many points are active
+        return infeascount

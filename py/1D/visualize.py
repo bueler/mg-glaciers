@@ -145,7 +145,7 @@ class VisObstacle():
             if len(self.args.o) > 0:
                 rname = 'resid_' + self.args.o
             self.residuals(filename=rname)
-            if not self.args.pgsonly:
+            if not self.args.sweepsonly:
                 dname, iname = '', ''
                 if len(self.args.o) > 0:
                     dname = 'decomp_' + self.args.o

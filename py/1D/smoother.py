@@ -1,9 +1,9 @@
 '''Module for SmootherObstacleProblem class and its derived class PGSPoisson.'''
 
+__all__ = ['SmootherObstacleProblem', 'PGSPoisson', 'PJacobiPoisson']
+
 from abc import ABC, abstractmethod
 import numpy as np
-
-__all__ = ['SmootherObstacleProblem', 'PGSPoisson', 'PJacobiPoisson']
 
 class SmootherObstacleProblem(ABC):
     '''Abstact base class for a smoother on an obstacle problem.  Works on
@@ -50,7 +50,7 @@ class SmootherObstacleProblem(ABC):
         return F
 
     @abstractmethod
-    def smoothersweep(self, mesh, w, ell, phi, forward=True, omega=1.0):
+    def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Apply obstacle-problem smoother on mesh to modify w in place.'''
 
     @abstractmethod
@@ -82,7 +82,7 @@ class PGSPoisson(SmootherObstacleProblem):
         assert 1 <= p <= mesh.m
         return (1.0/mesh.h) * (2.0*w[p] - w[p-1] - w[p+1]) - ell[p]
 
-    def smoothersweep(self, mesh, w, ell, phi, forward=True, omega=1.0):
+    def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected Gauss-Seidel sweep, with relaxation factor
         omega, over the interior points p=1,...,m, for the classical obstacle
         problem
@@ -98,7 +98,7 @@ class PGSPoisson(SmootherObstacleProblem):
         infeascount = self._checkrepairadmissible(mesh, w, phi)
         for p in self._sweepindices(mesh, forward=forward):
             c = - self.pointresidual(mesh, w, ell, p) / _poissondiagonalentry(mesh, p)
-            w[p] = max(w[p] + omega * c, phi[p])
+            w[p] = max(w[p] + self.args.omega * c, phi[p])
         mesh.WU += 1
         return infeascount
 
@@ -166,17 +166,17 @@ class PJacobiPoisson(PGSPoisson):
     '''Derived class of PGSPoisson that replaces the Gauss-Seidel
     (multiplicative) smoother with a Jacobi (additive) version.'''
 
-    def smoothersweep(self, mesh, w, ell, phi, forward=True, omega=0.8):
+    def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected Jacobi sweep, with relaxation factor
         omega, over the interior points p=1,...,m, for the classical obstacle
         problem.  Same as Gauss-Seidel but the new iterate values are NOT
-        used when updating the next point.  As suggested by Tai (2003),
-        underrelaxation is expected; omega = 0.8 seems to work o.k.'''
+        used when updating the next point; the residual is evaluated
+        at the start and those values are used for the sweep.  Tai (2003)
+        says underrelaxation is expected; omega = 0.8 seems to work.'''
         infeascount = self._checkrepairadmissible(mesh, w, phi)
-        wold = w.copy()
-        rold = self.residual(mesh, wold, ell)
+        r = self.residual(mesh, w, ell)
         for p in self._sweepindices(mesh, forward=forward):
-            c = - rold[p] / _poissondiagonalentry(mesh, p)
-            w[p] = max(wold[p] + omega * c, phi[p])
+            c = - r[p] / _poissondiagonalentry(mesh, p)
+            w[p] = max(w[p] + self.args.omega * c, phi[p])
         mesh.WU += 1
         return infeascount

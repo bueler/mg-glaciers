@@ -19,7 +19,7 @@ from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
 from smoother import PGSPoisson, PJacobiPoisson
-from siasmoother import PNGSSIA
+from siasmoother import PNGSSIA, PNJacobiSIA
 
 parser = argparse.ArgumentParser(description='''
 Solve 1D obstacle problems:  For given Banach space X and phi in X,
@@ -54,8 +54,10 @@ interior PDE.  We solve two particular problems:
 Solution is by Alg. 4.7 in Gräser & Kornhuber (2009), namely the multilevel
 constraint decomposition slash-cycle method by Tai (2003) in which a monotone
 restriction operator decomposes the defect obstacle.  The smoother and the
-coarse-mesh solver are projected Gauss-Seidel (PGS), which is nonlinear (PNGS)
-for problem 2.  Option -pgsonly reverts to single-level PGS.
+coarse-mesh solver are either projected Gauss-Seidel or projected Jacobi
+using a relaxation parameter (-omega).  These are nonlinear for problem 2,
+using a fixed number of Newton iterations at each point.  Option -sweepsonly
+reverts to a single-level solver using these smoothers.
 
 Get usage help with -h or --help.
 
@@ -110,8 +112,6 @@ parser.add_argument('-omega', type=float, default=1.0, metavar='X',
                     help='relaxation factor in PGS, thus PSOR (default X=1.0)')
 parser.add_argument('-parabolay', type=float, default=-1.0, metavar='X',
                     help='vertical location of obstacle in -problem parabola (default X=-1.0)')
-parser.add_argument('-pgsonly', action='store_true', default=False,
-                    help='do projected Gauss-Seidel as cycles (instead of multilevel)')
 parser.add_argument('-plain', action='store_true', default=False,
                     help='when used with -show or -o, only show exact solution and obstacle')
 parser.add_argument('-poissoncase', choices=['icelike', 'parabola'], metavar='X', default='icelike',
@@ -132,6 +132,8 @@ parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-siaintervallength', type=float, default=1800.0e3, metavar='L',
                     help='solve SIA on [0,L] (default L=1800 km)')
+parser.add_argument('-sweepsonly', action='store_true', default=False,
+                    help='do smoother sweeps (PGS or PJacobi) as cycles, instead of multilevel')
 parser.add_argument('-symmetric', action='store_true', default=False,
                     help='use symmetric projected Gauss-Seidel sweeps (forward then backward)')
 parser.add_argument('-up', type=int, default=0, metavar='N',
@@ -165,16 +167,17 @@ if args.problem == 'poisson':
         hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=1.0)
 elif args.problem == 'sia':
     if args.jacobi:
-        raise NotImplementedError
-    obsprob = PNGSSIA(args)
+       obsprob = PNGSSIA(args)
+    else:
+       obsprob = PNGSSIA(args)
     for j in range(levels):
         hierarchy[j] = MeshLevel1D(j=j+args.jcoarse,
                                    xmax=args.siaintervallength)
     # attach obstacle to mesh
     # FIXME o.k for single level but NOT for multilevel
-    if not args.pgsonly:
+    if not args.sweepsonly:
         raise NotImplementedError( \
-            'The constraint decomposition theory is not ready for SIA.  Use -pgsonly.')
+            'The constraint decomposition theory is not ready for SIA.  Use -sweepsonly.')
     mesh = hierarchy[-1]
     mesh.phi = obsprob.phi(mesh.xx())
 
@@ -261,13 +264,11 @@ for ni in nirange:
                 if irnorm > 100.0 * irnorm0:
                     print('DIVERGED:  irnorm > 100 irnorm0')
                     break
-        if args.pgsonly:
+        if args.sweepsonly:
             # smoother sweeps on finest level
-            infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine,
-                                                 omega=args.omega)
+            infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine)
             if args.symmetric:
-                infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine,
-                                                     omega=args.omega, forward=False)
+                infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine, forward=False)
         else:
             # Tai (2003) constraint decomposition method cycles; default=V(1,0);
             #   Alg. 4.7 in G&K (2009); see mcdl-solver and mcdl-slash in paper
@@ -276,8 +277,7 @@ for ni in nirange:
             y, infeas = mcdlcycle(obsprob, ni, hierarchy, ell,
                                   down=args.down, up=args.up, coarse=args.coarse,
                                   levels=levels, view=args.mgview,
-                                  symmetric=args.symmetric,
-                                  pgsomega=args.omega, pgscoarsestomega=args.coarsestomega)
+                                  symmetric=args.symmetric)
             uu += y
             infeascount += infeas
         actualits = s+1
@@ -294,8 +294,8 @@ method = 'using '
 if args.ni:
     method = 'nested iter. & '
 symstr = 'sym. ' if args.symmetric else ''
-if args.pgsonly:
-    method += '%d applications of %sPGS' % (actualits, symstr)
+if args.sweepsonly:
+    method += '%d applications of %ssmoother' % (actualits, symstr)
 else:
     method += '%d %sV(%d,%d) cycles' % (actualits, symstr, args.down, args.up)
 if obsprob.exact_available():
