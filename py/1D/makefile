@@ -28,7 +28,7 @@ runobstacle_7:
 	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -jfine 2 -monitor -irtol 1.0e-1" 1 7
 
 runobstacle_8:
-	-@./../testit.sh obstacle.py "-problem sia -exactinitial -sweepsonly -jfine 3 -monitor -cyclemax 2" 1 8
+	-@./../testit.sh obstacle.py "-problem sia -exactinitial -sweepsonly -jacobi -omega 0.5 -jfine 3 -monitor -cyclemax 2" 1 8
 
 test_obstacle: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8
 
