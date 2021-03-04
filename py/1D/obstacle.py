@@ -167,7 +167,7 @@ if args.problem == 'poisson':
         hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=1.0)
 elif args.problem == 'sia':
     if args.jacobi:
-       obsprob = PNGSSIA(args)
+       obsprob = PNJacobiSIA(args)
     else:
        obsprob = PNGSSIA(args)
     for j in range(levels):

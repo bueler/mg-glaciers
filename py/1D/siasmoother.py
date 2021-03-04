@@ -182,11 +182,10 @@ class PNGSSIA(SmootherObstacleProblem):
 
 class PNJacobiSIA(PNGSSIA):
 
-    def _jacobian(self, mesh, s, ell):
+    def _jacobian(self, mesh, s):
         '''Compute the Jacobian at each point, returning a vector.  Calls
         _pointjacobian() for values.'''
         mesh.checklen(s)
-        mesh.checklen(ell)
         J = mesh.zeros()
         for p in range(1, mesh.m+1):
             J[p] = self._pointjacobian(mesh, s, p)
