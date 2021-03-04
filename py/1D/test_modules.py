@@ -111,27 +111,6 @@ def test_poisson_pgssweep():
     prob.smoothersweep(ml, w, ell, phi, forward=True)
     assert all(prob.residual(ml, w, ell) == ml.zeros())
 
-def test_sia_pointresidual():
-    '''Point-wise residual for SIA.'''
-    ml = MeshLevel1D(j=1, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
-    prob = PNGSSIA(testargs)
-    ml.phi = ml.zeros()                    # attach obstacle to mesh
-    f = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
-    s = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
-    assert np.isreal(prob.pointresidual(ml, s, ml.ellf(f), 1))
-    #FIXME assert prob.pointresidual(ml, s, ml.ellf(f), 1) == VALUE
-
-def test_sia_residual():
-    '''Residual for SIA.'''
-    ml = MeshLevel1D(j=1, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
-    prob = PNGSSIA(testargs)
-    ml.phi = ml.zeros()                    # attach obstacle to mesh
-    m = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
-    s = np.array([0.0, 2500.0, 3100.0, 2500.0, 0.0])  # hand-adjusted so res is small!
-    res = prob.residual(ml, s, ml.ellf(m))
-    ml.checklen(res)
-    assert all(abs(res) < 1.0e-2)
-
 def test_sia_exact():
     '''Exact solution for SIA.'''
     ml = MeshLevel1D(j=2, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
@@ -149,7 +128,18 @@ def test_sia_exact():
     # generate siadatafigure.pdf using j=7 levels above:
     # prob.datafigure(ml)
 
-def test_sia_smoothersweep():
+def test_pngssia_residual():
+    '''Residual for SIA.'''
+    ml = MeshLevel1D(j=1, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
+    prob = PNGSSIA(testargs)
+    ml.phi = ml.zeros()                    # attach obstacle to mesh
+    m = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
+    s = np.array([0.0, 2500.0, 3100.0, 2500.0, 0.0])  # hand-adjusted so res is small!
+    res = prob.residual(ml, s, ml.ellf(m))
+    ml.checklen(res)
+    assert all(abs(res) < 1.0e-2)
+
+def test_pngssia_smoothersweep():
     '''Smoother for SIA.'''
     ml = MeshLevel1D(j=1, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
     prob = PNGSSIA(testargs)
