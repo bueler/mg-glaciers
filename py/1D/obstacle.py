@@ -262,8 +262,7 @@ for ni in nirange:
                 if irnorm <= args.irtol * irnorm0:
                     break
                 if irnorm > 100.0 * irnorm0:
-                    print('DIVERGED:  irnorm > 100 irnorm0')
-                    break
+                    print('DIVERGENCE WARNING:  irnorm > 100 irnorm0')
         if args.sweepsonly:
             # smoother sweeps on finest level
             infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine)
