@@ -5,6 +5,7 @@
 \usepackage{times,bm,bbm,empheq,fancyvrb,graphicx}
 \usepackage[dvipsnames]{xcolor}
 \usepackage{longtable}
+\usepackage{booktabs}
 
 \usepackage{tikz}
 \usetikzlibrary{decorations.pathreplacing}
@@ -218,20 +219,20 @@ Our basic solution method for FE problem \eqref{eq:feweakpoisson}, called \emph{
   F(w+c\,\psi_p^j)[\psi_p^j] = 0.  \label{eq:gaussseidelpoint}
 \end{equation}
 Noting that $F(w+c\,\psi_p^j)[\psi_p^j] = F(w)[\psi_p^j] + c\, a(\psi_p^j,\psi_p^j)$ because $a(\cdot,\cdot)$ is bilinear, we have the following algorithm:
-\begin{pseudo*}
-\pr{gssweep}(j,w,F)\text{:} \\+
+\begin{pseudo*} \label{ps:gs-sweep}
+\pr{gs-sweep}(j,w,F)\text{:} \\+
     for $p=1,\dots,m_j$ \\+
         $\displaystyle c = - F(w)[\psi_p^j]\, \big/ \,a(\psi_p^j,\psi_p^j)$  \\
         $w \gets w + c \psi_p^j$
 \end{pseudo*}
 
-This procedure takes the residual function as an argument and it modifies $w$ in-place.  Assuming the values $a(\psi_p^j,\psi_q^j)$ and $\ip{f}{\psi_p^j}$ are available, computing $c$ involves $O(1)$ work, and thus one application of \textsc{gssweep} requires $O(m_j)$ work.  Though \textsc{gssweep} only works as stated for a linear equation in the form of \eqref{eq:feweakpoisson}, it can be modified to solve nonlinear systems, so-called \emph{nonlinear Gauss-Seidel}.  For example, one could apply a few steps of Newton's iteration to each scalar equation $f(c) = F(w+c\,\psi_p^j)[\psi_p^j] = 0$.  We will adopt this approach in section \ref{sec:sia}.
+This procedure takes the residual function as an argument and it modifies $w$ in-place.  Assuming the values $a(\psi_p^j,\psi_q^j)$ and $\ip{f}{\psi_p^j}$ are available, computing $c$ involves $O(1)$ work, and thus one application of \pr{gs-sweep} requires $O(m_j)$ work.  Though \pr{gs-sweep} only works as stated for a linear equation in the form of \eqref{eq:feweakpoisson}, it can be modified to solve nonlinear systems, so-called \emph{nonlinear Gauss-Seidel}.  For example, one could apply a few steps of Newton's iteration to each scalar equation $f(c) = F(w+c\,\psi_p^j)[\psi_p^j] = 0$.  We will adopt this approach in section \ref{sec:sia}.
 
-Algorithm \pr{gssweep} has no dependence on the dimension of the problem.  In particular, for any linear elliptic PDE which can be written abstractly as weak form \eqref{eq:weakpoisson}, \pr{gssweep} applies as stated with $m_j$ denoting the number of $j$th-level mesh nodes and $\psi_p^j$ the corresponding hat functions.  However, the rate of convergence of GS iterations depends on the details of the PDE, including its dimension.
+Algorithm \pr{gs-sweep} has no dependence on the dimension of the problem.  In particular, for any linear elliptic PDE which can be written abstractly as weak form \eqref{eq:weakpoisson}, \pr{gs-sweep} applies as stated with $m_j$ denoting the number of $j$th-level mesh nodes and $\psi_p^j$ the corresponding hat functions.  However, the rate of convergence of GS iterations depends on the details of the PDE, including its dimension.
 
-What does a sweep of GS do to an iterate $w$?  By sequentially making the residual zero on each hat function we hope that the residual becomes smaller.  However, modifying $w$ to make the residual zero on one hat generally means the previously-zeroed locations are no longer zero because the equations are non-trivially coupled.  Considering only fine-level GS sweeps for a moment, one can prove for the Poisson problem that this iteration does eventually converge to the solution $u^h$ of \eqref{eq:feweakpoisson} \cite[for example]{Greenbaum1997}, but that is not our focus.  Instead, a key observation is that such a sweep is a fast \emph{smoother} of the (algebraic) error $e=w-u^h$, a function in $\mathcal{V}^h$, even when it is slow to make this error small.  Informally, the formula for $c$ in \textsc{gssweep} combines neighboring values of $w$ so as to flatten a peak or trough in the error.
+What does a sweep of GS do to an iterate $w$?  By sequentially making the residual zero on each hat function we hope that the residual becomes smaller.  However, modifying $w$ to make the residual zero on one hat generally means the previously-zeroed locations are no longer zero because the equations are non-trivially coupled.  Considering only fine-level GS sweeps for a moment, one can prove for the Poisson problem that this iteration does eventually converge to the solution $u^h$ of \eqref{eq:feweakpoisson} \cite[for example]{Greenbaum1997}, but that is not our focus.  Instead, a key observation is that such a sweep is a fast \emph{smoother} of the (algebraic) error $e=w-u^h$, a function in $\mathcal{V}^h$, even when it is slow to make this error small.  Informally, the formula for $c$ in \textsc{gs-sweep} combines neighboring values of $w$ so as to flatten a peak or trough in the error.
 
-An example is shown in Figure \ref{fig:residualpoints}, where we start with a non-smooth initial iterate $w$ on an $m_J=6$ mesh; its residual $F(w)$ is at top-left.  The Figure shows the residual (left sequence) and the error (right) after each step in the \textbf{for} loop in \textsc{gssweep}, indicating the location which is zeroed.  (We plot the linear functionals $F(w)[\cdot]$ as piecewise-constant functions with values $F(w)[\psi_p^J]$.)  While both the residual and error become smaller in norm, the strongest effect is the damping of high frequencies.
+An example is shown in Figure \ref{fig:residualpoints}, where we start with a non-smooth initial iterate $w$ on an $m_J=6$ mesh; its residual $F(w)$ is at top-left.  The Figure shows the residual (left sequence) and the error (right) after each step in the \textbf{for} loop in \pr{gs-sweep}, indicating the location which is zeroed.  (We plot the linear functionals $F(w)[\cdot]$ as piecewise-constant functions with values $F(w)[\psi_p^J]$.)  While both the residual and error become smaller in norm, the strongest effect is the damping of high frequencies.
 
 \begin{figure}[t]
 \includegraphics[width=0.8\textwidth]{genfigs/residualpoints.pdf}
@@ -242,36 +243,36 @@ An example is shown in Figure \ref{fig:residualpoints}, where we start with a no
 The observation that GS is a good smoother can be made quantitative by considering the frequencies supported on a mesh with spacing $h$.  The highest-frequency faithfully-represented mode on such a mesh is the sawtooth mode with (spatial) frequency $\omega=(2h)^{-1}$.  One GS sweep multiplies all modes with frequencies higher than $\frac{1}{2} \omega$ by factors at most $1/\sqrt{5}\approx 0.45$ \cite[Chapter 4]{Briggsetal2000}.  That is, a GS sweep \emph{strongly damps the highest half} of the frequencies in the error, though the particular damping factor depends on the dimension and the differential operator.
 
 \subsection*{Multilevel subspace corrections}  When the GS smoother is applied on a given level $j$, whether once or a few times, the error and residual of the iterate will no longer contain much energy in the $j$th-level modes.  Thus it makes sense to remove the energy in the next-coarser modes by applying GS on the $j-1$ level.  Starting on the finest level $J$, we have the following \emph{multilevel subspace decomposition} algorithm which corrects the residual on each level.
-\begin{pseudo*}
+\begin{pseudo*} \label{ps:msd-slash}
 \pr{msd-slash}(w,F)\text{:} \\+
     for $j=J$ downto $0$ \\+
-        \pr{gssweep}(j,w,F)
+        \pr{gs-sweep}(j,w,F)
 \end{pseudo*}
 
 The reason this downward-only scheme is called ``slash'' is illustrated in Figure \ref{fig:msdcycles}.  Other correction sequences are possible, for example one may return to the fine level in a ``V'' cycle, as follows.
-\begin{pseudo*}
+\begin{pseudo*} \label{ps:msd-vcycle}
 \pr{msd-vcycle}(w,F)\text{:} \\+
     for $j=J$ downto $0$ \\+
-        \pr{gssweep}(j,w,F) \\-
+        \pr{gs-sweep}(j,w,F) \\-
     for $j=1$ to $J$ \\+
-        \pr{gssweep}(j,w,F)
+        \pr{gs-sweep}(j,w,F)
 \end{pseudo*}
 Furthermore one may repeatedly apply the smoother on each level, or go up-and-down the mesh hierarchy in a more complicated manner (``W-cycles'', for example), or use coarser subspace corrections before finer; there are many possibilities \cite{Briggsetal2000,Trottenbergetal2001}.  We will apply both slash and V-cycles to glacier problems (sections \ref{sec:sia}, \ref{sec:stokes}).
 
 These \pr{msd} algorithms improve a fine-level iterate $w$ but they do not (generally) exactly solve the problem \eqref{eq:feweakpoisson}.  Instead one applies them via iteration, testing for convergence using some tolerance on the norm of the (computable) fine-level residual.  (An alternative view of MSD algorithms would treat them as preconditioners \cite[for example]{Bueler2021}, but we will not need to exploit this idea.)  For example, the following algorithm requires the residual to decrease from its initial value by a certain factor.
-\begin{pseudo*}
+\begin{pseudo*} \label{ps:msd-solver}
 \pr{msd-solver}(F,\id{rtol}=10^{-4})\text{:} \\+
     $w=0$ \qquad\qquad\qquad\qquad\qquad \ct{or other fine-level initial iterate} \\
     $r_0 = \|F(w)\|$ \\
     repeat \\+
-        \pr{msd-slash}(w,F) \qquad\qquad \ct{or \pr{msd-vcycle}, etc.} \\-
+        \pr{msd-slash}(w,F) \qquad\qquad \ct{or \pr{msd-vcycle}} \\-
     until $\|F(w)\| \le r_0\, \id{rtol}$ \\
     return $w$
 \end{pseudo*}
 
 \begin{figure}
 \input{tikz/msdcycles.tex}
-\caption{Subspace corrections can be downward-only as in \pr{msd-slash} (left) or a V-cycle as in \pr{msd-vcycle} (right).  Each dot in this three-level hierarchy ($J=2$) is an application of \pr{gssweep} on that level.}
+\caption{Subspace corrections can be downward-only as in \pr{msd-slash} (left) or a V-cycle as in \pr{msd-vcycle} (right).  Each dot in this three-level hierarchy ($J=2$) is an application of \pr{gs-sweep} on that level.}
 \label{fig:msdcycles}
 \end{figure}
 
@@ -285,7 +286,7 @@ These simply-stated schemes, which appeared relatively-late in the history of mu
 
 This result, that each cycle reduces the error by a mesh-independent factor $\rho<1$, is called \emph{multigrid convergence}, and $\rho$ the \emph{multigrid convergence rate} \cite{Braess2007}.  It follows from \eqref{eq:msdconvergence} that if we want the error norm $e^{(s)} = \|w^{(s)}-u^h\|_{\mathcal{H}}$ to be reduced to below some level $\eps>0$ then we should do $s>(\log\eps - \log e^{(0)})/\log \rho$ iterations, where $e^{(0)}$ is the initial error norm.  That is, we need $O(|\log\eps|)$ iterations.  Smaller $\rho$ implies a better constant, and it is common for a V-cycle to have a faster convergence rate than a slash cycle, but the latter does less work per cycle so comparison is interesting; see section \ref{sec:obstacle}.  Note that the error norms are not computable, but they are proportional to computable residual norms within a factor of the condition number of the system matrix \cite[Chapter 2]{Bueler2016}.
 
-However, even \pr{msd-solver} is not yet a complete solver.  Its performance depends on how iterates $w$ and residuals $F(w)[\cdot]$ are represented on each mesh level.  For example, if we represent $w$ and $F(w)$ using the fine-level basis $\{\psi_p^J\}$ then one application of \pr{gsweep}$(J,w,F)$ is indeed fast, i.e.~$O(m_J)$ operations, with a small constant, because evaluating each $F(w)[\psi_p^J]$ requires only a few operations.  However, evaluating $F(w)[\psi_p^j]$ on coarse levels ($j<J$) means computing integrals over the wide support of $\psi_p^j$, which is nonzero at many fine-mesh nodes $x_p^J$.  That is, \pr{gssweep}$(j,w,F)$ for $j<J$ is not an efficient operation if $w$ and $F(w)$ are represented on the fine level.  (Specifically, it is not an $O(m_j)$ operation with a coefficient which is independent of $j$.)  As explained next, this is addressed via hierarchical representations which are compatible with multilevel corrections.
+However, even \pr{msd-solver} is not yet a complete solver.  Its performance depends on how iterates $w$ and residuals $F(w)[\cdot]$ are represented on each mesh level.  For example, if we represent $w$ and $F(w)$ using the fine-level basis $\{\psi_p^J\}$ then one application of \pr{gsweep}$(J,w,F)$ is indeed fast, i.e.~$O(m_J)$ operations, with a small constant, because evaluating each $F(w)[\psi_p^J]$ requires only a few operations.  However, evaluating $F(w)[\psi_p^j]$ on coarse levels ($j<J$) means computing integrals over the wide support of $\psi_p^j$, which is nonzero at many fine-mesh nodes $x_p^J$.  That is, \pr{gs-sweep}$(j,w,F)$ for $j<J$ is not an efficient operation if $w$ and $F(w)$ are represented on the fine level.  (Specifically, it is not an $O(m_j)$ operation with a coefficient which is independent of $j$.)  As explained next, this is addressed via hierarchical representations which are compatible with multilevel corrections.
 
 \subsection*{Linear geometric multigrid}  Once the smoother has been applied on a finer level, so that the error and the residual no longer contain much energy in the high-frequency modes, the smoother should then be applied on the next-coarser level, but efficiently using coarse-level data structures to represent the problem.  This idea is then applied down the mesh-level hierarchy.  By using coarse-level representations we go beyond multilevel subpace corrections and create a true multigrid algorithm.
 
@@ -342,24 +343,23 @@ Again \eqref{eq:hatcombination} and \eqref{eq:nodalcoefficients} are used to fin
 \end{equation}
 and $c_{pq} = \psi_p^{j-1}(x_q^j)$ as before.  The result $P y$ is the same piecewise-linear function as the input $y$, but the representation has changed.
 
-
 Combining the above ideas gives a \emph{geometric multigrid} (GMG) \emph{V-cycle}.  In addition to sweeps of the GS smoother, our V-cycle algorithm solves the coarse-level correction equation \eqref{eq:coarsecorrection}, applies update \eqref{eq:update}, and follows by more smoother sweeps.  The next pseudocode, which modifies the fine-level iterate $w^J$ in-place, can be called repeatedly so as to improve the iterate.
-\begin{pseudo*}
+\begin{pseudo*} \label{ps:gmg-vcycle}
 \pr{gmg-vcycle}(J,w^J,F^J,\id{down}=1,\id{up}=1)\text{:} \\+
     for $j=J$ downto $1$ \\+
-        $\text{\pr{gssweep}}^{\text{\id{down}}}(j,w^j,F^j)$ \\
+        $\text{\pr{gs-sweep}}^{\text{\id{down}}}(j,w^j,F^j)$ \\
         $\ell^{j-1} := R(F^j(w^j))$ \\
         $F^{j-1}(y)[\cdot] := a(y,\cdot) - \ell^{j-1}[\cdot]$ \\
         $w^{j-1} = 0$ \qquad\qquad\qquad\qquad\qquad \ct{note $w^{j-1}=e^{j-1}$} \\-
-    \pr{coarsesolve}(w^0,F^0) \\
+    \pr{gmg-coarsesolve}(w^0,F^0) \\
     for $j=1$ to $J$ \\+
         $w^j \gets w^j + P w^{j-1}$ \\
-        $\text{\pr{gssweep}}^{\text{\id{up}}}(j,w^j,F^j)$ \\-
+        $\text{\pr{gs-sweep}}^{\text{\id{up}}}(j,w^j,F^j)$ \\-
 \end{pseudo*}
 
 It is straightforward to implement \pr{gmg-vcycle} recursively, but the above form using loops will be easier to extend to inequality-constrained cases.  A non-recursive implementation also explicitly identifies the storage needed, namely memory to hold states $w^0,\dots,w^J$ and linear functionals $\ell^0,\dots,\ell^J$.
 
-After \texttt{down} smoother sweeps, denoted here by $\text{\textsc{gssweep}}^{\text{\texttt{down}}}$, the correction equation \eqref{eq:coarsecorrection} is applied on the next-coarser level with a ``new'' source (linear functional) $\ell^{j-1}$, and a zero initial iterate.  Observe that $\ell^{j-1}$ is the amount by which the finer-level iterate $w^j$ did not already solve the problem.  (For instance, $\ell^{J-1}=0$ if $w^J=u^h$.)  After the correction an additional \texttt{up} sweeps are done to remove high-frequency components from the updated iterate.  Figure \ref{fig:vcycle} illustrates a V-cycle as implemented in \pr{gmg-vcycle}.
+After \texttt{down} smoother sweeps, denoted here by $\text{\textsc{gs-sweep}}^{\text{\texttt{down}}}$, the correction equation \eqref{eq:coarsecorrection} is applied on the next-coarser level with a ``new'' source (linear functional) $\ell^{j-1}$, and a zero initial iterate.  Observe that $\ell^{j-1}$ is the amount by which the finer-level iterate $w^j$ did not already solve the problem.  (For instance, $\ell^{J-1}=0$ if $w^J=u^h$.)  After the correction an additional \texttt{up} sweeps are done to remove high-frequency components from the updated iterate.  Figure \ref{fig:vcycle} illustrates a V-cycle as implemented in \pr{gmg-vcycle}.
 
 \begin{figure}
 \input{tikz/vcycle.tex}
@@ -367,14 +367,14 @@ After \texttt{down} smoother sweeps, denoted here by $\text{\textsc{gssweep}}^{\
 \label{fig:vcycle}
 \end{figure}
 
-The algorithm calls a coarse solver subroutine on the $j=0$ level.  For a linear problem like the one here, one may apply a direct solver to the linear system, but direct solvers are not available for nonlinear (e.g.~glacier) problems.  For simplicity and generalizability we suppose \textsc{coarsesolve} is implemented as a fixed number of in-place GS sweeps:
-\begin{pseudo*}
-\pr{coarsesolve}(w,F,\id{coarse}=1)\text{:} \\+
-    $\text{\pr{gssweep}}^{\text{\id{coarse}}}(0,w,F)$ \\
+The algorithm calls a coarse solver subroutine on the $j=0$ level.  For a linear problem like the one here, one may apply a direct solver to the linear system, but direct solvers are not available for nonlinear (e.g.~glacier) problems.  For simplicity and generalizability we suppose \pr{gmg-coarsesolve} is implemented as a fixed number of in-place GS sweeps:
+\begin{pseudo*} \label{ps:gmg-coarsesolve}
+\pr{gmg-coarsesolve}(w,F,\id{coarse}=1)\text{:} \\+
+    $\text{\pr{gs-sweep}}^{\text{\id{coarse}}}(0,w,F)$ \\
 \end{pseudo*}
 If the coarsest mesh has a single node ($m_0=1$) then a single sweep gives an exact solution.  In general this solver should be accurate and fast if $m_0$ is small.  Nonetheless the choice of the coarse level and its solver is nontrivial for realistic problems; see sections \ref{sec:sia} and \ref{sec:stokes}.
 
-Before proceeding, the reader might ask what makes the above V-cycles ``geometric'' multigrid?  The label is partly historical, but note that the restriction and prolongation operators directly use the FE mesh, i.e.~the formulae for $R$ and $P$ use coefficients $c_{pq} = \psi_p^{j-1}(x_q^j)$ based on the mesh hat functions, and that we \emph{rediscretize} on coarser levels.  In fact, in this and the next section we will use $a(\cdot,\cdot)$ to refers to the original form in \eqref{eq:weakpoisson}, and computation of the residual and matrix entries needed for \pr{gssweep}, in particular, use values $a(\psi_p^j,\psi_q^j)$ for the given level.  An alternative is to form a mesh-level matrices recursively by $A^{j-1} = R A^j P$; this \emph{Galerkin} approach is also common; see \cite{Bueler2021} and \cite[Chapter V]{Braess2007}.
+Before proceeding, the reader might ask what makes the above V-cycles ``geometric'' multigrid?  The label is partly historical, but note that the restriction and prolongation operators directly use the FE mesh, i.e.~the formulae for $R$ and $P$ use coefficients $c_{pq} = \psi_p^{j-1}(x_q^j)$ based on the mesh hat functions, and that we \emph{rediscretize} on coarser levels.  In fact, in this and the next section we will use $a(\cdot,\cdot)$ to refers to the original form in \eqref{eq:weakpoisson}, and computation of the residual and matrix entries needed for \pr{gs-sweep}, in particular, use values $a(\psi_p^j,\psi_q^j)$ for the given level.  An alternative is to form a mesh-level matrices recursively by $A^{j-1} = R A^j P$; this \emph{Galerkin} approach is also common; see \cite{Bueler2021} and \cite[Chapter V]{Braess2007}.
 
 For comparison, in an \emph{algebraic multigrid} (AMG) \cite{Trottenbergetal2001} approach the prolongation $P$ would be constructed using operations on the entries of the linear system matrix $A$, and then AMG algorithms invariably define $R=P^\top$.  For linear elliptic problems the geometric and algebraic approaches are closely-related, in part because AMG has been ``tuned'' to generate prolongations $P$ with similar coefficients.  For our upcoming nonlinear and inequality-constrained problems, however, the geometric approach generalizes directly, while AMG can only be used within the linear steps in a separately-constructed iteration, e.g.~based on an outer Newton iteration.  Both approaches are potentially optimal, and natural competitors for the highest-performance solutions, but we persevere with the geometric approach.
 
@@ -394,8 +394,8 @@ canonical prolongation $P$   & \eqref{eq:canonicalprolongationaction} & $\mathca
 \end{tabular}
 
 \medskip
-\label{tab:restrictionsprolongations}
 \caption{We use three transfer operators in this paper.  The nonlinear monotone restriction operator $\mR$ is defined in section \ref{sec:obstacle}.}
+\label{tab:restrictionsprolongations}
 \end{table}
 
 As linear operators, $R$ and $P$ may be represented as sparse non-square matrices, and then they are transposes ($P=R^\top$), but using memory to store them as matrices is unnecessary.  They are applied in $O(m_j)$ operations via \eqref{eq:canonicalrestrictionaction} and \eqref{eq:canonicalprolongationaction}, formulae which generalize verbatim to unstructured 2D and 3D meshes \cite[Chapter V]{Braess2007} if the indices $p,q$ denote the nodes of the mesh.  However, the two operators differ in their invertibility.  A function $y$ in $\mathcal{V}^{j-1}$ can be exactly recovered from $Py$ because $y(x)$ and $(Py)(x)$ are the same piecewise-linear function, and in fact we only explicitly write $P$ when indicating a change in vector representation.  (Said differently, as a map $P$ is one-to-one, and thus it has a left inverse.)  By contrast, $\ell$ in $(\mathcal{V}^j)'$ is not recoverable from $R\ell$; the values $\ell[\psi_q^j]$, the action of $\ell$ on the finer level hats, are averaged onto the coarse level and thus lost.
@@ -482,7 +482,7 @@ FIXME On the other hand, $\mathcal{K} \subset \mathcal{H}$ is an infinite-dimens
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/cartoonplane.pdf}
-\caption{Variational inequality \eqref{eq:obstaclevigradient} says that the minimum of $I(w)$ over $w$ in $\mathcal{K}$, namely the solution $u$, is where any vector $v-u$ for $v$ in $\mathcal{K}$ points into $\mathcal{K}$, that is, within $90^\circ$ of the $\grad I(u)$.  (This is slightly informal; see text.)}
+\caption{Variational inequality \eqref{eq:obstaclevigradient} characterizes the minimum $u$ of $I(w)$ over the convex cone $\mathcal{K}=\{v\ge \varphi\} \subset \mathcal{H}$.  Any vector $v-u$, for $v$ in $\mathcal{K}$, is within $90^\circ$ of $\grad I(u)$.  (This is slightly informal; see text.)}
 \label{fig:cartoonplane}
 \end{figure}
 
@@ -519,15 +519,15 @@ The minimization view is not essential, however, and we can derive \eqref{eq:pgs
 \end{equation}
 for all $\tilde c\ge \phi_p-w_p$.  Inequality \eqref{eq:pgspointwisevi} is a one-dimensional VI of form $(\tilde c - c)g(c) \ge 0$, on an interval, thus $g(c)=0$, or otherwise $c$ is at the end of the interval, thus \eqref{eq:pgsformula}.
 
-The following pseudocode, a small modification of \pr{gssweep}, implements PGS.
-\begin{pseudo*}
-\pr{pgssweep}(j,w,F,\phi)\text{:} \\+
+The following pseudocode, a small modification of \pr{gs-sweep}, implements PGS.
+\begin{pseudo*} \label{ps:pgs-sweep}
+\pr{pgs-sweep}(j,w,F,\phi)\text{:} \\+
     \ct{check admissibility: $w\ge \phi$} \\
     for $p=1,\dots,m_j$ \\+
         $c = \max\{-F(w)[\psi_p^j] \,\big/\, a(\psi_p^j,\psi_p^j),\, \phi(x_p^j)-w(x_p^j)\}$ \\
         $w \gets w + c \psi_p^j$
 \end{pseudo*}
-Because the evaluation of each residual value $F(w)[\psi_p^j]$ is an $O(1)$ operation in the $j$th-level representation, \pr{pgssweep} is an $O(m_j)$ operation.  This algorithm is known to converge to the solution $y^j$ of problem \eqref{eq:feobstacleviresidual} \cite[Proposition 4.5]{GraeserKornhuber2009}, but slowly on fine meshes.
+Because the evaluation of each residual value $F(w)[\psi_p^j]$ is an $O(1)$ operation in the $j$th-level representation, \pr{pgs-sweep} is an $O(m_j)$ operation.  This algorithm is known to converge to the solution $y^j$ of problem \eqref{eq:feobstacleviresidual} \cite[Proposition 4.5]{GraeserKornhuber2009}, but slowly on fine meshes.
 
 However, note that $\|F(w)\|_2$ does not go to zero (in general) at PGS convergence.  Recalling the CP formulation of the problem \eqref{eq:obstaclecp}, at convergence we have $F(w)[\psi_p^j] = 0$ where $w(x_p^j) > \phi(x_p^j)$ (inactive points), but if $w(x_p^j) = \phi(x_p^j)$ (active points) then $F(w)[\psi_p^j]$ is only required to be nonnegative.  Thus the convergence criterion for iterated PGS sweeps is that the norm of the \emph{CP residual}, the vector
 \begin{equation}
@@ -671,7 +671,7 @@ For the classical obstacle problem, wherein the (continuum) residual $F(w)[v]$ i
 The nonlinear VI form \eqref{eq:mcdvi} is thus the most general, but note that when $F$ is not the gradient of a coercive objective function then additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,KinderlehrerStampacchia1980}).  Both bilinearity and the gradient symmetry fail for the general-bed glacier problem, thus we will solve the general VI form \eqref{eq:mcdvi}.
 
 \subsection*{MCD cycles and convergence results}  We are now ready to implement a multilevel solver for the classical obstacle problem.  The following pseudocode solves \eqref{eq:mcdvilinear}.  Here \pr{MCDL} stands for ``multilevel constraint decomposition (linear)'', and this procedure is analogous to \pr{msd-solver} in section \ref{sec:subspace}.  This outer loop sets up the fine-level defect constraint and residual.  Checks for convergence occur after calling the inner solver, addressed next.
-\begin{pseudo*}
+\begin{pseudo*} \label{ps:mcdl-solver}
 \pr{mcdl-solver}(F,\varphi,\id{rtol}=10^{-4})\text{:} \\+
     $w=\varphi$ \qquad\qquad\qquad\qquad\qquad\quad \ct{or other admissible fine-level initial iterate} \\
     $r_0=\|\hat\bF(w)\|$ \qquad\qquad\qquad\qquad\qquad \ct{initial CP residual norm; see \eqref{eq:cpresidual}} \\
@@ -690,23 +690,23 @@ The inner solver is a slash cycle, also known as V(1,0) \cite{GraeserKornhuber20
   \ell^{j-1}[\cdot] = - R(F^j(y^j))[\cdot] \label{eq:rhslinearlevelcycle}
 \end{equation}
 for $j=J,\dots,1$.  As noted in section \ref{sec:subspace}, this loses residual information for the high-frequency modes on the $j$th level, but the smoother has minimized the loss.  As a pseudocode:
-\begin{pseudo*}
+\begin{pseudo*} \label{ps:mcdl-slash}
 \pr{mcdl-slash}(J,F^J,\chi^J,\id{down}=1,\id{coarse}=1)\text{:} \\+
     for $j=J$ downto $j=1$ \\+
       $\chi^{j-1} = \mR \chi^j$ \\
       $\phi^j = \chi^j - P\chi^{j-1}$ \qquad\qquad\qquad\quad \ct{define obstacle} \\
       $y^j = 0$ \\
-      $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,y^j,F^j,\phi^j)$ \qquad\quad \ct{down smoother} \\
+      $\text{\pr{pgs-sweep}}^{\text{\id{down}}}(j,y^j,F^j,\phi^j)$ \qquad\quad \ct{down smoother} \\
       $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad \ct{update and restrict residual} \\
       $F^{j-1}(y)[\cdot] := a(y,\cdot) - \ell^{j-1}[\cdot]$ \\-
     $y^0 = 0$ \\
-    $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \qquad\quad \ct{coarsest-level correction} \\
+    $\text{\pr{pgs-sweep}}^{\text{\id{coarse}}}(0,y^0,F^0,\chi^0)$ \qquad\quad \ct{coarsest-level correction} \\
     for $j=1$ to $j=J$ \\+
       $y^j \gets y^j + P y^{j-1}$ \qquad\qquad\qquad\quad \ct{accumulate corrections} \\-
     return $y^J$
 \end{pseudo*}
 
-In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, noting that the FE method includes a subroutine which evaluates $a(w,v)$ as needed, the linear functional $\ell^{j-1}$ is passed as a (row) vector, from which $F^{j-1}$ is constructed.  That is, the implementation signatures are actually \pr{pgssweep}$(j,y^j,\ell^j,\phi^j)$ and \pr{mcdl-slash}$(J,\ell^J,\chi^J)$, with the understanding that \eqref{eq:residuallinearlevel} defines $F^j$.
+In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, noting that the FE method includes a subroutine which evaluates $a(w,v)$ as needed, the linear functional $\ell^{j-1}$ is passed as a (row) vector, from which $F^{j-1}$ is constructed.  That is, the implementation signatures are actually \pr{pgs-sweep}$(j,y^j,\ell^j,\phi^j)$ and \pr{mcdl-slash}$(J,\ell^J,\chi^J)$, with the understanding that \eqref{eq:residuallinearlevel} defines $F^j$.
 
 FIXME error norms for slash cycle on two problems; convergence rate difference because of regularity of $f$
 
@@ -741,7 +741,7 @@ This is the direct FE approximation of \eqref{eq:obstacleviresidual}; compare \e
 
 First consider the PGS method.  Note that the following theorem describes the norm of the algebraic error of an iterate, i.e.~$\|w-u^h\|_{\mathcal{H}}$, relative to the objective value on the initial iterate.
 
-\begin{theorem} \cite[Prop.~4.5]{GraeserKornhuber2009}\,  \label{thm:pgsconvergence}  Suppose $w^{(s)}$  results from $s$ applications of \pr{pgssweep} on the fine level, starting with any $w^{(0)}$.  There is $C>0$ independent of $h$ so that
+\begin{theorem} \cite[Prop.~4.5]{GraeserKornhuber2009}\,  \label{thm:pgsconvergence}  Suppose $w^{(s)}$  results from $s$ applications of \pr{pgs-sweep} on the fine level, starting with any $w^{(0)}$.  There is $C>0$ independent of $h$ so that
 \begin{equation}
   \|w^{(s)} - u^h\|_{\mathcal{H}}^2 \le 2 (1-C h^2)^s\,\left(I(w^{(0)}) - I(u^h)\right).  \label{eq:pgsconvergence}
 \end{equation}
@@ -762,14 +762,14 @@ FIXME Compare Theorem \ref{thm:msdconvergence}; model performance when $h=O(2^{-
 \begin{table}
 \begin{tabular}{l|l|l}
 \emph{method} & \emph{iterations} & \emph{work} \\ \hline
-\pr{pgssweeps} & $O(N^2)$ & $O(N^3)$ \\
+\pr{pgs-sweep}s & $O(N^2)$ & $O(N^3)$ \\
 \pr{mcdl-solver} & $O(\log N)$ & $O(N \log N)$ \\ \hline
 \pr{gmg-vcycle} & $O(1)$ & $O(N)$
 \end{tabular}
 
 \medskip
-\label{tab:performancemodels}
 \caption{Number of iterations to reduce the error norm $\|w-u^h\|_{\mathcal{H}}$ by a factor of $\eps$, and amount of work (flops) as degrees of freedom $N\to\infty$.}
+\label{tab:performancemodels}  % \label must be last for correct reference
 \end{table}
 
 FIXME in Table \ref{tab:performancemodels}, the first two solvers are for the classical obstacle problem, but \pr{gmg-vcycle} solves the linear Poisson equation
@@ -815,10 +815,14 @@ FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to 
 
 %\clearpage
 \appendix
-\section{Notation}
+
+\section{Notation and pseudocodes}
+
+This review has been written with an attempt to use the simplest effective notation, but it is still substantial.  Furthermore a number of algorithms are discussed, on the assumption that the reader remembers their names.  Tables \ref{tab:notation} and \ref{tab:pseudocodes}, both of which are arranged alphabetically (where possible) should help in managing the terminology.
 
 \renewcommand{\arraystretch}{1.2}
 \begin{longtable}{l|l}
+\toprule
 \textbf{Symbol} {\Large$\strut$} & \textbf{Meaning} \\ \hline
 $a(\cdot,\cdot)$ & bilinear form associated to the Poisson problem; left side of equation \eqref{eq:weakpoissonearly} \\
 $\mathcal{D}^J$ & defect constraint set; $\mathcal{D}^J = \{v \ge \chi^J\}$ \\
@@ -847,7 +851,30 @@ $\chi^j(x)$ & $j$th-level (monotone) restriction of defect obstacle; $\chi^{j-1}
 $\psi_p^j(x)$ & $j$th-level hat function at $x_p$ \\
 $\ip{\cdot}{\cdot}$ & $L^2$ inner product \\
 $\|\cdot\|$ & $L^2$ norm; $\|f\|=\ip{f}{f}^{1/2}$ \\
-$\|\cdot\|_{\mathcal{H}}$ & norm on solution space; $\|f\|_{\mathcal{H}}^2 =\ip{f}{f} + \ip{f'}{f'}$ for $\mathcal{H}=H_0^1[0,1]$
+$\|\cdot\|_{\mathcal{H}}$ & norm on solution space; $\|f\|_{\mathcal{H}}^2 =\ip{f}{f} + \ip{f'}{f'}$ for $\mathcal{H}=H_0^1[0,1]$ \\  % final \\ required
+\bottomrule
+\caption{Notation.}
+\label{tab:notation}
+\end{longtable}
+
+\renewcommand{\arraystretch}{1.1}
+\begin{longtable}{l|l|l}
+\toprule
+\textbf{Name} {\Large$\strut$} & \textbf{Page} & \textbf{Description} \\ \hline
+\pr{gmg-coarsesolve} & \pageref{ps:gmg-coarsesolve} & geometric multigrid (GMG) coarse-level solver \\
+\pr{gmg-vcycle} & \pageref{ps:gmg-vcycle} & GMG V-cycle; calls \pr{gmg-coarsesolve} \\
+\pr{gs-sweep} & \pageref{ps:gs-sweep} & Gauss-Seidel (GS) sweep; smoother for unconstrained problems \\
+\pr{mcdl-slash} & \pageref{ps:mcdl-slash} & multilevel constraint decomposition (MSD) slash-cycle for \\
+  &  & \qquad linear equations; calls \pr{pgs-sweep} as smoother \\
+\pr{mcdl-solver} & \pageref{ps:mcdl-solver} & MCD (linear) solver; calls \pr{mcdl-slash} \\
+\pr{msd-slash} & \pageref{ps:msd-slash} & multilevel subspace decomposition (MSD) slash-cycle \\
+\pr{msd-solver} & \pageref{ps:msd-solver} & MSD solver; calls \pr{msd-slash} or \pr{msd-vcycle} \\
+\pr{msd-vcycle} & \pageref{ps:msd-vcycle} & MSD V-cycle \\
+\pr{pgs-sweep} & \pageref{ps:pgs-sweep} & projected GS sweep, a smoother for obstacle problems \\
+  &  & \qquad based on a linear equation \\ % final \\ required
+\bottomrule
+\caption{List of pseudocodes.}
+\label{tab:pseudocodes}
 \end{longtable}
 
 
@@ -875,17 +902,17 @@ for $p=1,\dots,m_{j-1}$, where $c_{pq} = \psi_p^{j-1}(x_q^j)$.  Equation \eqref{
                                       0, & \text{otherwise}. \end{cases}  \label{eq:injectprolong}
 \end{equation}
 In other words, we keep the values of $\ell$ on the coarser-level nodes and just fill-in with zero.  Using this prolongation gives a $j$th-level residual that is not smooth, but the solution of the equation on the $j$th level (i.e.~$\tilde F^j(y^j)[v]=0$ for all $v$ in $\mathcal{K}^j$) will be relatively smooth by ellipticity.  These ideas come together in the following pseudocode.
-\begin{pseudo*}
+\begin{pseudo*} \label{ps:mcdl-vcycle}
 \pr{mcdl-vcycle}(J,\ell^J,\chi^J,\id{down}=1,\id{up}=1,\id{coarse}=1)\text{:} \\+
     for $j=J$ downto $j=1$ \\+
       $\chi^{j-1} = \mR \chi^j$; \quad $\phi_V^j = \frac{1}{2}(\chi^j - P\chi^{j-1})$ \qquad  \ct{define obstacle} \\
-      $y^j = 0$; \quad $\text{\pr{pgssweep}}^{\text{\id{down}}}(j,y^j,\ell^j,\phi_V^j)$ \\
+      $y^j = 0$; \quad $\text{\pr{pgs-sweep}}^{\text{\id{down}}}(j,y^j,\ell^j,\phi_V^j)$ \\
       $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad\qquad\quad \ct{update and restrict residual} \\-
-    $y^0 = 0$; \quad $\text{\pr{pgssweep}}^{\text{\id{coarse}}}(0,y^0,\ell^0,\chi^0)$ \\
+    $y^0 = 0$; \quad $\text{\pr{pgs-sweep}}^{\text{\id{coarse}}}(0,y^0,\ell^0,\chi^0)$ \\
     $\omega^0 = y^0$ \\
     for $j=1$ to $j=J$ \\+
       $\ell^{j}[\cdot] := - \iP(\tilde F^{j-1}(\omega^{j-1}))[\cdot]$ \qquad\qquad\quad \ct{update and prolong residual} \\
-      $\eta^j = 0$; \quad $\text{\pr{pgssweep}}^{\text{\id{up}}}(j,\eta^j,\ell^j,\phi_V^j)$ \\
+      $\eta^j = 0$; \quad $\text{\pr{pgs-sweep}}^{\text{\id{up}}}(j,\eta^j,\ell^j,\phi_V^j)$ \\
       $\omega^j = y^j + \eta^j + P \omega^{j-1}$ \qquad\qquad\qquad\qquad \ct{accumulate corrections} \\-
     return $w^J$
 \end{pseudo*}
