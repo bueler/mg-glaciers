@@ -51,6 +51,7 @@ urlcolor=black    % ...
 \newcommand{\bbf}{\mathbf{f}}
 \newcommand{\bg}{\mathbf{g}}
 \newcommand{\bn}{\mathbf{n}}
+\newcommand{\br}{\mathbf{r}}
 \newcommand{\bu}{\mathbf{u}}
 \newcommand{\bv}{\mathbf{v}}
 \newcommand{\bw}{\mathbf{w}}
@@ -217,7 +218,7 @@ This decomposition will be useful despite the facts that the subspaces are neste
 
 Using our hat function bases, a subspace decomposition provides an approximate \emph{scale of frequencies}.  Informally, the value of the inner product of a function $g(x)$ with a fine-level hat, $\ip{g}{\psi_p^J}$, is, relative to the norm $\|g\| = \ip{g}{g}^{1/2}$, mostly a measure of its high-frequency content at $x_p^J$.  The inner product with a coarser-mesh hat $\psi_p^j$, by contrast, measures lower frequency content because it averages over many fine-mesh nodes.  If decomposition \eqref{eq:subspacedecomposition} were instead a Fourier decomposition, with each $\mathcal{V}^j$ spanned by waves of disjoint frequency ranges, then the sum would be orthogonal and the ``scale of frequencies'' meaning would be exact.  Our decompositions will always involve overlapping ranges of frequencies, but our multilevel methods will reduce the energy of the error on each level $\mathcal{V}^j$, and on coarser levels this will rapidly reduce the low frequencies present in the error.
 
-\subsection*{Gauss-Seidel, Jacobi, and time-stepping as smoothers}  Our basic solution method for FE problem \eqref{eq:feweakpoisson}, called \emph{Gauss-Seidel} (GS) iteration, is sequential and point-wise \emph{relaxation} of the residual \eqref{eq:residual}.  Though matrices are often used to present the GS algorithm \cite[for example]{Bueler2021,Greenbaum1997}, there is no need; we present it using residuals and hat functions, and this will be a beneficial approach when we consider nonlinear glacier models.
+\subsection*{Gauss-Seidel, Jacobi, and time-stepping as smoothers}  Our first solution method for FE problem \eqref{eq:feweakpoisson}, called \emph{Gauss-Seidel} (GS) iteration, is sequential and point-wise \emph{relaxation} of the residual \eqref{eq:residual}.  Though matrices are often used to present the GS and related classical iteration algorithms \cite[for example]{Bueler2021,Greenbaum1997}, there is no need.  We present it using only residuals and hat functions, a beneficial approach when we consider nonlinear glacier models.
 
 The $j$th-level GS algorithm sweeps through the mesh nodes $x_p^j$, modifying the iterate $w(x)$ by a multiple of $\psi_p^j$ so as to make that residual value zero.  That is, for each $p=1,\dots,m_j$ it finds a real number $c$ so that
 \begin{equation}
@@ -225,19 +226,15 @@ The $j$th-level GS algorithm sweeps through the mesh nodes $x_p^j$, modifying th
 \end{equation}
 Noting that $F(w+c\,\psi_p^j)[\psi_p^j] = F(w)[\psi_p^j] + c\, a(\psi_p^j,\psi_p^j)$ because $a(\cdot,\cdot)$ is bilinear, we have the following algorithm:
 \begin{pseudo*} \label{ps:gs-sweep}
-\pr{gs-sweep}(j,w,F)\text{:} \\+
+\pr{gs-sweep}(j,w,F,\id{omega}=1)\text{:} \\+
     for $p=1,\dots,m_j$ \\+
         $\displaystyle c = - F(w)[\psi_p^j]\, \big/ \,a(\psi_p^j,\psi_p^j)$  \\
-        $w \gets w + c \psi_p^j$
+        $w \gets w + \id{omega} \,c \,\psi_p^j$
 \end{pseudo*}
 
-This procedure takes the residual function as an argument and it modifies $w$ in-place.  Assuming the values $a(\psi_p^j,\psi_q^j)$ and $\ip{f}{\psi_p^j}$ are available, computing $c$ involves $O(1)$ work, and thus one application of \pr{gs-sweep} requires $O(m_j)$ work.  Though \pr{gs-sweep} only works as stated for a linear equation in the form of \eqref{eq:feweakpoisson}, it can be modified to solve nonlinear systems, so-called \emph{nonlinear Gauss-Seidel}.  For example, one could apply a few steps of Newton's iteration to each scalar equation $f(c) = F(w+c\,\psi_p^j)[\psi_p^j] = 0$.  We will adopt this approach in section \ref{sec:sia}.
+This procedure takes the residual function as an argument and it modifies $w$ in-place.  Assuming the values $a(\psi_p^j,\psi_q^j)$ and $\ip{f}{\psi_p^j}$ are available, computing $c$ involves $O(1)$ work, and thus one application of \pr{gs-sweep} requires $O(m_j)$ work.  Though \pr{gs-sweep} only works as stated for a linear equation in the form of \eqref{eq:feweakpoisson}, it can be modified to solve nonlinear systems by applying a few steps of Newton's iteration to each scalar equation $f(c) = F(w+c\,\psi_p^j)[\psi_p^j] = 0$.  This \emph{nonlinear Gauss-Seidel} algorithm is used in section \ref{sec:sia}.
 
-Algorithm \pr{gs-sweep} has no dependence on the dimension of the problem.  In particular, for any linear elliptic PDE which can be written abstractly as weak form \eqref{eq:weakpoisson}, \pr{gs-sweep} applies as stated with $m_j$ denoting the number of $j$th-level mesh nodes and $\psi_p^j$ the corresponding hat functions.  However, the rate of convergence of GS iterations depends on the details of the PDE, including its dimension.
-
-What does a sweep of GS do to an iterate $w$?  By sequentially making the residual zero on each hat function we hope that the residual becomes smaller.  However, modifying $w$ to make the residual zero on one hat generally means the previously-zeroed locations are no longer zero because the equations are non-trivially coupled.  Considering only fine-level GS sweeps for a moment, one can prove for the Poisson problem that this iteration does eventually converge to the solution $u^h$ of \eqref{eq:feweakpoisson} \cite[for example]{Greenbaum1997}, but that is not our focus.  Instead, a key observation is that such a sweep is a fast \emph{smoother} of the (algebraic) error $e=w-u^h$, a function in $\mathcal{V}^h$, even when it is slow to make this error small.  Informally, the formula for $c$ in \textsc{gs-sweep} combines neighboring values of $w$ so as to flatten a peak or trough in the error.
-
-An example is shown in Figure \ref{fig:residualpoints}, where we start with a non-smooth initial iterate $w$ on an $m_J=6$ mesh; its residual $F(w)$ is at top-left.  The Figure shows the residual (left sequence) and the error (right) after each step in the \textbf{for} loop in \pr{gs-sweep}, indicating the location which is zeroed.  (We plot the linear functionals $F(w)[\cdot]$ as piecewise-constant functions with values $F(w)[\psi_p^J]$.)  While both the residual and error become smaller in norm, the strongest effect is the damping of high frequencies.
+What does a sweep of GS do to an iterate $w$?  By sequentially making the residual zero on each hat function we hope that the residual becomes smaller.  However, modifying $w$ to make the residual zero on one hat generally means the previously-zeroed locations are no longer zero because the equations are non-trivially coupled.  One can prove for the Poisson problem that this iteration, applied on the fine level, does eventually converge to the solution $u^h$ of \eqref{eq:feweakpoisson} \cite[for example]{Greenbaum1997}, but that is not our focus.  Instead, a key observation is that such a sweep is a fast \emph{smoother} of the (algebraic) error $e=w-u^h$, even when it is slow to make this error small.  Informally, the formula for $c$ in \textsc{gs-sweep} combines neighboring values of $w$ so as to flatten a peak or trough in the error.  An example is shown in Figure \ref{fig:residualpoints}, where we start with a non-smooth initial iterate $w$ on an $m_J=6$ mesh; its residual $F(w)$ and error $e$ are at the top.  The Figure shows the residual and error after each step in the \textbf{for} loop in \pr{gs-sweep}, indicating the location which is zeroed.  (We plot the linear functionals $F(w)[\cdot]$ as piecewise-constant functions with values $F(w)[\psi_p^J]$.)  While both the residual and error become smaller in norm, the strongest effect is the damping of high frequencies.
 
 \begin{figure}[t]
 \includegraphics[width=0.8\textwidth]{genfigs/residualpoints.pdf}
@@ -245,7 +242,58 @@ An example is shown in Figure \ref{fig:residualpoints}, where we start with a no
 \label{fig:residualpoints}
 \end{figure}
 
-The observation that GS is a good smoother can be made quantitative by considering the frequencies supported on a mesh with spacing $h$.  The highest-frequency faithfully-represented mode on such a mesh is the sawtooth mode with (spatial) frequency $\omega=(2h)^{-1}$.  One GS sweep multiplies all modes with frequencies higher than $\frac{1}{2} \omega$ by factors at most $1/\sqrt{5}\approx 0.45$ \cite[Chapter 4]{Briggsetal2000}.  That is, a GS sweep \emph{strongly damps the highest half} of the frequencies in the error, though the particular damping factor depends on the dimension and the differential operator.
+The observation that GS is a good smoother can be made quantitative by considering the frequencies which can be supported on a mesh having spacing $h$.  The highest-frequency faithfully-represented mode here is the sawtooth with (spatial) frequency $\sigma=(2h)^{-1}$.  For a 1D Poisson equation, with constant coefficient $\alpha$, ne GS sweep multiplies all modes with frequencies higher than $\frac{1}{2} \sigma$ by factors at most $1/\sqrt{5}\approx 0.45$ for fine meshes \cite[Chapter 4]{Briggsetal2000}.  That is, a GS sweep \emph{strongly damps the highest half} of the frequencies in the error.  (The particular damping factor depends on the dimension and the differential operator.)  One may adjust the \emph{relaxation factor} \id{omega} away from its default value \id{omega} $=1$, which yields \emph{successive over-relaxation} when greater than one, with superior properties as a stand-alone solver \cite{Greenbaum1997}, but no better than GS as a smoother.
+
+Algorithm \pr{gs-sweep} has no dependence on the dimension of the problem.  In particular, for any linear elliptic PDE which can be written in weak form \eqref{eq:weakpoisson}, \pr{gs-sweep} applies as stated with $m_j$ denoting the number of $j$th-level mesh nodes and $\psi_p^j$ the corresponding hat functions.  However, the rate of convergence of GS iterations certainly depends on the details of the PDE, including its dimension.
+
+The GS iteration not the only smoother.  Note that GS involves repeatedly evaluating the residual at points, i.e.~$F(w)[\psi_p^j]$, which is inexpensive in some cases but not in others.  Where the evaluation of a point residual is expensive but can be amortized over all the points (see section \ref{sec:stokes}), an alternative is to evaluate the residual at all points at the start of the iteration.  The resulting \emph{weighted Jacobi} iteration is essentially parallel as the point updates to the iterate can be done in any order.
+
+\begin{pseudo*} \label{ps:jacobi-sweep}
+\pr{jacobi-sweep}(j,w,F,\id{omega}=1)\text{:} \\+
+    $r_p = F(w)[\psi_p^j]$ \qquad\qquad\qquad\qquad \ct{for all $p$} \\
+    for $p=1,\dots,m_j$ \\+
+        $\displaystyle c = - r_p \, \big/ \, a(\psi_p^j,\psi_p^j)$  \\
+        $w \gets w + \id{omega} \,c \,\psi_p^j$
+\end{pseudo*}
+
+The Jacobi iteration with relaxation factor \id{omega} $=1$ is neither a rapid solution method nor an effective smoother.  (It does not damp the highest-frequency sawtooth at all!)  However, underrelaxation can be a good smoother, and in fact for a 1D Poisson equation the optimal factor \id{omega} $=\frac{2}{3}$ multiplies all frequencies higher than $\frac{1}{2} \sigma$ by at most $\frac{1}{3}$ \cite[Chapter 4]{Briggsetal2000}.  Other optimal factors are known for 2D and 3D Poisson equation, and to varying degrees this good smoother performance extends to other PDEs, so weighted Jacobi is an important smoother to consider.  One modest disadvantage of Jacobi is the need to store the starting residual $\br = \{r_p\}$, which doubles the required storage versus \pr{gs-sweep}.
+
+These smoother considerations seem to be quite separated from the style in which evolving-geometry glacier models are designed.  Most ice sheet models proceed by explicit time-stepping of their complicated, coupled equations \cite[for example]{Winkelmannetal2011}.  However, it turns out that such time-stepping is closely related to Jacobi smoothing.  Consider the time-dependent problem corresponding to the $\alpha=1$ case of \eqref{eq:poisson}, namely
+\begin{equation}
+u_t = u_{xx} + f, \qquad u(t,0)=u(t,1)=0, \label{eq:heat}
+\end{equation}
+for $u(t,x)$ and $t>0$.  Of course this \emph{heat equation} needs an initial condition $u(0,x)=g(x)$.  The corresponding weak form for the FEM solution $u^h(t,x)$ follows (as usual) by multiplying by $v$ from $\mathcal{V}^j$ \cite[Chapter 8]{Johnson2009}:
+\begin{equation}
+\frac{d}{dt}\ip{u^h}{v} = -a(u^h,v) + \ip{f}{v} = - F(u^h)[v]. \label{eq:feheat}
+\end{equation}
+(Note the natural emergence of the residual.)  Expanding the FEM solution in hat functions, we have
+\begin{equation}
+u^h(t,x) = \sum_{q=1}^{m_j} \xi_p(t) \psi_p^j(x) \label{eq:trialheat}
+\end{equation}
+for $\xi_p(t) = u^h(t,x_p^j)$.  From \eqref{eq:feheat} with $v=\psi_p^j$ we may write an ODE system for the coefficients:
+\begin{equation}
+\sum_{q=1}^{m_j} \ip{\psi_p^j}{\psi_q^j} \xi_q(t)' = - F(u^h)[\psi_p^j] \label{eq:odeheatearly}
+\end{equation}
+Identifying the \emph{mass matrix} $B$ with entries $b_{pq} = \ip{\psi_p^j}{\psi_q^j}$, which is an easily inverted matrix with $O(1)$ condition number, and we can write the ODE system as
+\begin{equation}
+u^h(t,x_p^j)' = - (B^{-1} F(u^h)[\cdot])_p. \label{eq:odeheat}
+\end{equation}
+
+Suppose we discretize time with spacing $\Delta t$ and approximate consecutive states $u^h(t,x)$, $u^h(t+\Delta t,x)$ by $w(x)$, $\tilde w(x)$, respectively.  Using the forward Euler method, \eqref{eq:odeheat} becomes
+\begin{equation}
+\frac{\tilde w_p - w_p}{\Delta t} = - (B^{-1} F(w)[\cdot])_p. \label{eq:forwardeulerheat}
+\end{equation}
+Let us write this time-step as a pseudocode which takes the current values $w$ and computes the new values $\tilde w$.  Up to the inversion of the mass matrix $B$, and choosing to compute the updated values $\tilde w$ in-place, we have a method vrather similar to Jacobi:
+\begin{pseudo*} \label{ps:euler-timestep}
+\pr{euler-timestep}(j,w,F,\id{deltat})\text{:} \\+
+    $r_p = (B^{-1} F(w)[\cdot])_p$ \qquad\qquad\qquad\qquad \ct{for all $p$} \\
+    for $p=1,\dots,m_j$ \\+
+        $\displaystyle c = - r_p$  \\
+        $w \gets w + \id{deltat}\, c\, \psi_p^j$ \\-
+\end{pseudo*}
+In particular, the time step \id{deltat} apparently plays the role of \id{omega} in \pr{jacobi-sweep}.  However, the update $c$ to the value $w_p$ involves no division by the diagonal entries $a(\psi_p^j,\psi_p^j)$, as it does in the Jacobi iteration, so one must compensate here by choosing \id{deltat} $=O(h^2)$ for \emph{conditional stability} \cite{Bueler2021}.
+
+In summary, the Jacobi iteration on the steady-state problem \eqref{eq:poisson} behaves very similarly to explicit time-stepping on the corresponding time-dependent equation \eqref{eq:heat}.  Stable forward time-stepping of the heat equation is indeed a smoother, but if this method is applied on a single mesh level it is very slow.  The methods of this paper will apply Jacobi or Gauss-Seidel, but the whole method will be optimal only because these smoothers are applied on all mesh levels.  We will see in sections \ref{sec:sia} and \ref{sec:stokes} that even these simple smoothers are not quite sufficient, but fortunately the space of possible smoothers is quite large.  The choice of smoother is nontrivial for glacier problems.
 
 \subsection*{Multilevel subspace corrections}  When the GS smoother is applied on a given level $j$, whether once or a few times, the error and residual of the iterate will no longer contain much energy in the $j$th-level modes.  Thus it makes sense to remove the energy in the next-coarser modes by applying GS on the $j-1$ level.  Starting on the finest level $J$, we have the following \emph{multilevel subspace decomposition} algorithm which corrects the residual on each level.
 \begin{pseudo*} \label{ps:msd-slash}
@@ -866,9 +914,11 @@ $\|\cdot\|_{\mathcal{H}}$ & norm on solution space; $\|f\|_{\mathcal{H}}^2 =\ip{
 \begin{longtable}{l|l|l}
 \toprule
 \textbf{Name} {\Large$\strut$} & \textbf{Page} & \textbf{Description} \\ \hline
+\pr{euler-timestep} & \pageref{ps:euler-timestep} & forward Euler; compare to Jacobi smoother \\
 \pr{gmg-coarsesolve} & \pageref{ps:gmg-coarsesolve} & geometric multigrid (GMG) coarse-level solver \\
 \pr{gmg-vcycle} & \pageref{ps:gmg-vcycle} & GMG V-cycle; calls \pr{gmg-coarsesolve} \\
-\pr{gs-sweep} & \pageref{ps:gs-sweep} & Gauss-Seidel (GS) sweep; smoother for unconstrained problems \\
+\pr{gs-sweep} & \pageref{ps:gs-sweep} & Gauss-Seidel (GS) iteration; smoother for unconstrained problems \\
+\pr{jacobi-sweep} & \pageref{ps:jacobi-sweep} & Jacobi iteration; smoother for unconstrained problems\\
 \pr{mcdl-slash} & \pageref{ps:mcdl-slash} & multilevel constraint decomposition (MSD) slash-cycle for \\
   &  & \qquad linear equations; calls \pr{pgs-sweep} as smoother \\
 \pr{mcdl-solver} & \pageref{ps:mcdl-solver} & MCD (linear) solver; calls \pr{mcdl-slash} \\
@@ -878,7 +928,7 @@ $\|\cdot\|_{\mathcal{H}}$ & norm on solution space; $\|f\|_{\mathcal{H}}^2 =\ip{
 \pr{pgs-sweep} & \pageref{ps:pgs-sweep} & projected GS sweep, a smoother for obstacle problems \\
   &  & \qquad based on a linear equation \\ % final \\ required
 \bottomrule
-\caption{List of pseudocodes.}
+\caption{Alphabetical list of pseudocodes.}
 \label{tab:pseudocodes}
 \end{longtable}
 
