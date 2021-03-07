@@ -65,7 +65,7 @@ figsave('cartoonplane.pdf')
 # inner cone approx figure
 plt.figure(figsize=(8,6))
 xm, ym = 0.6, 0.4
-makeaxes(-0.35, xm, -0.25, ym)
+makeaxes(-0.4, xm, -0.25, ym)
 cornerx = [-0.3, -0.29, -0.2, -0.1]
 cornery = [-0.2, -0.14, -0.09, 0.0]
 sh = 0.02
@@ -76,6 +76,8 @@ for n, xc, yc in zip(range(4), cornerx, cornery):
              fontsize=fsize)
 plt.plot(0.0,0.0,'k.',ms=10.0)
 plt.text(0.0+sh,0.0+sh,r'$0$',fontsize=fsize)
+plt.text(-0.4,0.35,r'$\mathcal{V}^3$',
+         fontsize=fsize)
 plt.text(0.4,0.03,r'$\mathcal{K}^0$',
          fontsize=fsize)
 plt.text(0.33,cornery[2]+0.02,r'$\mathcal{K}^0+\mathcal{K}^1$',
