@@ -1,274 +1,87 @@
-# FIXME process into two performance figures
-#    Figure:  semilogx with N on x-axis and WU on y axis
-#    Figure:  loglog with N on x-axis and time on y axis;  result is time = O(N^xx)
-
-# see py/1D/study/convperf.sh which generated convergence.txt and performance.txt
-# columns:  solver obstacle J m cycles WU time
+# see py/1D/study/convperf.sh which generated this (and convergence.txt)
+# columns:  solver case J m cycles WU time
 # where:
 #    solver: 0 = V(1,0), 1 = V(2,0), 2 = NI+V(1,0), 3 = NIx2+V(1,0)
-#    obstacle: 0 = icelike, 1 = icelike+random
+#    case: 0 = icelike, 1 = icelike+random
 #    m = 2^{J+1} - 1  (and h = 1/(m+1))
 
-0 0  6   127
-0 0  7   255
-0 0  8   511
-0 0  9  1023
-0 0 10  2047
-0 0 11  4095
-0 0 12  8191
-0 0 13 16383
-0 0 14 32767
-0 0 15 65535
-
-*** solver = '', obstacle = '' ****
-fine level 6 (m=127): using 26 V(1,0) cycles -> 51.594 WU:  |u-uexact|_2 = 1.6100e-03
-real 0.50
-fine level 7 (m=255): using 25 V(1,0) cycles -> 49.805 WU:  |u-uexact|_2 = 2.2641e-03
-real 0.62
-fine level 8 (m=511): using 32 V(1,0) cycles -> 63.875 WU:  |u-uexact|_2 = 3.7963e-04
-real 0.71
-fine level 9 (m=1023): using 32 V(1,0) cycles -> 63.938 WU:  |u-uexact|_2 = 5.7425e-04
-real 0.98
-fine level 10 (m=2047): using 39 V(1,0) cycles -> 77.962 WU:  |u-uexact|_2 = 9.5545e-05
-real 1.78
-fine level 11 (m=4095): using 38 V(1,0) cycles -> 75.981 WU:  |u-uexact|_2 = 1.4389e-04
-real 3.08
-fine level 12 (m=8191): using 44 V(1,0) cycles -> 87.989 WU:  |u-uexact|_2 = 2.4050e-05
-real 6.25
-fine level 13 (m=16383): using 45 V(1,0) cycles -> 89.995 WU:  |u-uexact|_2 = 3.5759e-05
-real 12.17
-fine level 14 (m=32767): using 52 V(1,0) cycles -> 103.997 WU:  |u-uexact|_2 = 5.9533e-06
-real 28.54
-fine level 15 (m=65535): using 51 V(1,0) cycles -> 101.998 WU:  |u-uexact|_2 = 9.0027e-06
-real 56.03
-
-0 1  6   127
-0 1  7   255
-0 1  8   511
-0 1  9  1023
-0 1 10  2047
-0 1 11  4095
-0 1 12  8191
-0 1 13 16383
-0 1 14 32767
-0 1 15 65535
-
-*** solver = '', obstacle = '-random' ****
-fine level 6 (m=127): using 13 V(1,0) cycles -> 25.797 WU
-real 0.47
-fine level 7 (m=255): using 15 V(1,0) cycles -> 29.883 WU
-real 0.54
-fine level 8 (m=511): using 19 V(1,0) cycles -> 37.926 WU
-real 0.65
-fine level 9 (m=1023): using 20 V(1,0) cycles -> 39.961 WU
-real 0.80
-fine level 10 (m=2047): using 20 V(1,0) cycles -> 39.980 WU
-real 1.12
-fine level 11 (m=4095): using 23 V(1,0) cycles -> 45.989 WU
-real 1.98
-fine level 12 (m=8191): using 25 V(1,0) cycles -> 49.994 WU
-real 3.80
-fine level 13 (m=16383): using 26 V(1,0) cycles -> 51.997 WU
-real 7.52
-fine level 14 (m=32767): using 29 V(1,0) cycles -> 57.998 WU
-real 15.89
-fine level 15 (m=65535): using 30 V(1,0) cycles -> 59.999 WU
-real 33.30
-
-1 0  6   127
-1 0  7   255
-1 0  8   511
-1 0  9  1023
-1 0 10  2047
-1 0 11  4095
-1 0 12  8191
-1 0 13 16383
-1 0 14 32767
-1 0 15 65535
-
-*** solver = '-down 2', obstacle = '' ****
-fine level 6 (m=127): using 17 V(2,0) cycles -> 67.203 WU:  |u-uexact|_2 = 1.6105e-03
-real 0.50
-fine level 7 (m=255): using 17 V(2,0) cycles -> 67.602 WU:  |u-uexact|_2 = 2.2614e-03
-real 0.55
-fine level 8 (m=511): using 21 V(2,0) cycles -> 83.754 WU:  |u-uexact|_2 = 3.7920e-04
-real 0.70
-fine level 9 (m=1023): using 21 V(2,0) cycles -> 83.877 WU:  |u-uexact|_2 = 5.7468e-04
-real 0.93
-fine level 10 (m=2047): using 26 V(2,0) cycles -> 103.924 WU:  |u-uexact|_2 = 9.5713e-05
-real 1.64
-fine level 11 (m=4095): using 25 V(2,0) cycles -> 99.963 WU:  |u-uexact|_2 = 1.4375e-04
-real 2.78
-fine level 12 (m=8191): using 29 V(2,0) cycles -> 115.979 WU:  |u-uexact|_2 = 2.4002e-05
-real 5.84
-fine level 13 (m=16383): using 29 V(2,0) cycles -> 115.989 WU:  |u-uexact|_2 = 3.5780e-05
-real 11.45
-fine level 14 (m=32767): using 34 V(2,0) cycles -> 135.994 WU:  |u-uexact|_2 = 5.9628e-06
-real 26.06
-fine level 15 (m=65535): using 33 V(2,0) cycles -> 131.997 WU:  |u-uexact|_2 = 8.9946e-06
-real 48.63
-
-1 1  6   127
-1 1  7   255
-1 1  8   511
-1 1  9  1023
-1 1 10  2047
-1 1 11  4095
-1 1 12  8191
-1 1 13 16383
-1 1 14 32767
-1 1 15 65535
-
-*** solver = '-down 2', obstacle = '-random' ****
-fine level 6 (m=127): using 9 V(2,0) cycles -> 35.578 WU
-real 0.46
-fine level 7 (m=255): using 11 V(2,0) cycles -> 43.742 WU
-real 0.49
-fine level 8 (m=511): using 14 V(2,0) cycles -> 55.836 WU
-real 0.58
-fine level 9 (m=1023): using 14 V(2,0) cycles -> 55.918 WU
-real 0.75
-fine level 10 (m=2047): using 15 V(2,0) cycles -> 59.956 WU
-real 1.13
-fine level 11 (m=4095): using 16 V(2,0) cycles -> 63.977 WU
-real 1.99
-fine level 12 (m=8191): using 18 V(2,0) cycles -> 71.987 WU
-real 3.75
-fine level 13 (m=16383): using 19 V(2,0) cycles -> 75.993 WU
-real 7.57
-fine level 14 (m=32767): using 20 V(2,0) cycles -> 79.996 WU
-real 15.02
-fine level 15 (m=65535): using 21 V(2,0) cycles -> 83.998 WU
-real 32.23
-
-2 0  6   127
-2 0  7   255
-2 0  8   511
-2 0  9  1023
-2 0 10  2047
-2 0 11  4095
-2 0 12  8191
-2 0 13 16383
-2 0 14 32767
-2 0 15 65535
-
-*** solver = '-ni', obstacle = '' ****
-fine level 6 (m=127): nested iter. & 12 V(1,0) cycles -> 25.688 WU:  |u-uexact|_2 = 1.6261e-03
-real 0.47
-fine level 7 (m=255): nested iter. & 16 V(1,0) cycles -> 33.805 WU:  |u-uexact|_2 = 2.2372e-03
-real 0.52
-fine level 8 (m=511): nested iter. & 18 V(1,0) cycles -> 37.891 WU:  |u-uexact|_2 = 3.7080e-04
-real 0.60
-fine level 9 (m=1023): nested iter. & 14 V(1,0) cycles -> 29.951 WU:  |u-uexact|_2 = 5.7934e-04
-real 0.67
-fine level 10 (m=2047): nested iter. & 20 V(1,0) cycles -> 41.969 WU:  |u-uexact|_2 = 9.7646e-05
-real 1.14
-fine level 11 (m=4095): nested iter. & 22 V(1,0) cycles -> 45.983 WU:  |u-uexact|_2 = 1.4198e-04
-real 2.07
-fine level 12 (m=8191): nested iter. & 26 V(1,0) cycles -> 53.990 WU:  |u-uexact|_2 = 2.3483e-05
-real 4.20
-fine level 13 (m=16383): nested iter. & 25 V(1,0) cycles -> 51.995 WU:  |u-uexact|_2 = 3.6275e-05
-real 7.38
-fine level 14 (m=32767): nested iter. & 25 V(1,0) cycles -> 51.997 WU:  |u-uexact|_2 = 6.3206e-06
-real 14.58
-fine level 15 (m=65535): nested iter. & 33 V(1,0) cycles -> 67.998 WU:  |u-uexact|_2 = 8.9189e-06
-real 36.62
-
-2 1  6   127
-2 1  7   255
-2 1  8   511
-2 1  9  1023
-2 1 10  2047
-2 1 11  4095
-2 1 12  8191
-2 1 13 16383
-2 1 14 32767
-2 1 15 65535
-
-*** solver = '-ni', obstacle = '-random' ****
-fine level 6 (m=127): nested iter. & 9 V(1,0) cycles -> 19.734 WU
-real 0.46
-fine level 7 (m=255): nested iter. & 14 V(1,0) cycles -> 29.820 WU
-real 0.49
-fine level 8 (m=511): nested iter. & 17 V(1,0) cycles -> 35.895 WU
-real 0.57
-fine level 9 (m=1023): nested iter. & 23 V(1,0) cycles -> 47.934 WU
-real 0.86
-fine level 10 (m=2047): nested iter. & 23 V(1,0) cycles -> 47.966 WU
-real 1.25
-fine level 11 (m=4095): nested iter. & 24 V(1,0) cycles -> 49.982 WU
-real 2.12
-fine level 12 (m=8191): nested iter. & 24 V(1,0) cycles -> 49.991 WU
-real 3.83
-fine level 13 (m=16383): nested iter. & 34 V(1,0) cycles -> 69.994 WU
-real 9.91
-fine level 14 (m=32767): nested iter. & 17 V(1,0) cycles -> 35.998 WU
-real 10.05
-fine level 15 (m=65535): nested iter. & 28 V(1,0) cycles -> 57.999 WU
-real 31.74
-
-3 0  6   127
-3 0  7   255
-3 0  8   511
-3 0  9  1023
-3 0 10  2047
-3 0 11  4095
-3 0 12  8191
-3 0 13 16383
-3 0 14 32767
-3 0 15 65535
-
-*** solver = '-ni -nicycles 2', obstacle = '' ****
-fine level 6 (m=127): nested iter. & 8 V(1,0) cycles -> 19.609 WU:  |u-uexact|_2 = 1.6299e-03
-real 0.47
-fine level 7 (m=255): nested iter. & 16 V(1,0) cycles -> 35.727 WU:  |u-uexact|_2 = 2.2389e-03
-real 0.52
-fine level 8 (m=511): nested iter. & 15 V(1,0) cycles -> 33.859 WU:  |u-uexact|_2 = 3.7259e-04
-real 0.58
-fine level 9 (m=1023): nested iter. & 16 V(1,0) cycles -> 35.924 WU:  |u-uexact|_2 = 5.7156e-04
-real 0.75
-fine level 10 (m=2047): nested iter. & 11 V(1,0) cycles -> 25.965 WU:  |u-uexact|_2 = 9.8230e-05
-real 0.89
-fine level 11 (m=4095): nested iter. & 19 V(1,0) cycles -> 41.978 WU:  |u-uexact|_2 = 1.4227e-04
-real 2.02
-fine level 12 (m=8191): nested iter. & 19 V(1,0) cycles -> 41.988 WU:  |u-uexact|_2 = 2.3621e-05
-real 3.38
-fine level 13 (m=16383): nested iter. & 13 V(1,0) cycles -> 29.995 WU:  |u-uexact|_2 = 3.5564e-05
-real 4.57
-fine level 14 (m=32767): nested iter. & 14 V(1,0) cycles -> 31.997 WU:  |u-uexact|_2 = 6.2354e-06
-real 9.30
-fine level 15 (m=65535): nested iter. & 23 V(1,0) cycles -> 49.998 WU:  |u-uexact|_2 = 8.9200e-06
-real 28.66
-
-3 1  6   127
-3 1  7   255
-3 1  8   511
-3 1  9  1023
-3 1 10  2047
-3 1 11  4095
-3 1 12  8191
-3 1 13 16383
-3 1 14 32767
-3 1 15 65535
-
-*** solver = '-ni -nicycles 2', obstacle = '-random' ****
-fine level 6 (m=127): nested iter. & 12 V(1,0) cycles -> 27.547 WU
-real 0.52
-fine level 7 (m=255): nested iter. & 15 V(1,0) cycles -> 33.734 WU
-real 0.51
-fine level 8 (m=511): nested iter. & 17 V(1,0) cycles -> 37.852 WU
-real 0.63
-fine level 9 (m=1023): nested iter. & 24 V(1,0) cycles -> 51.908 WU
-real 0.93
-fine level 10 (m=2047): nested iter. & 23 V(1,0) cycles -> 49.953 WU
-real 1.40
-fine level 11 (m=4095): nested iter. & 24 V(1,0) cycles -> 51.975 WU
-real 2.25
-fine level 12 (m=8191): nested iter. & 25 V(1,0) cycles -> 53.987 WU
-real 4.05
-fine level 13 (m=16383): nested iter. & 40 V(1,0) cycles -> 83.991 WU
-real 12.30
-fine level 14 (m=32767): nested iter. & 19 V(1,0) cycles -> 41.997 WU
-real 11.75
-fine level 15 (m=65535): nested iter. & 28 V(1,0) cycles -> 59.998 WU
-real 34.20
+0 0  6   127  26   51.594   0.50
+0 0  7   255  25   49.805   0.62
+0 0  8   511  32   63.875   0.71
+0 0  9  1023  32   63.938   0.98
+0 0 10  2047  39   77.962   1.78
+0 0 11  4095  38   75.981   3.08
+0 0 12  8191  44   87.989   6.25
+0 0 13 16383  45   89.995  12.17
+0 0 14 32767  52  103.997  28.54
+0 0 15 65535  51  101.998  56.03
+0 1  6   127  13   25.797   0.47
+0 1  7   255  15   29.883   0.54
+0 1  8   511  19   37.926   0.65
+0 1  9  1023  20   39.961   0.80
+0 1 10  2047  20   39.980   1.12
+0 1 11  4095  23   45.989   1.98
+0 1 12  8191  25   49.994   3.80
+0 1 13 16383  26   51.997   7.52
+0 1 14 32767  29   57.998  15.89
+0 1 15 65535  30   59.999  33.30
+1 0  6   127  17   67.203   0.50
+1 0  7   255  17   67.602   0.55
+1 0  8   511  21   83.754   0.70
+1 0  9  1023  21   83.877   0.93
+1 0 10  2047  26  103.924   1.64
+1 0 11  4095  25   99.963   2.78
+1 0 12  8191  29  115.979   5.84
+1 0 13 16383  29  115.989  11.45
+1 0 14 32767  34  135.994  26.06
+1 0 15 65535  33  131.997  48.63
+1 1  6   127   9   35.578   0.46
+1 1  7   255  11   43.742   0.49
+1 1  8   511  14   55.836   0.58
+1 1  9  1023  14   55.918   0.75
+1 1 10  2047  15   59.956   1.13
+1 1 11  4095  16   63.977   1.99
+1 1 12  8191  18   71.987   3.75
+1 1 13 16383  19   75.993   7.57
+1 1 14 32767  20   79.996  15.02
+1 1 15 65535  21   83.998  32.23
+2 0  6   127  12   25.688   0.47
+2 0  7   255  16   33.805   0.52
+2 0  8   511  18   37.891   0.60
+2 0  9  1023  14   29.951   0.67
+2 0 10  2047  20   41.969   1.14
+2 0 11  4095  22   45.983   2.07
+2 0 12  8191  26   53.990   4.20
+2 0 13 16383  25   51.995   7.38
+2 0 14 32767  25   51.997  14.58
+2 0 15 65535  33   67.998  36.62
+2 1  6   127   9   19.734   0.46
+2 1  7   255  14   29.820   0.49
+2 1  8   511  17   35.895   0.57
+2 1  9  1023  23   47.934   0.86
+2 1 10  2047  23   47.966   1.25
+2 1 11  4095  24   49.982   2.12
+2 1 12  8191  24   49.991   3.83
+2 1 13 16383  34   69.994   9.91
+2 1 14 32767  17   35.998  10.05
+2 1 15 65535  28   57.999  31.74
+3 0  6   127   8   19.609   0.47
+3 0  7   255  16   35.727   0.52
+3 0  8   511  15   33.859   0.58
+3 0  9  1023  16   35.924   0.75
+3 0 10  2047  11   25.965   0.89
+3 0 11  4095  19   41.978   2.02
+3 0 12  8191  19   41.988   3.38
+3 0 13 16383  13   29.995   4.57
+3 0 14 32767  14   31.997   9.30
+3 0 15 65535  23   49.998  28.66
+3 1  6   127  12   27.547   0.52
+3 1  7   255  15   33.734   0.51
+3 1  8   511  17   37.852   0.63
+3 1  9  1023  24   51.908   0.93
+3 1 10  2047  23   49.953   1.40
+3 1 11  4095  24   51.975   2.25
+3 1 12  8191  25   53.987   4.05
+3 1 13 16383  40   83.991  12.30
+3 1 14 32767  19   41.997  11.75
+3 1 15 65535  28   59.998  34.20
