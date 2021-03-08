@@ -129,6 +129,7 @@ class FAS(object):
             # restrict down using  ell = R' (f^h - F^h(u^h)) + F^{2h}(R u^h)
             rfine = ell - self.prob.F(self.meshes[k].h,u)  # residual on the fine mesh
             Ru = self.meshes[k].Rfw(u)
+            #FIXME OR  Ru = self.meshes[k].Rin(u)
             coarseell = self.meshes[k].CR(rfine) + self.prob.F(self.meshes[k-1].h,Ru)
             # recurse
             ucoarse = Ru.copy()
