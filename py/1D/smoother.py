@@ -106,7 +106,7 @@ class PGSPoisson(SmootherObstacleProblem):
         '''The obstacle:  u >= phi.'''
         if self.args.poissoncase == 'icelike':
             ph = x * (1.0 - x)
-        elif self.args.poissoncase == 'parabola':
+        elif self.args.poissoncase == 'traditional':
             # maximum is at  2.0 + args.parabolay
             ph = 8.0 * x * (1.0 - x) + self.args.parabolay
         else:
@@ -148,7 +148,7 @@ class PGSPoisson(SmootherObstacleProblem):
             u[mid] = -4.0*x[mid]**2 + d0*x[mid] + d1
             u[left] = 8.0*x[left]**2 + c0*x[left] + c1
             u[right] = 8.0*(1.0-x[right])**2 + c0*(1.0-x[right]) + c1
-        else:  # poissoncase == 'parabola'
+        else:  # poissoncase == 'traditional'
             if self.args.parabolay == -1.0:
                 a = 1.0/3.0
                 def upoisson(x):

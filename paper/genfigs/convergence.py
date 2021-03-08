@@ -9,7 +9,7 @@ INFILE = 'convergence.txt'
 MARKER = ['o','s']
 MARKERSIZE = [12.0,10.0]
 MARKERFACE = ['w','k']
-PROBLEMNAME = ['ice-like','parabola']
+PROBLEMNAME = ['ice-like','traditional']
 
 SHOW = False
 def writeout(outname):

@@ -10,13 +10,13 @@ runobstacle_1:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jfine 3 -sweepsonly -omega 1.5 -cyclemax 3" 1 1
 
 runobstacle_2:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase parabola -parabolay -3.0 -jfine 1 -sweepsonly -symmetric" 1 2
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -parabolay -3.0 -jfine 1 -sweepsonly -symmetric" 1 2
 
 runobstacle_3:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jfine 3 -monitorerr -diagnostics -o test3.png" 1 3
 
 runobstacle_4:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase parabola -jfine 4 -jcoarse 3 -cyclemax 2 -monitorerr -mgview" 1 4
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -jfine 4 -jcoarse 3 -cyclemax 2 -monitorerr -mgview" 1 4
 
 runobstacle_5:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jfine 4 -monitorerr -errtol 5.0e-3 -ni" 1 5
