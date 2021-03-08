@@ -48,7 +48,7 @@ for p in range(2):
     plt.loglog(hh,np.exp(q[0]*np.log(hh) + q[1]),'k--',lw=0.5)
 plt.grid(True)
 plt.xlabel('h',fontsize=18.0)
-plt.ylabel(r'$\|u-u_{exact}\|_2$',fontsize=18.0)
+plt.ylabel(r'$\|u^h-u\|_2$',fontsize=18.0)
 plt.xticks(fontsize=14.0)
 plt.yticks(fontsize=14.0)
 plt.minorticks_off()
