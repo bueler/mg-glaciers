@@ -796,11 +796,23 @@ These pseudocodes have been implemented in Python.\footnote{At\, \href{https://g
 \label{fig:fcycle}
 \end{figure}
 
-FIXME explain WU; figure with WU on $y$-axis and $N$ on $x$-axis for PGS only, slash cycle, V(2,0), F-cycle, and 2-iterations-on-way-up-F-cycle (5 solvers) on two problems: icelike and icelike-with-random-bed
+FIXME explain WU
 
-FIXME \cite{Blumetal2004} on cascadic and CG variants
+FIXME Figure \ref{fig:mcdl-wu} shows WU for \pr{mcdl-solver}; for: slash cycle, V(2,0), F-cycle, and 2-iterations-on-way-up-F-cycle (4 solvers) on icelike-with-random-bed; comment on $J=6,7,8,9$ results with PGS only; comment on \cite{Blumetal2004} on cascadic and CG variants
 
-FIXME figure showing run time per degree of freedom for same runs
+\begin{figure}
+\includegraphics[width=0.6\textwidth]{genfigs/mcdl-wu.pdf}
+\caption{Work units (see text) as a function of degrees of freedom $m$ for runs of \pr{mcdl-solver} using four MCD algorithms (see text).}
+\label{fig:mcdl-wu}
+\end{figure}
+
+FIXME Figure \ref{fig:mcdl-timeper} shows time per $m$; for same 4 solvers and problem
+
+\begin{figure}
+\includegraphics[width=0.6\textwidth]{genfigs/mcdl-timeper.pdf}
+\caption{Run time per degrees of freedom $m$ as a function of $m$ for the same four MCD algorithms.}
+\label{fig:mcdl-timeper}
+\end{figure}
 
 \subsection*{Convergence theory and performance models}  Mathematical theory allows us to compare the convergence rates of our MCD solver versus the PGS method.  Let $u^h$, in $\mathcal{V}^h = \mathcal{V}^J$ and satisfying $u^h \ge \varphi^J$, be the exact solution of the finite-dimensional VI
 \begin{equation}

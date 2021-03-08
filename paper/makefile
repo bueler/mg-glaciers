@@ -1,6 +1,6 @@
 all: review.pdf
 
-_figures := finehats coarsehats coarsesthats residualpoints cartoonplane innerconeapprox prolongobstacle convergence
+_figures := finehats coarsehats coarsesthats residualpoints cartoonplane innerconeapprox prolongobstacle convergence mcdl-wu mcdl-timeper
 figures := $(addprefix genfigs/, $(addsuffix .pdf, $(_figures)))
 
 review.pdf: review.tex review.bib cropfigures
@@ -9,8 +9,8 @@ review.pdf: review.tex review.bib cropfigures
 	pdflatex review
 	pdflatex review
 
-$(figures): genfigs/hats1d.py genfigs/residualpoints.py genfigs/cartoonplane.py genfigs/prolongobstacle.py genfigs/convergence.py
-	(cd genfigs/ && python3 hats1d.py && python3 residualpoints.py && python3 cartoonplane.py && python3 prolongobstacle.py && python3 convergence.py)
+$(figures): genfigs/hats1d.py genfigs/residualpoints.py genfigs/cartoonplane.py genfigs/prolongobstacle.py genfigs/convergence.py genfigs/performance.py
+	(cd genfigs/ && python3 hats1d.py && python3 residualpoints.py && python3 cartoonplane.py && python3 prolongobstacle.py && python3 convergence.py && python3 performance.py)
 
 cropfigures: $(figures)
 	for X in $(figures); do \
