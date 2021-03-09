@@ -66,6 +66,8 @@ prs.add_argument('-ngsonly', action='store_true', default=False,
                  help='only do -down NGS sweeps in each "cycle"')
 prs.add_argument('-niters', type=int, default=2, metavar='N',
                  help='Newton iterations in NGS smoothers (default=2)')
+prs.add_argument('-R', choices=['fw', 'inj'], metavar='X', default='fw',
+                 help='choose solution restriction (default: %(default)s)')
 prs.add_argument('-show', action='store_true', default=False,
                  help='show plot at end')
 prs.add_argument('-up', type=int, default=1, metavar='N',
@@ -90,10 +92,10 @@ for k in range(kcoarse,args.K+1):  # create the meshes we actually use
 prob = LiouvilleBratu1D(lam=args.lam)
 
 # initialize FAS and its parameters
-fas = FAS(meshes,prob,kcoarse=kcoarse,kfine=args.K,mms=args.mms,
-          coarse=args.coarse,down=args.down,up=args.up,
-          niters=args.niters,monitor=args.monitor,
-          monitorupdate=args.monitorupdate)
+fas = FAS(meshes, prob, mms=args.mms, kcoarse=kcoarse, kfine=args.K,
+          coarse=args.coarse, down=args.down, up=args.up,
+          solutionR=args.R, niters=args.niters,
+          monitor=args.monitor, monitorupdate=args.monitorupdate)
 
 # SOLVE
 # note fas.vcycle() and fas.fcycle() count their work units
@@ -154,4 +156,3 @@ if args.show:
         plt.legend()
     plt.xlabel('x')
     plt.show()
-

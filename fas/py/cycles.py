@@ -15,9 +15,10 @@ class FAS(object):
     prob.F() and the NGS method prob.ngspoint().  The coarse correction uses
     prob.F() to build the right-hand side linear functional.  The NGS method
     is used for both the smoother and the coarse-level solver.  Key
-    MeshLevel1D components are meshes[k].Rfw() for full-weighting
-    restriction of vectors, meshes[k].CR() for canonical restriction of
-    linear functionals, and meshes[k].P() for prolongation.
+    MeshLevel1D components are meshes[k].Rfw() (full-weighting) or
+    meshes[k].Rinj() (injection) restriction of vectors, meshes[k].CR()
+    for canonical restriction of linear functionals, and meshes[k].P()
+    for prolongation of vectors.
 
     This class implements three main solver methods:
       ngssweep():  repeatedly call prob.ngspoint()
@@ -39,16 +40,18 @@ class FAS(object):
     and coarsesolve().
     '''
 
-    def __init__(self,meshes,prob,kcoarse,kfine,
-                 mms=False,coarse=1,down=1,up=1,niters=2,
-                 monitor=False,monitorupdate=False):
+    def __init__(self, meshes, prob, kcoarse, kfine,
+                 mms=False, solutionR='fw',
+                 coarse=1, down=1, up=1, niters=2,
+                 monitor=False, monitorupdate=False):
         self.meshes = meshes
         self.prob = prob
+        self.mms = mms
+        self.solutionR = solutionR
         assert kcoarse >= 0
         assert kcoarse < kfine
         self.kcoarse = kcoarse
         self.kfine = kfine
-        self.mms = mms
         self.coarse = coarse
         self.down = down
         self.up = up
@@ -128,8 +131,10 @@ class FAS(object):
             self.wu[k] += self.down
             # restrict down using  ell = R' (f^h - F^h(u^h)) + F^{2h}(R u^h)
             rfine = ell - self.prob.F(self.meshes[k].h,u)  # residual on the fine mesh
-            Ru = self.meshes[k].Rfw(u)
-            #FIXME OR  Ru = self.meshes[k].Rin(u)
+            if self.solutionR == 'inj':
+                Ru = self.meshes[k].Rinj(u)
+            else:
+                Ru = self.meshes[k].Rfw(u)
             coarseell = self.meshes[k].CR(rfine) + self.prob.F(self.meshes[k-1].h,Ru)
             # recurse
             ucoarse = Ru.copy()
@@ -163,4 +168,3 @@ class FAS(object):
                 self.vcycle(k,u,ellg)
             self.printresidualnorm(s+1,k,u,ellg)
         return u
-

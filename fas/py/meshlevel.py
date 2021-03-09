@@ -66,11 +66,11 @@ class MeshLevel1D(object):
         return y
 
     def Rfw(self,v):
-        '''Restrict a vector (function) v in S_k on the current mesh to the
+        '''Restrict a vector (function) v in S_k (the current mesh) to the
         next-coarser (k-1) mesh by using full-weighting.'''
         return 0.5 * self.CR(v)
 
-    def Rin(self,v):
-        '''Restrict a vector (function) v in S_k on the current mesh to the
+    def Rinj(self,v):
+        '''Restrict a vector (function) v in S_k (the current mesh) to the
         next-coarser (k-1) mesh by using injection.'''
         return v[0::2]

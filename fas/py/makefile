@@ -12,13 +12,15 @@ runfas1_3:
 runfas1_4:
 	-@./testit.sh fas1.py "-K 5 -mms -fcycle" 1 4
 
-test_fas1: runfas1_1 runfas1_2 runfas1_3 runfas1_4
+runfas1_5:
+	-@./testit.sh fas1.py "-monitor -cycles 2 -K 4 -mms -fcycle -R inj" 1 5
+
+test_fas1: runfas1_1 runfas1_2 runfas1_3 runfas1_4 runfas1_5
 
 test: test_fas1
 
-.PHONY: clean runfas1_1 runfas1_2 runfas1_3 runfas1_4 test_fas1 test
+.PHONY: clean runfas1_1 runfas1_2 runfas1_3 runfas1_4 runfas1_5 test_fas1 test
 
 clean:
 	@rm -f maketmp tmp difftmp
 	@rm -rf __pycache__
-
