@@ -26,9 +26,12 @@ Do the following simple run using three FAS V-cycles on a mesh of 2^6=64 subinte
 
         $ ./fas1.py -K 6 -cycles 3 -monitor -show
 
-See the convergence study, using a version of the problem with a known exact solution (method of manufactured solutions), in `py/study/converge.py`.  Also see the solver complexity (optimality) study of runtime and work units in `py/study/optimal.py` and `py/study/slow.py`.  These are described in section 6 of `doc/fas.pdf`.
+The following solves to discretization error on fine meshes in a single F-cycle using 9 WU:
+
+        $ for KK in 2 4 6 8 10 12 14 16; do ./fas1.py -mms -fcycle -K $KK -cycles 1; done
+
+See also the convergence study, using a version of the problem with a known exact solution (method of manufactured solutions), in `py/study/converge.sh`.  Solver complexity (optimality), namely runtime and work units, is studied in in `py/study/optimal.sh` and `py/study/slow.sh`.  These are described in section 6 of `doc/fas.pdf`.
 
 Run software tests:
 
         $ make test
-
