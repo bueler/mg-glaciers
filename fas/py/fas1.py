@@ -118,7 +118,7 @@ ellg = fas.rhs(args.K)
 if args.fcycle:
     # F-cycle ignores initial guess uu
     rnorm0 = fas.residualnorm(args.K, uu, ellg)
-    uu = fas.fcycle(vcycles=1, ep=not args.fcycleplainp)
+    uu = fas.fcycle(ep=not args.fcycleplainp)
     rnorm = fas.residualnorm(args.K, uu, ellg)
     s = 1
 else:

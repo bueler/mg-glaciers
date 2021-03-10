@@ -8,8 +8,8 @@ __all__ = ['FAS']
 class FAS():
     '''Class for the full approximation storage (FAS) scheme.  Implements
     V-cycles and F-cycles.  At initialization:
-      meshes[k]: type MeshLevel1D from meshlevel.py
-      prob:      type Problem1D from problems.py
+      meshes[k]: class MeshLevel1D from meshlevel.py
+      prob:      class Problem1D from problems.py
     Note meshes[kcoarse],...,meshes[kfine] are the mesh levels.
 
     The key problem-specific solver components are the nonlinear operator
@@ -26,19 +26,12 @@ class FAS():
       vcycle():    do FAS V-cycle, calling ngssweep() for down- and up-
                    smoother, and coarsesolve() at bottom
       fcycle():    do FAS F-cycle with one V-cycle per level on the
-                   way up, and more V-cycles on the finest level
+                   way up
     The first two act in-place because they work from the finest level.
     By contrast, fcycle() essentially has no inputs and returns the
     solution on the finest level.
 
-    The cycle methods use the P(), CR(), and Rfw() restriction
-    and prolongation methods of MeshLevel1D.
-
     The class also does monitoring of residual norms and work units.
-
-    The following helper functions are implemented: residualnorm(),
-    printresidualnorm(), printupdatenorm(), wutotal(), Phat(), rhs(),
-    and coarsesolve().
     '''
 
     def __init__(self, meshes, prob, kcoarse, kfine,
@@ -154,7 +147,7 @@ class FAS():
             self.wu[k] += self.up
 
     # FAS F-cycle for levels kcoarse up to kfine; returns u
-    def fcycle(self, vcycles=1, ep=True):
+    def fcycle(self, ep=True):
         u = self.meshes[self.kcoarse].zeros()
         ellg = self.rhs(self.kcoarse)
         self.printresidualnorm(0, self.kcoarse, u, ellg)
@@ -167,9 +160,7 @@ class FAS():
                 self.wu[k] += 0.5
             else:
                 u = self.meshes[k].P(u)
-            Z = vcycles if k == self.kfine else 1
-            for s in range(Z):
-                self.printresidualnorm(s, k, u, ellg)
-                self.vcycle(k, u, ellg)
-            self.printresidualnorm(s + 1, k, u, ellg)
+            self.printresidualnorm(0, k, u, ellg)
+            self.vcycle(k, u, ellg)
+            self.printresidualnorm(1, k, u, ellg)
         return u
