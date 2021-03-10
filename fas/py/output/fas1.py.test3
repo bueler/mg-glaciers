@@ -2,4 +2,4 @@
   1: residual norm 1.99691e-01
   2: residual norm 1.07349e-02
   3: residual norm 5.37429e-04
-  m=32 mesh using 3 V(2,2) cycles (23.44 WU): |u|_2=0.712274, |u-u_ex|_2=5.1827e-03
+  m=32 mesh, 3 V(2,2) cycles (23.44 WU): |u|_2=0.712274, |u-u_ex|_2=5.1827e-03

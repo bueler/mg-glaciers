@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
+'''Solve a 1D nonlinear ODE problem by the FAS scheme.'''
 
-import numpy as np
-import sys, argparse
+import sys
+import argparse
+
+# moving these imports to where needed generates error
+import matplotlib
+import matplotlib.pyplot as plt
 
 from meshlevel import MeshLevel1D
 from problems import LiouvilleBratu1D
@@ -39,11 +44,11 @@ Monitor the residual between V-cycles with -monitor, and perhaps with
 For help on runtime options use -h or --help.
 
 For full documentation see ../doc/fas.pdf.
-''',formatter_class=argparse.RawTextHelpFormatter)
+''', formatter_class=argparse.RawTextHelpFormatter)
 prs.add_argument('-coarse', type=int, default=1, metavar='N',
                  help='number of NGS sweeps on coarsest mesh (default=1)')
-prs.add_argument('-cycles', type=int, default=1, metavar='Z',
-                 help='number of FAS V-cycles (default=1)')
+prs.add_argument('-cyclemax', type=int, default=100, metavar='Z',
+                 help='maximum number of FAS V-cycles (default=100)')
 prs.add_argument('-down', type=int, default=1, metavar='N',
                  help='number of NGS sweeps before coarse correction (default=1)')
 prs.add_argument('-fcycle', action='store_true', default=False,
@@ -68,6 +73,8 @@ prs.add_argument('-niters', type=int, default=2, metavar='N',
                  help='Newton iterations in NGS smoothers (default=2)')
 prs.add_argument('-R', choices=['fw', 'inj'], metavar='X', default='fw',
                  help='choose solution restriction (default: %(default)s)')
+prs.add_argument('-rtol', type=float, default=1.0e-4, metavar='L',
+                 help='stop on residual norm reduction by this factor (default=1.0e-4)')
 prs.add_argument('-show', action='store_true', default=False,
                  help='show plot at end')
 prs.add_argument('-up', type=int, default=1, metavar='N',
@@ -78,6 +85,12 @@ args, unknown = prs.parse_known_args()
 if unknown:
     print('ERROR: unknown arguments ... try -h or --help for usage')
     sys.exit(1)
+if args.fcycle and args.ngsonly:
+    print('ERROR: -fcycle and -ngsonly cannot be used together')
+    sys.exit(2)
+if args.fcycleplainp and not args.fcycle:
+    print('ERROR: option -fcycleplainp only makes sense with -fcycle')
+    sys.exit(3)
 
 # setup mesh hierarchy
 if args.levels < 1:
@@ -85,7 +98,7 @@ if args.levels < 1:
 meshes = [None] * (args.K + 1)     # space for k=0,...,K meshes
 assert (args.levels >= 1) and (args.levels <= args.K + 1)
 kcoarse = args.K + 1 - args.levels
-for k in range(kcoarse,args.K+1):  # create the meshes we actually use
+for k in range(kcoarse, args.K+1):  # create the meshes we actually use
     meshes[k] = MeshLevel1D(k=k)
 
 # initialize problem
@@ -99,40 +112,46 @@ fas = FAS(meshes, prob, mms=args.mms, kcoarse=kcoarse, kfine=args.K,
 
 # SOLVE
 # note fas.vcycle() and fas.fcycle() count their work units
+uu = meshes[args.K].zeros()   # not a great initial iterate
+ellg = fas.rhs(args.K)
+# start with F-cycle?
 if args.fcycle:
-    if args.ngsonly:
-        print('ERROR: -fcycle and -ngsonly cannot be used together')
-        sys.exit(2)
-    uu = fas.fcycle(cycles=args.cycles,ep=not args.fcycleplainp)
+    # F-cycle ignores initial guess uu
+    rnorm0 = fas.residualnorm(args.K, uu, ellg)
+    uu = fas.fcycle(vcycles=1, ep=not args.fcycleplainp)
+    rnorm = fas.residualnorm(args.K, uu, ellg)
+    s = 1
 else:
-    if args.fcycleplainp:
-        print('ERROR: option -fcycleplainp only makes sense with -fcycle')
-        sys.exit(3)
-    # do V-cycles or NGS sweeps, with residual monitoring
-    uu = meshes[args.K].zeros()          # not a great initial iterate
-    ellg = fas.rhs(args.K)
-    for s in range(args.cycles):
-        fas.printresidualnorm(s,args.K,uu,ellg)
-        if args.ngsonly:
-            for q in range(args.down):
-                fas.ngssweep(args.K,uu,ellg)
-            fas.wu[args.K] += args.down  # add into FAS work units array
-        else:
-            fas.vcycle(args.K,uu,ellg)
-    fas.printresidualnorm(args.cycles,args.K,uu,ellg)
+    rnorm0 = fas.printresidualnorm(0, args.K, uu, ellg)
+    s = 0
+# do V-cycles or NGS sweeps, with residual monitoring
+while s < args.cyclemax:
+    if s > 0:
+        if rnorm < args.rtol * rnorm0:
+            break
+    if args.ngsonly:
+        for q in range(args.down):
+            fas.ngssweep(args.K, uu, ellg)
+        fas.wu[args.K] += args.down  # add into FAS work units array
+    else:
+        fas.vcycle(args.K, uu, ellg)
+    s += 1
+    rnorm = fas.printresidualnorm(s, args.K, uu, ellg)
 
 # report on computation
 if args.ngsonly:
-    print('  m=%d mesh using %d sweeps of NGS only' \
-          % (meshes[args.K].m,args.cycles*args.down), end='')
-elif args.fcycle:
-    print('  m=%d mesh using F-cycle, V(%d,%d), %d Vs' \
-          % (meshes[args.K].m,args.down,args.up,args.cycles), end='')
-else: # V-cycles
-    print('  m=%d mesh using %d V(%d,%d) cycles' \
-          % (meshes[args.K].m,args.cycles,args.down,args.up), end='')
+    print('  m=%d mesh, %d sweeps of NGS only' \
+          % (meshes[args.K].m, s * args.down), end='')
+else:
+    fcyclestr = ''
+    if args.fcycle:
+        fcyclestr = 'F-cycle, then '
+        s -= 1
+    print('  m=%d mesh, %s%d V(%d,%d) cycles' \
+          % (meshes[args.K].m, fcyclestr, s, args.down, args.up),
+          end='')
 print(' (%.2f WU): |u|_2=%.6f' \
-      % (fas.wutotal(),meshes[args.K].l2norm(uu)), end='')
+      % (fas.wutotal(), meshes[args.K].l2norm(uu)), end='')
 if args.mms:
     uexact, _ = prob.mms(meshes[args.K].xx())
     print(', |u-u_ex|_2=%.4e' % (meshes[args.K].l2norm(uu - uexact)))
@@ -141,17 +160,16 @@ else:
 
 # graphical output if desired
 if args.show:
-    import matplotlib.pyplot as plt
-    import matplotlib as mpl
+    # better defaults for graphs
     font = {'size' : 20}
-    mpl.rc('font', **font)
+    matplotlib.rc('font', **font)
     lines = {'linewidth': 2}
-    mpl.rc('lines', **lines)
-    plt.figure(figsize=(15.0,8.0))
-    plt.plot(meshes[args.K].xx(),uu,'k',linewidth=4.0,
+    matplotlib.rc('lines', **lines)
+    plt.figure(figsize=(15.0, 8.0))
+    plt.plot(meshes[args.K].xx(), uu, 'k', linewidth=4.0,
              label='numerical solution')
     if args.mms:
-        plt.plot(meshes[args.K].xx(),uexact,'k--',linewidth=4.0,
+        plt.plot(meshes[args.K].xx(), uexact, 'k--', linewidth=4.0,
                  label='exact solution')
         plt.legend()
     plt.xlabel('x')

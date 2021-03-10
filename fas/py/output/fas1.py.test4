@@ -1,1 +1,1 @@
-  m=64 mesh using F-cycle, V(1,1), 1 Vs (8.28 WU): |u|_2=0.709460, |u-u_ex|_2=2.4171e-03
+  m=64 mesh, F-cycle, then 0 V(1,1) cycles (8.28 WU): |u|_2=0.709460, |u-u_ex|_2=2.4171e-03

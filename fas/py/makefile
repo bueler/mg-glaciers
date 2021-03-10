@@ -1,19 +1,19 @@
 # testing
 
 runfas1_1:
-	-@./testit.sh fas1.py "-monitor -monitorupdate -cycles 2 -coarse 20 -levels 2" 1 1
+	-@./testit.sh fas1.py "-monitor -monitorupdate -cyclemax 2 -coarse 20 -levels 2" 1 1
 
 runfas1_2:
-	-@./testit.sh fas1.py "-monitor -cycles 5 -down 20 -ngsonly -mms" 1 2
+	-@./testit.sh fas1.py "-monitor -cyclemax 5 -rtol 0.0 -down 20 -ngsonly -mms" 1 2
 
 runfas1_3:
-	-@./testit.sh fas1.py "-monitor -cycles 3 -K 4 -down 2 -up 2 -mms -coarse 5" 1 3
+	-@./testit.sh fas1.py "-monitor -cyclemax 3 -K 4 -down 2 -up 2 -mms -coarse 5" 1 3
 
 runfas1_4:
-	-@./testit.sh fas1.py "-K 5 -mms -fcycle" 1 4
+	-@./testit.sh fas1.py "-K 5 -mms -fcycle -cyclemax 1" 1 4
 
 runfas1_5:
-	-@./testit.sh fas1.py "-monitor -cycles 2 -K 4 -mms -fcycle -R inj" 1 5
+	-@./testit.sh fas1.py "-monitor -K 4 -mms -fcycle -cyclemax 2 -R inj" 1 5
 
 test_fas1: runfas1_1 runfas1_2 runfas1_3 runfas1_4 runfas1_5
 
