@@ -552,7 +552,7 @@ By contrast, the \pr{ngsonly} algorithm is far from optimal, and not capable of 
 
 \begin{figure}
 \includegraphics[width=0.7\textwidth]{figs/optimal.pdf}
-\caption{Run time to reach discretization error is optimal $O(m)$ for both V-cycles and F-cycles, but it explodes for NGS sweeps.}
+\caption{Run time to reach discretization error is optimal $O(m)$ for both V-cycles and F-cycles.  Run time explodes for NGS sweeps.}
 \label{fig:optimal}
 \end{figure}
 
@@ -566,15 +566,13 @@ Consider the $K\to\infty$ limit of WU calculations for the three algorithms abov
 \end{align*}
 (Note that counting work units for NGS sweeps is trivial.)  To confirm this we have added WU counting to \texttt{fas1.py}.  On a $K=10$ mesh with $m=2^{11}=2048$ elements, for example, we observe that \textsf{F-cycles$+$3$\times$V(1,0)} requires a measured 8.98 WU while \textsf{12 V(1,1) cycles} uses 47.96 WU.
 
-In fact a single F-cycle, without any additional V-cycles, comes very close to reaching discretization error.  We compare three single-F-cycle schemes.  The first we call ``F(1,1)'' as it uses the default settings \id{down}=1 and \id{up}=1.  The other two are ``F(1,0)'' using \id{up}=0, and ``F(1,0)+$\Rin$'' which changes from the default full-weighting solution restriction ($\Rfw$) to injection ($\Rin$).  These three solvers use 9, 5, and 5 WU, respectively, in the $K\to\infty$ limit of many levels.  The Figure shows that on $K=7,\dots,18$ meshes, with up to $m=2^{19} = 5 \times 10^5$ elements, the measured numerical error is within a factor of two of discretization error.  (On the finest mesh it seems the discretization error itself was corrupted by rounding errors.)
+In fact a single F-cycle, without any additional V-cycles, nearly reaches discretization error.  Consider three single-F-cycle schemes.  The first is ``F(1,1)'', which uses the default settings \id{down}=1 and \id{up}=1.  The other two are ``F(1,0)'', using \id{up}=0, and ``F(1,0)+$\Rin$'', which changes from the default full-weighting restriction ($\Rfw$) to injection ($\Rin$).  These three solvers use 9, 5, and 5 WU, respectively, in the $K\to\infty$ limit of many levels.  The Figure shows that on $K=7,\dots,18$ meshes, with up to $m=2^{19} = 5 \times 10^5$ elements, the measured numerical error is within a factor of two of discretization error.  Note that the down-smoother-only F-cycles actually generate smaller errors.  On the finest mesh it seems the discretization error itself, of order $10^{-11}$, was corrupted by rounding errors, and so all the measured numerical errors are closer together.  Some multigrid authors \cite[for example]{BrownSmithAhmadia2013} use ``textbook multigrid efficiency'' to mean ``less than 10 WU to achieve discretization error'', and by that standard our F-cycles exhibit textbook multigrid efficiency.
 
 \begin{figure}
 \includegraphics[width=0.7\textwidth]{figs/tme.pdf}
 \caption{Computed numerical error, relative to discretization error, from three versions of a single F-cycle.}
 \label{fig:tme}
 \end{figure}
-
-Some multigrid authors \cite[for example]{BrownSmithAhmadia2013} use the concept of ``textbook multigrid efficiency'' to mean ``less than 10 WU to achieve discretization error.''  By that standard, F-cycles clearly show textbook multigrid efficiency.
 
 
 \section{Extensions}  \label{sec:extensions}
