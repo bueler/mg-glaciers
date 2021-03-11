@@ -89,7 +89,7 @@ Our problem is an ordinary differential equation (ODE) boundary value problem, t
 \end{equation}
 In this problem $\lambda$ is a real constant, $g(x)$ is given, and we seek $u(x)$.  This equation arises in the theory of combustion \cite{FrankKameneckij1955} and the stability of stars.
 
-Our goal is to solve \eqref{liouvillebratu} in optimal $O(m)$ time on a mesh of $m$ elements.  A Python implementation of FAS, \texttt{fas1.py} in directory \texttt{fas/py/},\footnote{Clone the Git repository\, \href{https://github.com/bueler/mg-glaciers}{\texttt{github.com/bueler/mg-glaciers}}\, and look in the \texttt{fas/py/} directory.} accomplishes such optimal-time solutions both by V-cycle and F-cycle strategies (section \ref{sec:fascycles}).  (This note serves as its documentation.)  While optimal-time solutions of 1D problems are not unusual, FAS and other multigrid strategies for many nonlinear 2D and 3D partial differential equations (PDEs) are also optimal.  This makes them the highest-performing class of solver algorithms for such problems.
+Our goal is to solve \eqref{liouvillebratu} in optimal $O(m)$ time on a mesh of $m$ elements.  A Python implementation of FAS, \texttt{fas1.py} in directory \texttt{fas/py/},\footnote{Clone the Git repository\, \href{https://github.com/bueler/mg-glaciers}{\texttt{github.com/bueler/mg-glaciers}}\, and look in the \texttt{fas/py/} directory.} accomplishes such optimal-time solutions both by V-cycle and F-cycle strategies (section \ref{sec:cycles}).  (This note serves as its documentation.)  While optimal-time solutions of 1D problems are not unusual, FAS and other multigrid strategies for many nonlinear 2D and 3D partial differential equations (PDEs) are also optimal.  This makes them the highest-performing class of solver algorithms for such problems.
 
 By default the program \texttt{fas1.py} solves \eqref{liouvillebratu} with $g=0$.  A runtime option \texttt{-mms}, the ``method of manufactured solutions'' \cite{Bueler2021}, facilitates testing by specifying a problem with known exact solution and nonzero source term.  In detail, the solution is $u(x)=\sin(3\pi x)$, and by differentiation $g(x)=9\pi^2 \sin(3\pi x) - \lambda e^{\sin(3\pi x)}$.
 
@@ -163,7 +163,7 @@ is small for all $v$ in $\mathcal{S}^h$.  Again $r^h(w^h)$ is a linear functiona
 \end{equation}
 Solving the finite-dimensional nonlinear system, i.e.~the FE approximation of \eqref{weakform}, is equivalent to finding $w^h$ in $\mathcal{S}^h$ so that $r^h(w^h)[\psi_p]=0$ for $p=1,\dots,m-1$.
 
-A function in \texttt{fas1.py} computes \eqref{feresidualdetail} for any source functional $\ell^h$.  On the original mesh, soon to be called the ``fine mesh'', we will use formula \eqref{ferhs}.  However, the FAS algorithm (sections \ref{sec:fastwolevel} and \ref{sec:fascycles}) is a systematic way to introduce a new source functional on each coarser mesh.
+A function in \texttt{fas1.py} computes \eqref{feresidualdetail} for any source functional $\ell^h$.  On the original mesh, soon to be called the ``fine mesh'', we will use formula \eqref{ferhs}.  However, the FAS algorithm (sections \ref{sec:fastwolevel} and \ref{sec:cycles}) is a systematic way to introduce a new source functional on each coarser mesh.
 
 The function $u^h(x)$ in $\mathcal{S}^h$, equivalently $\bu$ in $\RR^{m-1}$ given by \eqref{fevector}, exactly solves a finite-dimensional nonlinear system \eqref{feweakform}.  In practice, however, at each stage we only possess an iterate $w^h(x)$, for which the ``algebraic error'' is
 \begin{equation}
@@ -216,7 +216,7 @@ The NGS method ``sweeps'' through the mesh, zeroing $\phi(c)$ at successive node
 \end{pseudo*}
 For FAS algorithms (next section) we also define \textsc{ngssweep-back} with ``\textbf{for} $p=m-1,\dots,1$''.  Function \texttt{ngssweep()} in \texttt{fas1.py} computes either order, and the \texttt{niters} default is two.
 
-For a linear differential equation the Gauss-Seidel iteration is known to converge subject to matrix assumptions which correspond to ellipticity of the original problem \cite[for example]{Greenbaum1997}.  We expect that for weak nonlinearities, e.g.~small $\lambda$ in \eqref{liouvillebratu}, our method will therefore converge as a solution method for \eqref{feweakform}, and we will demonstrate that this occurs in practice (section \ref{sec:results}).  However, one observes in practice that, after substantial progress in the first few sweeps during which the residual becomes very smooth, soon NGS stagnates.  Following Brandt \cite{Brandt1977,BrandtLivne2011}, who asserts that such a stalling scheme must be ``wrong'', we adopt the multigrid approach next.
+For a linear differential equation the Gauss-Seidel iteration is known to converge subject to matrix assumptions which correspond to ellipticity of the original problem \cite[for example]{Greenbaum1997}.  We expect that for weak nonlinearities, e.g.~small $\lambda$ in \eqref{liouvillebratu}, our method will therefore converge as a solution method for \eqref{feweakform}, and we will demonstrate that this occurs in practice (section \ref{sec:convergence}).  However, one observes in practice that, after substantial progress in the first few sweeps during which the residual becomes very smooth, soon NGS stagnates.  Following Brandt \cite{Brandt1977,BrandtLivne2011}, who asserts that such a stalling scheme must be ``wrong'', we adopt the multigrid approach next.
 
 
 \section{The FAS equation for two levels}  \label{sec:fastwolevel}
@@ -229,9 +229,9 @@ The fundamental goal of any multigrid scheme is to do a minimal amount of work (
 \item a meaningful way to transfer the problem to a coarser mesh.
 \end{enumerate}
 
-Regarding (i), we describe only two levels at first, but a full mesh hierarchy is used in section \ref{sec:fascycles}.  Here our coarse mesh has spacing $2h$ and $m/2$ elements (subintervals); all quantities on the coarse mesh have superscript ``$2h$''.  The program \texttt{fas1.py} only refines by factors of two, but the ideas generalize for other refinement factors.
+Regarding (i), we describe only two levels at first, but a full mesh hierarchy is used in section \ref{sec:cycles}.  Here our coarse mesh has spacing $2h$ and $m/2$ elements (subintervals); all quantities on the coarse mesh have superscript ``$2h$''.  The program \texttt{fas1.py} only refines by factors of two, but the ideas generalize for other refinement factors.
 
-For (ii), a small fixed number of NGS sweeps is our smoother on the fine mesh.  Each sweep, given by algorithm \textsc{ngssweep} above, is an $O(m)$ operation with a small constant.  (The constant is determined by the number of Newton iterations and the expense of evaluating nonlinearities at each point, e.g.~$\lambda e^u$ in \eqref{liouvillebratu}.)  A few NGS sweeps produces the results that the fine-mesh residual $r^h(w^h)$ and algebraic error $e^h = w^h - u^h$ becomee smooth, but they do not necessarily become small.  Using more sweeps of NGS would eventually make the error small, and solve problem \eqref{feweakform}, but inefficiently in the sense that many sweeps would be needed, generally giving an $O(m^q)$ method for $q\gg 1$.  However, NGS sweeps on a coarser mesh will see the coarse-mesh interpolant of the fine-mesh residual as less smooth, so the coarser-mesh NGS can quickly eliminate a large fraction of the error.  Descending to yet coarser meshes, in a V-cycle as described in section \ref{sec:fascycles}, leads to a coarsest mesh on which the error can be eliminated entirely by applying NGS at only a few interior points.  (In the default settings for \texttt{fas1.py}, the coarsest mesh has two subintervals and one interior point.)
+For (ii), a small fixed number of NGS sweeps is our smoother on the fine mesh.  Each sweep, given by algorithm \textsc{ngssweep} above, is an $O(m)$ operation with a small constant.  (The constant is determined by the number of Newton iterations and the expense of evaluating nonlinearities at each point, e.g.~$\lambda e^u$ in \eqref{liouvillebratu}.)  A few NGS sweeps produces the results that the fine-mesh residual $r^h(w^h)$ and algebraic error $e^h = w^h - u^h$ becomee smooth, but they do not necessarily become small.  Using more sweeps of NGS would eventually make the error small, and solve problem \eqref{feweakform}, but inefficiently in the sense that many sweeps would be needed, generally giving an $O(m^q)$ method for $q\gg 1$.  However, NGS sweeps on a coarser mesh will see the coarse-mesh interpolant of the fine-mesh residual as less smooth, so the coarser-mesh NGS can quickly eliminate a large fraction of the error.  Descending to yet coarser meshes, in a V-cycle as described in section \ref{sec:cycles}, leads to a coarsest mesh on which the error can be eliminated entirely by applying NGS at only a few interior points.  (In the default settings for \texttt{fas1.py}, the coarsest mesh has two subintervals and one interior point.)
 
 For item (iii), what is the coarse-mesh version of the problem?  To derive this equation, namely to explain Brandt's FAS equation \cite{Brandt1977}, we start from the FE weak form \eqref{feweakform}.  The fine-mesh solution $u^h$ is generally unknown.  For an iterate $w^h$ we subtract $F^h(w^h)[v]$ from both sides to get the residual \eqref{feresidual} on the right:
 \begin{equation}
@@ -287,7 +287,7 @@ While it is common in linear multigrid \cite{Briggsetal2000,Bueler2021,Trottenbe
         \pr{ngssweep}(w,\ell)
 \end{pseudo*}
 
-In order to implement FAS we must define the action of operators $R'$, $R$, and $P$ in \eqref{fasell} and \eqref{fasupdate},which is done next.  In section \ref{sec:fascycles} we will define an FAS V-cycle by replacing \textsc{coarsesolve} with the recursive application of the FAS solver itself.
+In order to implement FAS we must define the action of operators $R'$, $R$, and $P$ in \eqref{fasell} and \eqref{fasupdate},which is done next.  In section \ref{sec:cycles} we will define an FAS V-cycle by replacing \textsc{coarsesolve} with the recursive application of the FAS solver itself.
 
 
 \section{Restriction and prolongation operators} \label{sec:restrictionprolongation}
@@ -405,16 +405,13 @@ This computes each coarse-mesh nodal value of $z=\Rfw w^h$ as a weighted average
 Which restriction do we choose?  Because of their simplicity, we will implement and compare $\Rfw$ and $\Rin$ in \texttt{fas1.py}.
 
 
-\section{FAS V-cycles and F-cycles} \label{sec:fascycles}
+\section{Cycles} \label{sec:cycles}
 
-The main principles of the FAS scheme are already contained in the \textsc{fas-twolevel} algorithm in section \ref{sec:fastwolevel}.  From this two-level scheme it is a small step to solve the coarse-mesh problem by the same scheme, generating a so-called ``V-cycle''.
+The main principles of the FAS scheme are already contained in the \textsc{fas-twolevel} algorithm in section \ref{sec:fastwolevel}, from which it is a small step to solve the coarse-mesh problem by the same scheme, creating a so-called ``V-cycle''.  To define this precisely we need an indexed hierarchy of mesh levels.  Start with a coarsest mesh with $m_0$ elements of length $h_0=1/m_0$.  (By default in \texttt{fas1.py} we have $m_0=2$.)  For $k=1,\dots,K$ we refine by factors of two so that the $k$th mesh has $m_k=2^k m_0$ elements of length $h_k=h_0/2^k$.  The final $K$th mesh is now called the ``fine mesh''.  Instead of the superscripts $h$ and $2h$ used in section \ref{sec:fastwolevel}, now we use a ``$k$'' superscript to indicate the mesh on which a quantity lives.
 
-To define a V-cycle precisely we need an indexed hierarchy of mesh levels.  Start with a coarsest mesh with $m_0$ elements (subintervals) of length (node spacing) $h_0=1/m_0$.  (By default in \texttt{fas1.py} we have $m_0=2$.)  For $k=1,\dots,K$ we refine by factors of two so that the $k$th mesh has $m_k=2^k m_0$ elements of length $h_k=h_0/2^k$.  Note that the $K$th mesh is now called the ``fine mesh''.  Instead of the superscripts $h$ and $2h$ used in section \ref{sec:fastwolevel}, now we use a ``$k$'' superscript to indicate the mesh on which some quantity lives.
-
-On this mesh hierarchy an FAS V-cycle is the following recursive algorithm, in which $F^k$ denotes the discretization of $F$ on the level $k$ mesh:
-
+On this hierarchy an FAS V-cycle is the following in-place recursive algorithm:
 \begin{pseudo*}
-\pr{fas-v}(k,w^k,\ell^k)\text{:} \\+
+\pr{fas-vcycle}(k,w^k,\ell^k,\id{down}=1,\id{up}=1)\text{:} \\+
     if $k=0$ \\+
         \pr{coarsesolve}(w^0,\ell^0) \\-
     else \\+
@@ -422,81 +419,80 @@ On this mesh hierarchy an FAS V-cycle is the following recursive algorithm, in w
             \pr{ngssweep}(w^k,\ell^k) \\-
         $w^{k-1} = \pr{copy}(R w^k)$ \\
         $\ell^{k-1}[v] := R' (\ell^k-F^k(w^k))[v] + F^{k-1}(R w^k)[v]$ \\
-        \pr{fas-v}(k-1,w^{k-1},\ell^{k-1}) \\
+        \pr{fas-vcycle}(k-1,w^{k-1},\ell^{k-1}) \\
         $w^k \gets w^k + P(w^{k-1} - R w^k)$ \\
         for $j=1,\dots,$\id{up} \\+
             \pr{ngssweep-back}(w^k,\ell^k) \\-
 \end{pseudo*}
-
-It is critical to observe that the meaning of ``$\ell^k$'' depends on the mesh level.  On the fine level it is $\ell^K[v] = \ip{g}{v}$, as in \eqref{ferhs}, but on coarser levels it is determined by the nontrivial FAS formula \eqref{fasell}.  Also note that \textsc{fas-vcycle} does in-place modification of an iterate $w^k$.  A V-cycle with $K=3$ is shown in Figure \ref{fig:cycles}.
+Observe that the meaning of ``$\ell^k$'' depends on the mesh level.  On the fine level it is $\ell^K[v] = \ip{g}{v}$, as in \eqref{ferhs}, but on coarser levels it is determined by the nontrivial FAS formula \eqref{fasell}.  Also note that \textsc{fas-vcycle} does in-place modification of the coarse-mesh iterate $w^{k-1}$.  A V-cycle with $K=3$ is shown in Figure \ref{fig:cycles}.
 
 \begin{figure}
 \input{tikz/cycles.tex}
-\caption{An FAS V-cycle (left) and F-cycle (right) on a mesh hierarchy with four levels ($K=3$).  Solid dots correspond to \texttt{down} sweeps of NGS, open circles to \texttt{up} sweeps, and squares to \textsc{coarsesolve}. Thick grey edges represent $\hat P$.}
+\caption{An FAS V-cycle (left) and F-cycle (right) on a mesh hierarchy with four levels ($K=3$).  Solid dots are \texttt{down} sweeps of NGS, open circles are \texttt{up} sweeps, and squares are \textsc{coarsesolve}. Thick grey edges show $\hat P$.}
 \label{fig:cycles}
 \end{figure}
 
-V-cycles can be iterated, using the whole mesh hierarchy, to solve problem \eqref{feweakform} to desired accuracy.  We put this in a pseudocode for clarity:
-
+V-cycles can be iterated to solve problem \eqref{feweakform} to desired accuracy.  We put this in a pseudocode for clarity:
 \begin{pseudo*}
-\pr{fas-vcycles}(Z)\text{:} \\+
-    $w^K = 0$, \, $\ell^K[v] = \ip{g}{v}$ \\
-    for $s=1,\dots,Z$ \\+
-        \pr{fas-v}(K,w^K,\ell^K) \\-
+\pr{fas-solver}(w^K,\id{rtol}=10^{-4},\id{cyclemax}=100)\text{:} \\+
+    $\ell^K[v] = \ip{g}{v}$ \\
+    $r_0 = \|\ell^K - F^K(w^K)\|$ \\
+    for $s=1,\dots,\id{cyclemax}$ \\+
+        \pr{fas-vcycle}(K,w^K,\ell^K) \\
+        if $\|\ell^K-F^K(w^K)\| < \id{rtol}\,r_0$ \\+
+            break \\--
     return $w^K$
 \end{pseudo*}
 
-In \texttt{fas1.py} the option \texttt{-cycles} specifies $Z$, defaulting to $Z=1$.  As we will see in practice, 7 to 12 V-cycles, using the default settings in \textsc{fas-vcycle} including \texttt{down} $=1$ and \texttt{up} $=1$ smoother applications, make a very effective solver on any mesh.
+Our Python code \texttt{fas1.py} implements \pr{fas-vcycle} and \pr{fas-solver}, and options \texttt{-rtol}, \texttt{-cyclemax} override the defaults for the latter.  As is easily seen by experimentation, and as we will demonstrate in the next two sections, 7 to 12 V-cycles, using the default settings in \textsc{fas-vcycle} including \texttt{down} $=1$ and \texttt{up} $=1$ smoother applications, make a very effective solver on any mesh.
 
-Next we can add a different multilevel idea.  It is based on the observation that a nonlinear equation solver usually depends critically on a quality initial iterate.  Indeed, choosing initial iterate $w=0$ as in \textsc{fas-vcycles} may not yield a convergent method.  However, one finds in practice that coarse meshes are more forgiving with respect to the initial iterate than are finer meshes.  The new idea is to start on the coarsest mesh in the hierarchy, where a blind guess like $w^0=0$ is most likely to succeed, and then work upward through the levels.  At each mesh level one computes an initial iterate by prolongation of a nearly-converged iterate on the next-coarser level, and then one does a V-cycle.  At the finest mesh level we may do repeated V-cycles.
+But we can add a different multilevel idea to get a new kind of cycle.  It is based on the observation that an iterative equation solver, linear or nonlinear, often depends critically on the quality of its initial iterate.  Indeed, choosing initial iterate $w^K=0$ and calling \textsc{fas-solver} may not yield a convergent method.  However, one finds in practice that coarse meshes are more forgiving with respect to the initial iterate than are finer meshes.  Now the new idea is to start on the coarsest mesh in the hierarchy, where a blind guess like $w^0=0$ is most likely to succeed, and then work upward through the levels.  At each mesh level one computes an initial iterate by prolongation of a nearly-converged iterate on the previous level, and then one does a V-cycle.  At the finest mesh level we may do repeated V-cycles.
 
-The resulting algorithm is called an FAS multigrid ``F-cycle'' because the pattern in Figure \ref{fig:cycles} (right) looks vaguely like an ``F'' on its back.\footnote{Confusingly, this algorithm is also called a ``full multigrid'' (FMG) cycle \cite{BrandtLivne2011,Briggsetal2000}.  The meaning of ``full'' is fundamentally different in FAS versus FMG terminology.}  It is the following algorithm:
-
+The resulting algorithm is called an FAS multigrid ``F-cycle'' because the pattern in Figure \ref{fig:cycles} (right) looks vaguely like an ``F'' on its back; it is the following algorithm:
 \begin{pseudo*}
-\pr{fas-f}(Z)\text{:} \\+
-    $w^0 = 0$, \, $\ell^0[v] = \ip{g}{v}$ \\
+\pr{fas-fcycle}(Z)\text{:} \\+
+    $w^0 = 0$ \\
+    $\ell^0[v] = \ip{g}{v}$ \\
     \pr{coarsesolve}(w^0,\ell^0) \\
     for $k=1,\dots,K$ \\+
-        $w^k = \hat P w^{k-1}$, \, $\ell^k[v] = \ip{g}{v}$ \\
-        if $k=K$ \\+
-            for $s=1,\dots,Z$ \\+
-                \pr{fas-v}(K,w^K,\ell^K) \\--
-        else \\+
-            \pr{fas-v}(k,w^k,\ell^k) \\--
+        $w^k = \hat P w^{k-1}$ \\
+        $\ell^k[v] = \ip{g}{v}$ \\
+        \pr{fas-vcycle}(k,w^k,\ell^k) \\-
     return $w^K$
 \end{pseudo*}
+This algorithm is also called a ``full multigrid'' (FMG) cycle \cite{BrandtLivne2011,Briggsetal2000}, but the meaning of ``full'' is fundamentally different in FAS versus FMG terminology.  One may run \pr{fas-fcycle} to generate the initial iterate for \pr{fas-solver}, as as we will see in section \ref{sec:performance}, the result of one F-cycle is already a very good solution.
 
-It is particularly important to avoid the introduction of high frequencies as one generates the first iterate on the finer mesh.  Thus an important detail in the algorithm is that the solution prolongation is enhanced \cite{BrandtLivne2011}:
+It is important to avoid the introduction of high frequencies as one generates the first iterate on the finer mesh.  Thus a coarse-mesh solution is prolonged on to the next level by a possibly-different operator:
 \begin{equation}
   w^k = \hat P w^{k-1} \label{enhancedprolongation}
 \end{equation}
-Our operator $\hat P$ first applies $P$ to generate a fine-mesh function, but then we sweep through the \emph{new} fine-mesh nodes and apply NGS there without altering values at the nodes already present in the coarse mesh.
+It is common for a better interpolation scheme to be used for $\hat P$ than for $P$ \cite{Trottenbergetal2001}.  Our choice for $\hat P$ first applies $P$ to generate a fine-mesh function, but followed by sweeping once through the \emph{new} fine-mesh nodes and applying NGS there without altering values at the nodes already present in the coarse mesh.  This $\hat P$ is half of a smoother, and counted as such; see section \ref{sec:performance}.
 
 
-\section{Results and Discussion}  \label{sec:results}
+\section{Convergence} \label{sec:convergence}
 
-The Python program \texttt{fas1.py} accompanying this note applies, by default, a single $V$ cycle to solve equation \eqref{liouvillebratu} on a very coarse mesh.  To get started, clone the Git repository and run the program:
+The Python program \texttt{fas1.py} accompanying this note applies \pr{fas-solver} by default, with zero initial iterate, to solve equation \eqref{liouvillebratu}.  The program depends only on the widely-available NumPy library \cite{Harrisetal2020}.  It imports local modules \texttt{meshlevel.py}, \texttt{problems.py}, and \texttt{cycles.py} from the same directory.
+
+To get started, clone the Git repository and run the program:
 \begin{cline}
 $ git clone https://github.com/bueler/mg-glaciers.git
 $ cd mg-glaciers/fas/py/
 $ ./fas1.py
-  m=8 mesh using 1 V(1,1) cycles (3.25 WU): |u|_2=0.094945
+  m=8 mesh, 6 V(1,1) cycles (19.50 WU): |u|_2=0.102443
 \end{cline}
 %$
-The program depends only on the widely-available NumPy library \cite{Harrisetal2020}, though it imports local modules \texttt{meshlevel.py}, \texttt{problems.py}, and \texttt{cycles.py} from the same directory.  The various allowed options to \texttt{fas1.py} are shown by usage help:
+Various allowed options to \texttt{fas1.py} are shown by usage help:\footnote{Also, a small suite of software (regression) tests of \texttt{fas1.py} is run with \,\texttt{make test}.}
 \begin{cline}
 $ ./fas1.py -h
 \end{cline}
 %$
-Also, a small suite of software (regression) tests of \texttt{fas1.py} is run with \,\texttt{make test}.
-
-For example, choosing a mesh with $m=2^{K+1}=16$ elements, two V-cycles, and a problem with known exact solution (section \ref{sec:intro}), yields Figure \ref{fig:show}:
+For example, choosing a mesh with $m=2^{K+1}=16$ elements and a problem with known exact solution (section \ref{sec:intro}), yields Figure \ref{fig:show}:
 \begin{cline}
-$ ./fas1.py -K 3 -cycles 2 -mms -show
-  m=16 mesh using 2 V(1,1) cycles ..., |u-u_ex|_2=1.2485e-02
+$ ./fas1.py -K 3 -mms -show
+  m=16 mesh, 6 V(1,1) cycles (21.75 WU): ... |u-u_ex|_2=2.1315e-02
 \end{cline}
 %$
-The V-cycles in this run are the same as shown in Figure \ref{fig:cycles}.  They are reported as ``\texttt{V(1,1)}'' because the defaults correspond to \texttt{down} $=1$ and \texttt{up} $=1$ NGS sweeps on each level.  Note that runs with option \texttt{-mms} report the numerical error $\|u-u_{\text{ex}}\|_2$.
+The V-cycles in this run, exactly as shown in Figure \ref{fig:cycles}, are reported as ``\texttt{V(1,1)}'' because the defaults correspond to \texttt{down} $=1$ and \texttt{up} $=1$ NGS sweeps on each level.  Note that runs with option \texttt{-mms} report the final numerical error $\|w^h-u\|_2$.
 
 \begin{figure}
 \includegraphics[width=0.8\textwidth]{figs/show.pdf}
@@ -504,43 +500,45 @@ The V-cycles in this run are the same as shown in Figure \ref{fig:cycles}.  They
 \label{fig:show}
 \end{figure}
 
-By using \texttt{-mms} we can demonstrate convergence of our implemented FE method, and thereby verify \texttt{fas1.py}.  The numerical error from runs with 12 V-cycles and $K=3,4,\dots,14$, corresponding to $16\le m \le 32768$ elements, are shown in Figure \ref{fig:converge}.  Because our problem is so simple, with a very smooth solution, the convergence rate is exactly at the expected rate $O(h^2)$ \cite{Elmanetal2014}.
+By using the \texttt{-mms} case we can demonstrate convergence of our implemented FE method, and thereby verify \texttt{fas1.py}.  The numerical error from runs with 12 V-cycles, i.e.~with options \texttt{-rtol 0 -cyclemax 12}, and $K=3,4,\dots,14$ corresponding to $16\le m \le 32768$ elements, are shown in Figure \ref{fig:converge}.  Because our problem is so simple, with a very smooth solution, the convergence rate is exactly at the expected rate $O(h^2)$ \cite{Elmanetal2014}.
 
-However, if instead of a small, fixed number of V-cycles we instead try a large, fixed number of NGS sweeps, i.e.~we apply the algorithm below, then the results are disappointing.
-
+However, if instead of a small, fixed number of V-cycles we instead try a large number of NGS sweeps, e.g.~we apply the algorithm below with \texttt{-rtol 0 -cyclemax 10000} and zero initial iterate, then the results are disappointing.
 \begin{pseudo*}
-\pr{ngsonly}(Z)\text{:} \\+
-    $w^K = 0$, \, $\ell^K[v] = \ip{g}{v}$ \\
-    for $s=1,\dots,Z$ \\+
-        \pr{ngssweep}(w^K,\ell^K) \\-
+\pr{ngsonly}(w^K,\id{rtol}=10^{-4},\id{cyclemax}=100)\text{:} \\+
+    $\ell^K[v] = \ip{g}{v}$ \\
+    $r_0 = \|\ell^K - F^K(w^K)\|$ \\
+    for $s=1,\dots,\id{cyclemax}$ \\+
+        \pr{ngssweep}(w^K,\ell^K) \\
+        if $\|\ell^K-F^K(w^K)\| < \id{rtol}\,r_0$ \\+
+            break \\--
     return $w^K$
 \end{pseudo*}
-
-As shown in Figure \ref{fig:converge}, \textsc{ngsonly}$(10^4$) generates convergence to discretization error on meshes with $m=16,32,64,128$.  However, for finer meshes ($m=256,512$) the same number of sweeps is no longer sufficient.  Continuing to yet finer meshes using the same $Z$ would make essentially no progress (not shown).  The reason for this behavior is that almost all of the algebraic and numerical error (section \ref{sec:femethod}) is in low-frequency modes which the NGS sweeps are barely able to reduce \cite[Chapter 6]{Bueler2021}.  Thus we observe the situation which multigrid schemes are designed to address \cite{BrandtLivne2011,Briggsetal2000}: by moving the problem between meshes the same smoother will efficiently-reduce all frequencies present in the remaining error.  Both the smoother and coarse-level solver components of our FAS algorithms consist entirely of NGS sweeps, but by adding a multilevel mesh infrastructure we have arranged that the sweeps are always making progress.
+As shown in Figure \ref{fig:converge}, such runs generates convergence to discretization error only on meshes with $m=16,32,64,128$.  For slightly finer meshes ($m=256,512$) the same number of sweeps is no longer sufficient, and continuing to yet finer meshes using the same number of sweeps would make essentially no progress (not shown).  The reason for this behavior is that almost all of the algebraic error (section \ref{sec:femethod}) is in low-frequency modes which the NGS sweeps are barely able to reduce.  This is the situation which multigrid schemes are designed to address \cite{BrandtLivne2011,Briggsetal2000}: by moving the problem between meshes the same smoother will efficiently-reduce all frequencies present in the error.  Both the smoother and the coarse-level solver components of our FAS algorithms consist entirely of NGS sweeps, but by adding a multilevel mesh infrastructure we have arranged that the sweeps are always making progress.
 
 \begin{figure}
 \includegraphics[width=0.7\textwidth]{figs/converge.pdf}
-\caption{For a fixed number of V-cycles the numerical error $\|u-u_{\text{ex}}\|_2$ converges to zero at the expected rate $O(h^2)$, but even a large (fixed) number of NGS sweeps fails to converge at higher resolutions.}
+\caption{For a fixed number of V-cycles the numerical error $\|u-u_{\text{ex}}\|_2$ converges to zero at the expected rate $O(h^2)$, but even a $10^4$ NGS sweeps fails to converge at higher resolutions.}
 \label{fig:converge}
 \end{figure}
+
+
+\section{Performance}  \label{sec:performance}
 
 Having verified our method, we compare the performance of three solver algorithms:
 
 \begin{itemize}
-\item \textsc{fas-f}$(Z)$, defined in section \ref{sec:fascycles}.
-\item \textsc{fas-vcycles}$(Z)$, defined in section \ref{sec:fascycles}.
-\item \textsc{ngsonly}$(Z)$, defined above.
+\item \textsc{fas-fcycle}, defined in section \ref{sec:cycles}.
+\item \textsc{fas-solver}, which does V-cycles, defined in section \ref{sec:cycles}.
+\item \textsc{ngsonly}, defined in section \ref{sec:convergence}.
 \end{itemize}
 
-\noindent Note that each algorithm returns an approximate solution $w^K$ on the finest mesh after iterating the solver $Z$ times, so these algorithms all have the same signature.
-
-The two FAS algorithms actually represent many different algorithms.  While making no attempt to systematically-explore the allowed solver and parameter choices, we observe that 7 to 12 V(1,1) cycles suffice to approach discretization error in the \texttt{-mms} problem.  For F-cycles we must choose how many finest-level V-cycles to take, and we observe that 2 or 3 suffice.  However, experimentation in minimizing the work units (below), while maintaining convergence, yields a choice of three V(1,0) cycles.  Thus our three algorithms become the following specific runs on meshes with $m=2^{K+1}$ elements:
+The two FAS algorithms actually represent many different algorithms.  While making no attempt to systematically-explore the allowed solver and parameter choices, we observe that 7 to 12 V(1,1) cycles suffice to approach discretization error in the \texttt{-mms} problem.  For F-cycles we must choose how many finest-level V-cycles to take, and we observe that 2 or 3 certainly suffice.  Experimentation in minimizing the work units (below), while maintaining convergence, yields a choice of three V(1,0) cycles.  Thus our three algorithms become the following specific \texttt{fas1.py} options on meshes with $m=2^{K+1}$ elements:
 
 \medskip
 \begin{tabular}{ll}
-\textsf{F-cycles 3xV(1,0)} \,:        &\texttt{./fas1.py -mms -fcycle -cycles 3 -up 0 -K }$K$ \\
-\textsf{12 V(1,1) cycles} \,:  &\texttt{./fas1.py -mms -cycles 12 -K }$K$ \\
-\textsf{NGS sweeps} \,:      &\texttt{./fas1.py -mms -ngsonly -K }$K$
+\textsf{F-cycles$+$3$\times$V(1,0)} \,:        &\texttt{-mms -fcycle -rtol 0 -cyclemax 4 -up 0 -K }$K$ \\
+\textsf{12 V(1,1) cycles} \,:  &\texttt{-mms -rtol 0 -cyclemax 12 -K }$K$ \\
+\textsf{NGS sweeps} \,:      &\texttt{-mms -rtol 0 -cyclemax $Z$ -ngsonly -K }$K$
 \end{tabular}
 
 \medskip
@@ -558,13 +556,15 @@ Because measuring run time is machine dependent, a standard way to compare multi
 
 On multilevel hierarchies, by summing geometric series \cite{Briggsetal2000} we may compute the $K\to\infty$ WUs of the three algorithms above.  Thus, when the hierarchy has a large number of levels, we have the following estimates:
 \begin{align*}
-\text{WU}\big(\text{\textsf{F-cycles $Z$xV(1,0)}}\big) &\approx 3+2Z \\
+\text{WU}\big(\text{\textsf{F-cycles$+Z\times$V(1,0)}}\big) &\approx 3+2Z \\
 \text{WU}\big(\text{\textsf{$Z$ V(1,1) cycles}}\big)   &\approx 4Z \\
 \text{WU}\big(\text{\textsf{$Z$ NGS sweeps}}\big)      &= Z
 \end{align*}
 (Note that counting work units for NGS sweeps is trivial.)  To confirm this we have added WU counting to \texttt{fas1.py}.  On a $K=10$ mesh with $m=2^{11}=2048$ elements, for example, we observe that \textsf{F-cycles 3xV(1,0)} requires a measured 8.98 WU while \textsf{12 V(1,1) cycles} uses 47.96 WU.  The above estimates give two-digit accuracy for $K \ge 13$.
 
 Some multigrid authors \cite[for example]{BrownSmithAhmadia2013} use the concept of ``textbook multigrid efficiency'' to mean ``less than 10 WU to achieve discretization error.''  By that standard, \textsf{F-cycles 3xV(1,0)} shows textbook multigrid efficiency.
+
+\section{Extensions}  \label{sec:extensions}
 
 Our program \texttt{fas1.py} is deliberately basic in many senses.  Here are four possible extensions which the reader might want to implement, roughly ordered from easiest to most difficult:
 \renewcommand{\labelenumi}{\textbf{\Roman{enumi}.}}
@@ -580,6 +580,7 @@ Example default values are \texttt{rtol} $=10^{-8}$ and \texttt{atol} $=10^{-50}
 This equation is the same as \eqref{liouvillebratu} when $p=2$, but for other values $p$ in $(1,\infty)$ the solution is less well-behaved because the coefficient of $u''$ can degenerate or explode.  However, a literature at least exists for the corresponding Poisson problem ($\lambda=0$) \cite{BarrettLiu1993,Bueler2021,Evans2007}.  A basic technique is to regularize the leading coefficient with a numerical parameter $\eps>0$: replace $|u'|^{p-2}$ with $\left(|u'|^2+\eps\right)^{(p-2)/2}$.  With such a change, continuation (item \textbf{II}) will be both important and a bit complicated.
 \item By far the most consequential extension of \texttt{fas1.py} would be to ``merely'' change from 1D to 2D or 3D.  That is, to change from solving ODEs to solving elliptic PDEs like $-\grad^2 u - \lambda e^u=g$, where $\grad^2$ is the Laplacian operator.  However, doing this in the style of \texttt{fas1.py}, using only NumPy vectors for infrastructure, is not recommended.  Instead, application of a finite element library like Firedrake \cite{Bueler2021,Rathgeberetal2016} or Fenics \cite{Loggetal2012} would be wise.  Using such libraries requires a substantial learning curve, and these libraries do not have full support for FAS multigrid methods, but using such libraries would also allow experimentation with higher-order finite element spaces and many other benefits.
 \end{enumerate}
+
 
 \section{Conclusion}  \label{sec:conclusion}
 
