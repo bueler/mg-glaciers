@@ -1,6 +1,6 @@
 # hand-edited results from:
 #   $ cd mg-glaciers/fas/py/study/
-#   # ./optimal.sh &> results-converge.txt
+#   # ./optimal.sh &> results-optimal.txt
 # columns: method m WU l2err time
 # method=0:  3 F-cycles with V(1,0)
 # method=1:  12 V(1,1)-cycles

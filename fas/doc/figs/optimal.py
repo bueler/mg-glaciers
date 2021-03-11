@@ -8,11 +8,11 @@ import sys
 
 INFILE = 'results-optimal.txt'
 # columns: method m WU l2err time
-# method=0:  3 F-cycles with V(1,0)
+# method=0:  F-cycles with down=1,up=0 followed by 3xV(1,0)
 # method=1:  12 V(1,1)-cycles
 # method=2:  NGS with enough cycles to get 2*(discretization error)
 
-LABELS = ['F-cycles 3xV(1,0)', '12 V(1,1) cycles', 'NGS sweeps']
+LABELS = ['F-cycles+3xV(1,0)', '12 V(1,1) cycles', 'NGS sweeps']
 SYMBOLS = ['s','.','o']
 MFC = ['k','k','w']
 MSIZE = [9.0,16.0,10.0]
