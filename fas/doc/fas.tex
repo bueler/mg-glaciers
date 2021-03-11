@@ -292,16 +292,16 @@ In order to implement FAS we must define the action of operators $R'$, $R$, and 
 
 \section{Restriction and prolongation operators} \label{sec:restrictionprolongation}
 
-To explain the two different restriction operators $R'$ and $R$ in \eqref{fasequation}, plus the prolongation $P$ in \eqref{fasupdate}, first note that functions $w^h$ in $\mathcal{S}^h$ are distinct objects from linear functionals like the residual $r^h(w^h)$, which act on $v$ in $\mathcal{S}^h$.  Denoting such linear functionals by $(\mathcal{S}^h)'$, the three operators are distinguished by their domain and range spaces:
+To explain the two different restriction operators $R'$ and $R$ in \eqref{fasequation}, plus the prolongation $P$ in \eqref{fasupdate}, first note that functions $w^h$ in $\mathcal{S}^h$ are distinct objects from linear functionals like the residual $r^h(w^h)$.  Denoting such linear functionals by $(\mathcal{S}^h)'$, the three operators are already distinguished by their domain and range spaces:
 \begin{align}
   R' &: (\mathcal{S}^h)' \to (\mathcal{S}^{2h})', \label{rpoperators} \\
   R  &: \mathcal{S}^h \to \mathcal{S}^{2h}, \notag \\
   P  &: \mathcal{S}^{2h} \to \mathcal{S}^h. \notag
 \end{align}
 
-Both functions in $\mathcal{S}^h$ and linear functionals in $(\mathcal{S}^h)'$ are representable by vectors in $\RR^{m-1}$.  One stores functions via coefficients $w[p]$ with respect to an expansion in the hat function basis $\{\psi_p\}$, as in \eqref{fesolution} for example, while one stores a functional $\ell$ by its values $\ell[\psi_p]$.  Though it makes sense to represent $w^h$ as a column vector and $\ell$ as a row vector \cite{TrefethenBau1997}, in Python it is easiest to use ``flat'' one-dimensional NumPy arrays for both purposes.  For our problem an iterate $w^h$ has zero boundary values, and likewise $\ell$ acts on $v$ with zero boundary values, thus only interior-point hat functions are needed in these representations.
+On the other hand, both functions in $\mathcal{S}^h$ and linear functionals in $(\mathcal{S}^h)'$ are representable by vectors in $\RR^{m-1}$.  One stores a function $w^h$ via coefficients $w[p]$ with respect to an expansion in the hat function basis $\{\psi_p\}$, as in \eqref{fesolution} for example, while one stores a functional $\ell^h$ by its values $\ell^h[\psi_p]$.  Though it makes sense to represent $w^h$ as a column vector and $\ell^h$ as a row vector \cite{TrefethenBau1997}, in Python one may use ``flat'' one-dimensional NumPy arrays for both purposes.  For our problem an iterate $w^h$ has zero boundary values, and likewise $\ell^h$ acts on $v$ with zero boundary values, thus only interior-point hat functions are needed in these representations.
 
-But how do $R'$, $R$, and $P$ actually operate in the finite element (FE) case?  A key calculation relates the coarse-mesh hat functions $\psi_q^{2h}(x)$ to the fine mesh hats $\psi_p^h(x)$ (Figure \ref{fig:hatcombination}):
+But how do $R'$, $R$, and $P$ actually operate in the finite element (FE) case?  The key calculation relates the coarse-mesh hat functions $\psi_q^{2h}(x)$ to the fine mesh hats $\psi_p^h(x)$ (Figure \ref{fig:hatcombination}):
 \begin{equation}
   \psi_q^{2h}(x) = \frac{1}{2} \psi_{2q-1}^h(x) + \psi_{2q}^h(x) + \frac{1}{2} \psi_{2q+1}^h(x), \label{hatrelation}
 \end{equation}
@@ -313,11 +313,12 @@ for $q=1,2,\dots,M-1$.  Recall that $M=m/2$, and that we are assuming $m$ is eve
 \label{fig:hatcombination}
 \end{figure}
 
-Now consider the prolongation $P$.  Because a piecewise-linear function on the coarse mesh is also a piecewise-linear function on the fine mesh, $P$ is defined as the injection of $\mathcal{S}^{2h}$ into $\mathcal{S}^h$, without changing the function.  Suppose $w^{2h}(x)$ is in $\mathcal{S}^{2h}$, so $w^{2h}(x) = \sum_{q=1}^{M-1} w[q] \psi_q^{2h}(x)$.  Then we use \eqref{hatrelation} to compute $P w^{2h}$ in terms of fine-mesh hat functions:
+First consider the prolongation $P$.  Because a piecewise-linear function on the coarse mesh is also a piecewise-linear function on the fine mesh, $P$ is defined as the injection of $\mathcal{S}^{2h}$ into $\mathcal{S}^h$, without changing the function.  Suppose $w^{2h}(x)$ is in $\mathcal{S}^{2h}$, so $w^{2h}(x) = \sum_{q=1}^{M-1} w[q] \psi_q^{2h}(x)$.  Then we use \eqref{hatrelation} to compute $P w^{2h}$ in terms of fine-mesh hat functions:
 \begin{align}
 (P w^{2h})(x) &= \sum_{q=1}^{M-1} w[q] \left(\frac{1}{2} \psi_{2q-1}^h(x) + \psi_{2q}^h(x) + \frac{1}{2} \psi_{2q+1}^h(x)\right) \label{pformula} \\
               &= \frac{1}{2} w[1] \psi_1^h(x) + w[1] \psi_2^h(x) + \left(\frac{1}{2} w[1] + \frac{1}{2} w[2]\right) \psi_3^h(x) + w[2] \psi_4^h(x) \notag \\
-              &\qquad + \left(\frac{1}{2} w[2] + \frac{1}{2} w[3]\right) \psi_5^h(x) + \dots + w[M\!-\!1] \psi_{m-2}^h(x) + \frac{1}{2} w[M\!-\!1] \psi_{m-1}^h(x) \notag
+              &\qquad + \left(\frac{1}{2} w[2] + \frac{1}{2} w[3]\right) \psi_5^h(x) + \dots + w[M\!-\!1] \psi_{m-2}^h(x) \notag \\
+              &\qquad + \frac{1}{2} w[M\!-\!1] \psi_{m-1}^h(x) \notag
 \end{align}
 As a matrix, $P:\RR^{M-1} \to \RR^{m-1}$ acts on vectors; it has $M-1$ columns and $m-1$ rows:
 \begin{equation}
@@ -330,18 +331,18 @@ P = \begin{bmatrix}
  & & & \ddots
 \end{bmatrix} \label{pmatrix}
 \end{equation}
-The column sums of $P$ are all two, because from \eqref{hatrelation} each column has a nonzero block $[1/2,1,1/2]^\top$, and the columns are linearly-independent.  The row sums equal one except for the first and last rows.
+The columns of $P$ are linearly-independent and the column sums equal two by \eqref{hatrelation}.  The row sums equal one except for the first and last rows.
 
-Next, the restriction $R'$ acts on fine-mesh linear functionals $\ell:\mathcal{S}^h \to \RR$.  It is called ``canonical restriction'' \cite{GraeserKornhuber2009} because its output, the functional $R'\ell:\mathcal{S}^{2h}\to \RR$, acts on coarse-mesh functions the same way as $\ell$ itself acts on those functions.  We may define it using $P$:
+Next, the restriction $R'$ acts on fine-mesh linear functionals $\ell:\mathcal{S}^h \to \RR$.  It is called ``canonical restriction'' \cite{GraeserKornhuber2009} because its output, the functional $R'\ell:\mathcal{S}^{2h}\to \RR$, acts on coarse-mesh functions the same way as $\ell$ itself acts on those functions, so defining $R'$ involves no choices.  We may state this using $P$:
 \begin{equation}
   (R'\ell)[v] = \ell[Pv],  \label{rprimedefinition}
 \end{equation}
-for $v$ in $\mathcal{S}^{2h}$.  As noted earlier, $\ell$ is represented by a vector in $\RR^{m-1}$, namely the values $\ell[p] = \ell[\psi_p^h]$, so one computes the values of $R'\ell$ using \eqref{hatrelation}:
+for $v$ in $\mathcal{S}^{2h}$.  As noted earlier, $\ell$ is represented by a vector in $\RR^{m-1}$ of the values $\ell[\psi_p^h]$, so one computes the values of $R'\ell$ using \eqref{hatrelation}:
 \begin{align}
-  (R'\ell)[q] &= (R'\ell)[\psi_q^{2h}] = \ell[\psi_q^{2h}] = \ell\left[\frac{1}{2} \psi_{2q-1}^h + \psi_{2q}^h + \frac{1}{2} \psi_{2q+1}^h\right]  \label{rprimeformula} \\
-      &= \frac{1}{2} \ell[\psi_{2q-1}^h] + \ell[\psi_{2q}^h] + \frac{1}{2} \ell[\psi_{2q+1}^h] = \frac{1}{2} \ell[2q-1] + \ell[2q] + \frac{1}{2} \ell[2q+1].  \notag
+  (R'\ell)[\psi_q^{2h}] &= \ell[\psi_q^{2h}] = \ell\left[\frac{1}{2} \psi_{2q-1}^h + \psi_{2q}^h + \frac{1}{2} \psi_{2q+1}^h\right]  \label{rprimeformula} \\
+      &= \frac{1}{2} \ell[\psi_{2q-1}^h] + \ell[\psi_{2q}^h] + \frac{1}{2} \ell[\psi_{2q+1}^h].  \notag
 \end{align}
-In other words, as a matrix $R'$ is the matrix transpose of $P$, with $M-1$ rows and $m-1$ columns:
+As a matrix $R'$ is the matrix transpose of $P$, with $M-1$ rows and $m-1$ columns:
 \begin{equation}
 R' = \begin{bmatrix}
 1/2 & 1 & 1/2 &   &     & \\
@@ -351,7 +352,7 @@ R' = \begin{bmatrix}
 \end{bmatrix} \label{rprimematrix}
 \end{equation}
 
-Finally we consider the restriction $R:\mathcal{S}^h\to\mathcal{S}^{2h}$ acting on functions.  This is a more interesting map as it loses information present in the fine-mesh input function $w^h = \sum_{p=1}^{m-1} w[p] \psi_p^{h}$.  (By contrast, $P$ and $R'$ essentially preserve the input object, without loss, via a reinterpretation on the other mesh.)  In particular, the result $R w^h$ is linear across those fine-mesh nodes which are not in the coarse mesh.
+Finally we consider the restriction $R:\mathcal{S}^h\to\mathcal{S}^{2h}$ acting on functions, a more interesting map because it loses information.  (By contrast, $P$ and $R'$ essentially preserve the input object, without loss, via reinterpretation on the output mesh.)  Consider a fine-mesh function $w^h = \sum_{p=1}^{m-1} w[p] \psi_p^{h}$.  The result $R w^h$ is linear across those fine-mesh nodes which are not in the coarse mesh, and so the values at those in-between nodes are not recoverable.
 
 There are three well-known versions of the restriction $R$:
 \begin{itemize}
@@ -370,12 +371,12 @@ or equivalently $\Rpr = (Q^{2h})^{-1} R' Q^{h}$.  Equation \eqref{rprequation} i
 \sum_{q=1}^{M-1} Q_{sq}^{2h} z[q] &= \sum_{p=1}^{m-1} \left(\frac{1}{2} Q_{2s-1,p} + Q_{2s,p} + \frac{1}{2} Q_{2s+1,p}\right) w[p] \\
 (Q^{2h} \Rpr w^h)[s] &= (R' Q^h w^h)[s]
 \end{align*}
-(Note $w^h$ in $\mathcal{S}^h$ and index $s$ are arbitrary.)  In 1D the mass matrices $Q^{2h},Q^h$ are tridiagonal, thus each column of $\Rpr$ can be found by solving equation \eqref{rprequation} using an $O(M)$ algorithm \cite{TrefethenBau1997}, thus forming $\Rpr$ implies $O(M^2)$ work.  While this is possible, and the result can even be found by hand in this case, the alternatives below are simpler.
-\item $\Rin$ is defined as pointwise injection:
+(Note $w^h$ in $\mathcal{S}^h$ and index $s$ are arbitrary.)  In 1D the mass matrices $Q^{2h},Q^h$ are tridiagonal, thus each column of $\Rpr$ can be found by solving equation \eqref{rprequation} using an $O(M)$ algorithm \cite{TrefethenBau1997}, implying $O(M^2)$ work.  While this is possible, and the result could even be found by hand in this case, the alternatives below are easier to implement.
+\item $\Rin$ is defined as pointwise injection.  Supposing $w^h = \sum_{p=1}^{m-1} w[p] \psi_p^{h}$,
 \begin{equation}
-  \Rin w^h = \sum_{q=1}^{M-1} w[2q] \psi_q^{2h}. \label{rindefinition}
+  \Rin w^h = \sum_{q=1}^{M-1} w[2q] \psi_q^{2h}, \label{rindefinition}
 \end{equation}
-Observe that $(\Rin w^h)(x_q) = w^h(x_q) = w[2q]$ for each point $x_q$.  In other words, to compute $\Rin w^h$ in $\mathcal{S}^{2h}$ we simply drop the nodal values at those fine-mesh nodes which are not in the coarse mesh.  As a matrix this is
+so $(\Rin w^h)(x_q) = w^h(x_q) = w[2q]$ for each point $x_q$.  In other words, to compute $\Rin w^h$ we simply drop the nodal values at those fine-mesh nodes which are not in the coarse mesh.  As a matrix this is
 \begin{equation}
 \Rin = \begin{bmatrix}
 0 & 1 &   &   &   &   &\\
@@ -384,7 +385,7 @@ Observe that $(\Rin w^h)(x_q) = w^h(x_q) = w[2q]$ for each point $x_q$.  In othe
   &   &   &   &   &   & \ddots
 \end{bmatrix}. \label{rinmatrix}
 \end{equation}
-This restriction is very simple but it may lose track of the magnitude of $w^h$, or badly mis-represent it.  For example, sampling a sawtooth function at the coarse-mesh nodes would capture only the peaks or only the troughs.
+This restriction is very simple but it may lose track of the magnitude of $w^h$, or badly mis-represent it, \emph{if} the input is not smooth.  For example, sampling a sawtooth function at the coarse-mesh nodes would capture only the peaks or only the troughs.
 \item $\Rfw$, the ``full-weighting'' restriction \cite{Briggsetal2000}, averages nodal values onto the coarse mesh:
 \begin{equation}
   \Rfw w^h = \sum_{q=1}^{M-1} \left(\frac{1}{4} w[2q-1] + \frac{1}{2} w[2q] + \frac{1}{4} w[2q+1]\right) \psi_q^{2h}. \label{rfwdefinition}
@@ -401,7 +402,7 @@ This computes each coarse-mesh nodal value of $z=\Rfw w^h$ as a weighted average
 \end{itemize}
 
 \medskip
-Which restriction do we choose?  Because of its simplicity, and its ability to approximately preserve norms, we use the full-weighting restriction $R=\Rfw$ in the implementation \texttt{fas1.py}.  That is, we choose $\Rfw$ over $\Rpr$ because it is simpler to compute, and $\Rfw$ over $\Rin$ to avoid unnecessary information loss.
+Which restriction do we choose?  Because of their simplicity, we will implement and compare $\Rfw$ and $\Rin$ in \texttt{fas1.py}.
 
 
 \section{FAS V-cycles and F-cycles} \label{sec:fascycles}
