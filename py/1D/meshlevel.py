@@ -90,6 +90,18 @@ class MeshLevel1D():
             y[q] = 0.5 * ell[2*q-1] + ell[2*q] + 0.5 * ell[2*q+1]
         return y
 
+    def injectR(self, v):
+        '''Restrict a vector (function) ell on the current mesh (in V^j)
+        to the next-coarser mesh, i.e. y = cR(v) in V^{j-1}, using
+        injection.'''
+        assert self.j > 0, \
+               'cannot restrict to a mesh coarser than the coarsest mesh'
+        self.checklen(v)
+        y = np.zeros(self.mcoarser+2)  # y[0]=y[mcoarser+1]=0
+        for q in range(1, self.mcoarser+1):
+            y[q] = v[2*q]
+        return y
+
     def injectP(self, ell):
         '''Prolong a linear functional ell by injection, from the next-coarser
         mesh.  If ell is in (V^{j-1})' then y = injectP(ell) is in (V^j)'.
