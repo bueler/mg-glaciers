@@ -10,7 +10,7 @@ publish.zip: fas.pdf fas.bbl
 	cp -f fas.bib fas.bbl fas.tex publish/
 	zip -r publish publish
 
-_figures := onehat hatcombination converge optimal
+_figures := onehat hatcombination converge optimal tme
 figures := $(addprefix figs/, $(addsuffix .pdf, $(_figures)))
 
 fas.pdf: fas.tex fas.bib $(figures)
