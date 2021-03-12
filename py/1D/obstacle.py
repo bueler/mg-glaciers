@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-'''Solve a 1D obstacle problem by a multilevel constraint decomposition method.'''
+'''Solve 1D obstacle problems by a multilevel constraint decomposition method.'''
 
 # best observed settings for generating solutions in 10 WU in exact solutions cases:
-#   for PROB in icelike parabola; do
-#     for JJ in 6 7 8 9 10 11 12 13 14 15 16 17; do
-#       ./obstacle.py -problem $PROB -jfine $JJ -ni -nicycles 2 -cyclemax 3 -omega 1.5
+#   for CASE in icelike traditional; do
+#     for JJ in 6 7 8 9 10 11 12 13 14 15 16; do
+#       ./obstacle.py -poissoncase $CASE -jfine $JJ -ni -nicycles 2 -cyclemax 3 -omega 1.5
 #     done
 #   done
-# but in -random cases it seems better to use -omega 1.0 and allow more cycles
+# but with -random it seems better to use -omega 1.0 and allow more cycles
 
 import sys
 import argparse
@@ -22,42 +22,46 @@ from smoother import PGSPoisson, PJacobiPoisson
 from siasmoother import PNGSSIA, PNJacobiSIA
 
 parser = argparse.ArgumentParser(description='''
-Solve 1D obstacle problems:  For given Banach space X and phi in X,
+Solve 1D obstacle problems by a multilevel constraint decomposition method.
+
+The problem:  For given Banach space X, and given an obstacle phi in X,
 find u in the closed, convex subset
     K = {v in X | v >= phi}
-so that the variational inequality holds,
+so that the variational inequality (VI) holds,
     F(u)[v-u] >= ell[v-u]   for all v in K.
-Where the constraint is inactive (u(x) > phi(x)), u solves an
-interior PDE.  We solve two particular problems:
+Note u solves an interior PDE in the inactive set {x | u(x) > phi(x)}.
 
-1. For classical obstacle problem in smoother.py:
+We solve two particular problems:
+
+1. For classical obstacle problem (smoother.py):
     X = H_0^1[0,1]
-    phi (obstacle) is in X
-    f (source) is in L^2[0,1] (or X')
+    phi (obstacle)
+    f (source) is in L^2[0,1]
     ell[v] = <f,v>
                        /1
     F(u)[v] = a(u,v) = |  u'(x) v'(x) dx   (bilinear form)
                        /0
-    interior PDE: Poisson equation  - u'' = f
+    PDE is Poisson equation  - u'' = f
 
-2. For shallow ice approximation (SIA) obstacle problem (Bueler 2016) in
-   siasmoother.py:
+2. For shallow ice approximation (SIA) obstacle problem (Bueler 2016)
+   (siasmoother.py):
     X = W_0^{1,p}[0,xmax]  where p = n + 1
-    b = phi (bed elevation) is in X
-    m (mass balance) is in L^2[0,xmax] (or X')
+    b = phi (bed elevation)
+    m (mass balance) is in L^2[0,xmax]
     ell[v] = <m,v>
               /xmax
     F(s)[v] = |     Gamma (s-b)^{n+2} |s'|^{n-1} s' v dx
               /0
-    interior PDE: SIA equation  - (Gamma (s-b)^{n+2} |s'|^{n-1} s')' = m
+    PDE is SIA equation  - (Gamma (s-b)^{n+2} |s'|^{n-1} s')' = m
 
-Solution is by Alg. 4.7 in Gräser & Kornhuber (2009), namely the multilevel
-constraint decomposition slash-cycle method by Tai (2003) in which a monotone
-restriction operator decomposes the defect obstacle.  The smoother and the
-coarse-mesh solver are either projected Gauss-Seidel or projected Jacobi
-using a relaxation parameter (-omega).  These are nonlinear for problem 2,
-using a fixed number of Newton iterations at each point.  Option -sweepsonly
-reverts to a single-level solver using these smoothers.
+Solution is by the multilevel constraint decomposition slash-cycle method
+by Tai (2003), as implemented in Alg. 4.7 of Gräser & Kornhuber (2009) in
+which a monotone restriction operator decomposes the defect obstacle.
+
+The smoother and the coarse-mesh solver are either projected Gauss-Seidel
+or projected Jacobi using a relaxation parameter (-omega).  These are
+nonlinear for problem 2, using a fixed number of Newton iterations at each
+point.  Option -sweepsonly reverts to using these smoothers on a single level.
 
 Get usage help with -h or --help.
 
@@ -211,14 +215,14 @@ def initial(fmesh, phi, ell):
             return fmesh.zeros()
 
 # nested iteration outer loop
-wusum = 0.0
+WUsum = 0.0
 infeascount = 0
 actualits = 0
 for ni in nirange:
-    # evaluate data varphi(x), ell[v] = <f,v> on (current) fine level
+    # evaluate data on continuum obstacle and source on current fine level
     mesh = hierarchy[ni]
-    phifine = obsprob.phi(mesh.xx())                   # obstacle
-    ellfine = mesh.ellf(obsprob.source(mesh.xx()))     # source functional
+    phifine = obsprob.phi(mesh.xx())                # obstacle
+    ellfine = mesh.ellf(obsprob.source(mesh.xx()))  # source functional ell[v] = <f,v>
 
     # feasible initial iterate
     if args.ni and ni > 0:
@@ -239,13 +243,12 @@ for ni in nirange:
         iters = args.nicycles  # use this value if doing nested iteration and
                                #   not yet on finest level
         if args.nicascadic:
-            # very simple model for number of cycles before finest
-            # compare Blum et al 2004
+            # very simple model for number of cycles; compare Blum et al 2004
             iters *= int(np.ceil(1.5**(levels-1-ni)))
     else:
         iters = args.cyclemax
 
-    # multigrid cycles inner loop
+    # do multigrid slash or V cycles
     for s in range(iters):
         irnorm, errnorm = mon.irerr(uu, ellfine, phifine, uex=uex, indent=levels-1-ni)
         if errnorm is not None and args.errtol is not None and ni == levels-1:
@@ -271,8 +274,8 @@ for ni in nirange:
         else:
             # Tai (2003) constraint decomposition method cycles; default=V(1,0);
             #   Alg. 4.7 in G&K (2009); see mcdl-solver and mcdl-slash in paper
-            mesh.chi = phifine - uu                # defect obstacle
-            ell = - obsprob.residual(mesh, uu, ellfine)      # base residual
+            mesh.chi = phifine - uu                      # defect obstacle
+            ell = - obsprob.residual(mesh, uu, ellfine)  # starting source
             y, infeas = mcdlcycle(obsprob, ni, hierarchy, ell,
                                   down=args.down, up=args.up, coarse=args.coarse,
                                   levels=levels, view=args.mgview,
@@ -285,8 +288,8 @@ for ni in nirange:
 
     # accumulate work units from this cycle
     for j in range(ni+1):
-        wusum += hierarchy[j].WU / 2**(levels - 1 - j)
-        hierarchy[j].WU = 0    # avoids double-counting in nested iteration
+        WUsum += hierarchy[j].WU / 2**(levels - 1 - j)
+        hierarchy[j].WU = 0
 
 # report on computation including numerical error, WU, infeasibles
 method = 'using '
@@ -305,7 +308,7 @@ else:
     error = ''
 countstr = '' if infeascount == 0 else ' (%d infeasibles)' % infeascount
 print('fine level %d (m=%d): %s -> %.3f WU%s%s' \
-      % (args.jfine, mesh.m, method, wusum, error, countstr))
+      % (args.jfine, mesh.m, method, WUsum, error, countstr))
 
 # graphical output if desired
 if args.show or args.o or args.diagnostics:
