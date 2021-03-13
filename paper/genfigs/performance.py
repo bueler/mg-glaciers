@@ -3,6 +3,7 @@
 # see py/1D/study/convperf.sh  to generate input data performance.txt
 # here we only consider icelike+random case (as more representative)
 # processed into two performance figures each showing all four solvers
+#    Figure:  semilogx with m on x-axis and number of slash cycles on y axis
 #    Figure:  semilogx with m on x-axis and WU on y axis
 #    Figure:  loglog with m on x-axis and time on y axis; result is time = O(m^xx)
 
@@ -39,6 +40,25 @@ cycles = v[case==1,4]
 WU = v[case==1,5]
 time = v[case==1,6]
 
+# cycles versus m
+plt.figure(figsize=(7,6))
+for s in range(4):  # s=solver
+    mm = m[solver==s]
+    ccycles = cycles[solver==s]
+    q = np.polyfit(np.log(mm),np.log(ccycles),1)
+    print('%15s: cycles = O(m^%.2f)' % (SOLVERNAME[s],q[0]))
+    plt.semilogx(mm,ccycles,'k'+MARKER[s],ms=MARKERSIZE[s],mfc=MARKERFACE[s],
+                 label=SOLVERNAME[s])
+plt.grid(True)
+plt.xlabel('$m$  (degrees of freedom)',fontsize=18.0)
+plt.ylabel('cycles',fontsize=18.0)
+plt.axis([100.0,1.0e5,0.0,41.0])
+plt.xticks(fontsize=14.0)
+plt.yticks(fontsize=14.0)
+plt.minorticks_off()
+plt.legend(loc='lower right',fontsize=14.0)
+writeout('mcdl-cycles.pdf')
+
 # work units versus m
 plt.figure(figsize=(7,6))
 for s in range(4):  # s=solver
@@ -46,15 +66,12 @@ for s in range(4):  # s=solver
     WUU = WU[solver==s]
     q = np.polyfit(np.log(mm),np.log(WUU),1)
     print('%15s: WU = O(m^%.2f)' % (SOLVERNAME[s],q[0]))
-    plt.semilogx(mm,WUU,
-                 'k'+MARKER[s],ms=MARKERSIZE[s],mfc=MARKERFACE[s],
+    plt.semilogx(mm,WUU,'k'+MARKER[s],ms=MARKERSIZE[s],mfc=MARKERFACE[s],
                  label=SOLVERNAME[s])
-                 #label=SOLVERNAME[s] + ':  $O(m^{%.2f})$' % q[0])
 plt.grid(True)
 plt.xlabel('$m$  (degrees of freedom)',fontsize=18.0)
 plt.ylabel('WU',fontsize=18.0)
-plt.xlim([100.0,1.0e5])
-plt.ylim([0.0,100.0])
+plt.axis([100.0,1.0e5,0.0,100.0])
 plt.xticks(fontsize=14.0)
 plt.yticks(fontsize=14.0)
 plt.minorticks_off()

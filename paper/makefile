@@ -1,6 +1,6 @@
 all: review.pdf
 
-_figures := finehats coarsehats coarsesthats residualpoints cartoonplane innerconeapprox prolongobstacle convergence mcdl-wu mcdl-timeper
+_figures := finehats coarsehats coarsesthats residualpoints cartoonplane innerconeapprox prolongobstacle convergence mcdl-cycles mcdl-wu mcdl-timeper
 figures := $(addprefix genfigs/, $(addsuffix .pdf, $(_figures)))
 
 review.pdf: review.tex review.bib cropfigures
