@@ -29,7 +29,7 @@ plt.figure(figsize=(8,6))
 makeaxes(-0.25,1.2,-0.1,0.8)
 phix = 0.1
 phiy = 0.3
-plt.fill([phix,1.2,1.2,phix,phix],[phiy,phiy,0.8,0.8,phiy],'k',alpha=0.3)
+plt.fill([phix,1.2,1.2,phix,phix],[phiy,phiy,0.8,0.8,phiy],'k',alpha=0.2)
 xhat = phix + 0.25
 yhat = phiy
 yc = phiy - 0.3
@@ -70,7 +70,7 @@ cornerx = [-0.3, -0.29, -0.2, -0.1]
 cornery = [-0.2, -0.14, -0.09, 0.0]
 sh = 0.02
 for n, xc, yc in zip(range(4), cornerx, cornery):
-    plt.fill([xc,xm,xm,xc,xc],[yc,yc,ym,ym,yc],'k',alpha=0.2)
+    plt.fill([xc,xm,xm,xc,xc],[yc,yc,ym,ym,yc],'k',alpha=0.13)
     plt.plot(cornerx[n],cornery[n],'k.',ms=10.0)
     plt.text(cornerx[n]+(n-3)*sh,cornery[n]-2*sh,'$\mathcal{X}^%d$' % (3-n),
              fontsize=fsize)
