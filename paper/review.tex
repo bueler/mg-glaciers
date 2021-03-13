@@ -780,7 +780,7 @@ The following solver adds an outer loop which sets-up the fine-level defect cons
     return $w$
 \end{pseudo*}
 
-These pseudocodes have been implemented in Python.\footnote{At\, \href{https://github.com/bueler/mg-glaciers/}{\texttt{github.com/bueler/mg-glaciers/}} see the \texttt{py/1D/} directory and its \texttt{README.md}.}  Recall the two exact solutions $u$ shown in Figure \ref{fig:icelike}.  The ``ice-like'' case has a discontinuous source $f$, while ``traditional'' has $f=0$, but both have smooth, parabolic obstacles.  Figure \ref{fig:convergence} demonstrates convergence of \pr{mcdl-solver}, with the numerical error norm $\|u^h-u\|_2$ as a function of mesh spacing $h$.  The ``traditional'' convergence rate is the best possible; $O(h^2)$ error is expected for the unconstrained problem \cite{Elmanetal2014}.  The ``ice-like'' rate is reduced because of the lower regularity of $f$.
+These pseudocodes have been implemented in Python.\footnote{At\, \href{https://github.com/bueler/mg-glaciers/}{\texttt{github.com/bueler/mg-glaciers/}} see the \texttt{py/1D/} directory and its \texttt{README.md}.}  Recall the two exact solutions $u$ shown in Figure \ref{fig:icelike}.  (The ``ice-like'' case has a discontinuous source $f$, while ``traditional'' has $f=0$, but both have smooth, parabolic obstacles.)  Figure \ref{fig:convergence} demonstrates convergence of \pr{mcdl-solver}, with the numerical error norm $\|u^h-u\|_2$ as a function of mesh spacing $h$, for runs with \id{rtol} $=10^{-7}$.  The ``traditional'' convergence rate is the best possible; $O(h^2)$ error is expected for the unconstrained problem \cite{Elmanetal2014}.  The ``ice-like'' rate is reduced because of the lower regularity of $f$.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/convergence.pdf}
@@ -788,23 +788,52 @@ These pseudocodes have been implemented in Python.\footnote{At\, \href{https://g
 \label{fig:convergence}
 \end{figure}
 
-\subsection*{Nested iteration and performance results} FIXME describe nested iteration; give pseudocode \pr{mcdl-fcycle}; Figure \ref{fig:fcycle}; mention V(1,1) in Appendix B
+\subsection*{Nested iteration and performance results}  Performance can be improved by exploiting additional multilevel techniques.  One of these is \emph{nested iteration}, where the initial iterate on a given mesh comes from prolonging (interpolating) a solution iterate from a coarser mesh.  Figure \ref{fig:fcycle} shows the resulting \emph{F-cycle}, constructed by concatenating slash cycles with an additional prolongation action.
 
 \begin{figure}
 \input{tikz/fcycle.tex}
-\caption{\emph{Left:} A four-level slash cycle with down-smoother (dots), coarse solver (square), and accumulation of corrections back to the finest level (gray line).  \emph{Right:} Nested iteration, an F-cycle, prepends shorter slash cycles, with solution prolongation (double lines) creating an initial iterate for the next cycle.}
+\caption{\emph{Left:} A four-level slash cycle with down-smoother (dots), coarse solver (square), and accumulation of corrections back to the finest level (gray line).  \emph{Right:} A nested iteration F-cycle prepends shorter slash cycles, with solution prolongation $\hat P$ (double lines) for the initial iterate in the next cycle.}
 \label{fig:fcycle}
 \end{figure}
 
-FIXME explain WU
+Only the update $y^{j-1}$ is prolonged in the \pr{mcdl-slash} cycle, now we need to prolong the full solution $w^{j-1}$ from $\mathcal{V}^{j-1}$, admissible in the sense that $w^{j-1} \ge \varphi^{j-1}$, where $\varphi^{j-1}$ is the interpolant of the continuum obstacle $\varphi$.  However, the new iterate also needs to be admissible.  Any prolongation onto the $j$th level will have to contend with not-yet-seen obstacle data in $\varphi^j$, and thus truncation is obligatory.  Thus we define \emph{solution prolongation} using canonical prolongation \eqref{eq:canonicalprolongation} and truncation:
+\begin{equation}
+\hat P w^{j-1} = \max\{P w^{j-1}, \varphi^{j}\}  \label{eq:solutionprolongation}
+\end{equation}
 
-FIXME Figure \ref{fig:mcdl-wu} shows WU for \pr{mcdl-solver}; for: slash cycle, V(2,0), F-cycle, and 2-iterations-on-way-up-F-cycle (4 solvers) on icelike-with-random-bed; comment on $J=6,7,8,9$ results with PGS only; comment on \cite{Blumetal2004} on cascadic and CG variants
+In our F-cycle we do one or more slash cycles before moving up to the next-finer level.  The resulting algorithm can be used as is, or to generate the initial iterate for \pr{mcdl-solver}, that is, one may do additional slash cycles on the output of this pseudocode.
+\begin{pseudo*} \label{ps:mcdl-fcycle}
+\pr{mcdl-fcycle}(J,F,\varphi,\id{coarse}=1,\id{nicycles}=1)\text{:} \\+
+    $w^0=\varphi^0$ \qquad\qquad\qquad\qquad\qquad\quad \ct{admissible coarsest-level initial iterate} \\
+    $\ell^0[\cdot] := \ip{f}{\cdot}$ \\
+    $F^0(y)[\cdot] := a(y,\cdot) - \ell^0[\cdot]$ \\
+    $\pr{smoother}^{\id{coarse}}(0,w^0,F^0,\varphi^0)$ \\
+    for $j=1,\dots,J$ \\+
+        $w^j = \hat P w^{j-1}$ \qquad\qquad\qquad\qquad \ct{initial iterate from solution prolongation} \\
+        for $s=1,\dots,\id{nicycles}$ \qquad\qquad\qquad \ct{one or more slash cycles} \\+
+            $\chi^j = \varphi^j - w^j$ \\
+            $\ell^j[\cdot] := \ip{f}{\cdot}$ \\
+            $F^j(y)[\cdot] := a(y,\cdot) - \ell^j[\cdot]$ \\
+            $w^j \gets w^j+\pr{mcdl-slash}(F^j,\chi^j)$ \\--
+    return $w^J$
+\end{pseudo*}
+
+
+FIXME for performance test we consider icelike-with-random-bed problem; we apply \pr{mcdl-solver}, and do slash cycles until convergence, i.e.~\eqref{eq:cpconvergencecriterion}, with \id{rtol} $=10^{-4}$
+
+FIXME 4 solvers: slash cycle V(1,0), V(2,0), prepend F-cycle, and prepend 2-iterations-on-way-up-F-cycle
+
+FIXME Figure showing number of cycles; note irregularity, which relates to position of free boundary unavoidably ``jumping'' as we move levels; F-cycles are less powerful than in PDE cases because multilevel cycles tasked with both ``find the free boundary'' and ``smooth low frequencies'' jobs
+
+FIXME explain WU; for ideal PDE case like Poisson, WU are $O(1)$ (though actually slightly increasing); Figure \ref{fig:mcdl-wu} shows WU for \pr{mcdl-solver}; result here: WU may be increasing a bit more
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/mcdl-wu.pdf}
 \caption{Work units (see text) as a function of degrees of freedom $m$ for runs of \pr{mcdl-solver} using four MCD algorithms (see text).}
 \label{fig:mcdl-wu}
 \end{figure}
+
+FIXME compare $J=6,7,8,9$ results with PGS only
 
 FIXME Figure \ref{fig:mcdl-timeper} shows time per $m$; for same 4 solvers and problem
 
@@ -813,6 +842,8 @@ FIXME Figure \ref{fig:mcdl-timeper} shows time per $m$; for same 4 solvers and p
 \caption{Run time per degrees of freedom $m$ as a function of $m$ for the same four MCD algorithms.}
 \label{fig:mcdl-timeper}
 \end{figure}
+
+FIXME mention V(1,1) in Appendix B, \cite{Blumetal2004} on cascadic and CG variants
 
 \subsection*{Convergence theory and performance models}  Mathematical theory allows us to compare the convergence rates of our MCD solver versus the PGS method.  Let $u^h$, in $\mathcal{V}^h = \mathcal{V}^J$ and satisfying $u^h \ge \varphi^J$, be the exact solution of the finite-dimensional VI
 \begin{equation}
