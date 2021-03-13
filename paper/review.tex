@@ -824,7 +824,7 @@ In our F-cycle we do one or more slash cycles before moving up to the next-finer
     return $w^J$
 \end{pseudo*}
 
-This algorithm could be used as is, and indeed for PDEs one F-cycle often suffices to reach discretization error \cite{Trottenbergetal2001}.  However, because obstacle problem solutions have lower regularity, and because multilevel cycles are required to both remove low frequencies from the error \emph{and} find the free boundary, we will need the F-cycle to generate the initial iterate for \pr{mcdl-solver}, so we do additional slash cycles on the output of \pr{mcdl-fcycle}.
+This algorithm could be used as is, and indeed for PDEs one F-cycle often suffices to reach discretization error \cite{Trottenbergetal2001}.  However, because obstacle problem solutions have lower regularity, and because multilevel cycles are required to both remove low frequencies from the error \emph{and} find the discrete free boundary, we will need the F-cycle to generate the initial iterate for \pr{mcdl-solver}, so we do additional slash cycles on the output of \pr{mcdl-fcycle}.
 
 We compare the performance of four solvers:
 \begin{itemize}
@@ -833,25 +833,27 @@ We compare the performance of four solvers:
 \item \textsf{F+V(1,0)}: \pr{mcdl-fcycle} with default settings, followed by \textsf{V(1,0)} above
 \item \textsf{Fx2+V(1,0)}: same but with two slash cycles in the F-cycle (\id{nicycles}$=2$)
 \end{itemize}
-We test these solvers on the ``icelike'' problem but with a more generic random bed, like the one shown in Figure \ref{fig:icelikedecomposition}.  In all cases we do slash cycles until convergence, i.e.~\eqref{eq:cpconvergencecriterion} with \id{rtol} $=10^{-4}$.
+We test these solvers on the ``icelike'' problem but with a more generic random bed, like the one shown in Figure \ref{fig:icelikedecomposition}.  In all cases we use the default \pr{pgs-sweeps} smoother and do slash cycles until convergence, i.e.~\eqref{eq:cpconvergencecriterion} with the default \id{rtol} $=10^{-4}$.
 
-FIXME Figure showing number of cycles; note irregularity, which relates to position of free boundary unavoidably ``jumping'' as we move levels; F-cycles are less powerful than in PDE cases because multilevel cycles tasked with both ``find the free boundary'' and ``smooth low frequencies'' jobs
-
-FIXME explain WU; for ideal PDE case like Poisson, WU are $O(1)$ (though actually slightly increasing); Figure \ref{fig:mcdl-wu} shows WU for \pr{mcdl-solver}; result here: WU may be increasing a bit more
+Figure \ref{fig:mcdl-cycles} shows the number of cycles for mesh hierarchies with $J=6,\dots,15$, thus $m$ nodes up to $m=6.5 \times 10^4$.  The number of cycles is larger than for elliptic PDEs with smooth solutions \cite{Trottenbergetal2001}, reflecting the lower regularity and need to locate the discrete free boundary, but it grows slowly for all the solvers.  The F-cycle solvers show more irregularity, presumably because the nested iteration prolonged solution can be ``lucky'', or not so much, with respect to locating the free boundary on the next level.
 
 \begin{figure}
-\includegraphics[width=0.6\textwidth]{genfigs/mcdl-wu.pdf}
-\caption{Work units (see text) as a function of degrees of freedom $m$ for runs of \pr{mcdl-solver} using four MCD algorithms (see text).}
-\label{fig:mcdl-wu}
+\includegraphics[width=0.6\textwidth]{genfigs/mcdl-cycles.pdf}
+\caption{Number of slash cycles as a function of degrees of freedom $m$.}
+\label{fig:mcdl-cycles}
 \end{figure}
 
-FIXME compare $J=6,7,8,9$ results with PGS only
+FIXME explain WU; for ideal PDE case (Poisson), WU are $O(1)$ (though actually slightly increasing) because cycles are $O(1)$ (mesh independent); here the picture for F-cycles is a little better relative to slash-cycles alone, but still the \textsf{V(1,0)} case is as fast, and more predictable in performance, than the other three; all of the solvers have WU $=O(m^q)$ with $q=0.12$ or $q=0.13$ on the above runs; compare $J=6,7,8$ results with PGS only giving $O(m^{1.97})$
+% for JJ in 6 7 8; do ../obstacle.py -random -cyclemax 100000 -sweepsonly -jfine $JJ; done
+% fine level 6 (m=127): using 2926 applications of smoother -> 2926.000 WU
+% fine level 7 (m=255): using 11275 applications of smoother -> 11275.000 WU
+% fine level 8 (m=511): using 45461 applications of smoother -> 45461.000 WU
 
 FIXME Figure \ref{fig:mcdl-timeper} shows time per $m$; for same 4 solvers and problem
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/mcdl-timeper.pdf}
-\caption{Run time per degrees of freedom $m$ as a function of $m$ for the same four MCD algorithms.}
+\caption{Run time per degrees of freedom $m$ as a function of $m$.}
 \label{fig:mcdl-timeper}
 \end{figure}
 
@@ -944,34 +946,36 @@ FIXME time-dependent runs
 
 \section{Tables to assist the reader}
 
-This review has been written attempting to use the simplest effective notation, but the amount of notation is still substantial.  Furthermore a number of new algorithms are discussed.  Tables \ref{tab:notation} and \ref{tab:pseudocodes}, of notation and pseudocodes respectively, both of which are arranged alphabetically where possible, should help in managing the terminology.
+This review has been written attempting to use the simplest effective notation, but the amount of notation is still substantial, and furthermore a number of new algorithms are discussed.  This Appendix may help the reader in managing the terminology.  Table \ref{tab:notation} shows the notation, arranged alphabetically where possible.  Tables \ref{tab:pseudocodespoisson} and \ref{tab:pseudocodesobstacle} list the pseudocodes with page number.
 
 \renewcommand{\arraystretch}{1.2}
 \begin{longtable}{l|l}
 \toprule
 \textbf{Symbol} {\Large$\strut$} & \textbf{Meaning} \\ \hline
-$a(\cdot,\cdot)$ & bilinear form associated to the Poisson problem; left side of equation \eqref{eq:weakpoissonearly} \\
+$a(\cdot,\cdot)$ & bilinear form; for Poisson this is the left side of equation \eqref{eq:weakpoissonearly} \\
 $\mathcal{D}^J$ & defect constraint set; $\mathcal{D}^J = \{v \ge \chi^J\}$ \\
-$F(w)[\cdot]$ & residual of iterate $w$, e.g.~$F(w)[v] = a(w,v) - \ip{f}{v}$ for the Poisson equation \\
-$\mathcal{H}$ & Hilbert space for the continuum problem; e.g.~$\mathcal{H}=H_0^1[0,1]$ \\
-$I(w)$ & scalar-valued objective function for the Poisson problem; $I(w) = \frac{1}{2} a(v,v) - \ip{f}{v}$ \\
+$F(w)[\cdot]$ & residual of iterate $w$; $F(w)[v] = a(w,v) - \ip{f}{v}$ for Poisson \\
+$F^j(w)[\cdot]$ & $j$th-level residual; $F^j(w)[v] = a(w,v) - \ell^j[v]$ for Poisson \\
+$\mathcal{H}$ & Hilbert space for the continuum problem; $\mathcal{H}=H_0^1[0,1]$ for Poisson \\
+$I(w)$ & scalar-valued objective function; $I(w) = \frac{1}{2} a(v,v) - \ip{f}{v}$ for Poisson \\
 $J$ & level index of finest mesh \\
 $j$ & index of mesh level; $j=0,1,\dots,J$ from coarse to fine \\
 $\mathcal{K}$ & continuum constraint set; $\mathcal{K} = \{v \ge \varphi\} \subset \mathcal{H}$ \\
 $\mathcal{K}^j$ & $j$th-level admissible functions; $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j$ \\
-$\ell[\cdot]$ & linear functional, e.g.~$\ell[v] = \ip{f}{v}$ \\
+$\ell[\cdot]$ & source linear functional, e.g.~$\ell[v] = \ip{f}{v}$ \\
+$\ell^j[\cdot]$ & $j$th-level source; usually a restriction of the $j+1$ level residual \\
+$m$ & number of degrees of freedom in discretized problem; $m=m_J$ \\
 $m_j$ & number of nodes in $j$th-level; $\dim \mathcal{V}^j=m_j$ \\
-$N$ & number of degrees of freedom in discretized problem \\
-$P$ & canonical prolongation of functions, $\mathcal{V}^{j-1} \to \mathcal{V}^j$; see \eqref{eq:canonicalprolongation} and Table \ref{tab:restrictionsprolongations} \\
-$R$ & canonical restriction of linear functionals, $(\mathcal{V}^j)' \to (\mathcal{V}^{j-1})'$; see \eqref{eq:canonicalrestriction} and Table \ref{tab:restrictionsprolongations} \\
-$\mR$ & monotone restriction of functions, $\mathcal{V}^j \to \mathcal{V}^{j-1}$; see \eqref{eq:monotonerestriction} and Table \ref{tab:restrictionsprolongations} \\
-$\mathcal{V}^h$ & finite element function space; $= \mathcal{V}^J$ \\
+$P$ & canonical prolongation of functions, $\mathcal{V}^{j-1} \to \mathcal{V}^j$; see Table \ref{tab:restrictionsprolongations} \\
+$R$ & canonical restriction of linear functionals, $(\mathcal{V}^j)' \to (\mathcal{V}^{j-1})'$; see Table \ref{tab:restrictionsprolongations} \\
+$\mR$ & monotone restriction of functions, $\mathcal{V}^j \to \mathcal{V}^{j-1}$; see Table \ref{tab:restrictionsprolongations} \\
+$\mathcal{V}^h$ & finite element function space; $\mathcal{V}^h = \mathcal{V}^J$ \\
 $\mathcal{V}^j$ & $j$th-level vector space \\
 $(\mathcal{V}^j)'$ & dual space (linear functionals) of $\mathcal{V}^j$  \\
 $x_p^j$ & $p$th node on $j$th-level mesh \\
 $\varphi(x)$ & obstacle in continuum problem \\
-$\varphi^J(x)$ & fine-level interpolant of continuum obstacle \\
-$\phi^j(x)$ & $j$th-level obstacle in MCD method; $\phi^j=\chi^j - P\chi^{j-1}$ \\
+$\varphi^j(x)$ & $j$th-level interpolant of continuum obstacle; \emph{not} equal to $\phi^j$ \\
+$\phi^j(x)$ & $j$th-level obstacle; $\phi^j=\chi^j - \chi^{j-1}$ \\
 $\chi^J(x)$ & fine-level defect obstacle; $\chi^J = \varphi^J - w^J$ for iterate $w^J$ \\
 $\chi^j(x)$ & $j$th-level (monotone) restriction of defect obstacle; $\chi^{j-1} = \mR \chi^j$ \\
 $\psi_p^j(x)$ & $j$th-level hat function at $x_p$ \\
@@ -979,11 +983,12 @@ $\ip{\cdot}{\cdot}$ & $L^2$ inner product \\
 $\|\cdot\|$ & $L^2$ norm; $\|f\|=\ip{f}{f}^{1/2}$ \\
 $\|\cdot\|_{\mathcal{H}}$ & norm on solution space; $\|f\|_{\mathcal{H}}^2 =\ip{f}{f} + \ip{f'}{f'}$ for $\mathcal{H}=H_0^1[0,1]$ \\  % final \\ required
 \bottomrule
-\caption{Notation.}
+\caption{Notation for sections \ref{sec:subspace} and \ref{sec:obstacle}.}
 \label{tab:notation}
 \end{longtable}
 
 \renewcommand{\arraystretch}{1.1}
+
 \begin{longtable}{l|l|l}
 \toprule
 \textbf{Name} {\Large$\strut$} & \textbf{Page} & \textbf{Description} \\ \hline
@@ -995,15 +1000,24 @@ $\|\cdot\|_{\mathcal{H}}$ & norm on solution space; $\|f\|_{\mathcal{H}}^2 =\ip{
 \pr{msd-slash} & \pageref{ps:msd-slash} & multilevel subspace decomposition (MSD) slash-cycle; \\
   &  & \qquad calls \pr{[gs$|$jacobi]-sweep} as smoother \\
 \pr{msd-solver} & \pageref{ps:msd-solver} & MSD solver; calls \pr{msd-[slash$|$vcycle]} \\
-\pr{msd-vcycle} & \pageref{ps:msd-vcycle} & MSD V-cycle \\ \hline
+\pr{msd-vcycle} & \pageref{ps:msd-vcycle} & MSD V-cycle \\
+\bottomrule
+\caption{Pseudocodes for the Poisson equation (section \ref{sec:subspace}).}
+\label{tab:pseudocodespoisson}
+\end{longtable}
+
+\begin{longtable}{l|l|l}
+\toprule
+\textbf{Name} {\Large$\strut$} & \textbf{Page} & \textbf{Description} \\ \hline
+\pr{mcdl-fcycle} & \pageref{ps:mcdl-fcycle} & MCD F-cycle (nested iteration); calls \pr{mcdl-slash} \\
 \pr{mcdl-slash} & \pageref{ps:mcdl-slash} & multilevel constraint decomposition (MCD) slash-cycle \\
   &  & \qquad in linear case; calls \pr{p[gs$|$jacobi]-sweep} as smoother \\
 \pr{mcdl-solver} & \pageref{ps:mcdl-solver} & MCD solver; calls \pr{mcdl-slash} \\
 \pr{pgs-sweep} & \pageref{ps:pgs-sweep} & projected GS iteration \\
 \pr{pjacobi-sweep} & \pageref{ps:pjacobi-sweep} & projected Jacobi iteration \\ % final \\ required
 \bottomrule
-\caption{Alphabetical lists of pseudocodes.  Above the line are PDE methods, and below are obstacle-problem methods.}
-\label{tab:pseudocodes}
+\caption{Pseudocodes for the classical obstacle problem (section \ref{sec:obstacle}).}
+\label{tab:pseudocodesobstacle}
 \end{longtable}
 
 \end{document}
