@@ -436,27 +436,31 @@ If the coarsest mesh has a single node ($m_0=1$) then a single sweep gives an ex
 
 Before proceeding, the reader might ask what makes the above V-cycles ``geometric''?  The label is partly historical, but defining the restriction and prolongation operators require the FE mesh, i.e.~coefficients $c_{pq} = \psi_p^{j-1}(x_q^j)$ from the mesh hat functions.  Also note that we \emph{rediscretize} on coarser levels.  An alternative \emph{Galerkin} approach is to form mesh-level matrices recursively by $A^{j-1} = R A^j P$; see \cite{Bueler2021} and \cite[Chapter V]{Braess2007}.  For comparison to our geometric method, in \emph{algebraic multigrid} (AMG) \cite{Trottenbergetal2001} the prolongation $P$ is constructed using operations on the entries of the linear system matrix $A$.  (Then such algorithms invariably define $R=P^\top$.)  For linear elliptic problems the geometric and algebraic approaches are closely-related, in part because AMG has been ``tuned'' to generate prolongations $P$ with similar coefficients.  For our upcoming nonlinear and inequality-constrained problems, however, the geometric approach generalizes directly, while AMG can only solve the linear steps in a separately-constructed iteration, e.g.~an outer Newton iteration.  GMG and AMG approaches are natural competitors for the highest-performance solutions, but we persevere with the geometric approach.
 
-\subsection*{On transfer operators}  The operators $R$ and $P$ make no choices, which is the meaning of ``canonical''.  However, their application requires computation because of how we represent functions and functionals on each level.  In fact, full-weighting formulae \eqref{eq:canonicalrestrictionaction} and \eqref{eq:canonicalprolongationaction}, which generalize verbatim to unstructured 2D and 3D meshes when the indices $p,q$ denote the nodes of the mesh \cite[Chapter V]{Braess2007}, arise from the simple fact that each coarse-level hat function is a linear combination of fine-level hats.  It turns out that three such mesh-level \emph{transfer} operators are used in this paper (Table \ref{tab:restrictionsprolongations}).  The third, a critical component allowing multilevel methods for problems involving inequality constraints, appears in the next section.
+\subsection*{On transfer operators}  The operators $R$ and $P$ make no choices, which is the meaning of ``canonical''.  However, their application requires computation because of how we represent functions and functionals on each level.  In fact, full-weighting formulae \eqref{eq:canonicalrestrictionaction} and \eqref{eq:canonicalprolongationaction}, which generalize verbatim to unstructured 2D and 3D meshes when the indices $p,q$ denote the nodes of the mesh \cite[Chapter V]{Braess2007}, arise from the simple fact that each coarse-level hat function is a linear combination of fine-level hats.
+
+As linear operators, $R$ and $P$ may be represented as sparse non-square matrices, and then they are transposes ($P=R^\top$), but using memory to store them this way is unnecessary as they can be applied in $O(m_j)$ operations via \eqref{eq:canonicalrestrictionaction} and \eqref{eq:canonicalprolongationaction}.  Note the two operators differ in their invertibility.  A function $y$ in $\mathcal{V}^{j-1}$ can be exactly recovered from $Py$ because $y(x)$ and $(Py)(x)$ are the same piecewise-linear function, and in fact we only explicitly write $P$ when indicating a change in vector representation.  (Said differently, the one-to-one map $P$ has a left inverse.)  By contrast, $\ell$ in $(\mathcal{V}^j)'$ is not recoverable from $R\ell$; the values $\ell[\psi_q^j]$, the action of $\ell$ on the finer level hats, are averaged onto the coarse level and thus lost.
+
+It turns out that four such \emph{transfer} operators are used in this paper (Table \ref{tab:transfers}), but two of these are introduced in the next section.
 
 \newcommand{\iP}{P^{\hookrightarrow}}
 \begin{table}
 \begin{tabular}{l|ccccc}
 \emph{operator}              & \emph{equation}  & \emph{domain}          & \emph{range}
                   & \emph{one-to-one} & \emph{linear} \\ \hline
+canonical prolongation $P$   & \eqref{eq:canonicalprolongationaction} & $\mathcal{V}^{j-1}$    & $\mathcal{V}^j$
+                  & \checkmark & \checkmark \\
+solution prolongation $\hat P$   & \eqref{eq:solutionprolongation} & $\mathcal{V}^{j-1}$    & $\mathcal{V}^j$
+                  &            &  \\
 canonical restriction $R$    & \eqref{eq:canonicalrestrictionaction} & $(\mathcal{V}^j)'$     & $(\mathcal{V}^{j-1})'$
                   &            & \checkmark \\
 monotone restriction $\mR$   & \eqref{eq:monotonerestriction} & $\mathcal{V}^j$        & $\mathcal{V}^{j-1}$
                   &            &            \\
-canonical prolongation $P$   & \eqref{eq:canonicalprolongationaction} & $\mathcal{V}^{j-1}$    & $\mathcal{V}^j$
-                  & \checkmark & \checkmark \\
 \end{tabular}
 
 \medskip
-\caption{We use three transfer operators in this paper.  The nonlinear monotone restriction operator $\mR$ is defined in section \ref{sec:obstacle}.}
-\label{tab:restrictionsprolongations}
+\caption{We use four transfer operators in this paper.  The nonlinear $\mR$ and $\hat P$ operators are defined in section \ref{sec:obstacle}.}
+\label{tab:transfers}
 \end{table}
-
-As linear operators, $R$ and $P$ may be represented as sparse non-square matrices, and then they are transposes ($P=R^\top$), but using memory to store them as matrices is unnecessary.  They are applied in $O(m_j)$ operations via \eqref{eq:canonicalrestrictionaction} and \eqref{eq:canonicalprolongationaction}.  However, the two operators differ in their invertibility.  A function $y$ in $\mathcal{V}^{j-1}$ can be exactly recovered from $Py$ because $y(x)$ and $(Py)(x)$ are the same piecewise-linear function, and in fact we only explicitly write $P$ when indicating a change in vector representation.  (Said differently, as a map $P$ is one-to-one, and thus it has a left inverse.)  By contrast, $\ell$ in $(\mathcal{V}^j)'$ is not recoverable from $R\ell$; the values $\ell[\psi_q^j]$, the action of $\ell$ on the finer level hats, are averaged onto the coarse level and thus lost.
 
 We have now presented a basic geometric multigrid algorithm for linear PDEs via a particular FE viewpoint, namely the subspace decomposition approach pioneered by Xu \cite{Xu1992} and others, which is foundational for multilevel, domain-decomposition, and other advanced algorithms \cite[for example]{Farrelletal2019}.  Our next step might be to show computational results demonstrating the efficiency of a GMG algorithm, giving evidence of optimal $O(m_J)$ time to solve the problem.  (Such results appear in all multigrid references \cite{Braess2007,Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.)  However, we first introduce a less-standard ``obstacle'' problem, with the essential free-boundary character of the glacier geometry problem.  Computational results appear in each of the next three sections.
 
@@ -638,7 +642,7 @@ Our application of MCD \emph{puts as much as possible of $\chi^J$ into the coars
 \begin{equation}
   \mR z = \sum_{p=1}^{m_{j-1}} \zeta_p \psi_p^{j-1} \qquad \text{where} \qquad \zeta_p = \max \{z_q \,:\, \psi_p^{j-1}(x_q^j) > 0\}.  \label{eq:monotonerestriction}
 \end{equation}
-Observe that $\mR z \ge z$.  Also note that $\mR$ acts on functions $\mathcal{V}^j$ while canonical restriction $R$ acts on linear functionals $(\mathcal{V}^j)'$; see Table \ref{tab:restrictionsprolongations}.
+Observe that $\mR z \ge z$.  Also note that $\mR$ acts on functions $\mathcal{V}^j$ while canonical restriction $R$ acts on linear functionals $(\mathcal{V}^j)'$; see Table \ref{tab:transfers}.
 
 We then define the \emph{$j$th-level defect constraint} inductively by
 \begin{equation}
@@ -966,9 +970,10 @@ $\ell[\cdot]$ & source linear functional, e.g.~$\ell[v] = \ip{f}{v}$ \\
 $\ell^j[\cdot]$ & $j$th-level source; usually a restriction of the $j+1$ level residual \\
 $m$ & number of degrees of freedom in discretized problem; $m=m_J$ \\
 $m_j$ & number of nodes in $j$th-level; $\dim \mathcal{V}^j=m_j$ \\
-$P$ & canonical prolongation of functions, $\mathcal{V}^{j-1} \to \mathcal{V}^j$; see Table \ref{tab:restrictionsprolongations} \\
-$R$ & canonical restriction of linear functionals, $(\mathcal{V}^j)' \to (\mathcal{V}^{j-1})'$; see Table \ref{tab:restrictionsprolongations} \\
-$\mR$ & monotone restriction of functions, $\mathcal{V}^j \to \mathcal{V}^{j-1}$; see Table \ref{tab:restrictionsprolongations} \\
+$P$ & canonical prolongation of functions, $\mathcal{V}^{j-1} \to \mathcal{V}^j$; see Table \ref{tab:transfers} \\
+$\hat P$ & solution prolongation of functions, $\mathcal{V}^{j-1} \to \mathcal{V}^j$; see Table \ref{tab:transfers} \\
+$R$ & canonical restriction of linear functionals, $(\mathcal{V}^j)' \to (\mathcal{V}^{j-1})'$; see Table \ref{tab:transfers} \\
+$\mR$ & monotone restriction of functions, $\mathcal{V}^j \to \mathcal{V}^{j-1}$; see Table \ref{tab:transfers} \\
 $\mathcal{V}^h$ & finite element function space; $\mathcal{V}^h = \mathcal{V}^J$ \\
 $\mathcal{V}^j$ & $j$th-level vector space \\
 $(\mathcal{V}^j)'$ & dual space (linear functionals) of $\mathcal{V}^j$  \\
