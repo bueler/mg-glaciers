@@ -678,7 +678,7 @@ for $j=0,1,\dots,J$.  Because $\phi^j \le 0$, the zero function is admissible on
 
 We also define the fine-level \emph{defect constraint set}
 \begin{equation}
-  \mathcal{D}^J = \left\{v \ge \chi^J\right\} \subset \mathcal{V}^J.
+  \mathcal{D}^J = \left\{v \ge \chi^J\right\} \subset \mathcal{V}^J.  \label{eq:constraintset}
 \end{equation}
 The admissible sets $\mathcal{K}^j$ decompose $\mathcal{D}^J$:
 \begin{equation}
@@ -707,11 +707,9 @@ Looking forward to the glacier problem in section \ref{sec:sia}, the fine-mesh o
 \label{fig:icelikedecomposition}
 \end{figure}
 
-\subsection*{MCD coarse-level corrections}  On each coarse level there is an obstacle problem, and we write this problem in three forms.  For the classical obstacle problem the forms are equivalent, but only one will generalize to glacier-geometry problems.  Recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the continuum residual \eqref{eq:residual}, and $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function.
+\subsection*{MCD coarse-level corrections}  On each mesh level there is now an obstacle problem, and we will write this problem in three forms.  The forms are equivalent for the classical obstacle problem, but only one generalizes to glacier problems.
 
-Suppose $w^J$ is an admissible iterate on the fine level: $w^J\ge \varphi^J$.  Let us assume that we have already descended from the fine level $J$ to some level $j$, computing admissible corrections $y^k$ from each constraint set $\mathcal{K}^k=\{v\ge \phi^k\}$, for $k\ge j$, as we go.  Because of \eqref{eq:defectmeaning} and decomposition \eqref{eq:constraintdecomposition}, $z = w^J+y^J+\dots+y^j$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.
-
-In an MCD method the coarse-level correction is a function $y$ in $\mathcal{K}^{j-1}$, i.e.~$y \ge \phi^{j-1}$, such that one of the following holds:
+Suppose $w^J$ is an admissible iterate on the fine level, such that $w^J\ge \varphi^J$.  Assume that we have already descended from the fine level $J$ to some level $j$, computing admissible corrections $y^k$ from each constraint set $\mathcal{K}^k=\{v\ge \phi^k\}$, for $k\ge j$.  Because of \eqref{eq:defectmeaning}, \eqref{eq:constraintset}, and \eqref{eq:constraintdecomposition}, the function $z = w^J+y^J+\dots+y^j$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.  Recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the continuum residual \eqref{eq:residual}, and that $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function.  The MCD \emph{coarse-level correction} is a function $y$ in $\mathcal{K}^{j-1}=\{v\ge \phi^{j-1}\}$ such that one of the following holds:
 \begin{itemize}
 \item variational inequality:
 \begin{equation}
@@ -726,37 +724,43 @@ In an MCD method the coarse-level correction is a function $y$ in $\mathcal{K}^{
   F^{j-1}(y)[v - y] \ge 0 \qquad \text{for all } v \text{ in } \mathcal{K}^{j-1}.   \label{eq:mcdvilinear}
 \end{equation}
 \end{itemize}
-Whichever form is used, the correction problem is defined for $j-1=0,\dots,J$, that is, we compute a correction $y$ in $\mathcal{K}^{j-1}$ on every level in the hierarchy including the finest ($j-1=J$ so $j=J+1$ in the above forms) and the coarsest ($j-1=0$).
+Whichever form is used, a correction is defined for $j-1=0,\dots,J$, that is, we compute a correction $y$ in $\mathcal{K}^{j-1}$ on every level in the hierarchy including the finest ($j=J+1$ in the above forms) and the coarsest ($j=1$).
 
-The third form \eqref{eq:mcdvilinear} exploits linearity to inductively define a coarse-level residual functional which does not refer to the fine-level admissible state $w^J+y^J+\dots+y^j+y$:
+The third form \eqref{eq:mcdvilinear} exploits linearity to inductively define a coarse-level residual functional which does not (directly) refer to the fine-level admissible state $w^J+y^J+\dots+y^j+y$:
 \begin{align}
-  F^{j-1}(y)[\cdot] &= F(w^J+y^J+\dots+y^j+y)[\cdot] \label{eq:residuallinearlevel} \\
+  F^{j-1}(y)[\cdot] &= F(w^J+y^J+\dots+y^j+y)[\cdot] \label{eq:residuallinearlevelderive} \\
                     &= a(w^J+y^J+\dots+y^j+y,\cdot) - \ip{f}{\cdot} \notag \\
                     &= a(y,\cdot) + F^j(y^j)[\cdot]. \notag
 \end{align}
-Equivalently, we construct a coarse-level source term,
+That is, we construct a coarse-level source term,
 \begin{equation}
-  \ell^{j-1}[\cdot] = \begin{cases} - F^j(y^j)[\cdot], & j < J, \\
-                                    - F(w^J)[\cdot],   & j = J, \end{cases} \label{eq:rhslinearlevel}
+  \tilde\ell^{j-1}[\cdot] = \begin{cases} - F^j(y^j)[\cdot], & j < J+1, \\
+                                    - F(w^J)[\cdot],   & j = J+1, \end{cases} \label{eq:rhslinearlevel}
 \end{equation}
-and then define $F^{j-1}(y)[\cdot] = a(y,\cdot) - \ell^{j-1}[\cdot]$.  While $F^{j-1}$ is in fact defined on $\mathcal{V}^h$, that is, on the fine-mesh FE space, and $\ell^{j-1}$ is in $(\mathcal{V}^h)'$, in our implemented multigrid cycle (below) smoothing occurs before each coarse correction.  Thus, using canonical restriction we will approximate $\ell^{j-1}$ by coarse-level linear functional in $(\mathcal{V}^{j-1})'$.
+thus
+\begin{equation}
+F^{j-1}(y)[\cdot] = a(y,\cdot) - \tilde\ell^{j-1}[\cdot].  \label{eq:residuallinearlevel}
+\end{equation}
+Here $F^{j-1}$ is defined on $\mathcal{V}^h$, that is, on the fine-mesh FE space, and $\tilde\ell^{j-1}$ is in $(\mathcal{V}^h)'$, but smoothing will occur before each coarse correction.  Thus, using canonical restriction, we will approximate $\tilde\ell^{j-1}$ by a linear functional in the coarse-level space $(\mathcal{V}^{j-1})'$; see \eqref{eq:restrictedrhslinearlevel} below.
 
-For the classical obstacle problem, wherein the (continuum) residual $F(w)[v]$ is built from a symmetric bilinear form $a(w,v)$, the three problems \eqref{eq:mcdvi}--\eqref{eq:mcdvilinear} are equivalent:
+For the classical obstacle problem, wherein the residual $F(w)[v]$ is built from a symmetric bilinear form $a(w,v)$, the three problems \eqref{eq:mcdvi}--\eqref{eq:mcdvilinear} are equivalent:
    $$\eqref{eq:mcdvilinear} \quad \stackrel{a \text{ bilinear}}{\iff\strut} \quad \eqref{eq:mcdvi} \quad \stackrel{F=\grad I}{\iff\strut} \quad \eqref{eq:mcdminimization}.$$
-The left equivalence depends on linearity and the right on symmetry.  The nonlinear VI form \eqref{eq:mcdvi} is thus the most general.  On the other hand, in the general situation where $F$ is not the gradient of a coercive objective function, as in the SIA and Stokes glacier problems, additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,JouvetBueler2012,KinderlehrerStampacchia1980}).  In summary, we will solve the general VI form \eqref{eq:mcdvi} for general-bed glacier problems.
+The left equivalence depends on linearity, and the right on symmetry, but the not-necessarily linear VI form \eqref{eq:mcdvi} is the most general, and it is the one we will apply for glacier problems.  Note that when $F$ is not the gradient of a coercive objective function, as in the SIA and Stokes glacier problems, additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,JouvetBueler2012,KinderlehrerStampacchia1980}).
 
-\subsection*{MCD cycles and convergence results}  For now we are may implement a multilevel solver for the classical obstacle problem.  Because the problem is linear, we solve  \eqref{eq:mcdvilinear}, the form special to linear problems, and call the method \pr{MCDL}, with L for ``linear''.
+\subsection*{MCD cycles and convergence results}  Now we implement a multilevel cycle and solver for the classical obstacle problem.  Because the interior PDE of this problem is the linear Poisson equation, we solve  \eqref{eq:mcdvilinear} and call the method \pr{MCDL}, with L for ``linear''.  Our slash cycle, also known as a V(1,0) cycle \cite{GraeserKornhuber2009}, is based on formulae \eqref{eq:defectconstraint}, \eqref{eq:chik}, \eqref{eq:levelobstacle}, \eqref{eq:rhslinearlevel}, and \eqref{eq:residuallinearlevel}.  However, after smoothing we also approximate the coarse-level residual by applying canonical restriction; for $j=J,\dots,1$ we compute
+\begin{equation}
+\ell^{j-1}[\cdot] = - R(F^j(y^j))[\cdot].  \label{eq:restrictedrhslinearlevel}
+\end{equation}
+In using $\ell^{j-1}$, instead of $\tilde\ell^{j-1}$ in \eqref{eq:rhslinearlevel}, we lose the remaining (after smoothing) residual information for high-frequency modes on the $j$th level.
 
-Our slash cycle, also known as a V(1,0) cycle \cite{GraeserKornhuber2009}, is based on formulae \eqref{eq:chik}, \eqref{eq:levelobstacle}, \eqref{eq:residuallinearlevel}, and \eqref{eq:rhslinearlevel}.  (A slash cycle is shown in Figure \ref{fig:fcycle} below.)  As already described, before computing the coarse-level correction, after smoothing we approximate the residual by applying canonical restriction, thus $\ell^{j-1}[\cdot] = - R(F^j(y^j))[\cdot]$, which loses any remaining residual information for high-frequency modes on the $j$th level.
-
-The following pseudocode uses \pr{pgs-sweep} or \pr{pjacobi-sweep} as a smoother and coarse-level solver.  It takes $F^J$ as an argument, and not the original $F$; it only knows about the fine-level iterate $w^J$ except through $F^J$ and $\chi^J$.
+The following pseudocode uses \pr{pgs-sweep} or \pr{pjacobi-sweep} as a smoother and coarse-level solver.  It takes $F^J$, defined in \eqref{eq:residuallinearlevel}, as an argument, and not the original $F$; it only knows about the fine-level iterate $w^J$ through $F^J$ and $\chi^J$.
 \begin{pseudo*} \label{ps:mcdl-slash}
 \pr{mcdl-slash}(F^J,\chi^J,\id{down}=1,\id{coarse}=1)\text{:} \\+
     for $j=J$ downto $j=1$ \\+
       $\chi^{j-1} = \mR \chi^j$ \\
       $\phi^j = \chi^j - P\chi^{j-1}$ \qquad\qquad\qquad\quad \ct{define obstacle} \\
       $y^j = 0$ \\
-      $\text{\pr{smoother}}^{\text{\id{down}}}(j,y^j,F^j,\phi^j)$ \qquad\quad \ct{down smoother} \\
+      $\text{\pr{smoother}}^{\text{\id{down}}}(j,y^j,F^j,\phi^j)$ \qquad\quad \ct{in-place smoothing} \\
       $\ell^{j-1}[\cdot] := - R (F^j(y^j))[\cdot]$ \qquad\qquad \ct{update and restrict residual} \\
       $F^{j-1}(y)[\cdot] := a(y,\cdot) - \ell^{j-1}[\cdot]$ \\-
     $y^0 = 0$ \\
@@ -765,24 +769,24 @@ The following pseudocode uses \pr{pgs-sweep} or \pr{pjacobi-sweep} as a smoother
       $y^j \gets y^{j} + P y^{j-1}$ \qquad\qquad\qquad \ct{prolong and accumulate corrections} \\-
     return $y^J$
 \end{pseudo*}
+In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, assuming a subroutine which evaluates $a(w,v)$ on each level, the linear functional $\ell^{j-1}$ is passed, from which $F^{j-1}$ is constructed.
 
-In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, assuming a subroutine which evaluates $a(w,v)$ as needed on each level, the linear functional $\ell^{j-1}$ is passed, from which $F^{j-1}$ is constructed.  The actual implementation signatures are \pr{smoother}$(j,y^j,\ell^j,\phi^j)$ and \pr{mcdl-slash}$(J,\ell^J,\chi^J)$.
-
-The following solver adds an outer loop which sets-up the fine-level defect constraint $\chi^J$, sets-up $F^J$, calls the cycle, and checks for convergence.  Compare \pr{msd-solver} in section \ref{sec:subspace}.
+The following solver adds an outer loop which sets-up the fine-level data $\chi^J$ and $F^J$, calls the slash cycle, and checks for convergence.  Compare \pr{msd-solver} in section \ref{sec:subspace}.
 \begin{pseudo*} \label{ps:mcdl-solver}
-\pr{mcdl-solver}(F,\varphi,\id{rtol}=10^{-4})\text{:} \\+
-    $w=\varphi$ \qquad\qquad\qquad\qquad\qquad\quad \ct{or other admissible fine-level initial iterate} \\
+\pr{mcdl-solver}(w,F,\varphi,\id{rtol}=10^{-4},\id{cyclemax}=100)\text{:} \\+
     $r_0=\|\hat\bF(w)\|$ \qquad\qquad\qquad\qquad\qquad \ct{initial CP residual norm; see \eqref{eq:cpresidual}} \\
-    repeat \\+
+    for $s=1,\dots,\id{cyclemax}$ \\+
         $\chi^J = \varphi - w$ \qquad\qquad\qquad\qquad\quad \ct{fine-level defect constraint} \\
-        $\ell^J[\cdot] := - F(w)[\cdot]$ \qquad\qquad\qquad\quad \ct{see \eqref{eq:rhslinearlevel}} \\
-        $F^J(y)[\cdot] := a(y,\cdot) - \ell^J[\cdot]$ \\
-        $w\gets w+\pr{mcdl-slash}(F^J,\chi^J)$ \\-
-    until $\|\hat\bF(w)\| \le \id{rtol} \, r_0$  \qquad\qquad\qquad \ct{see \eqref{eq:cpresidual}} \\
+        $\tilde\ell^J[\cdot] := - F(w)[\cdot]$ \qquad\qquad\qquad\quad \ct{see \eqref{eq:rhslinearlevel}} \\
+        $F^J(y)[\cdot] := a(y,\cdot) - \tilde\ell^J[\cdot]$ \\
+        $w\gets w+\pr{mcdl-slash}(F^J,\chi^J)$ \\
+        if $\|\hat\bF(w)\| \le \id{rtol} \, r_0$ \\+
+            break \\--
     return $w$
 \end{pseudo*}
+Note that one must start with an admissible initial iterate; $w=\varphi^J$ is one possibility.
 
-These pseudocodes have been implemented in Python.\footnote{At\, \href{https://github.com/bueler/mg-glaciers/}{\texttt{github.com/bueler/mg-glaciers/}} see the \texttt{py/1D/} directory and its \texttt{README.md}.}  Recall the two exact solutions $u$ shown in Figure \ref{fig:icelike}.  (The ``ice-like'' case has a discontinuous source $f$, while ``traditional'' has $f=0$, but both have smooth, parabolic obstacles.)  Figure \ref{fig:convergence} demonstrates convergence of \pr{mcdl-solver}, with the numerical error norm $\|u^h-u\|_2$ as a function of mesh spacing $h$, for runs with \id{rtol} $=10^{-7}$.  The ``traditional'' convergence rate is the best possible; $O(h^2)$ error is expected for the unconstrained problem \cite{Elmanetal2014}.  The ``ice-like'' rate is reduced because of the lower regularity of $f$.
+These pseudocodes have been implemented in Python.\footnote{At\, \href{https://github.com/bueler/mg-glaciers/}{\texttt{github.com/bueler/mg-glaciers/}} see the \texttt{py/1D/} directory and its \texttt{README.md}.}  We test \pr{mcdl-solver} on the two exact solutions $u$ shown in Figure \ref{fig:icelike}.  Note that the ``ice-like'' case has a discontinuous source $f$, while ``traditional'' has $f=0$, and both have smooth, parabolic obstacles.  Figure \ref{fig:convergence}, showing the numerical error norm $\|u^h-u\|_2$ as a function of mesh spacing $h$, demonstrates convergence for runs with \id{rtol} $=10^{-7}$.  The convergence rate for the traditional case is the best possible; $O(h^2)$ error is expected for the unconstrained problem \cite{Elmanetal2014}.  The ``ice-like'' rate is reduced because of the lower regularity of $f$.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/convergence.pdf}
@@ -790,20 +794,20 @@ These pseudocodes have been implemented in Python.\footnote{At\, \href{https://g
 \label{fig:convergence}
 \end{figure}
 
-\subsection*{Nested iteration and performance results}  Performance can be improved by exploiting additional multilevel techniques.  One of these is \emph{nested iteration}, where the initial iterate on a given mesh comes from prolonging (interpolating) a solution iterate from a coarser mesh.  Figure \ref{fig:fcycle} shows the resulting \emph{F-cycle}, constructed by concatenating slash cycles with an additional prolongation action.
+\subsection*{Nested iteration and performance results}  In this section we evaluate the performance of \pr{mcdl-solver} by counting iterations, measuring work units (see below), and measuring run time.  However, multilevel methods can often be accelerated using \emph{nested iteration} \cite{Trottenbergetal2001}.  Here the initial iterate on a given mesh comes from prolonging (interpolating) a converged solution iterate from a coarser mesh.  Figure \ref{fig:fcycle} shows the resulting \emph{F-cycle}, constructed by concatenating slash cycles with an additional prolongation action as follows.
 
 \begin{figure}
 \input{tikz/fcycle.tex}
-\caption{\emph{Left:} A four-level slash cycle with down-smoother (dots), coarse solver (square), and accumulation of corrections back to the finest level (gray line).  \emph{Right:} A nested iteration F-cycle prepends shorter slash cycles, with solution prolongation $\hat P$ (double lines) for the initial iterate in the next cycle.}
+\caption{\emph{Left:} A four-level slash cycle with down-smoother (dots), coarse solver (square), and accumulation of corrections back to the finest level (gray line).  \emph{Right:} An F-cycle prepends shallower slash cycles, with solution prolongation $\hat P$ (equation \eqref{eq:solutionprolongation}; double lines) for the initial iterate in the next cycle.}
 \label{fig:fcycle}
 \end{figure}
 
-Only the update $y^{j-1}$ is prolonged in the \pr{mcdl-slash} cycle, now we need to prolong the full solution $w^{j-1}$ from $\mathcal{V}^{j-1}$, admissible in the sense that $w^{j-1} \ge \varphi^{j-1}$, where $\varphi^{j-1}$ is the interpolant of the continuum obstacle $\varphi$.  However, the new iterate also needs to be admissible.  Any prolongation onto the $j$th level will have to contend with not-yet-seen obstacle data in $\varphi^j$, and thus truncation is obligatory.  Thus we define \emph{solution prolongation} using canonical prolongation \eqref{eq:canonicalprolongation} and truncation:
+Only the update $y^{j-1}$ is prolonged in the \pr{mcdl-slash} cycle, but now we need to prolong the full solution $w^{j-1}$ from $\mathcal{V}^{j-1}$.  This coarse-level solution is admissible in the sense that $w^{j-1} \ge \varphi^{j-1}$, where $\varphi^{j-1}$ is the interpolant of the continuum obstacle $\varphi$, the prolongation needs to be admissible in the corresponding sense.  However, admissibility is with respect to not-yet-seen obstacle data in the interpolant $\varphi^j$, and thus truncation is obligatory.  Thus we define \emph{solution prolongation} using canonical prolongation \eqref{eq:canonicalprolongation} and truncation:
 \begin{equation}
 \hat P w^{j-1} = \max\{P w^{j-1}, \varphi^{j}\}  \label{eq:solutionprolongation}
 \end{equation}
 
-In our F-cycle we do one or more slash cycles before moving up to the next-finer level.  The resulting algorithm can be used as is, or to generate the initial iterate for \pr{mcdl-solver}, that is, one may do additional slash cycles on the output of this pseudocode.
+In our F-cycle we do one or more slash cycles before moving up to the next-finer level.
 \begin{pseudo*} \label{ps:mcdl-fcycle}
 \pr{mcdl-fcycle}(J,F,\varphi,\id{coarse}=1,\id{nicycles}=1)\text{:} \\+
     $w^0=\varphi^0$ \qquad\qquad\qquad\qquad\qquad\quad \ct{admissible coarsest-level initial iterate} \\
@@ -820,10 +824,16 @@ In our F-cycle we do one or more slash cycles before moving up to the next-finer
     return $w^J$
 \end{pseudo*}
 
+This algorithm could be used as is, and indeed for PDEs one F-cycle often suffices to reach discretization error \cite{Trottenbergetal2001}.  However, because obstacle problem solutions have lower regularity, and because multilevel cycles are required to both remove low frequencies from the error \emph{and} find the free boundary, we will need the F-cycle to generate the initial iterate for \pr{mcdl-solver}, so we do additional slash cycles on the output of \pr{mcdl-fcycle}.
 
-FIXME for performance test we consider icelike-with-random-bed problem; we apply \pr{mcdl-solver}, and do slash cycles until convergence, i.e.~\eqref{eq:cpconvergencecriterion}, with \id{rtol} $=10^{-4}$
-
-FIXME 4 solvers: slash cycle V(1,0), V(2,0), prepend F-cycle, and prepend 2-iterations-on-way-up-F-cycle
+We compare the performance of four solvers:
+\begin{itemize}
+\item \textsf{V(1,0)}: \pr{mcdl-solver} with default settings including \id{down}$=1$ in the slash cycle
+\item \textsf{V(2,0)}: same but with \id{down}$=2$
+\item \textsf{F+V(1,0)}: \pr{mcdl-fcycle} with default settings, followed by \textsf{V(1,0)} above
+\item \textsf{Fx2+V(1,0)}: same but with two slash cycles in the F-cycle (\id{nicycles}$=2$)
+\end{itemize}
+We test these solvers on the ``icelike'' problem but with a more generic random bed, like the one shown in Figure \ref{fig:icelikedecomposition}.  In all cases we do slash cycles until convergence, i.e.~\eqref{eq:cpconvergencecriterion} with \id{rtol} $=10^{-4}$.
 
 FIXME Figure showing number of cycles; note irregularity, which relates to position of free boundary unavoidably ``jumping'' as we move levels; F-cycles are less powerful than in PDE cases because multilevel cycles tasked with both ``find the free boundary'' and ``smooth low frequencies'' jobs
 
@@ -845,7 +855,7 @@ FIXME Figure \ref{fig:mcdl-timeper} shows time per $m$; for same 4 solvers and p
 \label{fig:mcdl-timeper}
 \end{figure}
 
-FIXME mention V(1,1) in Appendix B, \cite{Blumetal2004} on cascadic and CG variants
+Before going on we should note there are variations on the above slash and F-cycles which were not tested.  Reference \cite{GraeserKornhuber2009} describe monotone and truncated-monotone multigrid methods for obstacle problems which extend the MCD method in ways that demonstrably improve performance for the classical problem when the coincidence set (active set) is geometrically complicated.  Reference \cite{Blumetal2004} proposes a ``cascadic'' variant, wherein all the smoothing is done on the upward part of the cycle, with a schedule of extra smoothing on coarser levels, and using a conjugate gradient smoother.  Finally both \cite{Tai2003} and \cite{GraeserKornhuber2009} suggest that it is straightforward to add up-smoothing to the slash cycle above, to give a V(1,1) cycle, but our attempts to do this have not yielded a faster solver in any case.
 
 \subsection*{Convergence theory and performance models}  Mathematical theory allows us to compare the convergence rates of our MCD solver versus the PGS method.  Let $u^h$, in $\mathcal{V}^h = \mathcal{V}^J$ and satisfying $u^h \ge \varphi^J$, be the exact solution of the finite-dimensional VI
 \begin{equation}

@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 INFILE = 'performance.txt'
-SOLVERNAME = ['V(1,0)', 'V(2,0)', 'NI+V(1,0)', 'NIx2+V(1,0)']
+SOLVERNAME = ['V(1,0)', 'V(2,0)', 'F+V(1,0)', 'Fx2+V(1,0)']
 MARKER = ['o','s','*','p']
 MARKERSIZE = [12.0,10.0,12.0,10.0]
 MARKERFACE = ['w','w','k','k']
