@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 # see py/1D/study/convperf.sh  to generate input data performance.txt
-# FIXME only consider case = icelike+random (as more representative)
-# FIXME process into two performance figures each showing all four solvers
+# here we only consider icelike+random case (as more representative)
+# processed into two performance figures each showing all four solvers
 #    Figure:  semilogx with m on x-axis and WU on y axis
-#    Figure:  loglog with m on x-axis and time on y axis;  result is time = O(m^xx)
+#    Figure:  loglog with m on x-axis and time on y axis; result is time = O(m^xx)
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,6 +31,7 @@ assert len(v[:,0]) == 8*N   # 8 solver+problem combinations
 
 # columns:  solver case J m cycles WU time
 case = v[:,1]
+# only consider -random cases
 solver = v[case==1,0]
 m = v[case==1,3]
 h = 1.0 / (m+1)
@@ -47,7 +48,8 @@ for s in range(4):  # s=solver
     print('%15s: WU = O(m^%.2f)' % (SOLVERNAME[s],q[0]))
     plt.semilogx(mm,WUU,
                  'k'+MARKER[s],ms=MARKERSIZE[s],mfc=MARKERFACE[s],
-                 label=SOLVERNAME[s] + ':  $O(m^{%.2f})$' % q[0])
+                 label=SOLVERNAME[s])
+                 #label=SOLVERNAME[s] + ':  $O(m^{%.2f})$' % q[0])
 plt.grid(True)
 plt.xlabel('$m$  (degrees of freedom)',fontsize=18.0)
 plt.ylabel('WU',fontsize=18.0)
