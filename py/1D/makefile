@@ -1,8 +1,10 @@
+all: mtest test
+
 # hybrid testing strategy:
 #   1. test modules using pytest
 #   2. test top-level codes using testit.sh
 
-testmodules:
+mtest:
 	@echo "**** TESTING MODULES ****"
 	python3 -m pytest
 
@@ -38,7 +40,7 @@ test_obstacle: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstac
 testbanner:
 	@echo "**** TESTING obstacle.py ****"
 
-test: testmodules testbanner test_obstacle
+test: testbanner test_obstacle
 
 .PHONY: clean runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 test_obstacle testmodules test testbanner
 
