@@ -54,9 +54,11 @@ We solve two particular problems:
               /0
     PDE is SIA equation  - (Gamma (s-b)^{n+2} |s'|^{n-1} s')' = m
 
-Solution is by the multilevel constraint decomposition slash-cycle method
-by Tai (2003), as implemented in Alg. 4.7 of Gräser & Kornhuber (2009) in
-which a monotone restriction operator decomposes the defect obstacle.
+Solution is by the multilevel constraint decomposition (MCD) method of
+Tai (2003).  As in Alg. 4.7 of Gräser & Kornhuber (2009), we implement
+MCD using a monotone restriction operator which decomposes the defect
+obstacle.  Gräser & Kornhuber (2009) implement a down-slash cycle, but
+we extend this to up-slash and v-cycles as well.
 
 The smoother and the coarse-mesh solver are either projected Gauss-Seidel
 or projected Jacobi using a relaxation parameter (-omega).  These are
@@ -151,6 +153,11 @@ if unknown:
 if args.show and args.o:
     print('usage ERROR: use either -show or -o FILE but not both')
     sys.exit(2)
+if args.down < 0 or args.coarse < 0 or args.up < 0:
+    print('usage ERROR: -down, -coarse, -up must be nonnegative integers')
+    sys.exit(3)
+if args.down + args.up == 0:
+    print('WARNING: You have set -down 0 and -up 0.  Not convergent without smoothing.')
 if args.nicascadic:
     args.ni = True
 
@@ -188,10 +195,10 @@ elif args.problem == 'sia':
 # more usage help
 if args.monitorerr and not obsprob.exact_available():
     print('usage ERROR: -monitorerr but exact solution and error not available')
-    sys.exit(3)
+    sys.exit(4)
 if args.errtol is not None and not obsprob.exact_available():
     print('usage ERROR: -errtol but exact solution and error not available')
-    sys.exit(4)
+    sys.exit(5)
 
 # set up nested iteration
 if args.ni:
