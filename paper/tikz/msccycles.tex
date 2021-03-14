@@ -1,5 +1,6 @@
 \begin{tikzpicture}[scale=1.2]
-  \pgfmathsetmacro\slx{-3.0}  % locate slash to left
+  \pgfmathsetmacro\slx{-5.0}  % locate down-slash to left
+  \pgfmathsetmacro\uslx{-2.5}  % locate up-slash middle
   \pgfmathsetmacro\hstep{0.5}
   \pgfmathsetmacro\vstep{0.75}
 
@@ -8,11 +9,17 @@
   \node at (\slx-2.0,\vstep) {$j=1$};
   \node at (\slx-2.0,0.0) {$j=0$};
 
-% slash
+% down-slash
   \draw[black,thin] (\slx,2*\vstep) -- (\slx+\hstep,\vstep) --  (\slx+2*\hstep,0.0);
   \filldraw (\slx,2*\vstep) circle (2.0pt);
   \filldraw (\slx+\hstep,\vstep) circle (2.0pt);
   \filldraw (\slx+2*\hstep,0.0) circle (2.0pt);
+
+% up-slash
+  \draw[black,thin] (\uslx,0.0) -- (\uslx+\hstep,\vstep) -- (\uslx+2*\hstep,2*\vstep);
+  \filldraw (\uslx,0.0) circle (2.0pt);
+  \filldraw (\uslx+\hstep,\vstep) circle (2.0pt);
+  \filldraw (\uslx+2*\hstep,2*\vstep) circle (2.0pt);
 
 % V-cycle
   \draw[black,thin] (0.0,2*\vstep) -- (\hstep,\vstep) --  (2*\hstep,0.0)
