@@ -89,44 +89,38 @@ class VisObstacle():
         plt.xlabel('x')
         _output(filename, 'residual and inactive residual')
 
-    def decomposition(self, up=0, filename=''):
+    def decomposition(self, filename=''):
         '''Hierarchical defect decomposition.'''
         assert self.hierarchy[-1].m == self.mesh.m
         plt.figure(figsize=(15.0, 10.0))
         J = len(self.hierarchy) - 1
-        if up == 0:
-            for j in range(J):
-                plt.plot(self.hierarchy[j].xx(), self.hierarchy[j].chi,
-                         'k.--', ms=10.0, label=r'$\chi^{%d}$' % j)
-            plt.plot(self.mesh.xx(), self.mesh.chi, 'k.-',
-                     ms=14.0, linewidth=3.0,
-                     label=r'$\chi^{%d} = \varphi^{%d} - w^{%d}$' % (J, J, J))
-        else:
-            raise NotImplementedError('decomposition not available when up>1')
+        for j in range(J):
+            plt.plot(self.hierarchy[j].xx(), self.hierarchy[j].chi,
+                     'k.--', ms=10.0, label=r'$\chi^{%d}$' % j)
+        plt.plot(self.mesh.xx(), self.mesh.chi, 'k.-',
+                 ms=14.0, linewidth=3.0,
+                 label=r'$\chi^{%d} = \varphi^{%d} - w^{%d}$' % (J, J, J))
         plt.legend(fontsize=24.0, frameon=False)
         plt.xlabel('x')
         _output(filename, 'hierarchical decomposition')
 
-    def icedecomposition(self, up=0, filename=''):
+    def icedecomposition(self, filename=''):
         '''Multilevel "ice-like" decomposition.'''
         assert self.hierarchy[-1].m == self.mesh.m
         plt.figure(figsize=(15.0, 10.0))
         J = len(self.hierarchy) - 1
-        if up == 0:
-            for j in range(J, -1, -1):
-                z = self.hierarchy[j].chi
-                for k in range(j, J):
-                    z = self.hierarchy[k+1].cP(z)
-                if j == J:
-                    chilabel = r'$w^{%d}$' % J
-                    chistyle = 'k'
-                else:
-                    chilabel = r'level $%d$' % j   # i.e. phi - chi^j
-                    chistyle = 'k--'
-                plt.plot(self.mesh.xx(), self.phi - z, chistyle,
-                         label=chilabel)
-        else:
-            raise NotImplementedError('ice-like decomposition not available when up>1')
+        for j in range(J, -1, -1):
+            z = self.hierarchy[j].chi
+            for k in range(j, J):
+                z = self.hierarchy[k+1].cP(z)
+            if j == J:
+                chilabel = r'$w^{%d}$' % J
+                chistyle = 'k'
+            else:
+                chilabel = r'level $%d$' % j   # i.e. phi - chi^j
+                chistyle = 'k--'
+            plt.plot(self.mesh.xx(), self.phi - z, chistyle,
+                     label=chilabel)
         plt.plot(self.mesh.xx(), self.phi, 'k',
                  label=r'$\varphi^{%d}$' % J, linewidth=4.0)
         plt.legend(fontsize=24.0, frameon=False)
@@ -150,5 +144,5 @@ class VisObstacle():
                 if len(self.args.o) > 0:
                     dname = 'decomp_' + self.args.o
                     iname = 'icedec_' + self.args.o
-                self.decomposition(up=self.args.up, filename=dname)
-                self.icedecomposition(up=self.args.up, filename=iname)
+                self.decomposition(filename=dname)
+                self.icedecomposition(filename=iname)

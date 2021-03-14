@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 '''Solve 1D obstacle problems by a multilevel constraint decomposition method.'''
 
-# best observed settings for generating solutions in 10 WU in exact solutions cases:
+# best observed settings, measured by error norms, for generating solutions in 10 WU:
 #   for CASE in icelike traditional; do
 #     for JJ in 6 7 8 9 10 11 12 13 14 15 16; do
 #       ./obstacle.py -poissoncase $CASE -jfine $JJ -ni -nicycles 2 -cyclemax 3 -omega 1.5
