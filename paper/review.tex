@@ -964,7 +964,29 @@ FIXME time-dependent runs
 
 \section{Tables to assist the reader}
 
-This review has been written attempting to use the simplest effective notation, but the amount of notation is still substantial, and furthermore a number of new algorithms are discussed.  This Appendix may help the reader in managing the terminology.  Table \ref{tab:notation} shows the notation, arranged alphabetically where possible.  Tables \ref{tab:pseudocodespoisson} and \ref{tab:pseudocodesobstacle} list the pseudocodes with page number.
+This review has been written attempting to use the simplest effective language and notation, but the new concepts are still substantial, and furthermore a number of different algorithms are discussed.  This Appendix may help the reader in managing the terminology, starting with acronyms in Table \ref{tab:acronyms} and notation in Table \ref{tab:notation}.  Tables \ref{tab:pseudocodespoisson} and \ref{tab:pseudocodesobstacle} list the algorithm pseudocodes with page number.  All Tables are arranged alphabetically where possible.
+
+\bigskip
+
+\renewcommand{\arraystretch}{1.1}
+\begin{longtable}{l|l}
+\toprule
+\textbf{Acronym} {\Large$\strut$} & \textbf{Definition} \\ \hline
+FE & finite element \\
+GMG & geometric multigrid \\
+GS & Gauss-Seidel \\
+MCD & multilevel constraint decomposition \\
+MCDL & linear version of MCD \\
+MSC & multilevel subspace corrections \\
+PDE & partial differential equation \\
+PGS & projected Gauss-Seidel \\
+SIA & shallow ice approximation \\
+VI & variational inequality \\
+WU & work units \\ % final \\ required
+\bottomrule
+\caption{Acronyms.}
+\label{tab:acronyms}
+\end{longtable}
 
 \renewcommand{\arraystretch}{1.2}
 \begin{longtable}{l|l}
@@ -1007,7 +1029,6 @@ $\|\cdot\|_{\mathcal{H}}$ & norm on solution space; $\|f\|_{\mathcal{H}}^2 =\ip{
 \end{longtable}
 
 \renewcommand{\arraystretch}{1.1}
-
 \begin{longtable}{l|l|l}
 \toprule
 \textbf{Name} {\Large$\strut$} & \textbf{Page} & \textbf{Description} \\ \hline
