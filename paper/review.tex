@@ -776,6 +776,8 @@ The left equivalence depends on linearity, and the right on symmetry, but the no
 \end{equation}
 In using $\ell^{j-1}$, instead of $\tilde\ell^{j-1}$ in \eqref{eq:rhslinearlevel}, we lose the remaining (after smoothing) residual information for high-frequency modes on the $j$th level.
 
+FIXME should be \pr{mcdl-vcycle}  below
+
 The following pseudocode uses \pr{pgs-sweep} or \pr{pjacobi-sweep} as a smoother and coarse-level solver.  It takes $F^J$, defined in \eqref{eq:residuallinearlevel}, as an argument, and not the original $F$; it only knows about the fine-level iterate $w^J$ through $F^J$ and $\chi^J$.
 \begin{pseudo*} \label{ps:mcdl-slash}
 \pr{mcdl-slash}(F^J,\chi^J,\id{down}=1,\id{coarse}=1)\text{:} \\+
@@ -793,6 +795,14 @@ The following pseudocode uses \pr{pgs-sweep} or \pr{pjacobi-sweep} as a smoother
     return $y^J$
 \end{pseudo*}
 In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, assuming a subroutine which evaluates $a(w,v)$ on each level, the linear functional $\ell^{j-1}$ is passed, from which $F^{j-1}$ is constructed.
+
+FIXME Figure \ref{fig:mcdvcycle}
+
+\begin{figure}
+\input{tikz/mcdvcycle.tex}
+\caption{On the way down each correction $y_j$ must be in $\mathcal{K}^j = \{v\ge \phi_j\}$, but going up a correction $\tilde y_j$ can be in the larger set $\mathcal{K}^0 + \dots + \mathcal{K}^j = \{v \ge \chi_j\}$.}
+\label{fig:mcdvcycle}
+\end{figure}
 
 The following solver adds an outer loop which sets-up the fine-level data $\chi^J$ and $F^J$, calls the slash cycle, and checks for convergence.  Compare \pr{msc-solver} in section \ref{sec:subspace}.
 \begin{pseudo*} \label{ps:mcdl-solver}
@@ -817,11 +827,11 @@ These pseudocodes have been implemented in Python.\footnote{At\, \href{https://g
 \label{fig:convergence}
 \end{figure}
 
-\subsection*{Nested iteration and performance results}  In this section we evaluate the performance of \pr{mcdl-solver} by counting iterations, measuring work units (see below), and measuring run time.  However, multilevel methods can often be accelerated using \emph{nested iteration} \cite{Trottenbergetal2001}.  Here the initial iterate on a given mesh comes from prolonging (interpolating) a converged solution iterate from a coarser mesh.  Figure \ref{fig:fcycle} shows the resulting \emph{F-cycle}, constructed by concatenating slash cycles with an additional prolongation action as follows.
+\subsection*{Nested iteration and performance results}  In this section we evaluate the performance of \pr{mcdl-solver} by counting iterations, measuring work units (see below), and measuring run time.  However, multilevel methods can often be accelerated using \emph{nested iteration} \cite{Trottenbergetal2001}.  Here the initial iterate on a given mesh comes from prolonging (interpolating) a converged solution iterate from a coarser mesh.  Figure \ref{fig:fcycle} FIXME:REVISED shows the resulting \emph{F-cycle}, constructed by concatenating slash cycles with an additional prolongation action as follows.
 
 \begin{figure}
 \input{tikz/fcycle.tex}
-\caption{\emph{Left:} A four-level slash cycle with down-smoother (dots), coarse solver (square), and accumulation of corrections back to the finest level (gray line).  \emph{Right:} An F-cycle prepends shallower slash cycles, with solution prolongation $\hat P$ (equation \eqref{eq:solutionprolongation}; double lines) for the initial iterate in the next cycle.}
+\caption{An F-cycle prepends shallower V-cycles, with solution prolongation $\hat P$ (equation \eqref{eq:solutionprolongation}; double lines) for the initial iterate on the next level.}
 \label{fig:fcycle}
 \end{figure}
 

@@ -3,42 +3,34 @@
   \pgfmathsetmacro\vstep{0.75}
   \pgfmathsetmacro\ceps{0.08}   % size of square for coarse grid
 
-% grid labels at left
-  \node at (-6,3*\vstep) {$j=3$};
-  \node at (-6,2*\vstep) {$j=2$};
-  \node at (-6,\vstep) {$j=1$};
-  \node at (-6,0.0) {$j=0$};
-
-% 4-level slash-cycle
-  \draw[black,thin] (-9*\hstep,3*\vstep) -- (-8*\hstep,2*\vstep) -- (-7*\hstep,\vstep) --  (-6*\hstep,0.0);
-  \filldraw (-9*\hstep,3*\vstep) circle (2.5pt);
-  \filldraw (-8*\hstep,2*\vstep) circle (2.5pt);
-  \filldraw (-7*\hstep,\vstep) circle (2.5pt);
-  \draw     (-6*\hstep-\ceps,-\ceps) rectangle (-6*\hstep+\ceps,+\ceps);
-  \draw[gray,line width=0.8mm] (-6*\hstep,0.0) -- (-5*\hstep,3*\vstep+\ceps);
-
 % coarse solve only
-  \draw     (-\hstep-\ceps,-\ceps) rectangle (-\hstep+\ceps,+\ceps);
-  \draw[black,double,line width=0.5mm,double distance=0.5mm] (-\hstep,0.0) -- (0.0,\vstep);
-% 2-level slash-cycle
-  \draw[black,thin] (0.0,\vstep) -- (\hstep,0.0);
-  \filldraw (0.0,\vstep) circle (2.5pt);
-  \draw     (\hstep-\ceps,-\ceps) rectangle (\hstep+\ceps,+\ceps);
-  \draw[gray,line width=0.8mm] (\hstep,0.0) -- (1.5*\hstep,\vstep);
-  \draw[black,double,line width=0.5mm,double distance=0.5mm] (1.5*\hstep,\vstep) -- (2*\hstep,2*\vstep);
-% 3-level slash-cycle
-  \draw[black,thin] (2*\hstep,2*\vstep) -- (3*\hstep,\vstep) --  (4*\hstep,0.0);
-  \filldraw (2*\hstep,2*\vstep) circle (2.5pt);
-  \filldraw (3*\hstep,\vstep) circle (2.5pt);
-  \draw     (4*\hstep-\ceps,-\ceps) rectangle (4*\hstep+\ceps,+\ceps);
-  \draw[gray,line width=0.8mm] (4*\hstep,0.0) -- (4.666667*\hstep,2*\vstep);
-  \draw[black,double,line width=0.5mm,double distance=0.5mm] (4.666667*\hstep,2*\vstep) -- (5*\hstep,3*\vstep);
-% 4-level slash-cycle
-  \draw[black,thin] (5*\hstep,3*\vstep) -- (6*\hstep,2*\vstep) -- (7*\hstep,\vstep) --  (8*\hstep,0.0);
+  \draw     (-4*\hstep-\ceps,-\ceps) rectangle (-4*\hstep+\ceps,+\ceps);
+  \draw[black,double,line width=0.5mm,double distance=0.5mm] (-4*\hstep,0.0) -- (-3*\hstep,\vstep);
+
+% 2-level V-cycle
+  \draw[black,thin] (-3*\hstep,\vstep) -- (-2*\hstep,0.0) -- (-\hstep,\vstep);
+  \filldraw (-3*\hstep,\vstep) circle (2.5pt);
+  \draw     (-2*\hstep-\ceps,-\ceps) rectangle (-2*\hstep+\ceps,+\ceps);
+  \draw     (-\hstep,\vstep) circle (2.5pt);
+  \draw[black,double,line width=0.5mm,double distance=0.5mm] (-\hstep,\vstep) -- (0.0,2*\vstep);
+
+% 3-level V-cycle
+  \draw[black,thin] (0.0,2*\vstep) -- (\hstep,\vstep) --  (2*\hstep,0.0) -- (3*\hstep,\vstep) -- (4*\hstep,2*\vstep);
+  \filldraw (0.0,2*\vstep) circle (2.5pt);
+  \filldraw (\hstep,\vstep) circle (2.5pt);
+  \draw     (2*\hstep-\ceps,-\ceps) rectangle (2*\hstep+\ceps,+\ceps);
+  \draw     (3*\hstep,\vstep) circle (2.5pt);
+  \draw     (4*\hstep,2*\vstep) circle (2.5pt);
+  \draw[black,double,line width=0.5mm,double distance=0.5mm] (4*\hstep,2*\vstep) -- (5*\hstep,3*\vstep);
+
+% 4-level V-cycle
+  \draw[black,thin] (5*\hstep,3*\vstep) -- (6*\hstep,2*\vstep) -- (7*\hstep,\vstep) --  (8*\hstep,0.0) -- (9*\hstep,\vstep) -- (10*\hstep,2*\vstep) -- (11*\hstep,3*\vstep);
   \filldraw (5*\hstep,3*\vstep) circle (2.5pt);
   \filldraw (6*\hstep,2*\vstep) circle (2.5pt);
   \filldraw (7*\hstep,\vstep) circle (2.5pt);
   \draw     (8*\hstep-\ceps,-\ceps) rectangle (8*\hstep+\ceps,+\ceps);
-  \draw[gray,line width=0.8mm] (8*\hstep,0.0) -- (9*\hstep,3*\vstep+\ceps);
+  \draw     (9*\hstep,\vstep) circle (2.5pt);
+  \draw     (10*\hstep,2*\vstep) circle (2.5pt);
+  \draw     (11*\hstep,3*\vstep) circle (2.5pt);
 
 \end{tikzpicture}
