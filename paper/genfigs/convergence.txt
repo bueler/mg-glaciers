@@ -2,7 +2,9 @@
 #   ./obstacle -poissoncase X -jfine J -irtol 1.0e-7 -cyclemax 1000
 # columns:  case J m cycles err
 # where:
-#   case=0 is icelike and =1 is traditional
+#   case= {0: icelike,
+#          1: traditional,
+#          2: unconstrained}
 #   m=2^{J+1}-1  (and h=1/(m+1))
 #   err=|u-uexact|_2
 
@@ -32,3 +34,16 @@
 1 12  8191 62 7.3249e-09
 1 13 16383 60 2.0552e-09
 1 14 32767 65 6.0838e-10
+2  2     7  9 2.8524e-03
+2  3    15 13 7.1318e-04
+2  4    31 16 1.7830e-04
+2  5    63 17 4.4574e-05
+2  6   127 18 1.1143e-05
+2  7   255 18 2.7859e-06
+2  8   511 19 6.9647e-07
+2  9  1023 20 1.7412e-07
+2 10  2047 20 4.3529e-08
+2 11  4095 21 1.0882e-08
+2 12  8191 22 2.7206e-09
+2 13 16383 22 6.8014e-10
+2 14 32767 23 1.6997e-10

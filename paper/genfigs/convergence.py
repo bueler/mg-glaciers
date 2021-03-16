@@ -6,10 +6,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 INFILE = 'convergence.txt'
-MARKER = ['o','s']
-MARKERSIZE = [12.0,10.0]
-MARKERFACE = ['w','k']
-PROBLEMNAME = ['ice-like','traditional']
+MARKER = ['o','s','p']
+MARKERSIZE = [12.0,10.0,10.0]
+MARKERFACE = ['w','k','w']
+PROBLEMNAME = ['ice-like','traditional','unconstrained']
 
 SHOW = False
 def writeout(outname):
@@ -23,7 +23,7 @@ print('reading %s ...' % INFILE)
 v = np.array(np.loadtxt(INFILE))
 
 N = 13  # number of different resolutions
-assert len(v[:,0]) == 2*N
+assert len(v[:,0]) == 3*N  # 3 problems, N resolutions
 
 # columns:  problem J m cycles err
 prob = v[:,0]
@@ -37,7 +37,7 @@ err = v[:,4]
 
 # numerical error versus h
 plt.figure(figsize=(7,6))
-for p in range(2):
+for p in range(3):
     hh = h[prob==p]
     ee = err[prob==p]
     q = np.polyfit(np.log(hh),np.log(ee),1)
