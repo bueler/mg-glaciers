@@ -1,5 +1,5 @@
 '''Module implementing the multilevel constraint decomposition (MCD) method
-of the Tai (2003).'''
+of the Tai (2003) for the classical obstacle problem (i.e. linear interior PDE).'''
 
 __all__ = ['mcdlcycle']
 
@@ -25,14 +25,15 @@ def _smoother(obsprob, s, mesh, v, ell, phi, forward=True, symmetric=False):
             infeas += obsprob.smoothersweep(mesh, v, ell, phi, forward=not forward)
     return infeas
 
-def mcdlcycle(obsprob, J, hierarchy, ell, down=1, up=1, coarse=1,
+def mcdlcycle(obsprob, J, hierarchy, ell, down=1, up=0, coarse=1,
               levels=None, view=False, symmetric=False):
     '''Apply one cycle of the multilevel subset decomposition method of
-    Tai (2003), as stated in Alg. 4.7 in Graeser & Kornhuber (2009),
-    either as a slash cycle (up=0) or as a V-cycle (up>0).
-    Note hierarchy[j] is of type MeshLevel1D, and hierarchy[j].chi is the
-    jth-level defect constraint.  Input linear functional ell is in V^J'.
-    The smoother is projected Gauss-Seidel (PGS).  The coarse solver is PGS,
+    Tai (2003).  This os stated in Alg. 4.7 in Graeser & Kornhuber (2009)
+    as a down-slash cycle (down=1, up=0).  Our implementation allows any
+    V(down,up) cycle.  Note hierarchy[j] is of type MeshLevel1D, and
+    this method generates all defect constraints hierarchy[j].chi.  The input
+    linear functional ell is in V^J'.  The smoother is projected Gauss-Seidel
+    or projected Jacobi.  The coarse solver is the same as the smoother,
     thus not exact.'''
 
     # set up
@@ -43,10 +44,11 @@ def mcdlcycle(obsprob, J, hierarchy, ell, down=1, up=1, coarse=1,
 
     # downward
     for k in range(J, 0, -1):
-        # update defect constraint and define obstacle
+        # compute defect constraint using monotone restriction
         hierarchy[k-1].chi = hierarchy[k].mR(hierarchy[k].chi)
+        # define down-obstacle
         phi = hierarchy[k].chi - hierarchy[k].cP(hierarchy[k-1].chi)
-        # down smoother = PGS sweeps
+        # down smoother
         if view:
             _levelreport(levels-1, k, hierarchy[k].m, down)
         hierarchy[k].y = hierarchy[k].zeros()
@@ -58,7 +60,7 @@ def mcdlcycle(obsprob, J, hierarchy, ell, down=1, up=1, coarse=1,
                                                                 hierarchy[k].y,
                                                                 hierarchy[k].ell))
 
-    # coarse mesh solver = PGS sweeps; consider using overrelaxation omega here
+    # coarse mesh solver = smoother sweeps
     if view:
         _coarsereport(levels-1, hierarchy[0].m, coarse)
     hierarchy[0].y = hierarchy[0].zeros()
@@ -66,17 +68,17 @@ def mcdlcycle(obsprob, J, hierarchy, ell, down=1, up=1, coarse=1,
                         hierarchy[0].ell, hierarchy[0].chi,
                         symmetric=symmetric)
 
-    # upward: obstacle is chi[k] not phi (see paper)
-    hierarchy[0].omega = hierarchy[0].y.copy()
+    # upward
+    z = hierarchy[0].y
     for k in range(1, J+1):
         # accumulate corrections
-        hierarchy[k].omega = hierarchy[k].cP(hierarchy[k-1].omega) + hierarchy[k].y
+        z = hierarchy[k].cP(z) + hierarchy[k].y
         if up > 0:
-            # up smoother = PGS sweeps
+            # up smoother; up-obstacle is chi[k] not phi (see paper)
             if view:
                 _levelreport(levels-1, k, hierarchy[k].m, up)
-            infeas += _smoother(obsprob, up, hierarchy[k], hierarchy[k].omega,
+            infeas += _smoother(obsprob, up, hierarchy[k], z,
                                 hierarchy[k].ell, hierarchy[k].chi,
                                 symmetric=symmetric, forward=False)
 
-    return hierarchy[J].omega, infeas
+    return z, infeas
