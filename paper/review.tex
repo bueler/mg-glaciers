@@ -826,11 +826,13 @@ The following solver defines an outer loop which sets-up the fine-level data $\c
     return $w$
 \end{pseudo*}
 
-\subsection*{Convergence}  These pseudocodes have been implemented in Python.\footnote{At\, \href{https://github.com/bueler/mg-glaciers/}{\texttt{github.com/bueler/mg-glaciers/}} see the \texttt{py/1D/} directory and its \texttt{README.md}.}  We test \pr{mcdl-solver} on the two exact solutions $u$ shown in Figure \ref{fig:icelike}.  Note that the ``ice-like'' case has a discontinuous source $f$, while ``traditional'' has $f=0$, and both have smooth, parabolic obstacles.  Figure \ref{fig:convergence}, showing the numerical error norm $\|u^h-u\|_2$ as a function of mesh spacing $h$, demonstrates convergence for runs with \id{rtol} $=10^{-7}$.  The convergence rate for the traditional case is the best possible; $O(h^2)$ error is expected for the unconstrained problem \cite{Elmanetal2014}.  However, the ``ice-like'' rate is reduced because of the lower regularity of $f$.
+\subsection*{Convergence of the numerical error}  All of the pseudocodes in the current section have been implemented in Python.\footnote{At\, \href{https://github.com/bueler/mg-glaciers/}{\texttt{github.com/bueler/mg-glaciers/}} see the \texttt{py/1D/} directory and its \texttt{README.md}.}  Both to verify these implementations, and to demonstrate the differences in numerical error convergence rates, between the obstacle problem and the corresponding unconstrained PDE, we measure numerical errors for three exact solutions.  The first two solutions are already shown in Figure \ref{fig:icelike}.  Note that the ``ice-like'' case has a discontinuous source $f$, while ``traditional'' has $f=0$, but both have smooth, parabolic obstacles.  The third ``unconstrained'' exact solution is for the Poisson equation $-u''=f$, i.e. the obstacle is low enough so that the inactive set is $(0,1)$ and all smoothing steps avoid projection; in detail: $u(x) = x^2(1-x^2)$, $f(x) = 12 x^2-2$, and $\varphi=-1$.
+
+Figure \ref{fig:convergence} shows the numerical error norm $\|u^h-u\|_2$ as a function of mesh spacing $h$ for runs with \id{rtol} $=10^{-7}$.  The convergence rate for ``traditional'' is the best possible, as $O(h^2)$ error is expected and observed for the unconstrained problem \cite{Elmanetal2014}.  However, the ``ice-like'' rate is reduced because of the lower regularity of $f$.  Note that the reduced regularity of obstacle problem solutions has greater effect on 2d and 3D convergence rates.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/convergence.pdf}
-\caption{Convergence of \pr{mcdl-solver} for the two cases shown in Figure \ref{fig:icelike}.}
+\caption{MCDL method convergence for three cases with known exact solutions.}
 \label{fig:convergence}
 \end{figure}
 
