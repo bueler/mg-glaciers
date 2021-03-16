@@ -1,19 +1,13 @@
 #!/bin/bash
 set -e
 
-# measure convergence and performance for the classical obstacle problem
+# measure performance for the classical obstacle problem
 # to save results:
-#   $ ./convperf.sh >& out.convperf
+#   $ ./performance.sh >& out.performance
 
-# convergence runs with V(1,0) and tight tolerance
-echo "CONVERGENCE"
-for CASE in icelike traditional; do
-    echo "*** case $CASE ****"
-    for JJ in 2 3 4 5 6 7 8 9 10 11 12 13 14; do
-        python3 ../obstacle.py -poissoncase $CASE -jfine $JJ -irtol 1.0e-7 -cyclemax 1000
-    done
-done
-echo
+FIXME
+1 add unconstrained and demo O(1) V(1,1) cycles and discretization in one F-cycle
+2 update runs to use ?:   V(1,0), V(0,1), V(1,1), ni+V(0,1), nicycles=2+V(0,1)
 
 # performance (WU and timing) runs with:  V(1,0), V(2,0), ni+V(1,0), nicycles=2+V(1,0),
 #   all on default problem (poisson, icelike)
