@@ -120,7 +120,8 @@ parser.add_argument('-parabolay', type=float, default=-1.0, metavar='X',
                     help='vertical location of obstacle in -problem parabola (default X=-1.0)')
 parser.add_argument('-plain', action='store_true', default=False,
                     help='when used with -show or -o, only show exact solution and obstacle')
-parser.add_argument('-poissoncase', choices=['icelike', 'traditional'], metavar='X', default='icelike',
+parser.add_argument('-poissoncase', choices=['icelike', 'traditional', 'unconstrained'],
+                    metavar='X', default='icelike',
                     help='determines obstacle and source function (default: %(default)s)')
 parser.add_argument('-printwarnings', action='store_true', default=False,
                     help='print pointwise feasibility warnings')

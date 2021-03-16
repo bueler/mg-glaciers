@@ -109,6 +109,8 @@ class PGSPoisson(SmootherObstacleProblem):
         elif self.args.poissoncase == 'traditional':
             # maximum is at  2.0 + args.parabolay
             ph = 8.0 * x * (1.0 - x) + self.args.parabolay
+        elif self.args.poissoncase == 'unconstrained':
+            ph = - np.ones(np.shape(x))  # phi = -1.0 < u(x) = x^2 (1 - x^2)
         else:
             raise ValueError
         if self.args.random:
@@ -132,8 +134,12 @@ class PGSPoisson(SmootherObstacleProblem):
             f = 8.0 * np.ones(np.shape(x))
             f[x < 0.2] = -16.0
             f[x > 0.8] = -16.0
-        else:
+        elif self.args.poissoncase == 'traditional':
             f = -2.0 * np.ones(np.shape(x))
+        elif self.args.poissoncase == 'unconstrained':
+            f = 12.0 * x * x - 2.0
+        else:
+            raise ValueError
         return self.args.fscale * f
 
     def exact(self, x):
@@ -148,7 +154,7 @@ class PGSPoisson(SmootherObstacleProblem):
             u[mid] = -4.0*x[mid]**2 + d0*x[mid] + d1
             u[left] = 8.0*x[left]**2 + c0*x[left] + c1
             u[right] = 8.0*(1.0-x[right])**2 + c0*(1.0-x[right]) + c1
-        else:  # poissoncase == 'traditional'
+        elif self.args.poissoncase == 'traditional':
             if self.args.parabolay == -1.0:
                 a = 1.0/3.0
                 def upoisson(x):
@@ -160,6 +166,8 @@ class PGSPoisson(SmootherObstacleProblem):
                 u = x * (x - 1.0)   # solution without obstruction
             else:
                 raise NotImplementedError
+        elif self.args.poissoncase == 'unconstrained':
+            u = x * x * (1.0 - x * x)
         return u
 
 class PJacobiPoisson(PGSPoisson):
