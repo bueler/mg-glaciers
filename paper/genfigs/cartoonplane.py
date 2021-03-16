@@ -78,13 +78,13 @@ plt.plot(0.0,0.0,'k.',ms=10.0)
 plt.text(0.0+sh,0.0+sh,r'$0$',fontsize=fsize)
 plt.text(-0.4,0.35,r'$\mathcal{V}^3$',
          fontsize=fsize)
-plt.text(0.4,0.03,r'$\mathcal{K}^0$',
+plt.text(0.4,0.03,r'$\mathcal{D}^0=\mathcal{K}^0$',
          fontsize=fsize)
-plt.text(0.33,cornery[2]+0.02,r'$\mathcal{K}^0+\mathcal{K}^1$',
+plt.text(0.33,cornery[2]+0.02,r'$\mathcal{D}^1=\mathcal{K}^0+\mathcal{K}^1$',
          fontsize=fsize)
-plt.text(0.27,cornery[1]+0.01,r'$\mathcal{K}^0+\mathcal{K}^1+\mathcal{K}^2$',
+plt.text(0.27,cornery[1]+0.01,r'$\mathcal{D}^2=\mathcal{K}^0+\mathcal{K}^1+\mathcal{K}^2$',
          fontsize=fsize)
-plt.text(0.15,cornery[0]+0.01,
+plt.text(0.19,cornery[0]+0.01,
          r'$\mathcal{D}^3=\mathcal{K}^0+\mathcal{K}^1+\mathcal{K}^2+\mathcal{K}^3$',
          fontsize=fsize)
 plt.axis('tight')
