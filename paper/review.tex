@@ -852,7 +852,7 @@ Let us define \emph{solution prolongation} using canonical prolongation \eqref{e
 \end{equation}
 After creating this initial iterate in $\mathcal{V}^j$ we do one or more V-cycles before moving up to the next-finer level.  The following pseudocode implements this strategy; note there is no checking of the residual norm.
 \begin{pseudo*} \label{ps:mcdl-fcycle}
-\pr{mcdl-fcycle}(J,F,\varphi,\id{coarse}=1,\id{nicycles}=1)\text{:} \\+
+\pr{mcdl-fcycle}(J,F,\varphi,\id{nicycles}=1)\text{:} \\+
     $w^0=\varphi^0$ \qquad\qquad\qquad\qquad\qquad\quad \ct{admissible on the coarsest level} \\
     for $j=0,\dots,J$ \\+
         for $s=1,\dots,\id{nicycles}$ \qquad\qquad\qquad \ct{one or more V-cycles} \\+

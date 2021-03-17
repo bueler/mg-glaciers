@@ -7,14 +7,13 @@
 #       ./obstacle.py -poissoncase $CASE -jfine $JJ -ni -nicycles 2 -cyclemax 3 -omega 1.5
 #     done
 #   done
-# but with -random it seems better to use -omega 1.0 and allow more cycles
 
 import sys
 import argparse
 import numpy as np
 
 from meshlevel import MeshLevel1D
-from subsetdecomp import mcdlcycle
+from mcdl import mcdlvcycle, mcdlfcycle
 from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
@@ -86,8 +85,6 @@ parser.add_argument('-diagnostics', action='store_true', default=False,
                     help='additional diagnostics figures (use with -show or -o)')
 parser.add_argument('-down', type=int, default=1, metavar='N',
                     help='PGS sweeps before coarse-mesh correction (default=1)')
-parser.add_argument('-errtol', type=float, default=None, metavar='X',
-                    help='stop if numerical error (if available) below X (default=None)')
 parser.add_argument('-exactinitial', action='store_true', default=False,
                     help='initialize using exact solution')
 parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
@@ -200,116 +197,74 @@ elif args.problem == 'sia':
 if args.monitorerr and not obsprob.exact_available():
     print('usage ERROR: -monitorerr but exact solution and error not available')
     sys.exit(4)
-if args.errtol is not None and not obsprob.exact_available():
-    print('usage ERROR: -errtol but exact solution and error not available')
-    sys.exit(5)
 
-# fine-mesh initialization
-def initial(fmesh, phi, ell):
-    if args.exactinitial:
-        return obsprob.exact(fmesh.xx())
-    else:
-        if args.problem == 'poisson':
-            # default; sometimes better than phifine when phifine
-            #   is negative in places (e.g. -problem parabola)
-            return np.maximum(phi, fmesh.zeros())
-        elif args.problem == 'sia':
-            # FIXME nonzero-thickness initial iterate scheme using ell
-            #   (i.e. mass balance); create obsprob method for default initial?
-            return fmesh.zeros()
+# fine-level problem data
+mesh = hierarchy[-1]
+phi = obsprob.phi(mesh.xx())
+ellf = mesh.ellf(obsprob.source(mesh.xx()))  # source functional ell[v] = <f,v>
 
-# set up nested iteration
-if args.ni:
-    nirange = range(levels)   # hierarchy[j] for j=0,...,levels-1
-    # evaluate inactive residual norm for initial iterate on finest mesh
-    finemesh = hierarchy[nirange[-1]]
-    phifine = obsprob.phi(finemesh.xx())
-    ellfine = finemesh.ellf(obsprob.source(finemesh.xx()))
-    uufine = initial(finemesh, phifine, ellfine)
-    finemon = ObstacleMonitor(obsprob, finemesh,
-                              printresiduals=args.monitor, printerrors=False)
-    irnorm0finest, _ = finemon.irerr(uufine, ellfine, phifine, uex=None, indent=0)
+# create fine-level monitor (using exact solution if available)
+uex = None
+if obsprob.exact_available():
+    uex = obsprob.exact(mesh.xx())
+mon = ObstacleMonitor(obsprob, mesh, uex=uex,
+                      printresiduals=args.monitor, printerrors=args.monitorerr)
+
+# initialization on fine mesh
+if args.exactinitial:
+    uu = obsprob.exact(mesh.xx())
 else:
-    nirange = [levels-1,]     # just run on finest level
-    irnorm0finest = None
+    if args.problem == 'poisson':
+        # default; sometimes better than phifine when phifine
+        #   is negative in places (e.g. -problem parabola)
+        uu = np.maximum(phi, mesh.zeros())
+    elif args.problem == 'sia':
+        # FIXME nonzero-thickness initial iterate scheme using ell
+        #   (i.e. mass balance); create obsprob method for default initial?
+        uu = mesh.zeros()
 
-# nested iteration outer loop
+# get (and print if requested) residual norm and error for initial iterate
+irnorm, errnorm = mon.irerr(uu, ellf, phi, indent=0)
+
+# do F-cycle first if requested; counts as first iterate
+iters = args.cyclemax
+if args.ni:
+    uu = mcdlfcycle(args, obsprob, levels-1, hierarchy)
+    iters -= 1
+    actualits = 1
+
+# mcdl-solver outer loop
 WUsum = 0.0
-actualits = 0
-for ni in nirange:
-    # evaluate data on continuum obstacle and source on current fine level
-    mesh = hierarchy[ni]
-    phifine = obsprob.phi(mesh.xx())                # obstacle
-    ellfine = mesh.ellf(obsprob.source(mesh.xx()))  # source functional ell[v] = <f,v>
-
-    # feasible initial iterate
-    if args.ni and ni > 0:
-        # prolong and truncate solution from previous coarser level
-        uu = np.maximum(phifine, hierarchy[ni].cP(uu))
-    else:
-        uu = initial(mesh, phifine, ellfine)
-
-    # create monitor on this mesh using exact solution if available
-    uex = None
-    if obsprob.exact_available():
-        uex = obsprob.exact(mesh.xx())
-    mon = ObstacleMonitor(obsprob, mesh,
-                          printresiduals=args.monitor, printerrors=args.monitorerr)
-
-    # how many cycles (at most)
-    if args.ni and ni < levels-1:
-        iters = args.nicycles  # use this value if doing nested iteration and
-                               #   not yet on finest level
-        if args.nicascadic:
-            # very simple model for number of cycles; compare Blum et al 2004
-            iters *= int(np.ceil(1.5**(levels-1-ni)))
-    else:
-        iters = args.cyclemax
-
-    # do multigrid slash or V cycles
-    for s in range(iters):
-        irnorm, errnorm = mon.irerr(uu, ellfine, phifine, uex=uex, indent=levels-1-ni)
-        if errnorm is not None and args.errtol is not None and ni == levels-1:
-            # special case: check numerical error on finest level
-            if errnorm < args.errtol:
-                break
+for s in range(iters):
+    # check convergence criterion
+    if s == 0:
+        if irnorm == 0.0:
+            break
         else:
-            # generally stop based on irtol condition
-            if s == 0:
-                if irnorm == 0.0:
-                    break
-                if ni == levels - 1 and irnorm0finest is not None:
-                    irnorm0 = max(irnorm,irnorm0finest)
-                else:
-                    irnorm0 = irnorm
-            else:
-                if irnorm <= args.irtol * irnorm0:
-                    break
-                if irnorm > 100.0 * irnorm0:
-                    print('DIVERGENCE WARNING:  irnorm > 100 irnorm0')
-        if args.sweepsonly:
-            # smoother sweeps on finest level
-            obsprob.smoothersweep(mesh, uu, ellfine, phifine)
-            if args.symmetric:
-                obsprob.smoothersweep(mesh, uu, ellfine, phifine, forward=False)
-        else:
-            # Tai (2003) constraint decomposition method cycles; default=V(1,0);
-            #   Alg. 4.7 in G&K (2009); see mcdl-solver and mcdl-slash in paper
-            mesh.chi = phifine - uu                      # defect obstacle
-            ell = - obsprob.residual(mesh, uu, ellfine)  # starting source
-            y = mcdlcycle(obsprob, ni, hierarchy, ell,
-                          down=args.down, up=args.up, coarse=args.coarse,
-                          levels=levels, view=args.mgview,
-                          symmetric=args.symmetric)
-            uu += y
-        actualits = s+1
-    else: # if break not called (for loop else)
-        mon.irerr(uu, ellfine, phifine, uex=uex, indent=levels-1-ni)
+            irnorm0 = irnorm
+    else:
+        if irnorm <= args.irtol * irnorm0:
+            break
+        if irnorm > 100.0 * irnorm0:
+            print('WARNING:  irnorm > 100 irnorm0')
+    if args.sweepsonly:
+        # smoother sweeps on finest level
+        obsprob.smoothersweep(mesh, uu, ellf, phi)
+        if args.symmetric:
+            obsprob.smoothersweep(mesh, uu, ellf, phi, forward=False)
+    else:
+        # MCDL V-cycles
+        mesh.chi = phi - uu                       # defect obstacle
+        ell = - obsprob.residual(mesh, uu, ellf)  # starting source
+        y = mcdlvcycle(args, obsprob, levels-1, hierarchy, ell, levels=levels)
+        uu += y
+    actualits = s+1
+    irnorm, errnorm = mon.irerr(uu, ellf, phi, indent=0)
 
-    # accumulate work units from this cycle
-    for j in range(ni+1):
-        WUsum += hierarchy[j].WU / 2**(levels - 1 - j)
-        hierarchy[j].WU = 0
+# accumulate work units
+for j in range(levels):
+    WUsum += hierarchy[j].WU / 2**(levels - 1 - j)
+    hierarchy[j].WU = 0
 
 # report on computation including numerical error, WU, infeasibles
 method = 'using '
@@ -335,5 +290,5 @@ print('fine level %d (m=%d): %s -> %.3f WU%s%s' \
 # graphical output if desired
 if args.show or args.o or args.diagnostics:
     vis = VisObstacle(args, obsprob, hierarchy,
-                      u=uu, phi=phifine, ell=ellfine, uex=uex)
+                      u=uu, phi=phi, ell=ellf, uex=uex)
     vis.generate()
