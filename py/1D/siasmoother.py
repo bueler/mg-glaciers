@@ -90,7 +90,7 @@ class PNGSSIA(SmootherObstacleProblem):
         Newton method (newtonits).  Protection against taking huge steps
         (newtondmax).  Avoids further iteration if first step is small
         (newtondtol).'''
-        infeascount = self._checkrepairadmissible(mesh, s, phi)
+        self._checkrepairadmissible(mesh, s, phi)
         for p in self._sweepindices(mesh, forward=forward):
             for k in range(self.newtonits):
                 d = - self.pointresidual(mesh, s, ell, p) / self._pointjacobian(mesh, s, p)
@@ -100,7 +100,6 @@ class PNGSSIA(SmootherObstacleProblem):
                 if abs(self.args.omega * d) < self.newtondtol: # tiny step
                     break
         mesh.WU += self.newtonits  # overcount WU if many points are active
-        return infeascount
 
     def phi(self, x):
         '''Generally the bed elevations depend on self.args, but for now we
@@ -196,7 +195,7 @@ class PNJacobiSIA(PNGSSIA):
         points p=1,...,m, for the SIA problem.  Compare PNGSSIA.smoothersweep()
         and PJacobiPoisson.smoothersweep().  Underrelaxation is expected;
         try omega = 0.8.'''
-        infeascount = self._checkrepairadmissible(mesh, s, phi)
+        self._checkrepairadmissible(mesh, s, phi)
         res = self.residual(mesh, s, ell)
         Jac = self._jacobian(mesh, s)
         for p in self._sweepindices(mesh, forward=forward):
@@ -208,4 +207,3 @@ class PNJacobiSIA(PNGSSIA):
                 if abs(self.args.omega * d) < self.newtondtol: # tiny step
                     break
         mesh.WU += self.newtonits  # overcount WU if many points are active
-        return infeascount

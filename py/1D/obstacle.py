@@ -235,7 +235,6 @@ else:
 
 # nested iteration outer loop
 WUsum = 0.0
-infeascount = 0
 actualits = 0
 for ni in nirange:
     # evaluate data on continuum obstacle and source on current fine level
@@ -290,20 +289,19 @@ for ni in nirange:
                     print('DIVERGENCE WARNING:  irnorm > 100 irnorm0')
         if args.sweepsonly:
             # smoother sweeps on finest level
-            infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine)
+            obsprob.smoothersweep(mesh, uu, ellfine, phifine)
             if args.symmetric:
-                infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine, forward=False)
+                obsprob.smoothersweep(mesh, uu, ellfine, phifine, forward=False)
         else:
             # Tai (2003) constraint decomposition method cycles; default=V(1,0);
             #   Alg. 4.7 in G&K (2009); see mcdl-solver and mcdl-slash in paper
             mesh.chi = phifine - uu                      # defect obstacle
             ell = - obsprob.residual(mesh, uu, ellfine)  # starting source
-            y, infeas = mcdlcycle(obsprob, ni, hierarchy, ell,
-                                  down=args.down, up=args.up, coarse=args.coarse,
-                                  levels=levels, view=args.mgview,
-                                  symmetric=args.symmetric)
+            y = mcdlcycle(obsprob, ni, hierarchy, ell,
+                          down=args.down, up=args.up, coarse=args.coarse,
+                          levels=levels, view=args.mgview,
+                          symmetric=args.symmetric)
             uu += y
-            infeascount += infeas
         actualits = s+1
     else: # if break not called (for loop else)
         mon.irerr(uu, ellfine, phifine, uex=uex, indent=levels-1-ni)
@@ -328,9 +326,11 @@ if obsprob.exact_available():
 else:
     uex = None
     error = ''
-countstr = '' if infeascount == 0 else ' (%d infeasibles)' % infeascount
+inadstr = ''
+if obsprob.inadmissible > 0:
+    inadstr = ' (%d inadmissibles)' % obsprob.inadmissible
 print('fine level %d (m=%d): %s -> %.3f WU%s%s' \
-      % (args.jfine, mesh.m, method, WUsum, error, countstr))
+      % (args.jfine, mesh.m, method, WUsum, error, inadstr))
 
 # graphical output if desired
 if args.show or args.o or args.diagnostics:

@@ -18,12 +18,10 @@ def _coarsereport(indent, m, sweeps):
                          % (sweeps, m))
 
 def _smoother(obsprob, s, mesh, v, ell, phi, forward=True, symmetric=False):
-    infeas = 0
     for _ in range(s):
-        infeas += obsprob.smoothersweep(mesh, v, ell, phi, forward=forward)
+        obsprob.smoothersweep(mesh, v, ell, phi, forward=forward)
         if symmetric:
-            infeas += obsprob.smoothersweep(mesh, v, ell, phi, forward=not forward)
-    return infeas
+            obsprob.smoothersweep(mesh, v, ell, phi, forward=not forward)
 
 def mcdlcycle(obsprob, J, hierarchy, ell, down=1, up=0, coarse=1,
               levels=None, view=False, symmetric=False):
@@ -39,7 +37,6 @@ def mcdlcycle(obsprob, J, hierarchy, ell, down=1, up=0, coarse=1,
     # set up
     assert down >= 0 and up >= 0 and coarse >= 0
     assert len(ell) == hierarchy[J].m + 2
-    infeas = 0
     hierarchy[J].ell = ell
 
     # downward
@@ -52,9 +49,8 @@ def mcdlcycle(obsprob, J, hierarchy, ell, down=1, up=0, coarse=1,
         if view:
             _levelreport(levels-1, k, hierarchy[k].m, down)
         hierarchy[k].y = hierarchy[k].zeros()
-        infeas += _smoother(obsprob, down, hierarchy[k], hierarchy[k].y,
-                            hierarchy[k].ell, phi,
-                            symmetric=symmetric)
+        _smoother(obsprob, down, hierarchy[k], hierarchy[k].y,
+                  hierarchy[k].ell, phi, symmetric=symmetric)
         # update and canonically-restrict the residual
         hierarchy[k-1].ell = - hierarchy[k].cR(obsprob.residual(hierarchy[k],
                                                                 hierarchy[k].y,
@@ -64,9 +60,8 @@ def mcdlcycle(obsprob, J, hierarchy, ell, down=1, up=0, coarse=1,
     if view:
         _coarsereport(levels-1, hierarchy[0].m, coarse)
     hierarchy[0].y = hierarchy[0].zeros()
-    infeas += _smoother(obsprob, coarse, hierarchy[0], hierarchy[0].y,
-                        hierarchy[0].ell, hierarchy[0].chi,
-                        symmetric=symmetric)
+    _smoother(obsprob, coarse, hierarchy[0], hierarchy[0].y,
+              hierarchy[0].ell, hierarchy[0].chi, symmetric=symmetric)
 
     # upward
     z = hierarchy[0].y
@@ -77,8 +72,8 @@ def mcdlcycle(obsprob, J, hierarchy, ell, down=1, up=0, coarse=1,
             # up smoother; up-obstacle is chi[k] not phi (see paper)
             if view:
                 _levelreport(levels-1, k, hierarchy[k].m, up)
-            infeas += _smoother(obsprob, up, hierarchy[k], z,
-                                hierarchy[k].ell, hierarchy[k].chi,
-                                symmetric=symmetric, forward=False)
+            _smoother(obsprob, up, hierarchy[k], z,
+                      hierarchy[k].ell, hierarchy[k].chi,
+                      symmetric=symmetric, forward=False)
 
-    return z, infeas
+    return z

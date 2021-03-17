@@ -12,20 +12,19 @@ class SmootherObstacleProblem(ABC):
     def __init__(self, args, admissibleeps=1.0e-10):
         self.args = args
         self.admissibleeps = admissibleeps
+        self.inadmissible = 0  # count of repaired admissibility violations
         # fix the random seed for repeatability
         np.random.seed(self.args.randomseed)
 
     def _checkrepairadmissible(self, mesh, w, phi):
         '''Check and repair feasibility.'''
-        infeascount = 0
         for p in range(1, mesh.m+1):
             if w[p] < phi[p] - self.admissibleeps:
                 if self.args.printwarnings:
-                    print('WARNING: repairing nonfeasible w[%d]=%e < phi[%d]=%e on level %d (m=%d)' \
+                    print('WARNING: repairing inadmissible w[%d]=%e < phi[%d]=%e on level %d (m=%d)' \
                           % (p, w[p], p, phi[p], mesh.j, mesh.m))
                 w[p] = phi[p]
-                infeascount += 1
-        return infeascount
+                self.inadmissible += 1
 
     def _sweepindices(self, mesh, forward=True):
         '''Generate indices for sweep.'''
@@ -95,12 +94,11 @@ class PGSPoisson(SmootherObstacleProblem):
             w[p] <- max(w[p] + omega c, phi[p]).
         Input mesh is of class MeshLevel1D.  Returns the number of pointwise
         feasibility violations.'''
-        infeascount = self._checkrepairadmissible(mesh, w, phi)
+        self._checkrepairadmissible(mesh, w, phi)
         for p in self._sweepindices(mesh, forward=forward):
             c = - self.pointresidual(mesh, w, ell, p) / _poissondiagonalentry(mesh, p)
             w[p] = max(w[p] + self.args.omega * c, phi[p])
         mesh.WU += 1
-        return infeascount
 
     def phi(self, x):
         '''The obstacle:  u >= phi.'''
@@ -181,10 +179,9 @@ class PJacobiPoisson(PGSPoisson):
         used when updating the next point; the residual is evaluated
         at the start and those values are used for the sweep.  Tai (2003)
         says underrelaxation is expected; omega = 0.8 seems to work.'''
-        infeascount = self._checkrepairadmissible(mesh, w, phi)
+        self._checkrepairadmissible(mesh, w, phi)
         r = self.residual(mesh, w, ell)
         for p in self._sweepindices(mesh, forward=forward):
             c = - r[p] / _poissondiagonalentry(mesh, p)
             w[p] = max(w[p] + self.args.omega * c, phi[p])
         mesh.WU += 1
-        return infeascount
