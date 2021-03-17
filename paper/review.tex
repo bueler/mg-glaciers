@@ -783,7 +783,7 @@ We represent functions and linear functionals in the piecewise-linear level spac
 \end{equation}
 for $j<J$, and then we define $F^j(y)[\cdot] = a(y,\cdot) - \ell^j[\cdot]$.  In using $\ell^j$ instead of $\tilde\ell^j$ we lose any high-frequency residual information in $y^{j+1}$ which remains after smoothing.
 
-Implementing formulae \eqref{eq:defectconstraint}, \eqref{eq:chik}, \eqref{eq:levelobstacle}, \eqref{eq:defineKj}, \eqref{eq:mcdvilinear}, and \eqref{eq:restrictedrhslinearlevel} produces a V(1,0) down-slash cycle called Algorithm 4.7 in \cite{GraeserKornhuber2009}.  However, once all the corrections $y^j$ are computed on the way down, admissible up-smoothing is more forgiving.  For instance, if we have computed $y^1$ in $\mathcal{K}^1$ and $y^0$ in $\mathcal{K}^0$ then prolongation and accumulation gives $\tilde z = P y^0 + y^1$ in $\mathcal{D}^1 = \mathcal{K}^0 + \mathcal{K}^1$, which we may smooth to $z^1$ in $\mathcal{D}^1$.  In other words it turns out that the $j$th-level obstacles $\phi^j$ can be regarded as the down-obstacles and the $j$th-level defect constraints $\chi^j$ can be regarded as the up-obstacles.  The observation of this asymmetry both makes a better algorithm and justifies some of the complexity of notation in the previous subsection.
+Implementing formulae \eqref{eq:defectconstraint}, \eqref{eq:chik}, \eqref{eq:levelobstacle}, \eqref{eq:defineKj}, \eqref{eq:mcdvilinear}, and \eqref{eq:restrictedrhslinearlevel} produces a V(1,0) down-slash cycle called Algorithm 4.7 in \cite{GraeserKornhuber2009}.  However, once all the corrections $y^j$ are computed on the way down, admissible up-smoothing is more forgiving.  For instance, if we have computed $y^1$ in $\mathcal{K}^1$ and $y^0$ in $\mathcal{K}^0$ then prolongation and accumulation gives $\tilde z = P y^0 + y^1$ in $\mathcal{D}^1 = \mathcal{K}^0 + \mathcal{K}^1$, which we may smooth to $z^1$ in $\mathcal{D}^1$.  In other words, obstacles $\phi^j$ can be regarded as the down-obstacles while the defect constraints $\chi^j$ can be regarded as the up-obstacles.  The observation of this asymmetry permits a better algorithm and justifies some of the complexity of notation in the previous subsection.
 
 The following V-cycle pseudocode uses \pr{pgs-sweep} or \pr{pjacobi-sweep} as the smoother and coarse-level solver.  It takes $F^J$, defined in \eqref{eq:residuallinearlevel}, as an argument, and not the original $F$; the cycle only knows about the fine-level iterate $w^J$ through $F^J$ and $\chi^J$.  The result of this cycle is a correction $z^J$; see \pr{mcdl-solver} next.
 \begin{pseudo*} \label{ps:mcdl-vcycle}
@@ -804,7 +804,7 @@ The following V-cycle pseudocode uses \pr{pgs-sweep} or \pr{pjacobi-sweep} as th
     return $z^J$
 \end{pseudo*}
 
-This algorithm is pictured in Figure \ref{fig:mcdvcycle}, labeling the downward, pre-smoothed corrections as $y^j$ in $\mathcal{K}^j$ and the upward, accumulated, and post-smoothed corrections as $z^j$ in $\mathcal{D}^j$.  In agreement with Algorithm 4.7 in \cite{GraeserKornhuber2009}, the default \id{down} and \id{up} settings give a V(1,0) cycle.  However, any V(\id{down},\id{up}) cycle is allowed, and we will test V(1,0), V(0,1), and V(1,1)\footnote{Reference \cite{GraeserKornhuber2009} describes extending the V(1,0) cycle to a V(1,1) cycle by splitting the obstacles $\phi^j$, but it is not clear to the current author how this should be implemented.  In any case, the implementation given here allows larger coarse-level corrections.} cycles below. In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, assuming a subroutine which evaluates $a(w,v)$ on each level, the linear functional $\ell^{j-1}$ is passed, from which $F^{j-1}$ is constructed in the smoother.
+This algorithm is pictured in Figure \ref{fig:mcdvcycle}.  In agreement with Algorithm 4.7 in \cite{GraeserKornhuber2009}, the default \id{down} and \id{up} settings give a V(1,0) cycle.  However, any V(\id{down},\id{up}) cycle is allowed, and we will test V(1,0), V(0,1), and V(1,1)\footnote{Reference \cite{GraeserKornhuber2009} describes extending from V(1,0) cycles to V(1,1) cycles by splitting the obstacles $\phi^j$, but it is not clear to the current author how this should be implemented.  In any case, the implementation given here allows larger coarse-level corrections.} cycles below. In the implementation, the functions $F^j(y)[\cdot]$ are not passed as functions in the pro\-gramming-language sense.  Rather, assuming a subroutine which evaluates $a(w,v)$ on each level, the linear functional $\ell^{j-1}$ is passed, from which $F^{j-1}$ is constructed in the smoother.
 
 \begin{figure}
 \input{tikz/mcdvcycle.tex}
@@ -828,7 +828,7 @@ The following solver defines an outer loop which sets-up the fine-level data $\c
 
 \subsection*{Convergence of the numerical error}  All of the pseudocodes in the current section have been implemented in Python.\footnote{At\, \href{https://github.com/bueler/mg-glaciers/}{\texttt{github.com/bueler/mg-glaciers/}} see the \texttt{py/1D/} directory and its \texttt{README.md}.}  Both to verify these implementations, and to demonstrate the differences in numerical error convergence rates, between the obstacle problem and the corresponding unconstrained PDE, we measure numerical errors for three exact solutions.  The first two solutions are already shown in Figure \ref{fig:icelike}.  Note that the ``ice-like'' case has a discontinuous source $f$, while ``traditional'' has $f=0$, but both have smooth, parabolic obstacles.  The third ``unconstrained'' exact solution is for the Poisson equation $-u''=f$, i.e. the obstacle is low enough so that the inactive set is $(0,1)$ and all smoothing steps avoid projection; in detail: $u(x) = x^2(1-x^2)$, $f(x) = 12 x^2-2$, and $\varphi=-1$.
 
-Figure \ref{fig:convergence} shows the numerical error norm $\|u^h-u\|_2$ as a function of mesh spacing $h$ for runs with \id{rtol} $=10^{-7}$.  The convergence rate for ``traditional'' is the best possible, as $O(h^2)$ error is expected and observed for the unconstrained problem \cite{Elmanetal2014}.  However, the ``ice-like'' rate is reduced because of the lower regularity of $f$.  Note that the reduced regularity of obstacle problem solutions has greater effect on 2d and 3D convergence rates.
+Figure \ref{fig:convergence} shows the numerical error norm $\|u^h-u\|_2$ as a function of mesh spacing $h$ for runs with \id{rtol} $=10^{-7}$.  The convergence rate for ``traditional'' is the best possible, as $O(h^2)$ error is expected (and observed) for the unconstrained problem \cite{Elmanetal2014}, though generally the low regularity of obstacle problem solutions has a greater effect on 2D or 3D convergence rates \cite[Chapter 12]{Bueler2021}.  The ``ice-like'' convergence rate is poor here because of the lower regularity of $f$.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/convergence.pdf}
@@ -836,7 +836,9 @@ Figure \ref{fig:convergence} shows the numerical error norm $\|u^h-u\|_2$ as a f
 \label{fig:convergence}
 \end{figure}
 
-\subsection*{Nested iteration and performance results}  In this section we evaluate the performance of \pr{mcdl-solver} by counting iterations, measuring work units (see below), and measuring run time.  However, multilevel methods can often be accelerated using \emph{nested iteration} \cite{Trottenbergetal2001}.  Here the initial iterate on a given mesh comes from prolonging (interpolating) a converged solution iterate from a coarser mesh.  Figure \ref{fig:fcycle} FIXME:REVISED shows the resulting \emph{F-cycle}, constructed by concatenating slash cycles with an additional prolongation action as follows.
+\subsection*{Nested iteration and performance results}  In this section we evaluate the performance of \pr{mcdl-solver} by counting iterations, measuring work units (see below), and measuring run time.  However, before measuring performance we add a multilevel technique which has the potential to substantially improve performance.
+
+Multilevel methods can often be accelerated by \emph{nested iteration} \cite{Trottenbergetal2001} in which a initial iterate comes from prolonging (interpolating) a converged iterate from a coarser mesh.  Figure \ref{fig:fcycle} shows the resulting \emph{F-cycle} which concatenates V-cycles using this additional prolongation.  Note that only the update $y^{j-1}$ is prolonged in \pr{mcdl-vcycle}, but now we need to prolong the coarse-level solution $w^{j-1}$ itself, and the result needs to be admissible.  Though $w^{j-1} \ge \varphi^{j-1}$ is already admissible, where $\varphi^{j-1}$ interpolates the continuum obstacle $\varphi$, the information in the new interpolant obstacle $\varphi^j$ has not yet been ``seen'', and thus truncation is obligatory.
 
 \begin{figure}
 \input{tikz/fcycle.tex}
@@ -844,29 +846,30 @@ Figure \ref{fig:convergence} shows the numerical error norm $\|u^h-u\|_2$ as a f
 \label{fig:fcycle}
 \end{figure}
 
-Only the update $y^{j-1}$ is prolonged in the \pr{mcdl-slash} cycle, but now we need to prolong the full solution $w^{j-1}$ from $\mathcal{V}^{j-1}$.  This coarse-level solution is admissible in the sense that $w^{j-1} \ge \varphi^{j-1}$, where $\varphi^{j-1}$ is the interpolant of the continuum obstacle $\varphi$, the prolongation needs to be admissible in the corresponding sense.  However, admissibility is with respect to not-yet-seen obstacle data in the interpolant $\varphi^j$, and thus truncation is obligatory.  Thus we define \emph{solution prolongation} using canonical prolongation \eqref{eq:canonicalprolongation} and truncation:
+Let us define \emph{solution prolongation} using canonical prolongation \eqref{eq:canonicalprolongation} and truncation:
 \begin{equation}
 \hat P w^{j-1} = \max\{P w^{j-1}, \varphi^{j}\}  \label{eq:solutionprolongation}
 \end{equation}
-
-In our F-cycle we do one or more slash cycles before moving up to the next-finer level.
+After creating this initial iterate in $\mathcal{V}^j$ we do one or more V-cycles before moving up to the next-finer level.  The following pseudocode implements this strategy; note there is no checking of the residual norm.
 \begin{pseudo*} \label{ps:mcdl-fcycle}
 \pr{mcdl-fcycle}(J,F,\varphi,\id{coarse}=1,\id{nicycles}=1)\text{:} \\+
-    $w^0=\varphi^0$ \qquad\qquad\qquad\qquad\qquad\quad \ct{admissible coarsest-level initial iterate} \\
+    $w^0=\varphi^0$ \qquad\qquad\qquad\qquad\qquad\quad \ct{admissible on the coarsest level} \\
     $\ell^0[\cdot] := \ip{f}{\cdot}$ \\
     $F^0(y)[\cdot] := a(y,\cdot) - \ell^0[\cdot]$ \\
     $\pr{smoother}^{\id{coarse}}(0,w^0,F^0,\varphi^0)$ \\
     for $j=1,\dots,J$ \\+
-        $w^j = \hat P w^{j-1}$ \qquad\qquad\qquad\qquad \ct{initial iterate from solution prolongation} \\
-        for $s=1,\dots,\id{nicycles}$ \qquad\qquad\qquad \ct{one or more slash cycles} \\+
+        $w^j = \hat P w^{j-1}$ \qquad\qquad\qquad\qquad\qquad \ct{initial iterate; see \eqref{eq:solutionprolongation}} \\
+        for $s=1,\dots,\id{nicycles}$ \qquad\qquad\qquad \ct{one or more V-cycles} \\+
             $\chi^j = \varphi^j - w^j$ \\
             $\ell^j[\cdot] := \ip{f}{\cdot}$ \\
             $F^j(y)[\cdot] := a(y,\cdot) - \ell^j[\cdot]$ \\
-            $w^j \gets w^j+\pr{mcdl-slash}(F^j,\chi^j)$ \\--
+            $w^j \gets w^j+\pr{mcdl-vcycle}(F^j,\chi^j)$ \\--
     return $w^J$
 \end{pseudo*}
 
-This algorithm could be used as is, and indeed for PDEs one F-cycle often suffices to reach discretization error \cite{Trottenbergetal2001}.  However, because obstacle problem solutions have lower regularity, and because multilevel cycles are required to both remove low frequencies from the error \emph{and} find the discrete free boundary, we will need the F-cycle to generate the initial iterate for \pr{mcdl-solver}, so we do additional slash cycles on the output of \pr{mcdl-fcycle}.
+For PDEs one F-cycle often suffices to reach discretization error \cite{Trottenbergetal2001}.  However, because obstacle problem solutions have lower regularity, and because multilevel cycles are required to both remove low frequencies from the error \emph{and} find the discrete free boundary, we will use the F-cycle to generate the initial iterate for \pr{mcdl-solver}.  That is, in practice we do additional V-cycles after applying \pr{mcdl-fcycle}.
+
+FIXME
 
 We compare the performance of four solvers:
 \begin{itemize}
@@ -988,7 +991,7 @@ FIXME time-dependent runs
 
 \section{Tables to assist the reader}
 
-This review has been written attempting to use the simplest effective language and notation, but the new concepts are still substantial, and furthermore a number of different algorithms are discussed.  This Appendix may help the reader in managing the terminology, starting with acronyms in Table \ref{tab:acronyms} and notation in Table \ref{tab:notation}.  Tables \ref{tab:pseudocodespoisson} and \ref{tab:pseudocodesobstacle} list the algorithm pseudocodes with page number.  All Tables are arranged alphabetically where possible.
+This review has been written attempting to use the simplest effective language and notation, but the new concepts are still substantial, and furthermore a number of different algorithms are discussed.  This Appendix may help the reader in managing the terminology, starting with acronyms in Table \ref{tab:acronyms} and notation in Table \ref{tab:notation}.  Tables \ref{tab:pseudocodespoisson} and \ref{tab:pseudocodesobstacle} list pseudocodes, for sections \ref{sec:subspace} and \ref{sec:obstacle} respectively, by page number.  All Tables are arranged alphabetically where possible.
 
 \bigskip
 
@@ -1074,10 +1077,10 @@ $\|\cdot\|_{\mathcal{H}}$ & norm on solution space; $\|f\|_{\mathcal{H}}^2 =\ip{
 \begin{longtable}{l|l|l}
 \toprule
 \textbf{Name} {\Large$\strut$} & \textbf{Page} & \textbf{Description} \\ \hline
-\pr{mcdl-fcycle} & \pageref{ps:mcdl-fcycle} & MCD F-cycle (nested iteration); calls \pr{mcdl-slash} \\
+\pr{mcdl-fcycle} & \pageref{ps:mcdl-fcycle} & MCD F-cycle (nested iteration); calls \pr{mcdl-vcycle} \\
 \pr{mcdl-vcycle} & \pageref{ps:mcdl-vcycle} & multilevel constraint decomposition (MCD) V-cycle \\
   &  & \qquad in linear case; calls \pr{p[gs$|$jacobi]-sweep} as smoother \\
-\pr{mcdl-solver} & \pageref{ps:mcdl-solver} & MCD solver; calls \pr{mcdl-slash} \\
+\pr{mcdl-solver} & \pageref{ps:mcdl-solver} & MCD solver; calls \pr{mcdl-vcycle} \\
 \pr{pgs-sweep} & \pageref{ps:pgs-sweep} & projected GS iteration \\
 \pr{pjacobi-sweep} & \pageref{ps:pjacobi-sweep} & projected Jacobi iteration \\ % final \\ required
 \bottomrule
