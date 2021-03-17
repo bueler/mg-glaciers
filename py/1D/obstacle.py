@@ -14,7 +14,7 @@ import argparse
 import numpy as np
 
 from meshlevel import MeshLevel1D
-from subsetdecomp import mcdlcycle
+from mcdl import mcdlvcycle
 from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
@@ -297,10 +297,7 @@ for ni in nirange:
             #   Alg. 4.7 in G&K (2009); see mcdl-solver and mcdl-slash in paper
             mesh.chi = phifine - uu                      # defect obstacle
             ell = - obsprob.residual(mesh, uu, ellfine)  # starting source
-            y = mcdlcycle(obsprob, ni, hierarchy, ell,
-                          down=args.down, up=args.up, coarse=args.coarse,
-                          levels=levels, view=args.mgview,
-                          symmetric=args.symmetric)
+            y = mcdlvcycle(args, obsprob, ni, hierarchy, ell, levels=levels)
             uu += y
         actualits = s+1
     else: # if break not called (for loop else)
