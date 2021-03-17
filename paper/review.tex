@@ -878,7 +878,7 @@ We compare the performance of four solvers:
 \item \textsf{F+V(1,0)}: \pr{mcdl-fcycle} with default settings, followed by \textsf{V(1,0)} above
 \item \textsf{Fx2+V(1,0)}: same but with two slash cycles in the F-cycle (\id{nicycles}$=2$)
 \end{itemize}
-We test these solvers on the ``icelike'' problem but with a more generic random bed, like the one shown in Figure \ref{fig:icelikedecomposition}.  In all cases we use the default \pr{pgs-sweeps} smoother and do slash cycles until convergence, i.e.~\eqref{eq:cpconvergencecriterion} with the default \id{rtol} $=10^{-4}$.
+We test these solvers on the ``icelike'' problem but with a more generic random bed, like the one shown in Figure \ref{fig:icelikedecomposition}.  In all cases we use the default \pr{pgs-sweeps} smoother and do slash cycles until convergence, i.e.~\eqref{eq:cpconvergencecriterion} with the default \id{rtol} $=10^{-3}$.
 
 Figure \ref{fig:mcdl-cycles} shows the number of cycles for mesh hierarchies with $J=6,\dots,15$, thus $m$ nodes up to $m=6.5 \times 10^4$.  The number of cycles is larger than for elliptic PDEs with smooth solutions \cite{Trottenbergetal2001}, reflecting the lower regularity and need to locate the discrete free boundary, but it grows slowly for all the solvers.  The F-cycle solvers show more irregularity, presumably because the nested iteration prolonged solution can be ``lucky'', or not so much, with respect to locating the free boundary on the next level.
 
