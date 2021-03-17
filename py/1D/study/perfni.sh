@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# FIXME make this much simpler: just do one F-cycle (-ni) or double V F-cycle (-ni -nicycles 2) on default problem
+#   and show a convergence figure like Figure 3.8 with indication of WU for the runs
+
 # measure performance (WU) to get discretization error
 # uses exact solution (convergence) cases from convperf.sh:
 #   get error |u-uexact|_2 from paper/genfig/convergence.txt and *double*
