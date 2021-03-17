@@ -201,26 +201,34 @@ if args.errtol is not None and not obsprob.exact_available():
     print('usage ERROR: -errtol but exact solution and error not available')
     sys.exit(5)
 
-# set up nested iteration
-if args.ni:
-    nirange = range(levels)   # hierarchy[j] for j=0,...,levels-1
-else:
-    nirange = [levels-1,]     # just run on finest level
-
 # fine-mesh initialization
 def initial(fmesh, phi, ell):
     if args.exactinitial:
         return obsprob.exact(fmesh.xx())
     else:
-        # FIXME create a obsprob method for generating a default initial
         if args.problem == 'poisson':
             # default; sometimes better than phifine when phifine
             #   is negative in places (e.g. -problem parabola)
             return np.maximum(phi, fmesh.zeros())
         elif args.problem == 'sia':
-            # FIXME nonzero-thickness initial iterate scheme using
-            #   ell (i.e. mass balance)
+            # FIXME nonzero-thickness initial iterate scheme using ell
+            #   (i.e. mass balance); create obsprob method for default initial?
             return fmesh.zeros()
+
+# set up nested iteration
+if args.ni:
+    nirange = range(levels)   # hierarchy[j] for j=0,...,levels-1
+    # evaluate inactive residual norm for initial iterate on finest mesh
+    finemesh = hierarchy[nirange[-1]]
+    phifine = obsprob.phi(finemesh.xx())
+    ellfine = finemesh.ellf(obsprob.source(finemesh.xx()))
+    uufine = initial(finemesh, phifine, ellfine)
+    finemon = ObstacleMonitor(obsprob, finemesh,
+                              printresiduals=args.monitor, printerrors=False)
+    irnorm0finest, _ = finemon.irerr(uufine, ellfine, phifine, uex=None, indent=0)
+else:
+    nirange = [levels-1,]     # just run on finest level
+    irnorm0finest = None
 
 # nested iteration outer loop
 WUsum = 0.0
@@ -239,14 +247,14 @@ for ni in nirange:
     else:
         uu = initial(mesh, phifine, ellfine)
 
-    # create monitor using exact solution if available
+    # create monitor on this mesh using exact solution if available
     uex = None
     if obsprob.exact_available():
         uex = obsprob.exact(mesh.xx())
     mon = ObstacleMonitor(obsprob, mesh,
                           printresiduals=args.monitor, printerrors=args.monitorerr)
 
-    # how many cycles
+    # how many cycles (at most)
     if args.ni and ni < levels-1:
         iters = args.nicycles  # use this value if doing nested iteration and
                                #   not yet on finest level
@@ -268,7 +276,10 @@ for ni in nirange:
             if s == 0:
                 if irnorm == 0.0:
                     break
-                irnorm0 = irnorm
+                if ni == levels - 1 and irnorm0finest is not None:
+                    irnorm0 = max(irnorm,irnorm0finest)
+                else:
+                    irnorm0 = irnorm
             else:
                 if irnorm <= args.irtol * irnorm0:
                     break
