@@ -14,12 +14,11 @@ import argparse
 import numpy as np
 
 from meshlevel import MeshLevel1D
-from subsetdecomp import mcdlcycle
 from monitor import ObstacleMonitor
 from visualize import VisObstacle
-
 from smoother import PGSPoisson, PJacobiPoisson
 from siasmoother import PNGSSIA, PNJacobiSIA
+from mcdl import mcdlsolver
 
 parser = argparse.ArgumentParser(description='''
 Solve 1D obstacle problems by a multilevel constraint decomposition method.
@@ -86,8 +85,6 @@ parser.add_argument('-diagnostics', action='store_true', default=False,
                     help='additional diagnostics figures (use with -show or -o)')
 parser.add_argument('-down', type=int, default=1, metavar='N',
                     help='PGS sweeps before coarse-mesh correction (default=1)')
-parser.add_argument('-errtol', type=float, default=None, metavar='X',
-                    help='stop if numerical error (if available) below X (default=None)')
 parser.add_argument('-exactinitial', action='store_true', default=False,
                     help='initialize using exact solution')
 parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
@@ -200,9 +197,6 @@ elif args.problem == 'sia':
 if args.monitorerr and not obsprob.exact_available():
     print('usage ERROR: -monitorerr but exact solution and error not available')
     sys.exit(4)
-if args.errtol is not None and not obsprob.exact_available():
-    print('usage ERROR: -errtol but exact solution and error not available')
-    sys.exit(5)
 
 # fine-mesh initialization
 def initial(fmesh, phi, ell):
@@ -236,7 +230,6 @@ else:
 # nested iteration outer loop
 WUsum = 0.0
 infeascount = 0
-actualits = 0
 for ni in nirange:
     # evaluate data on continuum obstacle and source on current fine level
     mesh = hierarchy[ni]
@@ -267,46 +260,31 @@ for ni in nirange:
     else:
         iters = args.cyclemax
 
-    # do multigrid slash or V cycles
-    for s in range(iters):
-        irnorm, errnorm = mon.irerr(uu, ellfine, phifine, uex=uex, indent=levels-1-ni)
-        if errnorm is not None and args.errtol is not None and ni == levels-1:
-            # special case: check numerical error on finest level
-            if errnorm < args.errtol:
-                break
-        else:
+    # call solver
+    if args.sweepsonly:
+        its = 0
+        for s in range(iters):
+            irnorm, _ = mon.irerr(uu, ellfine, phifine, uex=uex, indent=levels-1-ni)
             # generally stop based on irtol condition
+            if irnorm == 0.0:
+                break
             if s == 0:
-                if irnorm == 0.0:
-                    break
-                if ni == levels - 1 and irnorm0finest is not None:
-                    irnorm0 = max(irnorm,irnorm0finest)
-                else:
-                    irnorm0 = irnorm
+                irnorm0 = irnorm
             else:
                 if irnorm <= args.irtol * irnorm0:
                     break
                 if irnorm > 100.0 * irnorm0:
-                    print('DIVERGENCE WARNING:  irnorm > 100 irnorm0')
-        if args.sweepsonly:
+                    print('WARNING:  irnorm > 100 irnorm0')
             # smoother sweeps on finest level
             infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine)
             if args.symmetric:
                 infeascount += obsprob.smoothersweep(mesh, uu, ellfine, phifine, forward=False)
-        else:
-            # Tai (2003) constraint decomposition method cycles; default=V(1,0);
-            #   Alg. 4.7 in G&K (2009); see mcdl-solver and mcdl-slash in paper
-            mesh.chi = phifine - uu                      # defect obstacle
-            ell = - obsprob.residual(mesh, uu, ellfine)  # starting source
-            y, infeas = mcdlcycle(obsprob, ni, hierarchy, ell,
-                                  down=args.down, up=args.up, coarse=args.coarse,
-                                  levels=levels, view=args.mgview,
-                                  symmetric=args.symmetric)
-            uu += y
-            infeascount += infeas
-        actualits = s+1
-    else: # if break not called (for loop else)
-        mon.irerr(uu, ellfine, phifine, uex=uex, indent=levels-1-ni)
+            its += 1
+    else:
+        # do MCDL V-cycles
+        uu, its, infeas = mcdlsolver(args, obsprob, ni, hierarchy, mon, uu, ellfine, phifine,
+                                     iters=iters, uex=uex, totallevels=levels)
+        infeascount += infeas
 
     # accumulate work units from this cycle
     for j in range(ni+1):
@@ -319,9 +297,9 @@ if args.ni:
     method = 'nested iter. & '
 symstr = 'sym. ' if args.symmetric else ''
 if args.sweepsonly:
-    method += '%d applications of %ssmoother' % (actualits, symstr)
+    method += '%d applications of %ssmoother' % (its, symstr)
 else:
-    method += '%d %sV(%d,%d) cycles' % (actualits, symstr, args.down, args.up)
+    method += '%d %sV(%d,%d) cycles' % (its, symstr, args.down, args.up)
 if obsprob.exact_available():
     uex = obsprob.exact(hierarchy[-1].xx())
     error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
