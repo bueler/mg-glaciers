@@ -161,6 +161,9 @@ if args.down + args.up == 0:
     print('WARNING: You have set -down 0 and -up 0.  Not convergent without smoothing.')
 if args.nicascadic:
     args.ni = True
+if args.ni and args.random:
+    # FIXME
+    raise NotImplementedError('combination of -ni and -random is not yet implemented')
 
 # hierarchy will be a list of MeshLevel1D with indices [0,..,levels-1]
 assert args.jcoarse >= 0
