@@ -1,7 +1,10 @@
 '''Module implementing the multilevel constraint decomposition (MCD) method
 of the Tai (2003) for the classical obstacle problem (i.e. linear interior PDE).'''
 
-__all__ = ['mcdlvcycle']
+__all__ = ['mcdlvcycle', 'mcdlfcycle']
+
+import numpy as np
+from monitor import ObstacleMonitor
 
 def _indentprint(n, s):
     '''Print 2n spaces and then string s.'''
@@ -29,9 +32,10 @@ def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
     as a down-slash V(1,0) cycle.  Our implementation allows any V(down,up)
     cycle.  Input args is a dictionary with parameters.  The smoother is
     projected Gauss-Seidel or projected Jacobi according to argument obsprob.
-    Note hierarchy[j] is of type MeshLevel1D.  This method generates
-    all defect constraints hierarchy[j].chi.  The input linear functional ell
-    is in V^J'.  The coarse solver is the same as the smoother, thus not exact.'''
+    Note hierarchy[j] is of type MeshLevel1D.  This method generates all defect
+    constraints hierarchy[j].chi for j < J, but it uses hierarchy[J].chi, which
+    must be set in advance.  The input linear functional ell is in V^J'.
+    The coarse solver is the same as the smoother, thus not exact.'''
 
     # set up
     assert args.down >= 0 and args.up >= 0 and args.coarse >= 0
@@ -76,3 +80,38 @@ def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
                       symmetric=args.symmetric, forward=False)
 
     return z
+
+def mcdlfcycle(args, obsprob, J, hierarchy):
+    '''Apply an F-cycle, i.e. nested iteration, of the multilevel constraint
+    decomposition method of Tai (2003).  This method calls mcdlvcycle().'''
+
+    assert args.ni
+    phi = obsprob.phi(hierarchy[0].xx())
+    w = phi.copy()
+    for j in range(J+1):
+        mesh = hierarchy[j]
+        # create monitor on this mesh using exact solution if available
+        uex = None
+        if obsprob.exact_available():
+            uex = obsprob.exact(mesh.xx())
+        mon = ObstacleMonitor(obsprob, mesh, uex=uex,
+                              printresiduals=args.monitor, printerrors=args.monitorerr)
+        # how many cycles?
+        iters = args.nicycles
+        if args.nicascadic:
+            # very simple model for number of cycles; compare Blum et al 2004
+            iters *= int(np.ceil(1.5**(J-j)))
+        # do V cycles
+        ellf = mesh.ellf(obsprob.source(mesh.xx()))  # source functional ell[v] = <f,v>
+        for s in range(iters):
+            mon.irerr(w, ellf, phi, indent=J-j)       # print norms at stdout
+            mesh.chi = phi - w                        # defect obstacle
+            ell = - obsprob.residual(mesh, w, ellf)   # starting source
+            y = mcdlvcycle(args, obsprob, j, hierarchy, ell, levels=j+1)
+            w += y
+        mon.irerr(w, ellf, phi, indent=J-j)
+        # obstacle and initial iterate for next level; prolong and truncate current solution
+        if j < J:
+            phi = obsprob.phi(hierarchy[j+1].xx())
+            w = np.maximum(phi, hierarchy[j+1].cP(w))
+    return w

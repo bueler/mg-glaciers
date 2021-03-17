@@ -21,7 +21,7 @@ runobstacle_4:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -jfine 4 -jcoarse 3 -cyclemax 2 -monitorerr -mgview" 1 4
 
 runobstacle_5:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jfine 4 -monitorerr -errtol 5.0e-3 -ni" 1 5
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jfine 4 -ni -cyclemax 1 -monitorerr" 1 5
 
 runobstacle_6:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jacobi -omega 0.85 -monitor -irtol 1.0e-2" 1 6

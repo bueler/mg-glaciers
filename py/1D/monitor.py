@@ -8,12 +8,13 @@ __all__ = ['ObstacleMonitor']
 class ObstacleMonitor():
     '''The monitor has an internal state so it is a class.'''
 
-    def __init__(self, obsprob, mesh,
+    def __init__(self, obsprob, mesh, uex=None,
                  printresiduals=False, printerrors=False):
         self.obsprob = obsprob  # Class SmootherObstacleProblem
         self.mesh = mesh        # Class MeshLevel1D
         self.residuals = printresiduals
         self.errors = printerrors
+        self.uex = uex
         self.lastirnorm = None
         self.s = 0
 
@@ -26,7 +27,7 @@ class ObstacleMonitor():
         F[w < phi + ireps] = np.minimum(F[w < phi + ireps], 0.0)
         return F
 
-    def irerr(self, w, ell, phi, uex=None, indent=0):
+    def irerr(self, w, ell, phi, indent=0):
         '''Report inactive residual norm and error if available.'''
         irnorm = self.mesh.l2norm(self.inactiveresidual(w, ell, phi))
         ind = indent * '  '
@@ -39,8 +40,8 @@ class ObstacleMonitor():
             self.lastirnorm = irnorm
         errnorm = None
         if self.errors:
-            if uex is not None:
-                errnorm = self.mesh.l2norm(w - uex)
+            if self.uex is not None:
+                errnorm = self.mesh.l2norm(w - self.uex)
                 print(ind + '  %d:  |u-uexact|_2 = %.4e' % (self.s, errnorm))
         self.s += 1
         return irnorm, errnorm
