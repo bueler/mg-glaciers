@@ -64,7 +64,7 @@ class MeshLevel1D():
         return ellf
 
     def cP(self, v):
-        '''Prolong a vector (function) onto the next-coarser (j-1) mesh (i.e.
+        '''Prolong a vector (function) on the next-coarser (j-1) mesh (i.e.
         in V^{j-1}) onto the current mesh (in S_j).  Uses linear interpolation.'''
         assert self.j > 0, \
                'cannot prolong from a mesh coarser than the coarsest mesh'
