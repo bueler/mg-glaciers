@@ -787,7 +787,7 @@ Implementing formulae \eqref{eq:defectconstraint}, \eqref{eq:chik}, \eqref{eq:le
 
 The following V-cycle pseudocode uses \pr{pgs-sweep} or \pr{pjacobi-sweep} as the smoother and coarse-level solver.  It takes $F^J$, defined in \eqref{eq:residuallinearlevel}, as an argument, and not the original $F$; the cycle only knows about the fine-level iterate $w^J$ through $F^J$ and $\chi^J$.  The result of this cycle is a correction $z^J$; see \pr{mcdl-solver} next.
 \begin{pseudo*} \label{ps:mcdl-vcycle}
-\pr{mcdl-vcycle}(F^J,\chi^J,\id{down}=1,\id{coarse}=1,\id{up}=0)\text{:} \\+
+\pr{mcdl-vcycle}(J,F^J,\chi^J,\id{down}=1,\id{coarse}=1,\id{up}=0)\text{:} \\+
     for $j=J$ downto $j=1$ \\+
       $\chi^{j-1} = \mR \chi^j$ \qquad\qquad\qquad\qquad \ct{up-obstacle} \\
       $\phi^j = \chi^j - P\chi^{j-1}$ \qquad\qquad\qquad\quad \ct{down-obstacle} \\
@@ -820,7 +820,7 @@ The following solver defines an outer loop which sets-up the fine-level data $\c
         $\chi^J = \varphi - w$ \qquad\qquad\qquad\qquad\quad \ct{fine-level defect constraint} \\
         $\tilde\ell^J[\cdot] := - F(w)[\cdot]$ \qquad\qquad\qquad\quad \ct{see \eqref{eq:rhslinearlevel}} \\
         $F^J(y)[\cdot] := a(y,\cdot) - \tilde\ell^J[\cdot]$ \\
-        $w\gets w+\pr{mcdl-vcycle}(F^J,\chi^J)$ \\
+        $w\gets w+\pr{mcdl-vcycle}(J,F^J,\chi^J)$ \\
         if $\|\hat\bF(w)\| \le \id{rtol} \, r_0$ \\+
             break \\--
     return $w$
@@ -854,18 +854,17 @@ After creating this initial iterate in $\mathcal{V}^j$ we do one or more V-cycle
 \begin{pseudo*} \label{ps:mcdl-fcycle}
 \pr{mcdl-fcycle}(J,F,\varphi,\id{coarse}=1,\id{nicycles}=1)\text{:} \\+
     $w^0=\varphi^0$ \qquad\qquad\qquad\qquad\qquad\quad \ct{admissible on the coarsest level} \\
-    $\ell^0[\cdot] := \ip{f}{\cdot}$ \\
-    $F^0(y)[\cdot] := a(y,\cdot) - \ell^0[\cdot]$ \\
-    $\pr{smoother}^{\id{coarse}}(0,w^0,F^0,\varphi^0)$ \\
-    for $j=1,\dots,J$ \\+
-        $w^j = \hat P w^{j-1}$ \qquad\qquad\qquad\qquad\qquad \ct{initial iterate; see \eqref{eq:solutionprolongation}} \\
+    for $j=0,\dots,J$ \\+
         for $s=1,\dots,\id{nicycles}$ \qquad\qquad\qquad \ct{one or more V-cycles} \\+
-            $\chi^j = \varphi^j - w^j$ \\
+            $\chi^j = \varphi^j - w^j$ \qquad\qquad\qquad\quad \ct{defect constraint on this level} \\
             $\ell^j[\cdot] := \ip{f}{\cdot}$ \\
             $F^j(y)[\cdot] := a(y,\cdot) - \ell^j[\cdot]$ \\
-            $w^j \gets w^j+\pr{mcdl-vcycle}(F^j,\chi^j)$ \\--
+            $w^j \gets w^j+\pr{mcdl-vcycle}(j,F^j,\chi^j)$ \\-
+        if $j < J$ \\+
+            $w^j = \hat P w^{j-1}$ \qquad\qquad\qquad \ct{initial iterate for next level; see \eqref{eq:solutionprolongation}} \\--
     return $w^J$
 \end{pseudo*}
+Note that \pr{mcdl-vcycle} is called even on the coarsest $j=0$ level, but because the \textbf{for} loops in that V-cycle do not run in that case, it reduces to the coarse solved, i.e.~iterations of the smoother ($\pr{smoother}^{\id{coarse}}(0,y^0,F^0,\chi^0)$) as desired.
 
 For PDEs one F-cycle often suffices to reach discretization error \cite{Trottenbergetal2001}.  However, because obstacle problem solutions have lower regularity, and because multilevel cycles are required to both remove low frequencies from the error \emph{and} find the discrete free boundary, we will use the F-cycle to generate the initial iterate for \pr{mcdl-solver}.  That is, in practice we do additional V-cycles after applying \pr{mcdl-fcycle}.
 
