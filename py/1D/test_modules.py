@@ -1,5 +1,5 @@
 '''Tests of modules in mg-glaciers/py/.  Run as "python3 -m pytest" in current
-directory, or via "make test".'''
+directory, or via "make mtest".'''
 
 import numpy as np
 from meshlevel import MeshLevel1D
