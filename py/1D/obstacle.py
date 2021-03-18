@@ -13,7 +13,7 @@ import argparse
 import numpy as np
 
 from meshlevel import MeshLevel1D
-from mcdl import mcdlvcycle, mcdlfcycle
+from mcdl import mcdlvcycle, mcdlfcycle, mcdlsolver
 from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
@@ -224,47 +224,44 @@ else:
         uu = mesh.zeros()
 
 # get (and print if requested) residual norm and error for initial iterate
-irnorm, errnorm = mon.irerr(uu, ellf, phi, indent=0)
+irnorm, _ = mon.irerr(uu, ellf, phi, indent=0)
 
 # do F-cycle first if requested; counts as first iterate
-iters = args.cyclemax
 if args.ni:
     uu = mcdlfcycle(args, obsprob, levels-1, hierarchy)
-    iters -= 1
-    actualits = 1
 
-# mcdl-solver outer loop
-WUsum = 0.0
-for s in range(iters):
-    # check convergence criterion
-    if s == 0:
-        if irnorm == 0.0:
-            break
-        else:
-            irnorm0 = irnorm
-    else:
-        if irnorm <= args.irtol * irnorm0:
-            break
+# fine-level smoother-sweeps-only alternative to mcdlsolver()
+def sweepssolver(args, obsprob, mesh, ellf, phi, w, monitor,
+                 iters=100, irnorm0=None):
+    if irnorm0 == 0.0:
+        return
+    for s in range(iters):
+        # smoother sweeps on finest level
+        obsprob.smoothersweep(mesh, w, ellf, phi)
+        if args.symmetric:
+            obsprob.smoothersweep(mesh, w, ellf, phi, forward=False)
+        irnorm, errnorm = monitor.irerr(w, ellf, phi, indent=0)
         if irnorm > 100.0 * irnorm0:
             print('WARNING:  irnorm > 100 irnorm0')
-    if args.sweepsonly:
-        # smoother sweeps on finest level
-        obsprob.smoothersweep(mesh, uu, ellf, phi)
-        if args.symmetric:
-            obsprob.smoothersweep(mesh, uu, ellf, phi, forward=False)
-    else:
-        # MCDL V-cycles
-        mesh.chi = phi - uu                       # defect obstacle
-        ell = - obsprob.residual(mesh, uu, ellf)  # starting source
-        y = mcdlvcycle(args, obsprob, levels-1, hierarchy, ell, levels=levels)
-        uu += y
-    actualits = s+1
-    irnorm, errnorm = mon.irerr(uu, ellf, phi, indent=0)
+        if irnorm <= args.irtol * irnorm0:
+            break
 
-# accumulate work units
+# solve to tolerance
+itermax = args.cyclemax
+if args.ni:
+    itermax -= 1
+if itermax > 0:
+    if args.sweepsonly:
+        sweepssolver(args, obsprob, hierarchy[-1], ellf, phi, uu, mon,
+                     iters=itermax, irnorm0=irnorm)
+    else:
+        mcdlsolver(args, obsprob, levels-1, hierarchy, ellf, phi, uu, mon,
+                   iters=itermax, irnorm0=irnorm)
+
+# accumulate work units from values stored in hierarchy
+WUsum = 0.0
 for j in range(levels):
     WUsum += hierarchy[j].WU / 2**(levels - 1 - j)
-    hierarchy[j].WU = 0
 
 # report on computation including numerical error, WU, infeasibles
 method = 'using '
@@ -272,9 +269,9 @@ if args.ni:
     method = 'nested iter. & '
 symstr = 'sym. ' if args.symmetric else ''
 if args.sweepsonly:
-    method += '%d applications of %ssmoother' % (actualits, symstr)
+    method += '%d applications of %ssmoother' % (mon.s - 1, symstr)
 else:
-    method += '%d %sV(%d,%d) cycles' % (actualits, symstr, args.down, args.up)
+    method += '%d %sV(%d,%d) cycles' % (mon.s - 1, symstr, args.down, args.up)
 if obsprob.exact_available():
     uex = obsprob.exact(hierarchy[-1].xx())
     error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
