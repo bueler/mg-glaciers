@@ -1,7 +1,7 @@
 '''Module implementing the multilevel constraint decomposition (MCD) method
 of the Tai (2003) for the classical obstacle problem (i.e. linear interior PDE).'''
 
-__all__ = ['mcdlvcycle', 'mcdlfcycle']
+__all__ = ['mcdlvcycle', 'mcdlfcycle', 'mcdlsolver']
 
 import numpy as np
 from monitor import ObstacleMonitor
@@ -115,3 +115,24 @@ def mcdlfcycle(args, obsprob, J, hierarchy):
             phi = obsprob.phi(hierarchy[j+1].xx())
             w = np.maximum(phi, hierarchy[j+1].cP(w))
     return w
+
+def mcdlsolver(args, obsprob, J, hierarchy, ellf, phi, w, monitor,
+               iters=100, irnorm0=None):
+    '''Apply V-cycles of the multilevel constraint decomposition method of
+    Tai (2003) until convergence by an inactive residual norm tolerance.
+    This method calls mcdlvcycle().'''
+
+    mesh = hierarchy[J]
+    if irnorm0 == None:
+        irnorm0, _ = monitor.irerr(w, ellf, phi, indent=0)
+    if irnorm0 == 0.0:
+        return
+    for s in range(iters):
+        mesh.chi = phi - w                       # defect obstacle
+        ell = - obsprob.residual(mesh, w, ellf)  # starting source
+        w += mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=J+1)
+        irnorm, errnorm = monitor.irerr(w, ellf, phi, indent=0)
+        if irnorm > 100.0 * irnorm0:
+            print('WARNING:  irnorm > 100 irnorm0')
+        if irnorm <= args.irtol * irnorm0:
+            break
