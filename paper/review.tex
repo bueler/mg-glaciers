@@ -812,18 +812,17 @@ This algorithm is pictured in Figure \ref{fig:mcdvcycle}.  In agreement with Alg
 \label{fig:mcdvcycle}
 \end{figure}
 
-The following solver defines an outer loop which sets-up the fine-level data $\chi^J$ and $F^J$, calls the cycle, and checks for convergence.  Note that one must call the solver with an admissible initial iterate; $w=\varphi^J$ is one possibility.  Compare \pr{msc-solver} in section \ref{sec:subspace}.
+The following in-place solver defines an outer loop which sets-up the fine-level data $\chi^J$ and $F^J$, calls the cycle, and checks for convergence.  Note that one must call the solver with an admissible initial iterate; $w=\varphi^J$ is one possibility.  Compare \pr{msc-solver} in section \ref{sec:subspace}.
 \begin{pseudo*} \label{ps:mcdl-solver}
-\pr{mcdl-solver}(w,F,\varphi,\id{rtol}=10^{-4},\id{cyclemax}=100)\text{:} \\+
-    $r_0=\|\hat\bF(w)\|$ \qquad\qquad\qquad\qquad\qquad \ct{initial CP residual norm; see \eqref{eq:cpresidual}} \\
+\pr{mcdl-solver}(J,w^J,F,\varphi^J,\id{rtol}=10^{-4},\id{cyclemax}=100)\text{:} \\+
+    $r_0=\|\hat\bF(w^J)\|$ \qquad\qquad\qquad\qquad\qquad \ct{initial CP residual norm; see \eqref{eq:cpresidual}} \\
     for $s=1,\dots,\id{cyclemax}$ \\+
-        $\chi^J = \varphi - w$ \qquad\qquad\qquad\qquad\quad \ct{fine-level defect constraint} \\
-        $\tilde\ell^J[\cdot] := - F(w)[\cdot]$ \qquad\qquad\qquad\quad \ct{see \eqref{eq:rhslinearlevel}} \\
+        $\chi^J = \varphi^J - w^J$ \qquad\qquad\qquad\qquad\quad \ct{fine-level defect constraint} \\
+        $\tilde\ell^J[\cdot] := - F(w^J)[\cdot]$ \qquad\qquad\qquad\quad \ct{see \eqref{eq:rhslinearlevel}} \\
         $F^J(y)[\cdot] := a(y,\cdot) - \tilde\ell^J[\cdot]$ \\
-        $w\gets w+\pr{mcdl-vcycle}(J,F^J,\chi^J)$ \\
-        if $\|\hat\bF(w)\| \le \id{rtol} \, r_0$ \\+
+        $w^J\gets w^J+\pr{mcdl-vcycle}(J,F^J,\chi^J)$ \\
+        if $\|\hat\bF(w^J)\| \le \id{rtol} \, r_0$ \\+
             break \\--
-    return $w$
 \end{pseudo*}
 
 \subsection*{Convergence of the numerical error}  All of the pseudocodes in the current section have been implemented in Python.\footnote{At\, \href{https://github.com/bueler/mg-glaciers/}{\texttt{github.com/bueler/mg-glaciers/}} see the \texttt{py/1D/} directory and its \texttt{README.md}.}  Both to verify these implementations, and to demonstrate the differences in numerical error convergence rates, between the obstacle problem and the corresponding unconstrained PDE, we measure numerical errors for three exact solutions.  The first two solutions are already shown in Figure \ref{fig:icelike}.  Note that the ``ice-like'' case has a discontinuous source $f$, while ``traditional'' has $f=0$, but both have smooth, parabolic obstacles.  The third ``unconstrained'' exact solution is for the Poisson equation $-u''=f$, i.e. the obstacle is low enough so that the inactive set is $(0,1)$ and all smoothing steps avoid projection; in detail: $u(x) = x^2(1-x^2)$, $f(x) = 12 x^2-2$, and $\varphi=-1$.
