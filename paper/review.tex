@@ -834,39 +834,7 @@ Figure \ref{fig:convergence} shows the numerical error norm $\|u^h-u\|_2$ as a f
 \label{fig:convergence}
 \end{figure}
 
-\subsection*{Nested iteration and performance results}  In this section we evaluate the performance of \pr{mcdl-solver} by counting iterations, measuring work units (see below), and measuring run time.  However, before measuring performance we add a multilevel technique which has the potential to substantially improve performance.
-
-Multilevel methods can often be accelerated by \emph{nested iteration} \cite{Trottenbergetal2001} in which a initial iterate comes from prolonging (interpolating) a converged iterate from a coarser mesh.  Figure \ref{fig:fcycle} shows the resulting \emph{F-cycle} which concatenates V-cycles using this additional prolongation.  Note that only the update $y^{j-1}$ is prolonged in \pr{mcdl-vcycle}, but now we need to prolong the coarse-level solution $w^{j-1}$ itself, and the result needs to be admissible.  Though $w^{j-1} \ge \varphi^{j-1}$ is already admissible, where $\varphi^{j-1}$ interpolates the continuum obstacle $\varphi$, the information in the new interpolant obstacle $\varphi^j$ has not yet been ``seen'', and thus truncation is obligatory.
-
-\begin{figure}
-\input{tikz/fcycle.tex}
-\caption{An F-cycle prepends shallower V-cycles, with solution prolongation $\hat P$ (equation \eqref{eq:solutionprolongation}; double lines) for the initial iterate on the next level.}
-\label{fig:fcycle}
-\end{figure}
-
-Let us define \emph{solution prolongation} using canonical prolongation \eqref{eq:canonicalprolongation} and truncation:
-\begin{equation}
-\hat P w^{j-1} = \max\{P w^{j-1}, \varphi^{j}\}  \label{eq:solutionprolongation}
-\end{equation}
-After creating this initial iterate in $\mathcal{V}^j$ we do one or more V-cycles before moving up to the next-finer level.  The following pseudocode implements this strategy; note there is no checking of the residual norm.
-\begin{pseudo*} \label{ps:mcdl-fcycle}
-\pr{mcdl-fcycle}(J,F,\varphi,\id{nicycles}=1)\text{:} \\+
-    $w^0=\varphi^0$ \qquad\qquad\qquad\qquad\qquad\quad \ct{admissible on the coarsest level} \\
-    for $j=0,\dots,J$ \\+
-        for $s=1,\dots,\id{nicycles}$ \qquad\qquad\qquad \ct{one or more V-cycles} \\+
-            $\chi^j = \varphi^j - w^j$ \qquad\qquad\qquad\quad \ct{defect constraint on this level} \\
-            $\ell^j[\cdot] := \ip{f}{\cdot}$ \\
-            $F^j(y)[\cdot] := a(y,\cdot) - \ell^j[\cdot]$ \\
-            $w^j \gets w^j+\pr{mcdl-vcycle}(j,F^j,\chi^j)$ \\-
-        if $j < J$ \\+
-            $w^j = \hat P w^{j-1}$ \qquad\qquad\qquad \ct{initial iterate for next level; see \eqref{eq:solutionprolongation}} \\--
-    return $w^J$
-\end{pseudo*}
-Note that \pr{mcdl-vcycle} is called even on the coarsest $j=0$ level, but because the \textbf{for} loops in that V-cycle do not run in that case, it reduces to the coarse solved, i.e.~iterations of the smoother ($\pr{smoother}^{\id{coarse}}(0,y^0,F^0,\chi^0)$) as desired.
-
-For PDEs one F-cycle often suffices to reach discretization error \cite{Trottenbergetal2001}.  However, because obstacle problem solutions have lower regularity, and because multilevel cycles are required to both remove low frequencies from the error \emph{and} find the discrete free boundary, we will use the F-cycle to generate the initial iterate for \pr{mcdl-solver}.  That is, in practice we do additional V-cycles after applying \pr{mcdl-fcycle}.
-
-FIXME
+\subsection*{Performance results and nested iterations}  In this section we evaluate the performance of \pr{mcdl-solver} by counting iterations, measuring work units (see below), and measuring run time.
 
 We compare the performance of four solvers:
 \begin{itemize}
@@ -899,7 +867,38 @@ FIXME Figure \ref{fig:mcdl-timeper} shows time per $m$; for same 4 solvers and p
 \label{fig:mcdl-timeper}
 \end{figure}
 
-Before going on we should note there are variations on the above slash and F-cycles which were not tested.  Reference \cite{GraeserKornhuber2009} describe monotone and truncated-monotone multigrid methods for obstacle problems which extend the MCD method in ways that demonstrably improve performance for the classical problem when the coincidence set (active set) is geometrically complicated.  Reference \cite{Blumetal2004} proposes a ``cascadic'' variant, wherein all the smoothing is done on the upward part of the cycle, with a schedule of extra smoothing on coarser levels, and using a conjugate gradient smoother.  Finally both \cite{Tai2003} and \cite{GraeserKornhuber2009} suggest that it is straightforward to add up-smoothing to the slash cycle above, to give a V(1,1) cycle, but our attempts to do this have not yielded a faster solver in any case.
+
+FIXME Before moving on we should consider a technique can substantially-improve performance.  Multilevel methods can often be accelerated by \emph{nested iteration} \cite{Trottenbergetal2001} in which a initial iterate comes from prolonging (interpolating) a converged iterate from a coarser mesh.  Figure \ref{fig:fcycle} shows the resulting \emph{F-cycle} which concatenates V-cycles using this additional prolongation.  Note that only the update $y^{j-1}$ is prolonged in \pr{mcdl-vcycle}, but now we need to prolong the coarse-level solution $w^{j-1}$ itself, and the result needs to be admissible.  Though $w^{j-1} \ge \varphi^{j-1}$ is already admissible, where $\varphi^{j-1}$ interpolates the continuum obstacle $\varphi$, the information in the new interpolant obstacle $\varphi^j$ has not yet been ``seen'', and thus truncation is obligatory.
+
+\begin{figure}
+\input{tikz/fcycle.tex}
+\caption{An F-cycle prepends shallower V-cycles, with solution prolongation $\hat P$ (equation \eqref{eq:solutionprolongation}; double lines) for the initial iterate on the next level.}
+\label{fig:fcycle}
+\end{figure}
+
+Let us define \emph{solution prolongation} using canonical prolongation \eqref{eq:canonicalprolongation} and truncation:
+\begin{equation}
+\hat P w^{j-1} = \max\{P w^{j-1}, \varphi^{j}\}  \label{eq:solutionprolongation}
+\end{equation}
+After creating this initial iterate in $\mathcal{V}^j$ we do one or more V-cycles before moving up to the next-finer level.  The following pseudocode implements this strategy; note there is no checking of the residual norm.
+\begin{pseudo*} \label{ps:mcdl-fcycle}
+\pr{mcdl-fcycle}(J,F,\varphi,\id{nicycles}=1)\text{:} \\+
+    $w^0=\varphi^0$ \qquad\qquad\qquad\qquad\qquad\quad \ct{admissible on the coarsest level} \\
+    for $j=0,\dots,J$ \\+
+        for $s=1,\dots,\id{nicycles}$ \qquad\qquad\qquad \ct{one or more V-cycles} \\+
+            $\chi^j = \varphi^j - w^j$ \qquad\qquad\qquad\quad \ct{defect constraint on this level} \\
+            $\ell^j[\cdot] := \ip{f}{\cdot}$ \\
+            $F^j(y)[\cdot] := a(y,\cdot) - \ell^j[\cdot]$ \\
+            $w^j \gets w^j+\pr{mcdl-vcycle}(j,F^j,\chi^j)$ \\-
+        if $j < J$ \\+
+            $w^j = \hat P w^{j-1}$ \qquad\qquad\qquad \ct{initial iterate for next level; see \eqref{eq:solutionprolongation}} \\--
+    return $w^J$
+\end{pseudo*}
+Note that \pr{mcdl-vcycle} is called even on the coarsest $j=0$ level, but because the \textbf{for} loops in that V-cycle do not run in that case, it reduces to the coarse solved, i.e.~iterations of the smoother ($\pr{smoother}^{\id{coarse}}(0,y^0,F^0,\chi^0)$) as desired.
+
+For PDEs one F-cycle often suffices to reach discretization error \cite{Trottenbergetal2001}.  However, because obstacle problem solutions have lower regularity, and because multilevel cycles are required to both remove low frequencies from the error \emph{and} find the discrete free boundary, we will use the F-cycle to generate the initial iterate for \pr{mcdl-solver}.  That is, in practice we do additional V-cycles after applying \pr{mcdl-fcycle}.
+
+FIXME Note there are variations on the above slash and F-cycles which were not tested.  Reference \cite{GraeserKornhuber2009} describe monotone and truncated-monotone multigrid methods for obstacle problems which extend the MCD method in ways that demonstrably improve performance for the classical problem when the coincidence set (active set) is geometrically complicated.  Reference \cite{Blumetal2004} proposes a ``cascadic'' variant, wherein all the smoothing is done on the upward part of the cycle, with a schedule of extra smoothing on coarser levels, and using a conjugate gradient smoother.  Finally both \cite{Tai2003} and \cite{GraeserKornhuber2009} suggest that it is straightforward to add up-smoothing to the slash cycle above, to give a V(1,1) cycle, but our attempts to do this have not yielded a faster solver in any case.
 
 \subsection*{Theory, and performance models}  Mathematical theory allows us to understand the performance of our MCD solver, at least in part.  Let $u^h$, in $\mathcal{V}^h = \mathcal{V}^J$ and satisfying $u^h \ge \varphi^J$, be the exact solution of the finite-dimensional VI
 \begin{equation}
