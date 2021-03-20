@@ -342,17 +342,17 @@ These MSC cycles improve a fine-level iterate $w$ but they do not (generally) ex
 \end{pseudo*}
 Note that the user needs to provide an initial iterate $w=w^{(0)}$; we address this in section \ref{sec:obstacle}.
 
-Such simply-stated MSC schemes appeared late in the history of multigrid \cite{Xu1992}, but they contain the core multigrid ideas and the essential multigrid convergence rate.  For example, the following theorem applies to linear elliptic PDEs in any dimension.  The constant $\rho$ depends only on the element aspect ratios (\emph{shape regularity} \cite{Elmanetal2014}) in the mesh, though this is not relevant in 1D, and on a coefficient bound (\emph{ellipticity bound}) $\alpha_0=\inf_x \alpha(x)$.  Recall that $u^h$ is the exact solution of FE weak form \eqref{eq:feweakpoisson}.
+Such simply-stated MSC schemes appeared late in the history of multigrid \cite{Xu1992}, but they contain the core multigrid ideas and consequent performance.  The following theorem applies to linear elliptic PDEs in any dimension, if given by a symmetric and positive bilinear form.
 
-\begin{theorem} \cite[Thm.~3.10]{GraeserKornhuber2009}\,  \label{thm:mscconvergence}  Suppose $w^{(s)}$  results from $s$ applications of \pr{msc-downslash}, \pr{msc-upslash}, or \pr{msc-vcycle} on the fine ($J$th) level, starting with any $w^{(0)}$.  There is $\rho<1$ independent of $h$, the spacing of the (fine) mesh, so that
+\begin{theorem} \label{thm:mscconvergence}  Let $u^h$ be the exact solution of FE weak form \eqref{eq:feweakpoisson}.  Suppose $w^{(s)}$ is computed by from $s$ applications of \pr{msc-downslash}, \pr{msc-upslash}, or \pr{msc-vcycle} on the fine ($J$th) level, starting with any $w^{(0)}$.  There is $\rho<1$, independent of $h$, so that
 \begin{equation}
   \|w^{(s+1)} - u^h\|_{\mathcal{H}} \le \rho \|w^{(s)} - u^h\|_{\mathcal{H}}.  \label{eq:mscconvergence}
 \end{equation}
 \end{theorem}
 
-This result, that each cycle reduces the error by a mesh-independent factor $\rho<1$, is called \emph{multigrid convergence}, and $\rho$ is the \emph{multigrid convergence rate} \cite{Braess2007}.  It is common for a V-cycle to have a better convergence rate than a slash cycle, i.e.~a smaller $\rho$, but slashes do less work per cycle.  In section \ref{sec:obstacle}, when we present our first computational results, we will count work, and not just cycles.  Also, while error norms are not generally computable, they are proportional, for a mesh-dependent factor, to the computable residual norm.  (The factor is the condition number of the system matrix \cite[Chapter 2]{Bueler2016}.)
+Each cycle reduces the error by a mesh-independent factor $\rho<1$, called the \emph{multigrid convergence rate} \cite{Braess2007}.  The proof, by \cite{Neuss1998}, extends an earlier Jacobi smoothing result \cite{BraessHackbusch1983} to include GS smoothing; see also \cite[Thm.~3.10]{GraeserKornhuber2009}.  The convergence rate $\rho$ does not depend on the fine-mesh spacing $h$, nor on the number of fine-mesh degrees of freedom $m_J$, nor even the number of levels $J$.  It does depend on the element aspect ratios (\emph{shape regularity} \cite{Elmanetal2014}) in the mesh, though this is not relevant in 1D, and on the \emph{ellipticity bound} $\alpha_0=\inf_x \alpha(x)$ of the PDE.  It is common for a V-cycle to have a smaller $\rho$ than a slash cycle, but the latter do less work per cycle, so in section \ref{sec:obstacle}, when we present computational results, we will count computational work and run time, and not just cycles.
 
-It follows from \eqref{eq:mscconvergence} that if we want the error norm $e^{(s)} = \|w^{(s)}-u^h\|_{\mathcal{H}}$ to be reduced to below some small level $\eps>0$ then we should do $s>(\log\eps - \log e^{(0)})/\log \rho$ iterations.  That is, we need $s=O(|\log\eps|)$ iterations.  For later reference also note that $h$ and $J$ are related by logarithms; in our Poisson solver $h=(m+1)^{-1}=2^{-(J+1)}$ so $J = O(\log m) = O(|\log h|)$.
+It follows from \eqref{eq:mscconvergence} that if we want the error norm $e^{(s)} = \|w^{(s)}-u^h\|_{\mathcal{H}}$ to be reduced to below some small level $\eps>0$ then we should do $s>(\log\eps - \log e^{(0)})/\log \rho$ iterations.  That is, we need $s=O(|\log\eps|)$ iterations.  (Note that $h$ and $J$ are related by logarithms; in our case $h=(m_J+1)^{-1}=2^{-(J+1)}$ so $J = O(\log m_J) = O(|\log h|)$.)  On the other hand, the error norms in \eqref{eq:mscconvergence} are not generally computable.  An error norm is, however, bounded by the computable residual norm up to a (mesh-dependent) matrix condition number \cite[Chapter 2]{Bueler2016}.
 
 The pseudocode \pr{msc-solver} does not, yet, define an efficiently-implementable solver.  Its performance depends on how iterates $w$ and residuals $F(w)[\cdot]$ are \emph{represented on each mesh level}.  For example, if we represent $w$ and $F(w)$ using the fine-level basis $\{\psi_p^J\}$ then one application of \pr{gsweep}$(J,w,F)$ is indeed fast, i.e.~$O(m_J)$ operations, with a small constant, because evaluating each $F(w)[\psi_p^J]$ requires only a few operations.  However, evaluating $F(w)[\psi_p^j]$ on coarse levels ($j<J$) means computing integrals over the wide support of $\psi_p^j$, which is nonzero at many fine-mesh nodes $x_p^J$.  For example, \pr{gs-sweep}$(j,w,F)$ on a coarser level $j<J$ is not an efficient operation if $w$ and $F(w)$ are represented on the fine level; it is not an $O(m_j)$ operation with a coefficient which is independent of $j$.  This important concern is addressed via hierarchical representations, which are compatible with our multilevel corrections.
 
@@ -435,7 +435,7 @@ Combining the above ideas with the earlier MSC cycles gives an efficiently-imple
 \label{fig:vcycle}
 \end{figure}
 
-To summarize this fundamental algorithm (Figure \ref{fig:vcycle}), after ``down-smoother'' sweeps, here denoted $\text{\textsc{smoother}}^{\text{\texttt{down}}}$, the correction equation \eqref{eq:coarsecorrection} is applied on the next-coarser level with a ``new'' source (linear functional) $\ell^{j-1}$, and a zero initial iterate.  Observe that $\ell^{j-1}$ is the amount by which the finer-level iterate $w^j$ did not already solve the problem; for example, if $w^J=u^h$ then $\ell^{J-1}=0$.  After the correction additional ``up-smoother'' sweeps are done to remove high-frequency components from the updated iterate.  Memory is needed to hold the states $w^0,\dots,w^J$ until after the coarse-level correction.  It is also common to implement \pr{gmg-vcycle} recursively.
+To summarize this fundamental algorithm (Figure \ref{fig:vcycle}), after ``down-smoother'' sweeps, here denoted $\text{\textsc{smoother}}^{\text{\texttt{down}}}$, the correction equation \eqref{eq:coarsecorrection} is applied on the next-coarser level with a ``new'' source (linear functional) $\ell^{j-1}$, and a zero initial iterate.  Observe that $\ell^{j-1}$ is the amount by which the finer-level iterate $w^j$ did not already solve the problem; for example, if $w^J=u^h$ then $\ell^{J-1}=0$.  After the correction additional ``up-smoother'' sweeps are done to remove high-frequency components from the updated iterate.  Note that memory is needed to hold the states $w^0,\dots,w^J$ (i.e.~until after all coarse-level corrections).  It is also common to implement \pr{gmg-vcycle} recursively.
 
 The default settings give a V-cycle, denoted V(1,1).  If \id{up} $=0$ we get a V(1,0) down-slash cycle and \id{down} $=0$ gives a V(0,1) up-slash (Figure \ref{fig:msccycles}).
 
@@ -600,8 +600,8 @@ This minimization view of PGS is not essential, however.  We can derive formula 
 for all $\tilde c\ge \phi_p-w_p$.  Inequality \eqref{eq:pgspointwisevi} is a one-dimensional VI of form $(\tilde c - c)g(c) \ge 0$, on an interval, thus $g(c)=0$ or $c$ is at the end of the interval, and thus \eqref{eq:pgsformula} follows.
 
 The following pseudocode, a small modification of \pr{gs-sweep} on page \pageref{ps:gs-sweep}, implements PGS:
-\begin{pseudo*} \label{ps:pgs-sweep}
-\pr{pgs-sweep}(j,w,F,\phi,\id{omega}=1)\text{:} \\+
+\begin{pseudo*} \label{ps:pgs}
+\pr{pgs}(j,w,F,\phi,\id{omega}=1)\text{:} \\+
     \ct{check admissibility: $w\ge \phi$} \\
     for $p=1,\dots,m_j$ \\+
         $c = -F(w)[\psi_p^j] \,\big/\, a(\psi_p^j,\psi_p^j)$ \\
@@ -609,15 +609,15 @@ The following pseudocode, a small modification of \pr{gs-sweep} on page \pageref
 \end{pseudo*}
 
 As noted in section \ref{sec:subspace}, GS-type (i.e.~multiplicative) smoothers re-evaluate the residual after each point update.  This is an acceptable $O(1)$ cost when the residual of an iterate at a point $x_p^j$ is computable from a few neighboring values, as applies here and in section \ref{sec:sia}.  However, when the residual is nonlocal, and especially when it is both nonlocal and expensive to evaluate, as for the Stokes-based model in section \ref{sec:stokes}, a GS-type smoother becomes less practical.  An alternative is an additive smoother in which the vector residual is evaluated once at the beginning.  The following modifies \pr{jacobi-sweep} on page \pageref{ps:jacobi-sweep}.
-\begin{pseudo*} \label{ps:pjacobi-sweep}
-\pr{pjacobi-sweep}(j,w,F,\phi,\id{omega}=0.67)\text{:} \\+
+\begin{pseudo*} \label{ps:pjacobi}
+\pr{pjacobi}(j,w,F,\phi,\id{omega}=0.67)\text{:} \\+
     \ct{check admissibility: $w\ge \phi$} \\
     $r = F(w)[\cdot]$ \\
     for $p=1,\dots,m_j$ \\+
         $c = -r_p \,\big/\, a(\psi_p^j,\psi_p^j)$ \\
         $w_p \gets \max\{w_p + \id{omega}\,c, \phi_p\}$
 \end{pseudo*}
-(We could also describe this smoother as a projected forward Euler step (section \ref{sec:subspace}), i.e.~as a step of the common time-evolution method in glacier and ice sheet models \cite[for example]{Winkelmannetal2011}.)  Assuming each pointwise residual $F(w)[\psi_p^j]$ is an $O(1)$ operation in the $j$th-level representation, \pr{pgs-sweep} and \pr{pjacobi-sweep} are $O(m_j)$ operations.  The latter remains $O(m_j)$ as long as the vector residual and the diagonal entries can be computed in $O(m_j)$ operations given $w$, even if individual pointwise residuals are not $O(1)$.
+(We could also describe this smoother as a projected forward Euler step (section \ref{sec:subspace}), i.e.~as a step of the common time-evolution method in glacier and ice sheet models \cite[for example]{Winkelmannetal2011}.)  Assuming each pointwise residual $F(w)[\psi_p^j]$ is an $O(1)$ operation in the $j$th-level representation, \pr{pgs} and \pr{pjacobi} are $O(m_j)$ operations.  The latter remains $O(m_j)$ as long as the vector residual and the diagonal entries can be computed in $O(m_j)$ operations given $w$, even if individual pointwise residuals are not $O(1)$.
 
 For appropriate ranges of \id{omega} both algorithms above are known to converge to the solution $y^j$ of VI problem \eqref{eq:feobstacleviresidual} \cite[Proposition 4.5]{GraeserKornhuber2009}, but, of course, slowly on fine meshes.  Regarding the relaxation parameter \id{omega}, recall that the optimal value for the Poisson equation is \id{omega} $=2/3$ \cite{Briggsetal2000}, but finding the most-effective smoother values for obstacle problems is a topic for numerical experimentation.
 
@@ -790,7 +790,7 @@ However, once all the corrections $y^j$ are computed on the way down, admissible
 \label{fig:mcdvcycle}
 \end{figure}
 
-The following V-cycle pseudocode uses \pr{pgs-sweep} or \pr{pjacobi-sweep} as the smoother and coarse-level solver.  It takes $F^J$, defined via \eqref{eq:restrictedrhslinearlevel}, as an argument, and not the original $F$; this V-cycle only knows about the fine-level iterate $w^J$ through $F^J$ and $\chi^J$.  The result is a fine-level correction $z^J$; see \pr{mcdl-solver} next.
+The following V-cycle pseudocode uses \pr{pgs} or \pr{pjacobi} as the smoother and coarse-level solver.  It takes $F^J$, defined via \eqref{eq:restrictedrhslinearlevel}, as an argument, and not the original $F$; this V-cycle only knows about the fine-level iterate $w^J$ through $F^J$ and $\chi^J$.  The result is a fine-level correction $z^J$; see \pr{mcdl-solver} next.
 \begin{pseudo*} \label{ps:mcdl-vcycle}
 \pr{mcdl-vcycle}(J,F^J,\chi^J,\id{down}=1,\id{coarse}=1,\id{up}=0)\text{:} \\+
     for $j=J$ downto $j=1$ \\+
@@ -834,16 +834,16 @@ Figure \ref{fig:convergence} shows the numerical error norm $\|u^h-u\|_2$ as a f
 \label{fig:convergence}
 \end{figure}
 
-\subsection*{Performance: results and theory}  In this section we evaluate the performance of \pr{mcdl-solver} V-cycles by counting iterations, measuring work units (recalled below), and measuring run time.  In summary, MCDL for the classical obstacle problem is not as efficient as GMG for the Poisson equation.  Performance depends weakly on mesh resolution, a result supported by the theory of the MCD method, but the scaling is far superior to single-level approaches.
+\subsection*{Performance: results and theory}  In this section we evaluate the performance of V-cycles computed by our implementation of MCDL.  We count iterations, measure work units (defined below), and measure run time.  In summary, MCDL for the classical obstacle problem is not quite as efficient as GMG for the Poisson equation.  Performance depends weakly on mesh resolution, a result supported by the theory of the MCD method, but it is far superior to single-level approaches.
 
 We compare the performance of four MCDL solvers:
 \begin{itemize}
 \item \textsf{V(1,0)}: default settings, including \id{down} $=1$ and \id{up} $=0$ in \pr{mcdl-vcycle}
-\item \textsf{V(0,1)}: same but with \id{down} $=1$ and \id{up} $=0$
-\item \textsf{V(1,1)}: same but with \id{down} $=1$ and \id{up} $=1$
-\item \textsf{V(1,1)-J}: same but with \pr{pjacobi-sweep} smoothing using \id{omega} $=0.67$
+\item \textsf{V(0,1)}: same but with \id{down} $=0$, \id{up} $=1$
+\item \textsf{V(1,1)}: same but with \id{down} $=1$, \id{up} $=1$
+\item \textsf{V(1,1)-J}: same but with \pr{pjacobi} smoothing using \id{omega} $=0.67$
 \end{itemize}
-The first two are the down-slash and up-slash cycles, respectively.  The first three solvers use the default PGS smoother.  We test these solvers on the ``icelike'' problem shown in Figure \ref{fig:icelike}.  We iterate until convergence by the default criterion, i.e.~\eqref{eq:cpconvergencecriterion} with \id{rtol} $=10^{-3}$.
+The first two solvers are the down-slash and up-slash cycles, respectively.  The first three use the default PGS smoother.  We test these solvers on the ``icelike'' problem shown in Figure \ref{fig:icelike}.  We iterate until convergence by the default criterion, i.e.~\eqref{eq:cpconvergencecriterion} with \id{rtol} $=10^{-3}$.
 
 Figure \ref{fig:mcdl-cycles} shows the number of iterations, i.e.~cycles, for mesh hierarchies with $J=6,\dots,15$ refinements, thus $m=2^{J+1}-1$ degrees of freedom (nodes) on the finest levels, up to $m=6.5 \times 10^4$.  The number of iterations grows slowly in each case, with V(1,1) yielding the fewest.  As explained when we constructed MCD cycles, the constraints on the up-smoother are less severe than on the down-smoother, and indeed we see that the up-slash V(0,1) cycles are a bit faster than down-slash V(1,0).
 
@@ -1090,8 +1090,8 @@ $\|\cdot\|_{\mathcal{H}}$ & norm on solution space; $\|f\|_{\mathcal{H}}^2 =\ip{
 \pr{mcdl-vcycle} & \pageref{ps:mcdl-vcycle} & multilevel constraint decomposition (MCD) V-cycle \\
   &  & \qquad in linear case; calls \pr{p[gs$|$jacobi]-sweep} as smoother \\
 \pr{mcdl-solver} & \pageref{ps:mcdl-solver} & MCD solver; calls \pr{mcdl-vcycle} \\
-\pr{pgs-sweep} & \pageref{ps:pgs-sweep} & projected GS iteration \\
-\pr{pjacobi-sweep} & \pageref{ps:pjacobi-sweep} & projected Jacobi iteration \\ % final \\ required
+\pr{pgs} & \pageref{ps:pgs} & projected GS iteration, a smoother \\
+\pr{pjacobi} & \pageref{ps:pjacobi} & projected Jacobi iteration, a smoother \\ % final \\ required
 \bottomrule
 \caption{Pseudocodes for the classical obstacle problem (section \ref{sec:obstacle}).}
 \label{tab:pseudocodesobstacle}
