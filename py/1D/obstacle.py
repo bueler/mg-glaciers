@@ -112,7 +112,7 @@ parser.add_argument('-nicycles', type=int, default=1, metavar='N',
 parser.add_argument('-o', metavar='FILE', type=str, default='',
                     help='save plot at end in image file, e.g. PDF or PNG')
 parser.add_argument('-omega', type=float, default=1.0, metavar='X',
-                    help='relaxation factor in PGS, thus PSOR (default X=1.0)')
+                    help='relaxation factor in smoother (default X=1.0)')
 parser.add_argument('-parabolay', type=float, default=-1.0, metavar='X',
                     help='vertical location of obstacle in -problem parabola (default X=-1.0)')
 parser.add_argument('-plain', action='store_true', default=False,
