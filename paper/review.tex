@@ -870,7 +870,7 @@ Just like for iterations, WU grow as $O(m^q)$ for $0.10 \le q \le 0.12$.  For co
 
 The Figure shows that the V(0,1) up-slash cycles are the fastest.  Though they are less efficient, so more of them are required, they are inexpensive.  At the other end the V(1,1) cycles using the Jacobi iteration both have a poor (high) multigrid convergence rate and require the work of two smoother passes on each level.  However, Jacobi smoothing will remain significant in our applications to glacier problems (section \ref{sec:stokes}).
 
-Finally we look at the time per degree of freedom.  This quantity should be $O(1)=O(m^0)$ for any optimal method, i.e.~a solver that does $O(m)$ total work to solve the problem, and this is what is seen for the Poisson equation.  Here we only report times on the finer $J=9,\dots,15$ meshes, with a fit to the five finest results giving $O(m^r)$ for $0.05 \le r \le 0.06$, so the mesh dependence is very modest.  The result that our solvers all require about 1 millisecond per degree of freedom depends completely on the details of our Python implementation, and of course the machine on which these computations were run, but this amount of time serves as comparison point relative to the much more expensive computations needed to solve glacier problems (sections \ref{sec:sia} and \ref{sec:stokes}).
+Finally we look at the time per degree of freedom (time-per-$m$).  This quantity should be constant, $O(1)=O(m^0)$, for any optimal method.  Figure \ref{fig:mcdl-timeper} shows the results for the finer $J=9,\dots,15$ meshes.  Fitting only to the five finest results, the time-per-$m$ is $O(m^r)$ for $0.05 \le r \le 0.06$, so mesh dependence of the solver time is very modest.  Our solvers all require about 1 millisecond per degree of freedom.  Though this result depends completely on the details of our Python implementation, and on the physical computer, it will be comparable to the more expensive computations needed to solve glacier problems (sections \ref{sec:sia} and \ref{sec:stokes}).
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/mcdl-timeper.pdf}
@@ -878,13 +878,13 @@ Finally we look at the time per degree of freedom.  This quantity should be $O(1
 \label{fig:mcdl-timeper}
 \end{figure}
 
-Mathematical theory allows us to understand the above performance results, at least in part.   Denote the spacing of the fine ($J$th) mesh by $h$.  Let $u^h$ in $\mathcal{V}^h = \mathcal{V}^J$, satisfying $u^h \ge \varphi^J$, be the exact solution of the finite-dimensional VI
+Mathematical theory allows us to understand the above performance results, at least in part.   Denote the spacing of the fine ($J$th) mesh by $h$.  Let $u^h$ be the exact solution of the finite-dimensional VI
 \begin{equation}
   F(u^h)[v-u^h] \ge 0 \quad \text{ for all } v \text{ in $\mathcal{V}^h$ such that } v \ge \varphi^J. \label{eq:feobstaclevioriginal}
 \end{equation}
-This is the direct FE approximation of \eqref{eq:obstacleviresidual}; compare \eqref{eq:feobstacleviresidual} which we solve on each level.  Also recall that for the classical obstacle problem the residual is the gradient of an objective function $I(w)$.
+This is the direct FE approximation of \eqref{eq:obstacleviresidual}; compare \eqref{eq:feobstacleviresidual} which we solve on each level in MCD.  Also recall that for the classical obstacle problem the residual is the gradient of an objective function $I(w)$.
 
-First consider the PGS method.  Note that the following theorem describes the norm of the algebraic error of an iterate, i.e.~$\|w-u^h\|_{\mathcal{H}}$, relative to the objective value on the initial iterate.
+First consider the single-level PGS method.  The following theorem describes the norm of the algebraic error of an iterate, i.e.~$\|w-u^h\|_{\mathcal{H}}$, relative to the objective value on the initial iterate.
 
 \begin{theorem} \cite[Prop.~4.5]{GraeserKornhuber2009}\,  \label{thm:pgsconvergence}  Suppose $w^{(s)}$  results from $s$ applications of \pr{pgs-sweep} on the fine level, starting with any $w^{(0)}$.  There is $C>0$ independent of $h$ so that
 \begin{equation}
