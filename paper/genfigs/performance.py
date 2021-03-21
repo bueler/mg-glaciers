@@ -29,7 +29,7 @@ print('reading %s ...' % INFILE)
 v = np.array(np.loadtxt(INFILE))
 
 N = 10  # number of different resolutions
-assert len(v[:,0]) == 4*N   # 8 solver+problem combinations
+assert len(v[:,0]) == 4*N   # 4 solver+problem combinations
 
 # columns:  solver J m cycles WU time
 solver = v[:,0]

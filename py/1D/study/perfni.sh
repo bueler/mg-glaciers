@@ -1,44 +1,20 @@
 #!/bin/bash
 set -e
 
-# FIXME make this much simpler: just do one F-cycle (-ni) or double V F-cycle (-ni -nicycles 2) on default problem
-#   and show a convergence figure like Figure 3.8 with indication of WU for the runs
-
-# measure performance (WU) to get discretization error
-# uses exact solution (convergence) cases from convperf.sh:
-#   get error |u-uexact|_2 from paper/genfig/convergence.txt and *double*
-#   that value to get target error value (i.e. -errtol) for that case
+# compare the error norm from one F-cycle (-ni), or one F-cycle using
+#     2 V-cycles at each level (-ni -nicycles 2), with the goal of showing
+#     error norms relative to discretization error
+# uses "traditional" problem; performance is more inconsistent on icelike
+# run with "unconstrained" to see that F-cycles reach discretization
+#     (within factor of 2) if no obstacle
 
 # to save results:
 #   $ ./perfni.sh >& out.perfni
 
-CASE=icelike
-echo "*** case $CASE ****"
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 2 -errtol 9.79940e-02
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 3 -errtol 5.35860e-02
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 4 -errtol 9.68700e-03
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 5 -errtol 1.96754e-02
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 6 -errtol 3.23440e-03
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 7 -errtol 4.51220e-03
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 8 -errtol 7.54840e-04
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 9 -errtol 1.15324e-03
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 10 -errtol 1.92032e-04
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 11 -errtol 2.86740e-04
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 12 -errtol 4.78000e-05
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 13 -errtol 7.17820e-05
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 14 -errtol 1.19630e-05
-CASE=traditional
-echo "*** case $CASE ****"
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 2 -errtol 1.16462e-02
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 3 -errtol 4.09700e-03
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 4 -errtol 8.71000e-04
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 5 -errtol 2.36520e-04
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 6 -errtol 5.67680e-05
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 7 -errtol 1.44888e-05
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 8 -errtol 3.58820e-06
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 9 -errtol 9.03400e-07
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 10 -errtol 2.26160e-07
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 11 -errtol 5.76640e-08
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 12 -errtol 1.46498e-08
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 13 -errtol 4.11040e-09
-python3 ../obstacle.py -ni -nicycles 2 -poissoncase $CASE -jfine 14 -errtol 1.21676e-09
+for OPTS in "-irtol 1.0e-7 -down 1 -up 1" "-ni -cyclemax 1 -down 1 -up 1" "-ni -nicycles 2 -cyclemax 1 -down 1 -up 1"; do
+    echo "*** solver = '$OPTS' ****"
+    for JJ in 2 3 4 5 6 7 8 9 10 11 12; do
+      python3 ../obstacle.py -poissoncase traditional -jfine $JJ $OPTS
+      #python3 ../obstacle.py -poissoncase unconstrained -jfine $JJ $OPTS
+    done
+done
