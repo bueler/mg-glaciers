@@ -922,20 +922,19 @@ We now have three comparable convergence theorems, namely Theorems \ref{thm:mscc
 
 MCD convergence Theorem \ref{thm:mcdconvergence} actually applies to certain nonlinear VI problems.  However, the proof requires a constrained-minimization formulation and a uniform-ellipticity bound \cite{Tai2003}, and the glacier problems in sections \ref{sec:sia} and \ref{sec:stokes} satisfy neither hypothesis.  In this paper we will not pursue the theory further, but we will measure the performance of our MCD approaches on glacier problems.  Our standing assumption is that MCDL performance for the 1D classical obstacle problem represents the best-possible result.
 
-
-\subsection*{Nested iteration} We must consider a technique which can substantially-improve multilevel performance.  In \emph{nested iteration} \cite{Trottenbergetal2001} an initial iterate comes from prolonging a converged iterate from a coarser mesh.  The resulting \emph{F-cycle} (Figure \ref{fig:fcycle}) concatenates V-cycles using this new transfer operation.  Note that the update $y^{j-1}$ is prolonged in \pr{mcdl-vcycle}, but now we need to prolong the coarse-level solution $w^{j-1}$ itself, and the result needs to be admissible.  Though $w^{j-1} \ge \varphi^{j-1}$ is admissible on its level, where $\varphi^{j-1}$ interpolates the continuum obstacle $\varphi$, the information in the finer obstacle $\varphi^j$ has not yet been ``seen'', so truncation is obligatory.
+\subsection*{Nested iteration} We must consider a technique which can substantially-improve multilevel performance.  In \emph{nested iteration} \cite{Trottenbergetal2001} an initial iterate comes from prolonging a converged iterate from a coarser mesh.  If we then solve on each level by V-cycles then the resulting \emph{full multigrid} method does an \emph{F-cycle} (Figure \ref{fig:fcycle}).  That is, an F-cycle results from concatenating V-cycles using the solution prolongation.  Note that while a correction $y^{j-1}$ is prolonged in a V-cycle, now we also need to prolong the iterate $w^{j-1}$ itself, and the result needs to be admissible.
 
 \begin{figure}
 \input{tikz/fcycle.tex}
-\caption{An F-cycle prepends shallower V-cycles, with a new prolongation $\hat P$ (double lines) generating initial iterates on finer levels.}
+\caption{An F-cycle prepends shallower V-cycles, with a new prolongation $\hat P$ (double lines) generating the initial iterate on each starting level.}
 \label{fig:fcycle}
 \end{figure}
 
-Define \emph{solution prolongation} using canonical prolongation \eqref{eq:canonicalprolongation} and truncation:
+Though $w^{j-1} \ge \varphi^{j-1}$ is admissible on its level, the information in the finer obstacle $\varphi^j$ has not yet been ``seen'', so truncation is obligatory for admissibility, and we define \emph{solution prolongation} using canonical prolongation \eqref{eq:canonicalprolongation} and truncation:
 \begin{equation}
 \hat P w^{j-1} = \max\{P w^{j-1}, \varphi^{j}\}  \label{eq:solutionprolongation}
 \end{equation}
-After creating this initial iterate in $\mathcal{V}^j$ we do one or more V-cycles.  The following pseudocode implements this strategy.  Note there is no convergence criterion; the number of cycles is fixed.
+After creating this initial iterate we do one or more V-cycles.  The following pseudocode implements this strategy.  Note there is no convergence criterion; the number of cycles is fixed.
 \begin{pseudo*} \label{ps:mcdl-fcycle}
 \pr{mcdl-fcycle}(J,F,\varphi,\id{nicycles}=1)\text{:} \\+
     $w^0=\varphi^0$ \qquad\qquad\qquad\qquad\qquad\quad \ct{admissible on the coarsest level} \\
@@ -949,13 +948,21 @@ After creating this initial iterate in $\mathcal{V}^j$ we do one or more V-cycle
             $w^j = \hat P w^{j-1}$ \qquad\qquad\qquad \ct{initial iterate for next level; see \eqref{eq:solutionprolongation}} \\--
     return $w^J$
 \end{pseudo*}
-Note that when \pr{mcdl-vcycle} is called on the coarsest level it reduces to the coarse solver, namely iterations of the smoother.
+Note that when \pr{mcdl-vcycle} is called on the coarsest level it reduces to the coarse solver.
 
-For PDEs one F-cycle often suffices to reach discretization error \cite{Trottenbergetal2001}.  However, because obstacle problem solutions have lower regularity, and because multilevel cycles are required to both remove low frequencies from the error \emph{and} find the discrete free boundary, we assume that in practice the F-cycle would generate an initial fine-level iterate for \pr{mcdl-solver}.
+For PDEs one F-cycle often suffices to reach discretization error \cite{Trottenbergetal2001}.  However, because obstacle problem solutions have lower regularity, and because multilevel cycles are required to both remove low frequencies from the error \emph{and} find the discrete free boundary, performance is lower, as we will see.  In practice, the F-cycle can generate an initial fine-level iterate, but application of additional V-cycles, i.e.~of \pr{mcdl-solver}, is needed to converge according to a residual (or error) norm tolerance.
 
-FIXME F-cycle results which only assess whether one F-cycle gets close to discretization error; in actual practice the performances is somewhat inconsistent, presumably because the nested iteration solution can be ``lucky'', or not so much, with respect to locating the free boundary on the next level; not a wonder drug, but a potentially-useful tool
+To show MCDL F-cycles in the best light, consider the ``traditional'' exact solution shown in Figure \ref{fig:icelike}.  By using a tight tolerance (\id{rtol} $=10^{-7}$) and as many V(1,1) cycles as necessary, we first compute the discretization error for this problem on meshes with $J=2,\dots,12$ (stars in Figure \ref{fig:perfni}).  Now we run \pr{mcdl-fcycle} with its defaults, with one V(1,1) cycle per level, and then with two (\id{nicycles} $=2$).  Note these F-cycles are very fast, with $J\to\infty$ asymptotic WU values of 8 and 16, respectively.
 
-Many variations on these V- and F-cycle strategies have not been tested in this section.  Most significantly, reference \cite{GraeserKornhuber2009} describe monotone, truncated, and Newton-based multigrid methods for obstacle problems which extend the MCD method.  These methods demonstrably improve performance for the classical problem when the coincidence set (active set) is geometrically complicated, but in various ways they require the implementation to keep track of the discrete active set.  There is also the older complementarity-problem multilevel method of \cite{BrandtCryer1983}, while \cite{Blumetal2004} proposes a ``cascadic'' multilevel approach with a conjugate-gradient smoother.
+\begin{figure}
+\includegraphics[width=0.6\textwidth]{genfigs/perfni.pdf}
+\caption{For the classical obstacle problem, F-cycles with one or two V(1,1) cycles per level do not attain discretization error.}
+\label{fig:perfni}
+\end{figure}
+
+However, the corresponding figure for an unconstrained problem shows that the F-cycles yield error norms within a factor of two of discretization error (not shown).  That is, in the PDE case the markers are on top of each other for all mesh levels.  Classical obstacle problem F-cycles do generate small errors, especially given the amount of work, but our results here are qualitatively-worse than for the unconstrained Poisson equation.  Furthermore, F-cycle performance on the ``ice-like'' exact obstacle problem solution (Figure \ref{fig:icelike}), which has lower regularity than ``traditional'', is both worse and less consistent (not shown).  The F-cycle solution can be ``lucky'', or not, when locating the free boundary on coarser levels, and this dominates the fine-level discretization error from one F-cycle.  In summary, nested iterations (F-cycles) are likely to be a useful tool, but they are not as miraculous as expected from smooth PDE cases.
+
+Many variations on V- and F-cycle strategies have not been tested in this section.  Most significantly, reference \cite{GraeserKornhuber2009} describes monotone, truncated, and Newton-based multigrid methods for obstacle problems which extend the MCD method.  These methods improve performance for the classical problem when the coincidence set (active set) is geometrically complicated, but they require greater implementation effort, essentially because they keep track of the discrete active set.  There is also the discrete complementarity-problem ``PFAS'' method of \cite{BrandtCryer1983} (see below), while \cite{Blumetal2004} proposes a ``cascadic'' approach with a conjugate-gradient smoother.
 
 
 \section{Multigrid for the shallow-ice mass conservation problem} \label{sec:sia}
