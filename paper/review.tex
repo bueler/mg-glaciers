@@ -636,15 +636,13 @@ The above projected iterations will serve as our smoothers, applied one or two t
 
 \subsection*{Multilevel constraint decomposition (MCD)}  How do we maintain admissibility throughout a multilevel cycle while not introducing high-frequencies?
 
-Consider the coarse-level correction $e^{j-1}$ in a linear V-cycle (section \ref{sec:subspace}, equation \eqref{eq:coarsecorrection}), which is prolonged onto the $j$th level.  For an obstacle problem the resulting iterate would need to be admissible, i.e.~$w + P e^{j-1} \ge \phi^j$.  However, as illustrated in Figure \ref{fig:prolongobstacle}, if the obstacles are interpolants of a (common) continuum obstacle $\varphi$ then an iterate which is admissible on the $j-1$ level is \emph{not} necessarily admissible on the $j$ level.  (In the glacier context, a coarse-mesh ice surface may be breached by the fine-mesh bed topography.)
+Consider the coarse-level correction $e^{j-1}$ in a linear V-cycle (section \ref{sec:subspace}, equation \eqref{eq:coarsecorrection}), which is prolonged onto the $j$th level.  For an obstacle problem the resulting iterate would need to be admissible, i.e.~$w + P e^{j-1}$ would need to be above the obstacle, say $\varphi^j$.  However, as illustrated in Figure \ref{fig:prolongobstacle}, if the obstacles are interpolants of a (common) continuum obstacle $\varphi$ then an iterate which is admissible on the $j-1$ level is \emph{not} necessarily admissible on the $j$ level.  (In the glacier context, a coarse-mesh ice surface may be breached by the fine-mesh bed topography.)  We might try enforcing admissibility by \emph{truncation}, namely overwriting $\tilde w = w + Pe^{j-1}$ with $\max\{\tilde w, \varphi^j\}$.  However, this reintroduces high frequencies, requiring additional smoother effort to remove, and generally damaging multigrid convergence rates.
 
 \begin{figure}
 \qquad \includegraphics[width=0.75\textwidth]{genfigs/prolongobstacle.pdf}
 \caption{If the obstacles interpolate a common continuum obstacle then an admissible iterate on a coarse level, when prolonged, may not be admissible on a finer level.}
 \label{fig:prolongobstacle}
 \end{figure}
-
-We might try an ad hoc fix, namely overwriting $\tilde w = w + Pe^{j-1}$ with $\max\{\tilde w, \phi^j\}$, thus enforcing admissibility by \emph{truncation}.  However, this reintroduces high frequencies, requiring additional smoother effort to remove and damaging multigrid convergence rates.
 
 One way forward is the \emph{multilevel constraint decomposition} (MCD) method of Tai \cite{Tai2003}, described here using the specific decomposition proposed in \cite{GraeserKornhuber2009}.  Suppose $w^J$ in $\mathcal{V}^J$, on the finest level, is admissible in the original sense that
 \begin{equation}
@@ -659,7 +657,7 @@ Note $\chi^J \le 0$.  The meaning of $\chi^J$ is that if we modify $w^J$ by addi
   w^J + y \ge \varphi^J  \qquad \iff \qquad y \ge \chi^J.  \label{eq:defectmeaning}
 \end{equation}
 
-We will \emph{put as much of $\chi^J$ into the coarsest levels as possible}.  How we decompose $\chi^J$ determines how constrained the coarse-level corrections are, and we want to allow the largest corrections on the inexpensive coarse levels.  For this purpose, following \cite[equation (4.22)]{GraeserKornhuber2009}, we define a nonlinear \emph{monotone restriction} operator $\mR$ from $\mathcal{V}^j$ to $\mathcal{V}^{j-1}$.  For $z$ in $\mathcal{V}^j$, $\mR z$ is computed by maximizing nodal values of $z$ over the interior of the support of coarser-level hat functions.  That is, if $z = \sum_q z_q \psi_q^j$ on the fine level then
+Our MCD method will \emph{put as much of $\chi^J$ into the coarsest levels as possible}.  That is, our decomposition of $\chi^J$ determines how constrained the coarse-level corrections are, and we want to allow the largest corrections on the inexpensive coarse levels.  For this purpose, following \cite[equation (4.22)]{GraeserKornhuber2009}, we define a nonlinear \emph{monotone restriction} operator $\mR$ from $\mathcal{V}^j$ to $\mathcal{V}^{j-1}$.  For $z$ in $\mathcal{V}^j$, $\mR z$ is computed by maximizing nodal values of $z$ over the interior of the support of coarser-level hat functions.  That is, if $z = \sum_q z_q \psi_q^j$ on the fine level then
 \begin{equation}
   \mR z = \sum_{p=1}^{m_{j-1}} \zeta_p \psi_p^{j-1} \qquad \text{where} \qquad \zeta_p = \max \{z_q \,:\, \psi_p^{j-1}(x_q^j) > 0\}.  \label{eq:monotonerestriction}
 \end{equation}
@@ -669,7 +667,7 @@ We then define the \emph{$j$th-level defect constraint} inductively by
 \begin{equation}
   \chi^j = \mR \chi^{j+1}  \label{eq:chik}
 \end{equation}
-for $j=J-1$ down to $j=0$.  These defect constraints have two key properties: $\chi^j$ is in $\mathcal{V}^j$ and $\chi^j \ge \chi^{j+1}$.  (One may write $P \chi^j \ge \chi^{j+1}$, but recall that these subspaces are nested.)
+for $j=J-1$ down to $j=0$.  These defect constraints have two key properties: $\chi^j$ is in $\mathcal{V}^j$ and $\chi^j \ge \chi^{j+1}$.  (One may also write $P \chi^j \ge \chi^{j+1}$.)
 
 The \emph{$j$th-level obstacle} is the difference of defect constraints:
 \begin{equation}
@@ -702,11 +700,17 @@ We also define the $j$th-level \emph{defect constraint set}
 \begin{equation}
   \mathcal{D}^j = \left\{v \ge \chi^j\right\} \subset \mathcal{V}^j.  \label{eq:constraintset}
 \end{equation}
-The admissible correction sets $\mathcal{K}^j$ decompose $\mathcal{D}^j$:
+From the telescoping sum \eqref{eq:telescopingdecomposition}, the admissible correction sets $\mathcal{K}^j$ decompose $\mathcal{D}^j$:
 \begin{equation}
   \mathcal{D}^j = \mathcal{K}^0 + \mathcal{K}^1 + \dots + \mathcal{K}^j. \label{eq:constraintdecomposition}
 \end{equation}
-(The proof uses a telescoping sum like \eqref{eq:telescopingdecomposition}.)  That is, every $y$ from $\mathcal{V}^j$ for which $y\ge \chi^j$ can be built by choosing a function from each of the sets $\mathcal{K}^0,\dots,\mathcal{K}^j$.  As with \eqref{eq:subspacedecomposition}, where the subspaces $\mathcal{V}^j$ decompose the FE space $\mathcal{V}^h$, this representation is usually not unique.
+That is, every $y$ in $\mathcal{D}^j$ can be built by choosing a function from each of the sets $\mathcal{K}^0,\dots,\mathcal{K}^j$.  As with \eqref{eq:subspacedecomposition}, this representation is usually not unique.
+
+Subset equation \eqref{eq:constraintdecomposition} is close to the core meaning of the MCD method.  As shown in Figure \ref{fig:innerconeapprox}, this decomposition implies a nesting of cones:
+\begin{equation}
+  \mathcal{D}^0 \subset \mathcal{D}^1 \subset \dots \subset \mathcal{D}^J.  \label{eq:nestedcones}
+\end{equation}
+In particular, the fine-level defect constraint set $\mathcal{D}^J = \{v \ge \chi^J\}$ is approximated ``from within'' by coarser-level cones, the partial sums $\mathcal{D}^j = \sum_{k=0}^j \mathcal{K}^k$.  The smaller sets $\mathcal{K}^j$ are also cones, but they are not nested.  However, though $\mathcal{K}^j$ and $\mathcal{D}^j$ are cone relatives to $\phi^j$ and $\chi^j$, respectively, they are not closed under addition, and therefore corrections must be carefully applied, with attention to admissibility of the new iterate \eqref{eq:defectmeaning}, especially in a V-cycle (see below).
 
 \begin{figure}
 \includegraphics[width=0.65\textwidth]{genfigs/innerconeapprox.pdf}
@@ -714,12 +718,6 @@ The admissible correction sets $\mathcal{K}^j$ decompose $\mathcal{D}^j$:
 \caption{The MCD method approximates the fine-level defect constraint cone $\mathcal{D}^J = \{v\ge \chi^J\}$ from inside by coarse-level cones $\mathcal{D}^j=\mathcal{K}^0+\dots+\mathcal{K}^j$.}
 \label{fig:innerconeapprox}
 \end{figure}
-
-Equation \eqref{eq:constraintdecomposition} captures the core meaning of the MCD method.  As shown in Figure \ref{fig:innerconeapprox}, this decomposition can be regarded as a nesting of cones:
-\begin{equation}
-  \mathcal{D}^0 \subset \mathcal{D}^1 \subset \dots \subset \mathcal{D}^J.  \label{eq:nestedcones}
-\end{equation}
-In particular, the defect constraint set $\mathcal{D}^J = \{v \ge \chi^J\}$ is approximated ``from within'' by coarser-level cones, the partial sums $\mathcal{D}^j = \sum_{k=0}^j \mathcal{K}^k$.  The smaller sets $\mathcal{K}^j$ are also cones, but they are not nested.
 
 Looking forward to the glacier problem in section \ref{sec:sia}, the fine-mesh obstacle $\varphi^J$ will be the bed elevation, $w^J$ will be a candidate ice surface elevation on the fine mesh, and $-\chi^J$ will be the corresponding ice thickness.  With this in mind, Figure \ref{fig:icelikedecomposition} illustrates the same constraint decomposition as in Figure \ref{fig:gooddecomposition}, but pictured as a decomposition of the ``ice'' into layers.  (Compared to Figure \ref{fig:icelike} (top), the ``topography'' $\varphi^J$ here is bumpy.)  However, the earlier Figure plots the decomposition in the correct sense, so that the functions $\chi^j$ and $\phi^j$ are piecewise-linear, and so that the zero correction is admissible on every level.
 
@@ -913,16 +911,16 @@ We now have three comparable convergence theorems, namely Theorems \ref{thm:mscc
 \begin{tabular}{l|ccc}
 \emph{method}    & \emph{rate} $\rho$ & \emph{iterations}  & \emph{work (flops)} \\ \hline
 \pr{pgs}         & $1-O(h^2)$         & $m^2\, \loge$    & $m^3\, \loge$ \\
-\pr{mcdl-vcycle} & $1-O(|\!\log h|))$ & $\log m\, \loge$ & $m \log m\, \loge$ \\
+\pr{mcdl-vcycle} & \quad $1-O(|\!\log h|))$ \quad & \quad $\log m\, \loge$ \quad & \quad $m \log m\, \loge$ \\
 \pr{gmg-vcycle}  & $1-O(1)$           & $\loge$          & $m\, \loge$
 \end{tabular}
 
 \medskip
-\caption{Theoretical performance as $h\to 0$ and $m=m_J\to\infty$, to reduce the algebraic error norm by $\eps$.  Iterations and work are in the $O(\cdot)$ sense.}
+\caption{Theoretical performance as $h\to 0$ and $m=m_J\to\infty$, for algebraic error norm reduction by $\eps$.  Iterations and work are in the $O(\cdot)$ sense.}
 \label{tab:performancemodels}  % \label must be last for correct reference
 \end{table}
 
-MCD convergence Theorem \ref{thm:mcdconvergence} actually applies to nonlinear VI problems.  However, the proof requires a constrained-minimization formulation and a uniform-ellipticity bound \cite{Tai2003}.  Unfortunately, the glacier problems in sections \ref{sec:sia} and \ref{sec:stokes} satisfy neither hypothesis.  In this paper we will not pursue the theory further, but we will measure the performance of our MCD approaches on glacier problems.  Our standing assumption is that the performance of MCDL, for the classical obstacle problem, represents the best-possible result.
+MCD convergence Theorem \ref{thm:mcdconvergence} actually applies to certain nonlinear VI problems.  However, the proof requires a constrained-minimization formulation and a uniform-ellipticity bound \cite{Tai2003}, and the glacier problems in sections \ref{sec:sia} and \ref{sec:stokes} satisfy neither hypothesis.  In this paper we will not pursue the theory further, but we will measure the performance of our MCD approaches on glacier problems.  Our standing assumption is that MCDL performance for the 1D classical obstacle problem represents the best-possible result.
 
 
 \subsection*{Nested iteration} We must consider a technique which can substantially-improve multilevel performance.  In \emph{nested iteration} \cite{Trottenbergetal2001} an initial iterate comes from prolonging a converged iterate from a coarser mesh.  The resulting \emph{F-cycle} (Figure \ref{fig:fcycle}) concatenates V-cycles using this new transfer operation.  Note that the update $y^{j-1}$ is prolonged in \pr{mcdl-vcycle}, but now we need to prolong the coarse-level solution $w^{j-1}$ itself, and the result needs to be admissible.  Though $w^{j-1} \ge \varphi^{j-1}$ is admissible on its level, where $\varphi^{j-1}$ interpolates the continuum obstacle $\varphi$, the information in the finer obstacle $\varphi^j$ has not yet been ``seen'', so truncation is obligatory.
