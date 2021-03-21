@@ -692,7 +692,7 @@ An example is shown in Figure \ref{fig:gooddecomposition}.  Note that the obstac
 
 From the obstacles $\phi^j$ we define closed, convex \emph{admissible (correction) sets}
 \begin{equation}
-\mathcal{K}^j = \left\{v \ge \phi^j\right\} \subseteq \mathcal{V}^j \label{eq:defineKj}
+\mathcal{K}^j = \left\{v \ge \phi^j\right\} \subset \mathcal{V}^j \label{eq:defineKj}
 \end{equation}
 for $j=0,1,\dots,J$.  Because $\phi^j \le 0$, the zero function is admissible on every level.  On the finest level, note that $\phi^J$ is not the same as $\varphi^J$, and so $\mathcal{K}^J$ does not approximate $\mathcal{K}$.
 
@@ -769,7 +769,7 @@ The left equivalence depends on linearity, and the right on symmetry, but VI for
 
 When $F$ is not the gradient of a coercive objective function, e.g.~as in the SIA and Stokes glacier problems, additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,JouvetBueler2012,KinderlehrerStampacchia1980}).  However, we will assume well-posedness and proceed with the numerics.
 
-\subsection*{MCDL cycles}  Now we may implement multilevel cycles for the classical obstacle problem.  Because the interior PDE of this problem is the linear Poisson equation, we solve form \eqref{eq:mcdvilinear} and name the method \pr{MCDL}, with L for ``linear''.  A general nonlinear MCD algorithm is applied to glacier problems in sections \ref{sec:sia} and \ref{sec:stokes}.
+\subsection*{Linear MCD cycles}  Now we may implement multilevel cycles for the classical obstacle problem.  Because the interior PDE of this problem is the linear Poisson equation, we solve form \eqref{eq:mcdvilinear} and name the method \pr{MCDL}, with L for ``linear''.  A general nonlinear MCD algorithm is applied to glacier problems in sections \ref{sec:sia} and \ref{sec:stokes}.
 
 We represent functions and linear functionals in the piecewise-linear spaces $\mathcal{V}^j$ and $(\mathcal{V}^j)'$ just as in section \ref{sec:subspace}.  To address how the correction problem is actually moved onto the coarser level, note that equations \eqref{eq:rhslinearlevel} and \eqref{eq:residuallinearlevel} will be applied after smoothing of the previous correction $y^{j+1}$, so we approximate the residual by applying canonical restriction,
 \begin{equation}
@@ -967,9 +967,52 @@ Many variations on V- and F-cycle strategies have not been tested in this sectio
 
 \section{Multigrid for the shallow-ice mass conservation problem} \label{sec:sia}
 
-FIXME model problem in previous section has the wrong ``physics'' but correctly addresses the free boundary and obstacle nature of the glacier problem; glaciers as obstacle problems introduced by \cite{Calvoetal2002}; extended by \cite{Bueler2016,Bueler2020,JouvetBueler2012}, but these do not use multigrid; multigrid is applied to SIA in \cite{Jouvetetal2013,JouvetGraeser2013} with similar algorithm; we apply MCD because of its geometric clarity; there are other fast solution methods, for which theory is incomplete also, e.g.~PFAS in \cite{BrandtCryer1983} and inactive-set Newton-Multigrid \cite[Chapter 12]{Bueler2021}, and monotone and truncated multigrid \cite{GraeserKornhuber2009}
+\subsection*{The SIA obstacle problem}  Now we will consider a 1D obstacle problem which is an actual model for glaciers, namely the shallow-ice approximation (SIA) for ice surface elevation, a nonlinear version of the Poisson equation \eqref{eq:poisson}.  As before we state the problem in strong form first and then give the weak form, a nonlinear variational inequality (VI).
 
-FIXME SIA model equations \cite{Bueler2016} with constants from \cite{Huybrechtsetal1996}; in this section we consider the steady-state problem; an 1D exact solution is Bueler profile from \cite{vanderVeen2013} section 5.3, Figure \ref{fig:siadatafigure}
+To get started we must specify the data and parameters of the problem.  Suppose a \emph{surface mass balance} function $a(x)$, of size $O(1)$ meters per year, and a \emph{bed elevation} (topography) function $b(x)$, with values in meters above sea level, are given.  The data $a(x)$ and $b(x)$ are assumed steady.  Let $n>1$ be the (Glen) power, $A>0$ the (constant) ice softness in units of $\text{Pa}^n\,\text{s}^{-1}$, $\rhoi$ the ice density in $\text{kg}\,\text{m}^{-3}$, and $g$ the acceleration of gravity in $\text{m}\,\text{s}^{-2}$.    For reasons to be explained momentarily, let $\eta_0 \ge 0$, in meters, be a regularizing thickness.  In the implementation all quantities are converted to SI units.\footnote{The parameter values used in experiments are from \cite{Huybrechtsetal1996}: $n=3$, $A=10^{-16}/s_a$ where $s_a = 31556926$ is the number of seconds per year, $\rhoi=910$, and $g=9.81$.  We use $\eta_0=100$ in most experiments, but see below.}
+
+The steady SIA model \cite{Bueleretal2005,Huybrechtsetal1996} determines the \emph{ice surface elevation} $s(x)$, with values in meters above sea level, on the part of the interval where $s>b$:
+\begin{equation}
+- \left(\Gamma (s-b+\eta_0)^{n+2} |s'|^{n-1} s'\right)' = a  \label{eq:sia}
+\end{equation}
+where we have defined $\Gamma = 2 A (\rhoi g)^n / (n+2)$ as a convenience constant.  We will often refer to $h=s-b$ as the \emph{ice thickness} and to $h+\eta_0$ as the \emph{regularized thickness}.  As explained in section \ref{sec:obstacle}, this should be interpreted as the following complementarity problem (CP) comparable to \eqref{eq:obstaclecp}:
+\begin{align}
+s - b &\ge 0, \label{eq:siacp} \\
+- \left(\Gamma (s-b+\eta_0)^{n+2} |s'|^{n-1} s'\right)' - a &\ge 0 \notag \\
+(s-b) \left[-\left(\Gamma (s-b+\eta_0)^{n+2} |s'|^{n-1} s'\right)' - a\right] &= 0 \notag
+\end{align}
+Obviously, the primary inequality constraint could be written $H\ge 0$.  Problem \eqref{eq:siacp} applies on a fixed interval $[0,L]$ which includes the entire glacier, with $L$ of order $O(1)$ to $O(1000)$ kilometers.  The data $a(x)$, $b(x)$ are given on this entire interval even though the ice-covered area is a subset of the interval.
+
+CP \eqref{eq:siacp} is the strong form of the steady and isothermal SIA model, but to state a weak form we must decide on function spaces.  To do this, let $p=n+1>2$ and consider the $p$-\emph{Laplacian problem} for an abstract quantity $u(x)$ given an abstract source $f(x)$:
+\begin{equation}
+-(|u'|^{p-2} u')' = f.  \label{eq:plaplacianpoisson}
+\end{equation}
+This equation is relatively well-understood: a unique (weak) solution exists in the Sobolev space
+\begin{equation}
+\mathcal{W} = W_0^{1,p}[0,L]  \label{eq:defineW}
+\end{equation}
+if $f$ is minimally well-behaved, for example if $f$ is in $L^q[0,L]$ for $q$ conjugate to $p$ (i.e.~$p^{-1}+q^{-1}=1$); see \cite[section 5.3]{Ciarlet2002} and \cite{BarrettLiu1993}.  Comparing the SIA equation, if $\eta_0>0$ then a kind of uniform ``ellipticity'' applies, relative to \eqref{eq:plaplacianpoisson}.  That is, \eqref{eq:sia} is of the form $-(\mu |s'|^{p-2} s')'=a$ where $\mu=\Gamma (s-b+\eta_0)^{p+1}$ is bounded below: $\mu(x)\ge \mu_0 = \Gamma \eta_0^{p+1} > 0$.  Based on this understanding, we suppose the key data $b$ is in $\mathcal{W}$ and we propose to find a solution $s$ in the admissible set
+\begin{equation}
+\mathcal{K} = \left\{v \ge b\right\} \subset \mathcal{W}.  \label{eq:siaK}
+\end{equation}
+
+Next the weak form is derived, as usual, by assuming $s$ is a well-behaved solution to \eqref{eq:siacp}, multiplying by a test function $v$, and integrating by parts.  The result is a nonlinear VI
+\begin{equation}
+N(s)[v-s] \ge \ell[v-s] \quad \text{for all } v \text{ in } \mathcal{W} \label{eq:siaVI}
+\end{equation}
+where
+\begin{equation}
+N(s)[v] = \int_0^L \Gamma (s(x)-b(x)+\eta_0)^{p+1} |s'(x)|^{p-2} s'(x) v'(x)\,dx \label{eq:siaN}
+\end{equation}
+and $\ell[v] = \ip{a}{v} = \int_0^L a(x) v(x)\,dx$.  If we also define $F(s)[v] = N(s)[v] - \ell[v]$ then the VI takes the form
+\begin{equation}
+F(s)[v-s] \ge 0 \quad \text{for all } v \text{ in } \mathcal{W} \label{eq:siaVIresidual}
+\end{equation}
+just as considered in section \ref{sec:obstacle}.  In terms of the intuition behind \eqref{eq:siaVIresidual}, see Figure \ref{fig:cartoonplane} and the accompanying text, but observe that for general bed elevations $b$, $F$ is not the gradient of a scalar objective functional.
+
+The well-posedness theory of weak-form problem \eqref{eq:siaVIresidual}, which was first explored by \cite{Calvoetal2002}, is decidely incomplete.  In the unregularized ($\eta_0=0$) case, a solution to the weak form exists \cite{JouvetBueler2012}.  When $b=0$ this solution is unique, but for general bed topography $b(x)$ uniqueness has not been established.  Note that \cite{JouvetBueler2012} writes the problem as a VI for a power of the thickness as the solution, i.e.~$u(x)=(s-b)^{(2n+2)/n}$, and not for $s$.  However, any glaciologist will note that the top surface ($s$) of any large glacier or ice sheet is relatively smooth, ignoring crevassing and other non-fluid effects, while the bed elevation $b$ and thus the thickness $h$ are decidedly less smooth.
+
+FIXME an 1D exact solution is Bueler profile from \cite{vanderVeen2013} section 5.3, Figure \ref{fig:siadatafigure}
 
 \begin{figure}
 \includegraphics[width=0.7\textwidth]{fixfigs/siadatafigure.pdf}
@@ -977,13 +1020,19 @@ FIXME SIA model equations \cite{Bueler2016} with constants from \cite{Huybrechts
 \label{fig:siadatafigure}
 \end{figure}
 
-FIXME SIA modifications to smoother in 1D case
+FIXME glaciers as obstacle problems introduced by \cite{Calvoetal2002}; extended by \cite{Bueler2016,JouvetBueler2012}, but these do not use multigrid; multigrid is applied to SIA in \cite{Jouvetetal2013,JouvetGraeser2013} with similar algorithm; we apply MCD because of its geometric clarity; there are other fast solution methods, for which theory is incomplete also, e.g.~PFAS in \cite{BrandtCryer1983} and inactive-set Newton-Multigrid \cite[Chapter 12]{Bueler2021}, and monotone and truncated multigrid \cite{GraeserKornhuber2009}
+
+\subsection*{The PNGS smoother}  FIXME SIA modifications to smoother in 1D case
 
 FIXME 1D results for smoother only
 
-FIXME FAS version of MCD
+\subsection*{Nonlinear MCD cycles}  FIXME FAS version of MCD
 
-FIXME for 2D domains use Firedrake
+%FIXME for 2D domains use Firedrake?
+
+\subsection*{Convergence and performance results}  FIXME use Bueler profile only
+
+\subsection*{Time-dependent geometry}  FIXME use Halfar solution
 
 
 \section{Multigrid for Glen-Stokes glacier flow} \label{sec:stokes}
