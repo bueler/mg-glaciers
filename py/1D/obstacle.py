@@ -163,6 +163,9 @@ if args.nicascadic:
 if args.ni and args.random:
     # FIXME
     raise NotImplementedError('combination of -ni and -random is not yet implemented')
+if args.nicycles > args.cyclemax:
+    print('usage ERROR: nested iteration V-cycles count toward total; -nicycles <= -cyclemax')
+    sys.exit(4)
 
 # hierarchy will be a list of MeshLevel1D with indices [0,..,levels-1]
 assert args.jcoarse >= 0
@@ -198,7 +201,7 @@ elif args.problem == 'sia':
 # more usage help
 if args.monitorerr and not obsprob.exact_available():
     print('usage ERROR: -monitorerr but exact solution and error not available')
-    sys.exit(4)
+    sys.exit(5)
 
 # fine-level problem data
 mesh = hierarchy[-1]
@@ -251,7 +254,7 @@ def sweepssolver(args, obsprob, mesh, ellf, phi, w, monitor,
 # solve to tolerance
 itermax = args.cyclemax
 if args.ni:
-    itermax -= 1
+    itermax -= args.nicycles
 if itermax > 0:
     if args.sweepsonly:
         sweepssolver(args, obsprob, hierarchy[-1], ellf, phi, uu, mon,
