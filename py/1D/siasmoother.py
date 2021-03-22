@@ -174,7 +174,7 @@ class PNGSSIA(SmootherObstacleProblem):
         plt.plot(x/1000.0, self.source(x) * self.secpera, 'k')
         plt.xlabel('x (km)', fontsize=12.0)
         plt.ylabel('mass balance (m a-1)', fontsize=12.0)
-        plt.xticks(fontsize=12.0)
+        plt.xticks([0.0,300.0,600.0,900.0,1200.0,1500.0,1800.0],fontsize=12.0)
         plt.yticks(fontsize=12.0)
         plt.savefig('siadatafigure.pdf', bbox_inches='tight')
 

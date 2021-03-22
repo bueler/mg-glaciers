@@ -120,6 +120,7 @@ def test_poisson_pgssweep():
 def test_sia_exact():
     '''Exact solution for SIA.'''
     ml = MeshLevel1D(j=2, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
+    #ml = MeshLevel1D(j=7, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
     prob = PNGSSIA(testargs)
     assert prob.exact_available()
     x = ml.xx()
