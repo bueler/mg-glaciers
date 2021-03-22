@@ -271,7 +271,7 @@ for j in range(levels):
 # report on computation including numerical error, WU, infeasibles
 method = 'using '
 if args.ni:
-    method = 'nested iter. & '
+    method = 'F-cycle + '
 symstr = 'sym. ' if args.symmetric else ''
 if args.sweepsonly:
     method += '%d applications of %ssmoother' % (mon.s - 1, symstr)
