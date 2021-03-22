@@ -27,7 +27,7 @@ The problem:  For given Banach space X, and given an obstacle phi in X,
 find u in the closed, convex subset
     K = {v in X | v >= phi}
 so that the variational inequality (VI) holds,
-    F(u)[v-u] >= ell[v-u]   for all v in K.
+    F(u)[v-u] >= 0   for all v in K.
 Note u solves an interior PDE in the inactive set {x | u(x) > phi(x)}.
 
 We solve two particular problems:
@@ -37,21 +37,23 @@ We solve two particular problems:
     phi (obstacle)
     f (source) is in L^2[0,1]
     ell[v] = <f,v>
-                       /1
-    F(u)[v] = a(u,v) = |  u'(x) v'(x) dx   (bilinear form)
-                       /0
+             /1
+    a(u,v) = |  u'(x) v'(x) dx   (bilinear form)
+             /0
+    F(u)[v] = a(u,v) - ell[v]
     PDE is Poisson equation  - u'' = f
 
 2. For shallow ice approximation (SIA) obstacle problem (Bueler 2016)
    (siasmoother.py):
     X = W_0^{1,p}[0,xmax]  where p = n + 1
     b = phi (bed elevation)
-    m (mass balance) is in L^2[0,xmax]
-    ell[v] = <m,v>
+    a (mass balance) is in L^q[0,xmax]
+    ell[v] = <a,v>
               /xmax
-    F(s)[v] = |     Gamma (s-b)^{n+2} |s'|^{n-1} s' v dx
+    N(s)[v] = |     Gamma (s-b)^{n+2} |s'|^{n-1} s' v dx
               /0
-    PDE is SIA equation  - (Gamma (s-b)^{n+2} |s'|^{n-1} s')' = m
+    F(u)[v] = N(u)[v] - ell[v]
+    PDE is SIA equation  - (Gamma (s-b)^{n+2} |s'|^{n-1} s')' = a
 
 Solution is by the multilevel constraint decomposition (MCD) method of
 Tai (2003).  As in Alg. 4.7 of Gräser & Kornhuber (2009), we implement
