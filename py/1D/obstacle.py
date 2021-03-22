@@ -95,8 +95,8 @@ parser.add_argument('-jacobi', action='store_true', default=False,
                     help='use Jacobi (additive) instead of Gauss-Seidel (multiplicative) for smoothing')
 parser.add_argument('-jcoarse', type=int, default=0, metavar='J',
                     help='coarse mesh is jth level (default jcoarse=0 gives 1 node)')
-parser.add_argument('-jfine', type=int, default=3, metavar='J',
-                    help='fine mesh is jth level (default jfine=3)')
+parser.add_argument('-J', type=int, default=3, metavar='J',
+                    help='fine mesh is Jth level (default J=3)')
 parser.add_argument('-mgview', action='store_true', default=False,
                     help='view multigrid cycles by indented print statements')
 parser.add_argument('-monitor', action='store_true', default=False,
@@ -164,8 +164,8 @@ if args.ni and args.random:
 
 # hierarchy will be a list of MeshLevel1D with indices [0,..,levels-1]
 assert args.jcoarse >= 0
-assert args.jfine >= args.jcoarse
-levels = args.jfine - args.jcoarse + 1
+assert args.J >= args.jcoarse
+levels = args.J - args.jcoarse + 1
 hierarchy = [None] * (levels)             # list [None,...,None]
 
 # set up obstacle problem with smoother (class SmootherObstacleProblem)
@@ -282,7 +282,7 @@ inadstr = ''
 if obsprob.inadmissible > 0:
     inadstr = ' (%d inadmissibles)' % obsprob.inadmissible
 print('fine level %d (m=%d): %s -> %.3f WU%s%s' \
-      % (args.jfine, mesh.m, method, WUsum, error, inadstr))
+      % (args.J, mesh.m, method, WUsum, error, inadstr))
 
 # graphical output if desired
 if args.show or args.o or args.diagnostics:
