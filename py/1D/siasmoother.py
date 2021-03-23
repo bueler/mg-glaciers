@@ -29,6 +29,7 @@ class PNGSSIA(SmootherObstacleProblem):
     def __init__(self, args, admissibleeps=1.0e-10,
                  g=9.81, rhoi=910.0, nglen=3.0, A=1.0e-16/31556926.0):
         super().__init__(args, admissibleeps=admissibleeps)
+        self.args = args
         self.secpera = 31556926.0   # seconds per year
         self.g = g                  # m s-2
         self.rhoi = rhoi            # kg m-3
@@ -48,57 +49,53 @@ class PNGSSIA(SmootherObstacleProblem):
         self.newtonHmin = 100.0     # protect divide by zero in smoother
         self.newtonslopemin = 1.0e-4 # protect divide by zero in smoother
 
-    def pointresidual(self, mesh, s, ell, p):
+    def pointresidual(self, mesh, w, ell, p):
         '''Compute the value of the residual linear functional, in V^j', for
-        given iterate s(x) in V^j, at one interior hat function psi_p^j:
-           F(s)[psi_p^j] = int_0^L Gamma (s(x) - phi(x))^{n+2} |s'(x)|^{n-1} s'(x) dx
-                           - ell(psi_p^j)
+        given iterate w(x) in V^j, at one interior hat function psi_p^j:
+           F(w)[psi_p^j] = int_0^L Gamma (w(x) - b(x))^{n+2} |w'(x)|^{n-1} w'(x) dx
+                           - ell[psi_p^j]
         Input ell is in V^j'.  Input mesh is of class MeshLevel1D, with attached
-        obstacle b = mesh.phi.'''
-        mesh.checklen(s)
+        bed elevation mesh.b.'''
+        mesh.checklen(w)
         mesh.checklen(ell)
-        assert hasattr(mesh, 'phi')
-        b = mesh.phi
-        mesh.checklen(b)
         assert 1 <= p <= mesh.m
-        C = self.Gamma / (2.0 * mesh.h**self.nglen)
-        HP = (s[p-1:p+2] - b[p-1:p+2])**(self.nglen + 2.0)  # 3 thickness powers
-        ds = s[p:p+2] - s[p-1:p+1]                          # 2 delta s
+        assert hasattr(mesh, 'b')
+        CC = self.Gamma / (2.0 * mesh.h**self.nglen)
+        HP = (w[p-1:p+2] - mesh.b[p-1:p+2] + self.args.siaeta0)**(self.nglen + 2.0)
+        ds = w[p:p+2] - w[p-1:p+1]
         mu = abs(ds)**(self.nglen - 1.0) * ds
         meat = (HP[0] + HP[1]) * mu[0] - (HP[1] + HP[2]) * mu[1]
-        return C * meat - ell[p]
+        return CC * meat - ell[p]
 
-    def _pointjacobian(self, mesh, s, p):
-        '''The derivative of pointresidual() with respect to s[p].'''
-        mesh.checklen(s)
-        assert hasattr(mesh, 'phi')
-        b = mesh.phi
-        mesh.checklen(b)
+    def _pointjacobian(self, mesh, w, p):
+        '''The derivative of pointresidual() with respect to w[p].'''
+        mesh.checklen(w)
         assert 1 <= p <= mesh.m
+        assert hasattr(mesh, 'b')
         C = self.Gamma / (2.0 * mesh.h**self.nglen)
         # protects divide by zero in smoother:
-        Hpos = np.maximum(s[p-1:p+2] - b[p-1:p+2], self.newtonHmin)
+        Hpos = np.maximum(w[p-1:p+2] - mesh.b[p-1:p+2] + self.args.siaeta0, self.newtonHmin)
         HP = Hpos**(self.nglen + 2.0)
         # protects divide by zero in smoother:
-        ads = np.maximum(abs(s[p:p+2] - s[p-1:p+1]), mesh.h * self.newtonslopemin)
+        ads = np.maximum(abs(w[p:p+2] - w[p-1:p+1]), mesh.h * self.newtonslopemin)
         dmu = self.nglen * ads**(self.nglen - 1.0)
         return C * ( (HP[0] + HP[1]) * dmu[0] + (HP[1] + HP[2]) * dmu[1] )
 
-    def smoothersweep(self, mesh, s, ell, phi, forward=True):
+    def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected nonlinear Gauss-Seidel sweep over the interior
-        points p=1,...,m, for the SIA problem.  Fixed number of steps of the
-        Newton method (newtonits).  Protection against taking huge steps
-        (newtondmax).  Avoids further iteration if first step is small
-        (newtondtol).'''
-        self._checkrepairadmissible(mesh, s, phi)
+        points p=1,...,m, for the SIA problem on the iterate w.  Does a fixed
+        number of steps of the  Newton method (newtonits) with protection
+        against taking huge steps (newtondmax).  Avoids further iteration if
+        first step is small (newtondtol).'''
+        self._checkrepairadmissible(mesh, w, phi)
         for p in self._sweepindices(mesh, forward=forward):
             for k in range(self.newtonits):
-                d = - self.pointresidual(mesh, s, ell, p) / self._pointjacobian(mesh, s, p)
-                d = max(d, phi[p] - s[p])                     # require admissible
+                d = - self.pointresidual(mesh, w, ell, p) / self._pointjacobian(mesh, w, p)
+                d = max(d, phi[p] - w[p])                     # require admissible
                 d = np.sign(d) * min(abs(d), self.newtondmax) # limit huge steps
-                s[p] += self.args.omega * d                   # take step
-                if abs(self.args.omega * d) < self.newtondtol: # tiny step
-                    break
+                w[p] += self.args.omega * d                   # take step
+                if abs(self.args.omega * d) < self.newtondtol:
+                    break # stop iterations if tiny step
         mesh.WU += self.newtonits  # overcount WU if many points are active
 
     def phi(self, x):
@@ -107,12 +104,11 @@ class PNGSSIA(SmootherObstacleProblem):
         return np.zeros(np.shape(x))
 
     def exact_available(self):
-        '''Generally whether there is an exact solution depends on self.args
-        but for now we just do the Bueler profile.'''
+        '''For now we just do use the Bueler profile, an exact solution.'''
         return True
 
     def exact(self, x):
-        '''Exact solution Bueler profile.  See van der Veen (2013) equation
+        '''Exact solution (Bueler profile).  See van der Veen (2013) equation
         (5.50).  Assumes x is a numpy array.'''
         assert self.exact_available()
         n = self.nglen

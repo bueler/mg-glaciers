@@ -84,7 +84,8 @@ class Namespace:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
-testargs = Namespace(jacobi=False, omega=1.0, printwarnings=False, randomseed=1)
+testargs = Namespace(jacobi=False, omega=1.0, printwarnings=False, randomseed=1,
+                     siaeta0=0.0)
 
 def test_poisson_pointresidual():
     '''Point-wise residual for Poisson.'''
@@ -139,7 +140,7 @@ def test_pngssia_residual():
     '''Residual for SIA.'''
     ml = MeshLevel1D(j=1, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
     prob = PNGSSIA(testargs)
-    ml.phi = ml.zeros()                    # attach obstacle to mesh
+    ml.b = ml.zeros()                      # attach bed elevation to mesh
     m = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
     s = np.array([0.0, 2500.0, 3100.0, 2500.0, 0.0])  # hand-adjusted so res is small!
     res = prob.residual(ml, s, ml.ellf(m))
@@ -150,12 +151,12 @@ def test_pngssia_smoothersweep():
     '''Smoother for SIA.'''
     ml = MeshLevel1D(j=1, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
     prob = PNGSSIA(testargs)
-    ml.phi = ml.zeros()                    # attach obstacle to mesh
+    ml.b = ml.zeros()                      # attach bed elevation to mesh
     m = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
     s = np.array([0.0, 2500.0, 3100.0, 2500.0, 0.0])  # hand-adjusted so res is small!
     ell = ml.ellf(m)
     res = prob.residual(ml, s, ell)
-    prob.smoothersweep(ml, s, ell, ml.phi)
-    prob.smoothersweep(ml, s, ell, ml.phi)
+    prob.smoothersweep(ml, s, ell, ml.b)
+    prob.smoothersweep(ml, s, ell, ml.b)
     newres = prob.residual(ml, s, ell)
     assert ml.l2norm(newres) < ml.l2norm(res)

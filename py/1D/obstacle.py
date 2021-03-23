@@ -136,6 +136,8 @@ parser.add_argument('-randommodes', type=int, default=30, metavar='N',
                     help='number of sinusoid modes in -random perturbation (default N=30)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
+parser.add_argument('-siaeta0', type=float, default=100.0, metavar='L',
+                    help='regularize thickness in SIA model by adding this value (default 100 m)')
 parser.add_argument('-siaintervallength', type=float, default=1800.0e3, metavar='L',
                     help='solve SIA on [0,L] (default L=1800 km)')
 parser.add_argument('-sweepsonly', action='store_true', default=False,
@@ -183,6 +185,9 @@ if args.problem == 'poisson':
     for j in range(levels):
         hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=1.0)
 elif args.problem == 'sia':
+    if not args.sweepsonly:
+        raise NotImplementedError( \
+            'The constraint decomposition theory is not ready for SIA.  Use -sweepsonly.')
     if args.jacobi:
        obsprob = PNJacobiSIA(args)
     else:
@@ -190,13 +195,8 @@ elif args.problem == 'sia':
     for j in range(levels):
         hierarchy[j] = MeshLevel1D(j=j+args.jcoarse,
                                    xmax=args.siaintervallength)
-    # attach obstacle to mesh
-    # FIXME o.k for single level but NOT for multilevel
-    if not args.sweepsonly:
-        raise NotImplementedError( \
-            'The constraint decomposition theory is not ready for SIA.  Use -sweepsonly.')
-    mesh = hierarchy[-1]
-    mesh.phi = obsprob.phi(mesh.xx())
+        # attach interpolated bed elevation to each mesh level
+        hierarchy[j].b = obsprob.phi(hierarchy[j].xx())
 
 # more usage help
 if args.monitorerr and not obsprob.exact_available():
