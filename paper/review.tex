@@ -1049,13 +1049,23 @@ that similarly for the interpolant of the bed elevation, $b^j = \sum b_q \psi_q^
 \begin{equation}
 N(w)[\psi_p^j] = \int_{x_p^j-h}^{x_p^j+h} \Gamma (w-b+\eta_0)^{\pp+1} |w'|^{\pp-2} w' (\psi_p^j)'\,dx,  \label{eq:siaNlocal}
 \end{equation}
-by using the trapezoid rule.  Thus the $j$th-level residual is computed as follows:
+using the trapezoid rule and the piecewise-linearity of the hat functions.  Thus the $j$th-level FE residual $F^j(w)[\cdot] \approx N(w)[\cdot] - \ell^j[\cdot]$ has the following values:
 \begin{align}
-F^j(w)[\psi_p^j] &= FIXME - \ell_p \label{eq:siaresiduallevel} \\
-    &=   \notag
+F^j(w)[\psi_p^j] &= \Gamma \left(\frac{\tilde H_{p-1}(w)^{\pp+1} + \tilde H_p(w)^{\pp+1}}{2}\right) \left|\frac{w_p-w_{p-1}}{h}\right|^{\pp-2} \frac{w_p-w_{p-1}}{h}\, \frac{+1}{h}\, h \label{eq:siaresiduallevel} \\
+    &\quad  + \Gamma \left(\frac{\tilde H_p(w)^{\pp+1} + \tilde H_{p+1}(w)^{\pp+1}}{2}\right) \left|\frac{w_{p+1}-w_p}{h}\right|^{\pp-2} \frac{w_{p+1}-w_p}{h}\, \frac{-1}{h}\, h - \ell_p, \notag
 \end{align}
+where $\tilde H_p(w)  = w_p - b_p + \eta_0$ is the pointwise value of the regularized thickness.
 
-FIXME obstacle $\phi^j$ on that level, $\phi^j = \sum \phi_q \psi_q^j$.  (Note $\phi^j$ is not generally the interpolant of the bed $b(x)$ but instead is a defect obstacle; see below.)
+To construct a smoother we assume an obstacle $\phi^j$ on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$.  Note $\phi^j$ is \emph{not} generally the interpolant of the bed $b(x)$, but rather a defect obstacle; see below.  Following the logic of the VI derivation of the PGS smoother in the previous section, wherein one-dimensional VI \eqref{eq:pgspointwisevi} yields formula \eqref{eq:pgsformula}, at the node $x_p^j$ our \emph{projected nonlinear Gauss-Seidel} (PNGS) smoother seeks a scalar $c \ge \phi_p - w_p$ which solves the following one-dimension VI:
+\begin{equation}
+  F^j(w+c\psi_p^j)[(w+\tilde c\psi_p^j) - (w+c\psi_p^j)] \ge 0,  \label{eq:pngspointwisevi}
+\end{equation}
+for all $\tilde c \ge \phi_p - w_p$.  (Recall that if $w$ is admissible on the $j$th level, i.e.~if $w\ge \phi^j$, then, for our piecewise-linear finite elements, a point perturbation $w+c\psi_p^j$ is admissible if and only if $w_p+c \ge \phi_p$, equivalently $c \ge \phi_p - w_p$.)
+
+The solution of \eqref{eq:pngspointwisevi} is either the critical point of a one-dimensional minimization or the left endpoint of the admissible interval.  However, unlike for the classical obstacle problem, and in contrast to the simplicity of formula \eqref{eq:pgsformula}, the solution of \eqref{eq:pngspointwisevi} cannot generally be found exactly.  Instead we set up a one-dimensional Newton iteration to compute $c$.
+\begin{equation}
+  c = \max\left\{-\frac{F^j(w)[\psi_p^j]}{FIXME}, \, \phi_p - w_p\right\}  \label{eq:pngsformula}
+\end{equation}
 
 FIXME use Bueler profile to verify smoother only
 
