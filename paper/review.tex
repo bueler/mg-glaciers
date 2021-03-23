@@ -1014,11 +1014,11 @@ N(s)[v-s] \ge \ip{a}{v-s} \quad \text{for all } v \text{ in } \mathcal{K}_b \lab
 \end{equation}
 where $\ip{a}{v} = \int_0^L a(x) v(x)\,dx$ is the usual inner product (i.e.~dual pairing \cite{KinderlehrerStampacchia1980}).
 
-If we define $\ell_a[v] = \ip{a}{v}$ and
+Defining
 \begin{equation}
-F(s)[v] = N(s)[v] - \ell_a[v] \label{eq:siaF}
+F(s)[v] = N(s)[v] - \ip{a}{v}, \label{eq:siaF}
 \end{equation}
-then the nonlinear SIA VI takes the form
+the nonlinear SIA VI takes the form
 \begin{equation}
 F(s)[v-s] \ge 0 \quad \text{for all } v \text{ in } \mathcal{K}_b, \label{eq:siaVIresidual}
 \end{equation}
@@ -1039,12 +1039,29 @@ non-smooth Newton multigrid method \cite{GraeserKornhuber2009} which tracks the 
 
 We propose to apply a nonlinear form of the MCD to the SIA problem.  The MCD framework is geometrically clear and relatively simple, which should lead to more robust numerical implementations.  Our next step is to describe the FE discretization and a nonlinear smoother.
 
-\subsection*{The PNGS smoother}  FIXME SIA smoother
+\subsection*{The PNGS smoother}  The discretization of SIA VI form \eqref{eq:siaVIresidual} proceeds essentially as in section \ref{sec:obstacle} for the VI form \eqref{eq:obstacleviresidual} of the classical obstacle problem.  One difference is that we will approximate the integral in the nonlinear form (operator) $N(s)[v]$, formula \eqref{eq:siaN}, using quadrature.  Recall that when we apply an MCD scheme for an obstacle problem, the coarse-level correction involves transformations of the residual and the obstacle from their continuum form to a different level-specific form.
+
+Suppose as before that an iterate $w$ on the $j$th level is written in hat functions,
+\begin{equation}
+  w(x) = \sum_{q=1}^{m_j} w_q \psi_q^j(x), \label{eq:siatrialfunction}
+\end{equation}
+that similarly for the interpolant of the bed elevation, $b^j = \sum b_q \psi_q^j$.  (Note $b^j$ is not the obstacle, but it appears in the formula for $N$.)  Assume that $\ell^j[\cdot]$ is a linear functional with known values $\ell^j[\psi_p^j] = \ell_p$.  (It will be computed below.)  Recall that the support of $\psi_p^j$ is the interval $[x_p^j-h,x_p^j+h]$.  We will approximate $N$ in \eqref{eq:siaN} on the $j$th-level, namely the exact values
+\begin{equation}
+N(w)[\psi_p^j] = \int_{x_p^j-h}^{x_p^j+h} \Gamma (w-b+\eta_0)^{\pp+1} |w'|^{\pp-2} w' (\psi_p^j)'\,dx,  \label{eq:siaNlocal}
+\end{equation}
+by using the trapezoid rule.  Thus the $j$th-level residual is computed as follows:
+\begin{align}
+F^j(w)[\psi_p^j] &= FIXME - \ell_p \label{eq:siaresiduallevel} \\
+    &=   \notag
+\end{align}
+
+FIXME obstacle $\phi^j$ on that level, $\phi^j = \sum \phi_q \psi_q^j$.  (Note $\phi^j$ is not generally the interpolant of the bed $b(x)$ but instead is a defect obstacle; see below.)
+
+FIXME use Bueler profile to verify smoother only
 
 \subsection*{Nonlinear MCD cycles}  FIXME FAS version of MCD
 
-\subsection*{Convergence and performance results}  FIXME use Bueler profile; compare
-smoother only
+\subsection*{Convergence and performance results}  FIXME
 
 \subsection*{Performance of implicit evolving-geometry solvers}  FIXME use Halfar solution
 
