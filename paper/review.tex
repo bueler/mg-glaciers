@@ -976,47 +976,47 @@ Many variations on V- and F-cycle strategies have not been tested in this sectio
 
 \subsection*{The SIA obstacle problem}  Now we will consider a 1D obstacle problem, a nonlinear version of the Poisson equation \eqref{eq:poisson}, which is a model for glacier geometry, namely the steady and isothermal shallow-ice approximation (SIA) for ice surface elevation.  The weak form is a nonlinear variational inequality (VI), but as usual we state the problem in strong form first.
 
-We must specify the data and parameters of the problem.  Suppose a \emph{surface mass balance} function $a(x)$, of size $O(1)$ meters per year, and a \emph{bed elevation} (topography) function $b(x)$, with values in meters above sea level, are given.  (Note $a(x)$ and $b(x)$ are assumed time-independent.)  Let $n>1$ be the (Glen) power, $\rhoi$ the ice density, and $g$ the acceleration of gravity.  Assuming isothermal conditions \cite{GreveBlatter2009}, let $A>0$ be the (constant) ice softness.  For reasons to be explained momentarily, let $\eta_0 \ge 0$ be a (constant) regularizing thickness.\footnote{The parameter values used in experiments are from \cite{Huybrechtsetal1996}: $n=3$, $A=10^{-16}/s_a \,\text{Pa}^n\,\text{s}^{-1}$, where $s_a = 31556926$ is the number of seconds per year, $\rhoi=910 \,\text{kg}\,\text{m}^{-3}$, and $g=9.81 \,\text{m}\,\text{s}^{-2}$.  We use $\eta_0=100\,\text{m}$ in most experiments, but see below.  In the implementation all quantities are converted to SI units.}
+We must specify the data and parameters of the model.  Suppose a \emph{surface mass balance} function $a(x)$, of size $O(1)$ meters per year, and a \emph{bed elevation} (topography) function $b(x)$, with values in meters above sea level, are given.  The data $a(x)$ and $b(x)$ are assumed time-independent.  Let $n>1$ be the (Glen) power, $\rhoi$ the ice density, and $g$ the acceleration of gravity.  Assuming isothermal conditions \cite{GreveBlatter2009}, let $A>0$ be the (constant) ice softness.  In the implementation all quantities are converted to SI units, and the parameter values used below in experiments are from \cite{Huybrechtsetal1996}: $n=3$, $\rhoi=910 \,\text{kg}\,\text{m}^{-3}$, $g=9.81 \,\text{m}\,\text{s}^{-2}$, and $A=10^{-16} s_a^{-1} \,\text{Pa}^n\,\text{s}^{-1}$, where $s_a = 31556926$ is the number of seconds per year.
 
 The steady SIA model \cite{Bueleretal2005,Huybrechtsetal1996,vanderVeen2013} determines the \emph{ice surface elevation} $s(x)$, with values in meters above sea level, on the part of the domain where $s>b$.  In the 1D case the equation is:
 \begin{equation}
-- \left(\Gamma (s-b+\eta_0)^{n+2} |s'|^{n-1} s'\right)' = a  \label{eq:sia}
+- \left(\Gamma (s-b)^{n+2} |s'|^{n-1} s'\right)' = a  \label{eq:sia}
 \end{equation}
-where we have defined $\Gamma = 2 A (\rhoi g)^n / (n+2)$ as a convenience.  As explained in section \ref{sec:obstacle}, the proper strong form is a complementarity problem (CP) comparable to \eqref{eq:obstaclecp}:
+where $\Gamma = 2 A (\rhoi g)^n / (n+2)$ is a convenience constant.  As explained in section \ref{sec:obstacle}, the true strong form is then a complementarity problem (CP):
 \begin{align}
 s - b &\ge 0, \label{eq:siacp} \\
-- \left(\Gamma (s-b+\eta_0)^{n+2} |s'|^{n-1} s'\right)' - a &\ge 0 \notag \\
-(s-b) \left[-\left(\Gamma (s-b+\eta_0)^{n+2} |s'|^{n-1} s'\right)' - a\right] &= 0 \notag
+- \left(\Gamma (s-b)^{n+2} |s'|^{n-1} s'\right)' - a &\ge 0 \notag \\
+(s-b) \left[-\left(\Gamma (s-b)^{n+2} |s'|^{n-1} s'\right)' - a\right] &= 0 \notag
 \end{align}
-Problem \eqref{eq:siacp} applies on a fixed interval $[0,L]$ which includes the entire glacier, with $L$ of order $O(1)$ to $O(1000)$ kilometers.  The data $a(x)$, $b(x)$ are given on this interval, of which the ice-covered area is an open subset.
 
-In CP formulation \eqref{eq:siacp} note that $H=s-b$ is the \emph{ice thickness}, so $H+\eta_0$ is the \emph{regularized thickness}.  Clearly the inequality constraint could be written ``$H\ge 0$'', with the zero function as the obstacle, and indeed this is done in \cite{Bueler2016,JouvetBueler2012, Jouvetetal2013,JouvetGraeser2013}; see also \cite{Bueler2020}.  However, the smoothness of $s(x)$, relative to $H(x)$, has consequences for the effectiveness of multilevel calculations.  This is the reason we regard $s$ as the solution, and $b$ as the obstacle, in the presentation here.
+CP \eqref{eq:siacp}, which is comparable to \eqref{eq:obstaclecp}, applies on a fixed interval $[0,L]$, a superset of the glaciated area, with $L$ of order $O(1)$ to $O(1000)$ kilometers.  The data $a(x)$, $b(x)$ must be defined on this interval.  Noting that $H=s-b$ is the \emph{ice thickness}, the inequality constraint could state the nonnegativity of thickness, in which case the zero function is the obstacle.  (This is the form found in \cite{Bueler2016,JouvetBueler2012, Jouvetetal2013,JouvetGraeser2013}; see also \cite{Bueler2020}.)  However, the smoothness of $s(x)$, relative to $H(x)$, has consequences for the effectiveness of multilevel calculations, and for this reason we regard $s$ as the solution and $b$ as the obstacle here.
 
-To state the weak form corresponding to \eqref{eq:siacp} we must decide on appropriate function spaces, so we refer to a better-understood, but also nonlinear, problem.  Let $\pp=n+1>2$ and consider the $\pp$-\emph{Laplacian Poisson problem}.  The solution and test functions live in the Sobolev space
+To state the weak form corresponding to \eqref{eq:siacp} we must decide on appropriate function spaces, so we refer to a better-understood nonlinear problem.  Let $\pp=n+1>2$ and consider the $\pp$-\emph{Laplacian Poisson equation}.  The solution and test functions live in the Sobolev space
 \begin{equation}
 \mathcal{W} = W_0^{1,\pp}[0,L]  \label{eq:defineW}
 \end{equation}
 of functions with zero boundary values and $\pp$th-power integrable first derivatives.  For solution $u(x)$ and source $f(x)$, the strong and weak forms are 
 \begin{equation}
--(|u'|^{\pp-2} u')' = f \quad \iff \quad \int_0^L |u'|^{\pp-2} u' v'\,dx = \int_0^L f v\,dx,  \label{eq:plaplacianpoisson}
+-(|u'|^{\pp-2} u')' = f, \qquad \int_0^L |u'|^{\pp-2} u' v'\,dx = \int_0^L f v\,dx,  \label{eq:plaplacianpoisson}
 \end{equation}
-for all $v$ in $\mathcal{W}$.  The weak form \eqref{eq:plaplacianpoisson}, both as a PDE and in its obstacle problem version \cite{ChoeLewis1991}, is relatively well-understood because the calculus of variations can be applied---see \cite[section 5.3]{Ciarlet2002} and \cite{BarrettLiu1993}.  A unique solution $u$ in $\mathcal{W}$ exists as long as $f$ defines a bounded linear functional on $\mathcal{W}$, for example if $f$ is in $L^\qq[0,L]$ for $\qq$ conjugate to $\pp$, thus $\pp^{-1}+\qq^{-1}=1$.
+for all $v$ in $\mathcal{W}$.  The weak form \eqref{eq:plaplacianpoisson}, both as a PDE and in its obstacle problem version \cite{ChoeLewis1991}, is relatively well-understood because the calculus of variations can be applied---see \cite[section 5.3]{Ciarlet2002} and \cite{BarrettLiu1993}.  In fact, a unique solution $u$ in $\mathcal{W}$ exists as long as $f$ defines a bounded linear functional on $\mathcal{W}$, for example if $f$ is in $L^\qq[0,L]$ for $\qq$ conjugate to $\pp$, thus $\pp^{-1}+\qq^{-1}=1$.  However, the $\pp>2$ case of \eqref{eq:plaplacianpoisson} is \emph{degenerate} \cite{DiBenedetto2012} in the sense that where $u'\to 0$ the strong-form coefficient of $u''$ goes to zero.
 
-Now, if $\eta_0>0$ then ``uniform $\pp$-Laplacian ellipticity'' applies to SIA equation \eqref{eq:sia} because the regularized thickness does not degenerate to zero.  That is, comparing to \eqref{eq:plaplacianpoisson}, the SIA equation $-(\mu |s'|^{\pp-2} s')'=a$ has bounded-below coefficient $\mu=\Gamma (s-b+\eta_0)^{\pp+1}$, i.e.~$\mu(x)\ge \Gamma \eta_0^{\pp+1} > 0$.  On the other hand \eqref{eq:sia} has a double nonlinearity \cite{Calvoetal2002} because the coefficient $\mu$ depends on $s$; the SIA equation has both porous medium \cite{Evans2010} and $\pp$-Laplacian nonlinearities.
-
-Assume that the obstacle $b$ is in $\mathcal{W}$, in particular such that $b(0)=b(L)=0$.  We propose to find a weak form solution $s$ in the admissible set
+Let us assume that the obstacle $b$ is in $\mathcal{W}$, in particular such that $b(0)=b(L)=0$.  We propose to find a weak form solution $s$ in the admissible set
 \begin{equation}
 \mathcal{K}_b = \left\{v \ge b\right\} \subset \mathcal{W}.  \label{eq:siaK}
 \end{equation}
-The weak form is derived, as usual, by assuming $s$ is a well-behaved solution to \eqref{eq:siacp}, multiplying by a test function $v$ from $\mathcal{K}_b$, and integrating by parts.  Let
+
+The weak form itself is derived, as usual, by assuming $s$ is a well-behaved solution to \eqref{eq:siacp}, multiplying by a test function $v$ from $\mathcal{K}_b$, and integrating by parts.  Let
 \begin{equation}
-N(s)[v] = \int_0^L \Gamma (s-b+\eta_0)^{\pp+1} |s'|^{\pp-2} s' v'\,dx \label{eq:siaN}
+N(s)[v] = \int_0^L \Gamma (s-b)^{\pp+1} |s'|^{\pp-2} s' v'\,dx \label{eq:siaN}
 \end{equation}
 define a nonlinear operator $N:\mathcal{K}_b \to \mathcal{W}'$.  The result of integration by parts and application of the CP is a nonlinear VI
 \begin{equation}
-N(s)[v-s] \ge \ip{a}{v-s} \quad \text{for all } v \text{ in } \mathcal{K}_b \label{eq:siaVI}
+N(s)[v-s] \ge \ip{a}{v-s} \label{eq:siaVI}
 \end{equation}
-where $\ip{a}{v} = \int_0^L a(x) v(x)\,dx$ is the usual inner product (i.e.~dual pairing \cite{KinderlehrerStampacchia1980}).
+where $\ip{a}{v} = \int_0^L a(x) v(x)\,dx$ is the usual inner product (i.e.~dual pairing \cite{KinderlehrerStampacchia1980}).  We say $s$ in $\mathcal{K}_b$ solves the SIA weak form if inequality \eqref{eq:siaVI} applies for all $v$ in $\mathcal{K}_b$.
+
+Whether written in strong form \eqref{eq:siacp} or weak form \eqref{eq:siaVI}, the SIA problem has a double nonlinearity \cite{Calvoetal2002}, of both the porous medium \cite{Evans2010} and $\pp$-Laplacian types.  That is, compared to \eqref{eq:plaplacianpoisson}, the SIA equation does not even have ``uniform ellipticity'' relative to the $\pp$-Laplacian because the thickness may go to zero, i.e.~the coefficient $(s-b)^{\pp+1}$ may degenerate to zero.  It is important for the reader to recognize that the nonlinear form $N(s)[v]$ will degenerate when either the thickness $s-b$ goes to zero or the surface slope $|u'|$ goes to zero.
 
 Defining
 \begin{equation}
@@ -1026,9 +1026,9 @@ the nonlinear SIA VI takes the form
 \begin{equation}
 F(s)[v-s] \ge 0 \quad \text{for all } v \text{ in } \mathcal{K}_b, \label{eq:siaVIresidual}
 \end{equation}
-the same form as the classical obstacle problem VI \eqref{eq:obstacleviresidual} considered in section \ref{sec:obstacle}.  Regarding the intuition behind \eqref{eq:siaVIresidual}, see Figure \ref{fig:cartoonplane}, and the accompanying text, but note that for general data $b(x)$ the $F$ defined in \eqref{eq:siaF} is \emph{not} the gradient of a scalar objective functional.
+the same form as the classical obstacle problem VI \eqref{eq:obstacleviresidual} considered in section \ref{sec:obstacle}.  Regarding the intuition behind \eqref{eq:siaVIresidual}, see Figure \ref{fig:cartoonplane}, and the accompanying text, but note that for general data $b(x)$ the $F$ defined in \eqref{eq:siaF} is \emph{not} the gradient of a scalar objective functional \cite{JouvetBueler2012}.
 
-The well-posedness of weak-form problem \eqref{eq:siaVIresidual}, which was first explored by \cite{Calvoetal2002}, is still not resolved in the literature, although large-scale numerical applications of this model are well-established.  (For example, see the high-resolution Greenland ice sheet model in section 4.2 of \cite{Bueler2016}, or SIA applications as hybrid ice sheet model components \cite[for example]{Winkelmannetal2011}.)  However, in the unregularized ($\eta_0=0$) case, a solution to the weak form is known to exist \cite{JouvetBueler2012}.  When $b=0$ this solution is unique, but for general bed topography uniqueness has not been established.  Note that \cite{JouvetBueler2012} writes the problem as a VI for a power of the thickness, $u=H^{(2n+2)/n}$, and not for $s$.  However, the surface elevation $s$ of a real glacier or ice sheet is relatively smooth compared to the bed elevation $b$.\footnote{This is especially true if crevassing, and other surficial effects like sastrugi, are ignored, as they are when the ice is assumed to be a viscous fluid.}  We prefer to apply smoothers and transfer operators to $s$ rather than to the ice thickness $H$.
+The well-posedness of weak-form problem \eqref{eq:siaVIresidual}, which was first explored by \cite{Calvoetal2002}, is still not resolved in the literature, although large-scale numerical applications of this model are common.  (For example, see the high-resolution Greenland ice sheet model in section 4.2 of \cite{Bueler2016}, or SIA applications as hybrid ice sheet model components \cite[for example]{Winkelmannetal2011}.)  However, a weak-form solution is known to exist \cite{JouvetBueler2012}.  When $b=0$ this solution is unique, but for general bed topography uniqueness has not been established.  Regarding the proof techniques, note that \cite{JouvetBueler2012} writes the problem as a VI for a power of the thickness, i.e.~for $u=(s-b)^{(2n+2)/n}$, and not for $s$.  However, the surface elevation $s$ of a real glacier or ice sheet is relatively smooth compared to the bed elevation $b$,\footnote{This is especially true if crevassing, and other surficial effects like sastrugi, are ignored, as they are when the ice is assumed to be a viscous fluid.} and so we prefer to apply smoothers and transfer operators to $s$ rather than to the ice thickness $s-b$.
 
 \begin{figure}
 \includegraphics[width=0.65\textwidth]{fixfigs/siadatafigure.pdf}
@@ -1036,32 +1036,34 @@ The well-posedness of weak-form problem \eqref{eq:siaVIresidual}, which was firs
 \label{fig:siadatafigure}
 \end{figure}
 
-For numerical testing we will use the 1D exact solution shown in Figure \ref{fig:siadatafigure}.  (See section 5.6.3 of \cite{GreveBlatter2009} or section 5.3 of \cite{vanderVeen2013} for specific formulas.)  It has a continuous surface mass balance function $a(x)$ which, like the classical obstacle problem solution shown in Figure \ref{fig:icelike}, has negative values towards either end of the interval.  This generates a free boundary, i.e.~an ablation-caused \emph{glacier margin}.  This solution to the $\eta_0=0$ problem has singular gradient at the margin.  Indeed, this $s(x)$ is \emph{not} in the space $\mathcal{W}$ because its margin shape goes like $s(x) \sim |x-x_m|^{1/2}$ if $x_m$ is the position of the margin \cite{Bueleretal2005}.  (In the $L=1800$ km case shown, exact margin positions are $x_m=900\pm 750$ km.)  Only for the uniformly $\pp$-Laplacian-elliptic problem with $\eta_0>0$ do we expect $s(x)$ to live in $\mathcal{W}$.  We will return to this dominating regularity concern below.
+For numerical testing we will use the 1D exact solution shown in Figure \ref{fig:siadatafigure}.  (See section 5.6.3 of \cite{GreveBlatter2009} or section 5.3 of \cite{vanderVeen2013} for specific formulas.)  It has a continuous surface mass balance function $a(x)$ which, like the classical obstacle problem solution shown in Figure \ref{fig:icelike}, has negative values towards either end of the interval.  This generates a free boundary, i.e.~an ablation-caused \emph{glacier margin}, but the gradient is singular at the margin.  Indeed, this $s(x)$ is \emph{not} in the space $\mathcal{W}$ because its margin shape goes like $s(x) \sim |x-x_m|^{1/2}$ if $x_m$ is the position of the margin \cite{Bueleretal2005}.  (In the $L=1800$ km case shown, exact margin positions are $x_m=900\pm 750$ km.)  We will return to this important regularity concern below.
 
-A brief historical summary of the SIA problem may be helpful.  The model appears in \cite{Hutter1983}, and it was first solved by a finite difference scheme in \cite{Mahaffy1976}.  The idea that the glacier geometry solves an obstacle problem was introduced by \cite{Calvoetal2002}.  Existence for this problem was extended to non-flat beds by \cite{JouvetBueler2012}, and finite element type solutions are in \cite{Calvoetal2002,JouvetBueler2012}.  However, none of these solutions use multilevel methods.  That was first applied to the SIA model by Jouvet and others \cite{Jouvetetal2013}, with further results in \cite{JouvetGraeser2013}, using a truncated
-non-smooth Newton multigrid method \cite{GraeserKornhuber2009} which tracks the inactive set; see also \cite{Bueler2016}.  There are also other obstacle problem multilevel methods which might be applied to SIA, including the PFAS method of \cite{BrandtCryer1983}, and inactive-set Newton-multigrid \cite[Chapter 12]{Bueler2021}, and monotone and truncated multigrid \cite{GraeserKornhuber2009}.
+A brief historical summary of the SIA problem may be helpful.  The model appears in \cite{Hutter1983}, and it was first solved by a finite difference scheme in \cite{Mahaffy1976}.  The idea that the glacier geometry solves an obstacle problem was introduced by \cite{Calvoetal2002}.  Existence for this problem was extended to non-flat beds by \cite{JouvetBueler2012}, and finite element type solutions are in \cite{Calvoetal2002,JouvetBueler2012}.  However, none of these references use multilevel methods.  They were first applied to the SIA model by Jouvet and others \cite{Jouvetetal2013}, with further results in \cite{JouvetGraeser2013}, using a truncated
+non-smooth Newton multigrid method \cite{GraeserKornhuber2009} which tracks the inactive set; see also \cite{Bueler2016}.
 
 We propose to apply a nonlinear form of the MCD to the SIA problem.  The MCD framework is geometrically clear and relatively simple, which should lead to more robust numerical implementations.  Our next step is to describe the FE discretization and a nonlinear smoother.
 
-\subsection*{The PNGS smoother}  The discretization of SIA VI form \eqref{eq:siaVIresidual} proceeds essentially as in section \ref{sec:obstacle} for the VI form \eqref{eq:obstacleviresidual} of the classical obstacle problem.  One difference is that we will approximate the integral in the nonlinear form (operator) $N(s)[v]$, formula \eqref{eq:siaN}, using quadrature.  Recall that when we apply an MCD scheme for an obstacle problem, the coarse-level correction involves transformations of the residual and the obstacle from their continuum form to a different level-specific form.
+\subsection*{The PNGS smoother}  The discretization of SIA VI \eqref{eq:siaVIresidual} proceeds essentially as in section \ref{sec:obstacle}, i.e.~for the VI form \eqref{eq:obstacleviresidual} of the classical obstacle problem.  One difference is that we will approximate the integral in \eqref{eq:siaN}, for the nonlinear operator $N(s)[v]$, using quadrature.  Also recall that when we apply an MCD scheme for an obstacle problem, the coarse-level correction involves transformations of the residual and obstacle from their continuum form to a different level-specific form.  On the other hand, the bed elevation $b$ itself appears in the formula for $N(s)[v]$, and not just in defining $\mathcal{K}_b$.
 
-Suppose as before that an iterate $w$ on the $j$th level is written in hat functions,
+Suppose $w$ is an iterate on the $j$th level, an approximation of the surface elevation $s(x)$.  It can be written in hat functions,
 \begin{equation}
   w(x) = \sum_{q=1}^{m_j} w_q \psi_q^j(x), \label{eq:siatrialfunction}
 \end{equation}
-that similarly for the interpolant of the bed elevation, $b^j = \sum b_q \psi_q^j$.  (Note $b^j$ is not the obstacle, but it appears in the formula for $N$.)  Assume that $\ell^j[\cdot]$ is a linear functional with known values $\ell^j[\psi_p^j] = \ell_p$.  (It will be computed below.)  Recall that the support of $\psi_p^j$ is the interval $[x_p^j-h,x_p^j+h]$.  We will approximate $N$ in \eqref{eq:siaN} on the $j$th-level, namely the exact values
+and similarly $b^j = \sum b_q \psi_q^j$ interpolates the bed elevation.  Suppose $\phi^j$ is the obstacle on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$.  (Note $\phi^j$ is \emph{not} generally the interpolant of the bed $b(x)$, but rather it is a defect obstacle; see below.)  Let
 \begin{equation}
-N(w)[\psi_p^j] = \int_{x_p^j-h}^{x_p^j+h} \Gamma (w-b+\eta_0)^{\pp+1} |w'|^{\pp-2} w' (\psi_p^j)'\,dx,  \label{eq:siaNlocal}
+  \mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j. \label{eq:siaadmissiblelevel}
 \end{equation}
-using the trapezoid rule and the piecewise-linearity of the hat functions.  Define
+Assume that $\ell^j[\cdot]$ is a linear functional with values $\ell^j[\psi_p^j] = \ell_p$.  (It is computed below as part of the coarse-level correction process.)  Recall that the support of $\psi_p^j$ is the interval $[x_p^j-h,x_p^j+h]$.  Define two helper functions
 \begin{equation}
-\mu(x) = |x|^{\pp-2} x,  \label{eq:siahelperfcn}
+\mu(x) = |x|^{\pp-2} x, \qquad \tau_p(x)  = (x - b_p)^{\pp+1}, \label{eq:siahelperfcns}
 \end{equation}
-a continuously-differentiable function on $\RR$.  Also define
+on $\RR$ and $x\ge b_p$, respectively.  These functions are continuously-differentiable with nonnegative derivatives $\mu'(x) = (\pp-1) |x|^{\pp-2}$ and $\tau_p'(x) = (\pp+1) (x-b_p)^{\pp}$, respectively.
+
+We will approximate $N$ in \eqref{eq:siaN} on the $j$th-level, with exact values
 \begin{equation}
-\tau_p(x)  = (x - b_p + \eta_0)^{\pp+1},  \label{eq:siahelperpower}
+N(w)[\psi_p^j] = \int_{x_p^j-h}^{x_p^j+h} \Gamma (w-b)^{\pp+1} \mu(w') (\psi_p^j)'\,dx,  \label{eq:siaNlocal}
 \end{equation}
-a power of the regularized thickness when $x=w_p$.  Then the $j$th-level FE residual $F^j(w)[\cdot] \approx N(w)[\cdot] - \ell^j[\cdot]$ has the following values:
+using the trapezoid rule and the piecewise-linearity of the hat functions.  In fact, we define the $j$th-level FE residual $F^j(w)[\cdot] \approx N(w)[\cdot] - \ell^j[\cdot]$, a map from $w$ in $\mathcal{K}^j$ to $F^j(w)$ in $(\mathcal{V}^j)'$, as follows:
 \begin{align}
 F^j(w)[\psi_p^j] &= \Gamma \left(\frac{\tau_{p-1}(w_{p-1}) + \tau_p(w_p)}{2}\right) \mu\left(\frac{w_p-w_{p-1}}{h}\right)\, \frac{+1}{h}\, h \notag \\
     &\qquad\quad  + \Gamma \left(\frac{\tau_p(w_p) + \tau_{p+1}(w_{p+1})}{2}\right) \mu\left(\frac{w_{p+1}-w_p}{h}\right)\, \frac{-1}{h}\, h - \ell_p, \notag \\
@@ -1069,34 +1071,39 @@ F^j(w)[\psi_p^j] &= \Gamma \left(\frac{\tau_{p-1}(w_{p-1}) + \tau_p(w_p)}{2}\rig
     &\qquad\qquad\quad - (\tau_p(w_p) + \tau_{p+1}(w_{p+1})) \mu(w_{p+1}-w_p)\Big] - \ell_p. \notag
 \end{align}
 
-To construct a smoother we suppose $\phi^j$ is the obstacle on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$.  Note $\phi^j$ is \emph{not} generally the interpolant of the bed $b(x)$, but rather it is a defect obstacle; see below.  Next we follow the logic of the VI derivation of the PGS smoother in the previous section, wherein one-dimensional VI \eqref{eq:pgspointwisevi} yields formula \eqref{eq:pgsformula}.  Recall that if $w$ is admissible on the $j$th level, i.e.~if $w\ge \phi^j$, then, for our piecewise-linear finite elements, a point perturbation $w+c\psi_p^j$ is admissible if and only if $w_p+c \ge \phi_p$, equivalently $c \ge \phi_p - w_p$.
-
-At the node $x_p^j$ our \emph{projected nonlinear Gauss-Seidel} (PNGS) smoother seeks a scalar $c \ge \phi_p - w_p$ which solves the following one-dimensional VI: FIXME CONSIDER $w+c\eta_0\psi_p^j$ SO $c$ IS UNITLESS
+To construct a smoother we follow the VI derivation of the PGS smoother in the previous section, wherein one-dimensional VI \eqref{eq:pgspointwisevi} yields formula \eqref{eq:pgsformula}.  Recall that if $w$ is admissible on the $j$th level, i.e.~if $w\ge \phi^j$, then, for piecewise-linear finite elements, a point perturbation $w+c\psi_p^j$ is admissible if and only if $w_p+c \ge \phi_p$, equivalently $c \ge \phi_p - w_p$.  Thus, at the node $x_p^j$, our \emph{projected nonlinear Gauss-Seidel} (PNGS) smoother seeks a scalar $c \ge \phi_p - w_p$ which solves the following one-dimensional VI:
 \begin{equation}
   F^j(w+c\psi_p^j)[(w+\tilde c\psi_p^j) - (w+c\psi_p^j)] \ge 0,  \label{eq:pngspointwiseviEARLY}
 \end{equation}
-for all $\tilde c \ge \phi_p - w_p$.  By linearity we may write this as
+for all $\tilde c \ge \phi_p - w_p$.  By linearity, i.e.~because $F^j(w)$ is in $(\mathcal{V}^j)'$, we may write this as
 \begin{equation}
   (\tilde c - c) g(c) \ge 0,  \label{eq:pngspointwisevi}
 \end{equation}
 where
-\begin{equation}
-  g(c) = F^j(w+c\psi_p^j)[\psi_p^j]  \label{eq:pngspointwiseresidual}
-\end{equation}
-is a differentiable function on $[\phi_p - w_p,+\infty)$ computed from formula \eqref{eq:siaresiduallevel} by replacing $w_p$ with $w_p+c$.
+\begin{align}
+  g(c) &= F^j(w+c\psi_p^j)[\psi_p^j] = \frac{\Gamma}{2h^{\pp-1}} \Big[(\tau_{p-1}(w_{p-1}) + \tau_p(w_p+c)) \mu(w_p+c-w_{p-1}) \label{eq:pngspointwiseresidual}  \\
+       &\hspace{55mm} - (\tau_p(w_p+c) + \tau_{p+1}(w_{p+1})) \mu(w_{p+1}-w_p-c)\Big] - \ell_p \notag
+\end{align}
+is a differentiable function on $[\phi_p - w_p,+\infty)$.
 
-As was the situation for \eqref{eq:pgspointwisevi}, the solution of VI \eqref{eq:pngspointwisevi} is either the unique value $c$ in the admissible interval $[\phi_p - w_p,+\infty)$ such that $g(c)=0$, or it is the left endpoint of that interval.  In fact, regarding the practical matter of constructing a reliable smoother, it is important that we justify why VI \eqref{eq:pngspointwisevi} is well-posed in this sense.  FIXME It suffices to show that $g(c)$ is strictly increasing.  First observe that $\mu'(x) = (\pp-1) |x|^{\pp-2}$ is nonnegative on the real line, and that $\tau_p'(x) = (\pp+1) (x-b_p+\eta_0)^{\pp}$ is strictly positive on the admissible interval\footnote{FIXME conflict between $[\phi_p - w_p,+\infty)$ and $[b_p - w_p,+\infty)$} because $\eta_0>0$.  The derivative of $g$ is
+As was the situation for \eqref{eq:pgspointwisevi}, the solution of VI \eqref{eq:pngspointwisevi} is either the unique value $c$ in the admissible interval $[\phi_p - w_p,+\infty)$ such that $g(c)=0$, or it is the left endpoint of that interval.  In fact, regarding the practical matter of constructing a reliable smoother, it is important that we justify why VI \eqref{eq:pngspointwisevi} is well-posed in this sense.  
+
+FIXME conflict between $[\phi_p - w_p,+\infty)$ and $[b_p - w_p,+\infty)$
+
+FIXME $g(c)$ may not be strictly increasing; its derivative is
 \begin{align}
   g'(c) &= \frac{\Gamma}{2h^{\pp-1}} \Big[\tau_p'(w_p+c) \left(\mu(w_p+c-w_{p-1}) -  \mu(w_{p+1}-w_p-c)\right) \label{eq:pngspointwisejacobian} \\
         &\qquad\qquad + (\tau_{p-1}(w_{p-1}) + \tau_p(w_p+c)) \mu'(w_p+c-w_{p-1}) \notag \\
         &\qquad\qquad + (\tau_p(w_p+c) + \tau_{p+1}(w_{p+1})) \mu'(w_{p+1}-w_p-c)\Big] \notag 
 \end{align}
-It FIXME is easily seen that $g'(c)$ is nonnegative, and FIXME, thus $g(c)$ is strictly increasing, and thus the solution of \eqref{eq:pngspointwisevi} is unique.
 
-However, unlike the corresponding problem for the classical obstacle problem, the solution of \eqref{eq:pngspointwisevi} cannot be found exactly.  Instead we set up a Newton iteration to compute $c$.  FIXME Newton
-\begin{equation}
-  c = \max\left\{-\frac{F^j(w)[\psi_p^j]}{FIXME}, \, \phi_p - w_p\right\}  \label{eq:pngsformula}
-\end{equation}
+FIXME CONSIDER ADDING $\eta_0$ TO THICKNESS
+
+FIXME CONSIDER $w+c\eta_0\psi_p^j$ or $w+ch\psi_p^j$ SO $c$ IS UNITLESS
+
+However, unlike the corresponding problem for the classical obstacle problem, the solution of \eqref{eq:pngspointwisevi} cannot be found exactly.  Instead we set up a Newton iteration to compute $c$.  FIXME
+
+FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not too big)
 
 FIXME use Bueler profile to verify smoother only
 
