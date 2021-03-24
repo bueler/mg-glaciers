@@ -596,11 +596,15 @@ The minimum of $i(b)$ on the admissible interval $\phi_p - w_p \le b < \infty$ o
 \end{equation}
 solves \eqref{eq:pgsminimization}.  In other words, we compute the critical point and project it into the admissible interval.  Then we update $w \gets w + c\psi_p^j$ and proceed to the next point.
 
-This minimization view of PGS is not essential, however.  We can derive formula \eqref{eq:pgsformula} using only VI \eqref{eq:feobstacleviresidual} as follows.  We seek $c$ such that $w+c\psi_p^j$ is admissible and so that \eqref{eq:feobstacleviresidual} holds for all admissible $v=w+\tilde c\psi_p^j$.  That is, we find $c\ge \phi_p-w_p$ so that
+This minimization view of PGS is not essential, however.  We can derive formula \eqref{eq:pgsformula} using only VI \eqref{eq:feobstacleviresidual}, and this will be a useful reference when we consider the glacier model in section \ref{sec:sia}.  We seek $c$ such that $w+c\psi_p^j$ is admissible and so that \eqref{eq:feobstacleviresidual} holds for all admissible $v=w+\tilde c\psi_p^j$.  That is, we find $c\ge \phi_p-w_p$ so that
 \begin{equation}
   F^j(w+c\psi_p^j)[(w+\tilde c\psi_p^j) - (w+c\psi_p^j)] = (\tilde c - c) F^j(w+c\psi_p^j)[\psi_p^j] \ge 0,  \label{eq:pgspointwisevi}
 \end{equation}
-for all $\tilde c\ge \phi_p-w_p$.  Inequality \eqref{eq:pgspointwisevi} is a one-dimensional VI of form $(\tilde c - c)g(c) \ge 0$, on an interval, thus $g(c)=0$ or $c$ is at the end of the interval, and thus \eqref{eq:pgsformula} follows.
+for all $\tilde c\ge \phi_p-w_p$.  Inequality \eqref{eq:pgspointwisevi} is a one-dimensional VI, of form $(\tilde c - c)g(c) \ge 0$ for
+\begin{equation}
+  g(c) = F^j(w+c\psi_p^j)[\psi_p^j] = F^j(w)[\psi_p^j] + c\,a(\psi_p^j,\psi_p^j),  \label{eq:pgspointwisegfunction}
+\end{equation}
+on the interval $[\phi_p-w_p,+\infty)$.  Note that the ellipticity of the Poisson equation implies $a(\psi_p^j,\psi_p^j)>0$, thus that $g(c)$ is strictly increasing, and thus that \eqref{eq:pgspointwisevi} is a well-posed VI.  (While $g(c)$ is a linear function with a trivial root-finding problem, the corresponding problem in section \ref{sec:sia} is more interesting.)  Thus $g(c)=0$ or $c$ is at the end of the interval, and thus \eqref{eq:pgsformula}.
 
 The following pseudocode, a small modification of \pr{gs-sweep} on page \pageref{ps:gs-sweep}, implements PGS:
 \begin{pseudo*} \label{ps:pgs}
@@ -1049,20 +1053,47 @@ that similarly for the interpolant of the bed elevation, $b^j = \sum b_q \psi_q^
 \begin{equation}
 N(w)[\psi_p^j] = \int_{x_p^j-h}^{x_p^j+h} \Gamma (w-b+\eta_0)^{\pp+1} |w'|^{\pp-2} w' (\psi_p^j)'\,dx,  \label{eq:siaNlocal}
 \end{equation}
-using the trapezoid rule and the piecewise-linearity of the hat functions.  Thus the $j$th-level FE residual $F^j(w)[\cdot] \approx N(w)[\cdot] - \ell^j[\cdot]$ has the following values:
-\begin{align}
-F^j(w)[\psi_p^j] &= \Gamma \left(\frac{\tilde H_{p-1}(w)^{\pp+1} + \tilde H_p(w)^{\pp+1}}{2}\right) \left|\frac{w_p-w_{p-1}}{h}\right|^{\pp-2} \frac{w_p-w_{p-1}}{h}\, \frac{+1}{h}\, h \label{eq:siaresiduallevel} \\
-    &\quad  + \Gamma \left(\frac{\tilde H_p(w)^{\pp+1} + \tilde H_{p+1}(w)^{\pp+1}}{2}\right) \left|\frac{w_{p+1}-w_p}{h}\right|^{\pp-2} \frac{w_{p+1}-w_p}{h}\, \frac{-1}{h}\, h - \ell_p, \notag
-\end{align}
-where $\tilde H_p(w)  = w_p - b_p + \eta_0$ is the pointwise value of the regularized thickness.
-
-To construct a smoother we assume an obstacle $\phi^j$ on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$.  Note $\phi^j$ is \emph{not} generally the interpolant of the bed $b(x)$, but rather a defect obstacle; see below.  Following the logic of the VI derivation of the PGS smoother in the previous section, wherein one-dimensional VI \eqref{eq:pgspointwisevi} yields formula \eqref{eq:pgsformula}, at the node $x_p^j$ our \emph{projected nonlinear Gauss-Seidel} (PNGS) smoother seeks a scalar $c \ge \phi_p - w_p$ which solves the following one-dimension VI:
+using the trapezoid rule and the piecewise-linearity of the hat functions.  Define
 \begin{equation}
-  F^j(w+c\psi_p^j)[(w+\tilde c\psi_p^j) - (w+c\psi_p^j)] \ge 0,  \label{eq:pngspointwisevi}
+\mu(x) = |x|^{\pp-2} x,  \label{eq:siahelperfcn}
 \end{equation}
-for all $\tilde c \ge \phi_p - w_p$.  (Recall that if $w$ is admissible on the $j$th level, i.e.~if $w\ge \phi^j$, then, for our piecewise-linear finite elements, a point perturbation $w+c\psi_p^j$ is admissible if and only if $w_p+c \ge \phi_p$, equivalently $c \ge \phi_p - w_p$.)
+a continuously-differentiable function on $\RR$.  Also define
+\begin{equation}
+\tau_p(x)  = (x - b_p + \eta_0)^{\pp+1},  \label{eq:siahelperpower}
+\end{equation}
+a power of the regularized thickness when $x=w_p$.  Then the $j$th-level FE residual $F^j(w)[\cdot] \approx N(w)[\cdot] - \ell^j[\cdot]$ has the following values:
+\begin{align}
+F^j(w)[\psi_p^j] &= \Gamma \left(\frac{\tau_{p-1}(w_{p-1}) + \tau_p(w_p)}{2}\right) \mu\left(\frac{w_p-w_{p-1}}{h}\right)\, \frac{+1}{h}\, h \notag \\
+    &\qquad\quad  + \Gamma \left(\frac{\tau_p(w_p) + \tau_{p+1}(w_{p+1})}{2}\right) \mu\left(\frac{w_{p+1}-w_p}{h}\right)\, \frac{-1}{h}\, h - \ell_p, \notag \\
+    &= \frac{\Gamma}{2h^{\pp-1}} \Big[(\tau_{p-1}(w_{p-1}) + \tau_p(w_p)) \mu(w_p-w_{p-1})  \label{eq:siaresiduallevel} \\
+    &\qquad\qquad\quad - (\tau_p(w_p) + \tau_{p+1}(w_{p+1})) \mu(w_{p+1}-w_p)\Big] - \ell_p. \notag
+\end{align}
 
-The solution of \eqref{eq:pngspointwisevi} is either the critical point of a one-dimensional minimization or the left endpoint of the admissible interval.  However, unlike for the classical obstacle problem, and in contrast to the simplicity of formula \eqref{eq:pgsformula}, the solution of \eqref{eq:pngspointwisevi} cannot generally be found exactly.  Instead we set up a one-dimensional Newton iteration to compute $c$.
+To construct a smoother we suppose $\phi^j$ is the obstacle on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$.  Note $\phi^j$ is \emph{not} generally the interpolant of the bed $b(x)$, but rather it is a defect obstacle; see below.  Next we follow the logic of the VI derivation of the PGS smoother in the previous section, wherein one-dimensional VI \eqref{eq:pgspointwisevi} yields formula \eqref{eq:pgsformula}.  Recall that if $w$ is admissible on the $j$th level, i.e.~if $w\ge \phi^j$, then, for our piecewise-linear finite elements, a point perturbation $w+c\psi_p^j$ is admissible if and only if $w_p+c \ge \phi_p$, equivalently $c \ge \phi_p - w_p$.
+
+At the node $x_p^j$ our \emph{projected nonlinear Gauss-Seidel} (PNGS) smoother seeks a scalar $c \ge \phi_p - w_p$ which solves the following one-dimensional VI: FIXME CONSIDER $w+c\eta_0\psi_p^j$ SO $c$ IS UNITLESS
+\begin{equation}
+  F^j(w+c\psi_p^j)[(w+\tilde c\psi_p^j) - (w+c\psi_p^j)] \ge 0,  \label{eq:pngspointwiseviEARLY}
+\end{equation}
+for all $\tilde c \ge \phi_p - w_p$.  By linearity we may write this as
+\begin{equation}
+  (\tilde c - c) g(c) \ge 0,  \label{eq:pngspointwisevi}
+\end{equation}
+where
+\begin{equation}
+  g(c) = F^j(w+c\psi_p^j)[\psi_p^j]  \label{eq:pngspointwiseresidual}
+\end{equation}
+is a differentiable function on $[\phi_p - w_p,+\infty)$ computed from formula \eqref{eq:siaresiduallevel} by replacing $w_p$ with $w_p+c$.
+
+As was the situation for \eqref{eq:pgspointwisevi}, the solution of VI \eqref{eq:pngspointwisevi} is either the unique value $c$ in the admissible interval $[\phi_p - w_p,+\infty)$ such that $g(c)=0$, or it is the left endpoint of that interval.  In fact, regarding the practical matter of constructing a reliable smoother, it is important that we justify why VI \eqref{eq:pngspointwisevi} is well-posed in this sense.  FIXME It suffices to show that $g(c)$ is strictly increasing.  First observe that $\mu'(x) = (\pp-1) |x|^{\pp-2}$ is nonnegative on the real line, and that $\tau_p'(x) = (\pp+1) (x-b_p+\eta_0)^{\pp}$ is strictly positive on the admissible interval\footnote{FIXME conflict between $[\phi_p - w_p,+\infty)$ and $[b_p - w_p,+\infty)$} because $\eta_0>0$.  The derivative of $g$ is
+\begin{align}
+  g'(c) &= \frac{\Gamma}{2h^{\pp-1}} \Big[\tau_p'(w_p+c) \left(\mu(w_p+c-w_{p-1}) -  \mu(w_{p+1}-w_p-c)\right) \label{eq:pngspointwisejacobian} \\
+        &\qquad\qquad + (\tau_{p-1}(w_{p-1}) + \tau_p(w_p+c)) \mu'(w_p+c-w_{p-1}) \notag \\
+        &\qquad\qquad + (\tau_p(w_p+c) + \tau_{p+1}(w_{p+1})) \mu'(w_{p+1}-w_p-c)\Big] \notag 
+\end{align}
+It FIXME is easily seen that $g'(c)$ is nonnegative, and FIXME, thus $g(c)$ is strictly increasing, and thus the solution of \eqref{eq:pngspointwisevi} is unique.
+
+However, unlike the corresponding problem for the classical obstacle problem, the solution of \eqref{eq:pngspointwisevi} cannot be found exactly.  Instead we set up a Newton iteration to compute $c$.  FIXME Newton
 \begin{equation}
   c = \max\left\{-\frac{F^j(w)[\psi_p^j]}{FIXME}, \, \phi_p - w_p\right\}  \label{eq:pngsformula}
 \end{equation}
