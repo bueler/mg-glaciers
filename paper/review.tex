@@ -1045,7 +1045,11 @@ We propose to apply a nonlinear form of the MCD to the SIA problem.  The MCD fra
 
 \subsection*{The PNGS smoother}  The discretization of SIA VI \eqref{eq:siaVIresidual} proceeds essentially as in section \ref{sec:obstacle}, i.e.~for the VI form \eqref{eq:obstacleviresidual} of the classical obstacle problem.  One difference is that we will approximate the integral in \eqref{eq:siaN}, for the nonlinear operator $N(s)[v]$, using quadrature.  Also recall that when we apply an MCD scheme for an obstacle problem, the coarse-level correction involves transformations of the residual and obstacle from their continuum form to a different level-specific form.  On the other hand, the bed elevation $b$ itself appears in the formula for $N(s)[v]$, and not just in defining $\mathcal{K}_b$.
 
-Suppose $w$ is an iterate on the $j$th level, an approximation of the surface elevation $s(x)$.  It can be written in hat functions,
+Suppose $w$ in $\mathcal{V}^j$ is an iterate on the $j$th level, an approximation of the surface elevation $s(x)$, where
+\begin{equation}
+\mathcal{V}^j \subset \mathcal{W}
+\end{equation}
+is the subspace of piecewise-linear functions with zero boundary values.  The iterate can be written in hat functions,
 \begin{equation}
   w(x) = \sum_{q=1}^{m_j} w_q \psi_q^j(x), \label{eq:siatrialfunction}
 \end{equation}
@@ -1107,7 +1111,51 @@ FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not t
 
 FIXME use Bueler profile to verify smoother only
 
-\subsection*{Nonlinear MCD cycles}  FIXME FAS version of MCD
+\subsection*{Nonlinear MCD cycles}  We derive an apparently-new nonlinear MCD method which generalizes the MCDL method of section \ref{sec:obstacle}.  The first step is to look at a two-level method.  The resulting method is a VI and MCD interpretation of the \emph{full approximation scheme} \cite{Briggsetal2000,Trottenbergetal2001} multilevel method for nonlinear PDEs.
+
+Suppose $b^J$ in $\mathcal{V}^J \subset \mathcal{W}$ is the fine-level interpolant of the continuum bed $b(x)$, and assume that the iterate $w$ in $\mathcal{V}^J$ is admissible in the sense that $w^J \ge b^J$.  As in section \ref{sec:obstacle} we define the fine-level defect obstacle as
+    $$\chi^J = b^J - w^J.$$
+Recall that for a perturbation $y^J$ in $\mathcal{V}^J$, the perturbed iterate is admissible ($w^J + y^J \ge b^J$) if and only if the perturbation is above the defect obstacle ($y^J \ge \chi^J$).  As before we use the monotone restriction operator \eqref{eq:monotonerestriction} to define a defect constraint and down-obstacle on each level,
+    $$\chi^j = \mR \chi^{j+1}, \qquad \phi^j = \chi^j - \chi^{j-1},$$
+for $j=J-1,\dots,1,0$, including $\chi^{-1}=0$ so $\phi^0=\chi^0$, and so that the telescoping-sum decomposition $\chi^J = \sum_{j=0}^J \phi^j$ holds.  Figure \ref{fig:gooddecomposition} again serves as a visualization, but with ``$\varphi^J$'' in that Figure replaced here by the fine-level bed interpolant $b^J$.  Let
+    $$\mathcal{D}^j = \{v \ge \chi^j\}, \qquad \mathcal{K}^j = \{v \ge \phi^j\}$$
+be the up-admissilbe and down-admissible sets, respectively; both are subsets of the FE space $\mathcal{V}^j$.  Recall that $\mathcal{D}^j = \sum_{k=0}^j \mathcal{K}^k$ for all $j$ (by the same telescoping sum).
+
+Let $\ell^a[v] = \ip{a}{v}$.  Our goal is to solve the fine-level version of VI \eqref{eq:siaVI}, that is,
+\begin{equation}
+N(s^J)[v-s^J] \ge \ell_a[v-s^J] \label{eq:siaVIFE}
+\end{equation}
+for all $v$ in the set $\{v \ge b^J\} \subset \mathcal{V}^J$.  Here $s^J$ is the exact solution to this FE weak form, the surface elevation result which we want.
+
+Suppose $y^J$ in $\mathcal{K}^J$ is a down-admissible perturbation of $w^J$.  Substituting $s^J=w^J+y^J$ and $v=w^J+\tilde v$ into \eqref{eq:siaVIFE}, and removing the tilde, $y^J$ should satisfy
+\begin{equation}
+N(w^J+y^J)[v-y^J] \ge \ell_a[v-y^J] \label{eq:siaVIFEperturbationFINE}
+\end{equation}
+for all $v$ in $\mathcal{K}^J$.  In fact, let us suppose that the smoother has been applied and that $y^J$ satisfies \eqref{eq:siaVIFEperturbationFINE} to some accuracy.  Now we seek a coarser-level down-admissible perturbation $y$ in $\mathcal{K}^{J-1}$ so that
+\begin{equation}
+N(w^J+y^J+y)[v-y] \ge \ell_a[v-y] \label{eq:siaVIFEperturbationCOARSE}
+\end{equation}
+for all $v$ in $\mathcal{K}^{J-1}$.
+
+However, \eqref{eq:siaVIFEperturbationCOARSE} is expressed on the fine mesh, in the sense that the input $w^J+y^J+y$ into $N$ is in $\mathcal{V}^J$, while for multigrid efficiency we need a representation on the coarser level.  So we try to rewrite \eqref{eq:siaVIFEperturbationCOARSE} so that it is accurately represented on the $J-1$ level.  Subtract the quantity $N(w^J+y^J)[v-y]$ from both sides:
+\begin{equation}
+N(w^J+y^J+y)[v-y] - N(w^J+y^J)[v-y] \ge \ell_a[v-y] - N(w^J+y^J)[v-y]. \label{eq:siaVIFEcoarselevelEARLY}
+\end{equation}
+We note that the right-hand side is the residual, up to a sign; we define
+    $$F^J(y^J)[v] = N(w^J+y^J)[v] - \ell_a[v]$$
+in $(\mathcal{V}^J)'$.
+
+Equation \eqref{eq:siaVIFEcoarselevelEARLY} holds as is on the fine level.  However, if the smoother has been applied on the fine level then $w^J+y^J$ gives only smooth residual, and the difference between the inputs into $N$, namely $y$, should be smooth also.  We therefore propose the following coarse-level VI problem which approximates  \eqref{eq:siaVIFEcoarselevelEARLY}:
+\begin{equation}
+N^{J-1}\left(R^i(w^J+y^J) + y\right)[v-y] \ge \ell^{J-1}[v-y] \label{eq:SIAVIFEcoarselevel}
+\end{equation}
+for $y$ in $\mathcal{K}^{J-1}$ and all $v$ in $\mathcal{K}^{J-1}$.  Here $R^i:\mathcal{V}^J \to \mathcal{V}^{J-1}$ is injection, which preserves admissibility in the original sense: $R^i:\{v\ge b^J\} \to \{v\ge b^{J-1}\}$.  The new linear function includes the restricted residual from the right side of \eqref{eq:siaVIFEcoarselevelEARLY} plus the $y$-independent term moved from the left side:
+   $$\ell^{J-1}[v] = N^{J-1}\left(R^i(w^J+y^J)\right)[v] - R(F^J(y^J))[v].$$
+(Here $R$ is canonical restriction.)  Finally
+   $$N^{J-1} = FIXME$$
+uses $\mR$ to generate a coarse-level thickness coefficient that is better.  That is, on the coarse level the nonlinear operator is slightly different; it is more ``$\pp$-Laplacian elliptic'' in the sense that the thickness-dependent coefficient is nonzero on a coarse-level superset of the fine-level nonzero set.
+
+FIXME much to do
 
 \subsection*{Convergence and performance results}  FIXME
 
