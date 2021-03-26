@@ -114,7 +114,7 @@ FIXME cite for multigrid on classical obstacle \cite{BrandtCryer1983,Bueler2021,
 
 \section{Subspace decomposition, and geometric multigrid} \label{sec:subspace}
 
-\subsection*{Finite elements for a Poisson model problem}  In this section we will consider how to solve a simple differential equation, namely a linear Poisson-like problem
+\subsection{Finite elements for a Poisson model problem} \label{subsec:poissonfe}  In this section we will consider how to solve a simple differential equation, namely a linear Poisson-like problem
 \begin{equation}
 - \big(\alpha(x)\,u'(x)\big)' = f(x) \quad \text{on} \quad 0 \le x \le 1, \label{eq:poisson}
 \end{equation}
@@ -182,7 +182,7 @@ Given $w$ which does not already solve \eqref{eq:feweakpoisson}, we will iterati
 
 The number of nonzero terms in sum \eqref{eq:residualpoisson} is equal to the number of hat functions $\psi_q$ whose support overlaps the support of $\psi_p$.  This number is at most three in the current 1D case, and for general 2D and 3D meshes it remains small if the elements do not have small angles \cite{Braess2007}.  Thus the computation of a component $F(w)[\psi_p]$ requires $O(1)$ work, so computing all components of a residual linear functional $F(w)$ requires $O(m)$ work.  This observation about the cost of evaluating a residual is foundational in all of our methods.
 
-\subsection*{Coarse mesh levels and subspace decompositions}  From the above simple FE scheme we now take the first steps to build a \emph{multilevel} scheme.  Consider an enlarged set of hat functions:
+\subsection{Coarse mesh levels and subspace decompositions} \label{subsec:coarselevels}  From the above simple FE scheme we now take the first steps to build a \emph{multilevel} scheme.  Consider an enlarged set of hat functions:
     $$\underbrace{\psi_1(x),\dots,\psi_m(x)}_{\text{existing fine level}},\underbrace{\psi_{m+1}(x),\dots,\psi_M(x)}_{\text{\small coarser levels}}$$
 For example, two coarser levels, derived from the fine level in Figure \ref{fig:finehats} by coarsening, are shown in Figure \ref{fig:coarsehats}.  The first coarsening (top) by-passes every other node on the fine mesh, and the next coarsening (bottom) does this again.
 
@@ -221,7 +221,7 @@ This decomposition will be useful despite the facts that the subspaces are neste
 
 Using our hat function bases, a subspace decomposition provides an approximate \emph{scale of frequencies}.  Informally, the value of the inner product of a function $g(x)$ with a fine-level hat, $\ip{g}{\psi_p^J}$, is, relative to the norm $\|g\| = \ip{g}{g}^{1/2}$, mostly a measure of its high-frequency content at $x_p^J$.  The inner product with a coarser-mesh hat $\psi_p^j$, by contrast, measures lower frequency content because it averages over many fine-mesh nodes.  If decomposition \eqref{eq:subspacedecomposition} were instead a Fourier decomposition, with each $\mathcal{V}^j$ spanned by waves of disjoint frequency ranges, then the sum would be orthogonal and the ``scale of frequencies'' meaning would be exact.  Our decompositions will always involve overlapping ranges of frequencies, but our multilevel methods will reduce the energy of the error on each level $\mathcal{V}^j$, and on coarser levels this will rapidly reduce the low frequencies present in the error.
 
-\subsection*{Gauss-Seidel, Jacobi, and time-stepping as smoothers}  Our first solution method for FE problem \eqref{eq:feweakpoisson}, called \emph{Gauss-Seidel} (GS) iteration, is sequential and point-wise \emph{relaxation} of the residual \eqref{eq:residual}.  Though matrices are often used to present such classical iteration algorithms \cite[for example]{Bueler2021,Greenbaum1997}, we present them using only residuals and hat functions, a beneficial approach when we consider nonlinear glacier models.
+\subsection{Gauss-Seidel, Jacobi, and time-stepping as smoothers} \label{subsec:smoothers}  Our first solution method for FE problem \eqref{eq:feweakpoisson}, called \emph{Gauss-Seidel} (GS) iteration, is sequential and point-wise \emph{relaxation} of the residual \eqref{eq:residual}.  Though matrices are often used to present such classical iteration algorithms \cite[for example]{Bueler2021,Greenbaum1997}, we present them using only residuals and hat functions, a beneficial approach when we consider nonlinear glacier models.
 
 The $j$th-level GS algorithm sweeps through the mesh nodes $x_p^j$, modifying the iterate $w(x)$ by a multiple of $\psi_p^j$ to make that residual value zero.  That is, we compute $c$ so that
 \begin{equation}
@@ -302,7 +302,7 @@ In particular, the time step \id{deltat} apparently plays the role of \id{omega}
 
 In summary, applied to the Poisson problem \eqref{eq:poisson}, the GS and Jacobi iterations act as smoothers.  Subject to stability restrictions on the time step, forward Euler time-stepping for the corresponging heat equation \eqref{eq:heat} is also a smoother.  Applied on a single mesh level, all of these methods are slow to converge.  Optimal performance of the multilevel methods of this paper depends on applying such smoothers on different mesh levels.  We will see in sections \ref{sec:sia} and \ref{sec:stokes} that the particular smoothers here are not sufficient, and indeed smoother choice is nontrivial for glacier problems, but fortunately the space of possible smoothers is sufficiently large.
 
-\subsection*{Multilevel subspace corrections}  When a smoother is applied on a given level $j$, whether once or a few times, the error and residual of the iterate no longer contain much energy in high-frequency modes.  It makes sense to switch to smoothing on the $j-1$ level to remove energy in lower frequencies.  That is, we correct the residual on the next-coarser level.
+\subsection{Multilevel subspace corrections} \label{subsec:msc}  When a smoother is applied on a given level $j$, whether once or a few times, the error and residual of the iterate no longer contain much energy in high-frequency modes.  It makes sense to switch to smoothing on the $j-1$ level to remove energy in lower frequencies.  That is, we correct the residual on the next-coarser level.
 
 For example, if we start on the finest level $J$ then we have the following \emph{multilevel subspace corrections} \cite{Xu1992} algorithm:
 \begin{pseudo*} \label{ps:msc-downslash}
@@ -359,7 +359,7 @@ It follows from \eqref{eq:mscconvergence} that if we want the error norm $e^{(s)
 
 The pseudocode \pr{msc-solver} does not, yet, define an efficiently-implementable solver.  Its performance depends on how iterates $w$ and residuals $F(w)[\cdot]$ are \emph{represented on each mesh level}.  For example, if we represent $w$ and $F(w)$ using the fine-level basis $\{\psi_p^J\}$ then one application of \pr{gsweep}$(J,w,F)$ is indeed fast, i.e.~$O(m_J)$ operations, with a small constant, because evaluating each $F(w)[\psi_p^J]$ requires only a few operations.  However, evaluating $F(w)[\psi_p^j]$ on coarse levels ($j<J$) means computing integrals over the wide support of $\psi_p^j$, which is nonzero at many fine-mesh nodes $x_p^J$.  For example, \pr{gs-sweep}$(j,w,F)$ on a coarser level $j<J$ is not an efficient operation if $w$ and $F(w)$ are represented on the fine level; it is not an $O(m_j)$ operation with a coefficient which is independent of $j$.  This important concern is addressed via hierarchical representations, which are compatible with our multilevel corrections.
 
-\subsection*{Linear geometric multigrid}  Once the smoother has been applied on the fine level, so that the error and the residual no longer contain much energy in the high-frequency modes, the smoother should then be applied on the next-coarser level.  However, a fast algorithm must use appropriate coarse-level data structures to represent the problem on the new level.  When this idea is applied down the mesh-level hierarchy, we go beyond multilevel subspace corrections and create a true multigrid algorithm.
+\subsection{Linear geometric multigrid} \label{subsec:gmg}  Once the smoother has been applied on the fine level, so that the error and the residual no longer contain much energy in the high-frequency modes, the smoother should then be applied on the next-coarser level.  However, a fast algorithm must use appropriate coarse-level data structures to represent the problem on the new level.  When this idea is applied down the mesh-level hierarchy, we go beyond multilevel subspace corrections and create a true multigrid algorithm.
 
 Efficiency on coarser levels requires addressing two related concerns:
 \renewcommand{\labelenumi}{\emph{\roman{enumi})}}
@@ -451,7 +451,7 @@ If the coarsest mesh has a single node ($m_0=1$) then, for a linear problem, a s
 
 Before proceeding, the reader might ask what makes the above V-cycles ``geometric''?  Though the label is partly historical, note that our restriction and prolongation operators arise from the dimensions of the FE mesh via coefficients which use the hat functions ($c_{pq} = \psi_p^{j-1}(x_q^j)$).  Also, we \emph{rediscretize} on coarser levels, that is, we use the original bilinear form $a(\cdot,\cdot)$ on all levels.  An alternative to rediscretization is the \emph{Galerkin} approach which forms coarser-level matrices recursively by $A^{j-1} = R A^j P$, starting from $A^J$ which is the fine-level system matrix; see \cite[Chapter V]{Braess2007} and \cite[Chapter 6]{Bueler2021}.  Going further away from our approach, in a \emph{algebraic multigrid} (AMG) method \cite[Appendix A]{Trottenbergetal2001} the prolongation $P$ is constructed using operations on the entries of $A^J$, and such algorithms invariably define $R=P^\top$.  On linear elliptic problems the geometric and algebraic approaches are closely-related, in part because AMG has been ``tuned'' to generate prolongations $P$ with similar coefficients, but for our upcoming nonlinear and inequality-constrained problems the geometric approach generalizes directly.  By contrast, AMG can only solve the linear steps in a separately-constructed iteration, e.g.~by requiring an outer Newton iteration.  GMG and AMG approaches are natural competitors for the highest-performance solutions, but we will persevere here with the geometric approach.
 
-\subsection*{On transfer operators}  The operators $R$ and $P$ make no choices, which is the meaning of ``canonical''.  However, their application requires computation because of how we represent functions and functionals on each level.  In fact, full-weighting formulae \eqref{eq:canonicalrestrictionaction} and \eqref{eq:canonicalprolongationaction}, which generalize verbatim to unstructured 2D and 3D meshes when the indices $p,q$ denote the nodes of the mesh \cite[Chapter V]{Braess2007}, arise from the simple fact \eqref{eq:hatcombination}, that each coarse-level hat function is a linear combination of fine-level hats.
+\subsection{On transfer operators} \label{subsec:transfers}  The operators $R$ and $P$ make no choices, which is the meaning of ``canonical''.  However, their application requires computation because of how we represent functions and functionals on each level.  In fact, full-weighting formulae \eqref{eq:canonicalrestrictionaction} and \eqref{eq:canonicalprolongationaction}, which generalize verbatim to unstructured 2D and 3D meshes when the indices $p,q$ denote the nodes of the mesh \cite[Chapter V]{Braess2007}, arise from the simple fact \eqref{eq:hatcombination}, that each coarse-level hat function is a linear combination of fine-level hats.
 
 As linear operators, $R$ and $P$ may be represented as sparse, rectangular matrices, and they are transposes ($P=R^\top$), but using memory to store them this way is unnecessary.  They are applied in $O(m_j)$ operations via \eqref{eq:canonicalrestrictionaction} and \eqref{eq:canonicalprolongationaction}.
 
@@ -484,7 +484,7 @@ We have now presented a basic GMG algorithm for linear PDEs via a particular FE 
 
 \section{Constraint decomposition for the obstacle problem} \label{sec:obstacle}
 
-\subsection*{An ice-like model problem}  We now have a clear view of the GMG method, for a linear equation and from the MSC point of view.  However, as addressed in section \ref{sec:intro}, the main problem of how glacier geometry and ice velocity co-evolve in response to climatic inputs requires an inequality constraint for well-posedness.  The fact that the ice surface elevation is above the bed generates the land-terminating mass-conservation boundary condition.  This constraint, by itself, makes the problem nonlinear and reduces solution regularity, making it challenging to numerical methods.
+\subsection{An ice-like model problem} \label{subsec:obstacleproblem}  We now have a clear view of the GMG method, for a linear equation and from the MSC point of view.  However, as addressed in section \ref{sec:intro}, the main problem of how glacier geometry and ice velocity co-evolve in response to climatic inputs requires an inequality constraint for well-posedness.  The fact that the ice surface elevation is above the bed generates the land-terminating mass-conservation boundary condition.  This constraint, by itself, makes the problem nonlinear and reduces solution regularity, making it challenging to numerical methods.
 
 To address such constraints in a multilevel framework, and before actually modeling glaciers in section \ref{sec:sia}, we introduce the \emph{classical obstacle problem}.  It simply adds an inequality constraint to linear Poisson equation \eqref{eq:poisson}.  After stating the weak form, which is now solved over a convex \emph{subset} of the function space, we will modify the MSC approach into the \emph{multilevel constraint decomposition} (MCD) method.  Each mesh level will host an inequality-constrained problem, and together all the levels will capture the constraint subset.  The nonlinear SIA model (section \ref{sec:sia}) and the Stokes model (section \ref{sec:stokes}) will use a nonlinear extension of the MCD method.
 
@@ -526,7 +526,7 @@ Unlike problem \eqref{eq:poisson}, the solution to \eqref{eq:obstaclecp} does \e
 
 The glacier problem also has a CP formulation (section \ref{sec:sia}; see also \cite{Calvoetal2002}) in which the obstacle is the bed elevation, the solution is the glacier surface elevation, and the source term is the surface mass balance.  In the inactive region, i.e.~on the glacier, the mass conservation equation applies, and the surface mass balance must be negative in the active region off the glacier.
 
-\subsection*{Weak formulation with constraints}  We now define a closed subset which incorporates the constraint:
+\subsection{Weak formulation with constraints} \label{subsec:obstacleweak}  We now define a closed subset which incorporates the constraint:
 \begin{equation}
 \mathcal{K} = \left\{v \ge \varphi\right\} \subseteq \mathcal{H}.  \label{eq:Kdefine}
 \end{equation}
@@ -575,7 +575,7 @@ Regardless of how the classical obstacle problem is formulated, a \emph{free bou
 
 The solution of the classical obstacle problem will generally be non-smooth at a free boundary even when the data are arbitrarily smooth.  For example, smoothing the source term $f$ in \eqref{eq:icelikedetails} by ``mollification'' \cite{Evans2010}, so that the transition between positive and negative values would be $C^\infty$, would give a solution nearly the same as shown in Figure \ref{fig:icelike} (top).  However, the free boundary would remain, and at that free boundary the second derivative $u''$ would jump discontinuously from value $+16=-f$ to value $-2=\varphi''$.  A similar jump in $u''$ applies at the free boundary in Figure \ref{fig:icelike} (bottom), from $0=f$ to $-16=\varphi''$.  In general it is known that for smooth $C^\infty$ data ($f,\varphi$) the obstacle problem solution $u$ is in the Sobolev space $W^{2,\infty}$, but it is not in $C^2$ \cite[section IV.6]{KinderlehrerStampacchia1980}.
 
-\subsection*{Smoothers: projected Gauss-Seidel and Jacobi}  Now consider the FE method for a VI.  On each mesh level we will define an obstacle $\phi^j$ in $\mathcal{V}^j$, an admissible set $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j$, and a residual function $F^j$.  (Recall $\mathcal{V}^j$ is the vector space spanned by the $j$th-level hats $\psi_p^j$; see section \ref{sec:subspace}.)  The FE method seeks $y^j$ in $\mathcal{K}^j$ so that a finite-dimensional VI holds:
+\subsection{Smoothers: projected Gauss-Seidel and Jacobi} \label{subsec:obstaclesmoothers}  Now consider the FE method for a VI.  On each mesh level we will define an obstacle $\phi^j$ in $\mathcal{V}^j$, an admissible set $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j$, and a residual function $F^j$.  (Recall $\mathcal{V}^j$ is the vector space spanned by the $j$th-level hats $\psi_p^j$; see section \ref{sec:subspace}.)  The FE method seeks $y^j$ in $\mathcal{K}^j$ so that a finite-dimensional VI holds:
 \begin{equation}
   F^j(y^j)[v-y^j] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}^j. \label{eq:feobstacleviresidual}
 \end{equation}
@@ -641,7 +641,7 @@ for some tolerance \id{rtol}.
 
 The above projected iterations will serve as our smoothers, applied one or two times on each level, and as the coarse-level solver as well.  However, we are not yet prepared to build a multilevel method for problem \eqref{eq:feobstacleviresidual} because the nontrivial construction of the obstacles $\phi^j$ and residuals $F^j$ remains.  We need to decompose the continuum constraint $\varphi$ across the mesh-level hierarchy, and we need to construct admissible multilevel corrections.
 
-\subsection*{Multilevel constraint decomposition (MCD)}  How do we maintain admissibility throughout a multilevel cycle while not introducing high-frequencies?
+\subsection{Multilevel constraint decomposition (MCD)} \label{subsec:mcd}  How do we maintain admissibility throughout a multilevel cycle while not introducing high-frequencies?
 
 Consider the coarse-level correction $e^{j-1}$ in a linear V-cycle (section \ref{sec:subspace}, equation \eqref{eq:coarsecorrection}), which is prolonged onto the $j$th level.  For an obstacle problem the resulting iterate would need to be admissible, i.e.~$w + P e^{j-1}$ would need to be above the obstacle, say $\varphi^j$.  However, as illustrated in Figure \ref{fig:prolongobstacle}, if the obstacles are interpolants of a (common) continuum obstacle $\varphi$ then an iterate which is admissible on the $j-1$ level is \emph{not} necessarily admissible on the $j$ level.  (In the glacier context, a coarse-mesh ice surface may be breached by the fine-mesh bed topography.)  We might try enforcing admissibility by \emph{truncation}, namely overwriting $\tilde w = w + Pe^{j-1}$ with $\max\{\tilde w, \varphi^j\}$.  However, this reintroduces high frequencies, requiring additional smoother effort to remove, and generally damaging multigrid convergence rates.
 
@@ -734,7 +734,7 @@ Looking forward to the glacier problem in section \ref{sec:sia}, the fine-mesh o
 \label{fig:icelikedecomposition}
 \end{figure}
 
-\subsection*{MCD coarse-level corrections}  On each mesh level there is now an obstacle problem, and we will write it in three forms.  The forms are equivalent for the classical obstacle problem, but only one will generalize to the glacier problems in sections \ref{sec:sia} and \ref{sec:stokes}.  For now, recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the continuum residual \eqref{eq:residual}, and then $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function.
+\subsection{MCD coarse-level corrections} \label{subsec:mcdcorrections}  On each mesh level there is now an obstacle problem, and we will write it in three forms.  The forms are equivalent for the classical obstacle problem, but only one will generalize to the glacier problems in sections \ref{sec:sia} and \ref{sec:stokes}.  For now, recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the continuum residual \eqref{eq:residual}, and then $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function.
 
 Again suppose $w^J$ is an admissible iterate on the fine level: $w^J\ge \varphi^J$.  Assume that we have already descended from the fine level $J$ to some level $j+1$, computing admissible corrections $y^k$ from each set $\mathcal{K}^k=\{v\ge \phi^k\}$, for $k\ge j+1$.  From the definitions of $\chi^J$ and $\mathcal{D}^J$, the function $z = w^J+y^J+\dots+y^{j+1}$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.  The MCD \emph{coarse-level correction} is a function $y$ in $\mathcal{K}^j=\{v\ge \phi^j\}$ such that one of the following holds:
 \begin{itemize}
@@ -776,7 +776,7 @@ The left equivalence depends on linearity, and the right on symmetry, but VI for
 
 When $F$ is not the gradient of a coercive objective function, e.g.~as in the SIA and Stokes glacier problems, additional structural properties of $F$ are required for well-posedness (e.g.~monotonicity \cite{Bueler2020,JouvetBueler2012,KinderlehrerStampacchia1980}).  However, we will assume well-posedness and proceed with the numerics.
 
-\subsection*{Linear MCD cycles}  Now we may implement multilevel cycles for the classical obstacle problem.  Because the interior PDE of this problem is the linear Poisson equation, we solve form \eqref{eq:mcdvilinear} and name the method \pr{MCDL}, with L for ``linear''.  A general nonlinear MCD algorithm is applied to glacier problems in sections \ref{sec:sia} and \ref{sec:stokes}.
+\subsection{Linear MCD cycles} \label{subsec:mcdl}  Now we may implement multilevel cycles for the classical obstacle problem.  Because the interior PDE of this problem is the linear Poisson equation, we solve form \eqref{eq:mcdvilinear} and name the method \pr{MCDL}, with L for ``linear''.  A general nonlinear MCD algorithm is applied to glacier problems in sections \ref{sec:sia} and \ref{sec:stokes}.
 
 We represent functions and linear functionals in the piecewise-linear spaces $\mathcal{V}^j$ and $(\mathcal{V}^j)'$ just as in section \ref{sec:subspace}.  To address how the correction problem is actually moved onto the coarser level, note that equations \eqref{eq:rhslinearlevel} and \eqref{eq:residuallinearlevel} will be applied after smoothing of the previous correction $y^{j+1}$, so we approximate the residual by applying canonical restriction,
 \begin{equation}
@@ -829,7 +829,7 @@ The following in-place solver adds an outer loop which sets-up the fine-level da
             break \\--
 \end{pseudo*}
 
-\subsection*{Convergence of the numerical error}  All of the pseudocodes in the current section have been implemented in Python.\footnote{At\, \href{https://github.com/bueler/mg-glaciers/}{\texttt{github.com/bueler/mg-glaciers/}} see the \texttt{py/1D/} directory and its \texttt{README.md}.}  Both to verify these implementations, and to demonstrate the differences in numerical error convergence rates between the obstacle problem and the corresponding unconstrained PDE, we use three exact solutions.  The first two are already shown in Figure \ref{fig:icelike}; note that the ``ice-like'' case has a discontinuous source $f$, while ``traditional'' has $f=0$, but both have smooth, parabolic obstacles.  The third ``unconstrained'' exact solution is for the Poisson equation $-u''=f$.  Specifically, the obstacle is low enough so that the inactive set is $(0,1)$, all smoothing steps avoid projection, and $u(x) = x^2(1-x^2)$, $f(x) = 12 x^2-2$, and $\varphi=-1$.
+\subsection{Convergence of the numerical error} \label{subsec:obstacleconvergence}  All of the pseudocodes in the current section have been implemented in Python.\footnote{At\, \href{https://github.com/bueler/mg-glaciers/}{\texttt{github.com/bueler/mg-glaciers/}} see the \texttt{py/1D/} directory and its \texttt{README.md}.}  Both to verify these implementations, and to demonstrate the differences in numerical error convergence rates between the obstacle problem and the corresponding unconstrained PDE, we use three exact solutions.  The first two are already shown in Figure \ref{fig:icelike}; note that the ``ice-like'' case has a discontinuous source $f$, while ``traditional'' has $f=0$, but both have smooth, parabolic obstacles.  The third ``unconstrained'' exact solution is for the Poisson equation $-u''=f$.  Specifically, the obstacle is low enough so that the inactive set is $(0,1)$, all smoothing steps avoid projection, and $u(x) = x^2(1-x^2)$, $f(x) = 12 x^2-2$, and $\varphi=-1$.
 
 Figure \ref{fig:convergence} shows the numerical error norm $\|u^h-u\|_2$ as a function of mesh spacing $h$ for runs with \id{rtol} $=10^{-7}$.  The convergence rate for ``traditional'' is the best possible, as $O(h^2)$ error is expected (and observed) for unconstrained problems \cite{Elmanetal2014}.  The ``ice-like'' convergence rate is poor here because of the lower regularity of $f$.  Note that the low regularity of obstacle problem solutions will have a greater effect on 2D or 3D convergence rates.
 
@@ -839,7 +839,7 @@ Figure \ref{fig:convergence} shows the numerical error norm $\|u^h-u\|_2$ as a f
 \label{fig:convergence}
 \end{figure}
 
-\subsection*{Performance: results and theory}  In this section we evaluate the performance of V-cycles computed by our implementation of MCDL.  We will count iterations, measure work units (defined below), and measure run time.  In summary, MCDL for the classical obstacle problem is not quite as efficient as GMG for the Poisson equation.  Performance depends weakly on mesh resolution, a result supported by theory, but it is far superior to single-level approaches.
+\subsection{Performance: results and theory} \label{subsec:obstacleperformance}  In this section we evaluate the performance of V-cycles computed by our implementation of MCDL.  We will count iterations, measure work units (defined below), and measure run time.  In summary, MCDL for the classical obstacle problem is not quite as efficient as GMG for the Poisson equation.  Performance depends weakly on mesh resolution, a result supported by theory, but it is far superior to single-level approaches.
 
 We compare the performance of four MCDL solvers:
 \begin{itemize}
@@ -929,7 +929,7 @@ We now have three comparable convergence theorems, namely Theorems \ref{thm:mscc
 
 MCD convergence Theorem \ref{thm:mcdconvergence} actually applies to certain nonlinear VI problems.  However, the proof requires a constrained-minimization formulation and a uniform-ellipticity bound \cite{Tai2003}, and the glacier problems in sections \ref{sec:sia} and \ref{sec:stokes} satisfy neither hypothesis.  In this paper we will not pursue the theory further, but we will measure the performance of our MCD approaches on glacier problems.  Our standing assumption is that MCDL performance for the 1D classical obstacle problem represents the best-possible result.
 
-\subsection*{Nested iteration} We must consider a technique which can substantially-improve multilevel performance.  In \emph{nested iteration} \cite{Trottenbergetal2001} an initial iterate comes from prolonging a converged iterate from a coarser mesh.  If we then solve on each level by V-cycles then the resulting \emph{full multigrid} method does an \emph{F-cycle} (Figure \ref{fig:fcycle}).  That is, an F-cycle results from concatenating V-cycles using the solution prolongation.  Note that while a correction $y^{j-1}$ is prolonged in a V-cycle, now we also need to prolong the iterate $w^{j-1}$ itself, and the result needs to be admissible.
+\subsection{Nested iteration} \label{subsec:obstaclefcycles}  We must consider a technique which can substantially-improve multilevel performance.  In \emph{nested iteration} \cite{Trottenbergetal2001} an initial iterate comes from prolonging a converged iterate from a coarser mesh.  If we then solve on each level by V-cycles then the resulting \emph{full multigrid} method does an \emph{F-cycle} (Figure \ref{fig:fcycle}).  That is, an F-cycle results from concatenating V-cycles using the solution prolongation.  Note that while a correction $y^{j-1}$ is prolonged in a V-cycle, now we also need to prolong the iterate $w^{j-1}$ itself, and the result needs to be admissible.
 
 \begin{figure}
 \input{tikz/fcycle.tex}
@@ -974,7 +974,7 @@ Many variations on V- and F-cycle strategies have not been tested in this sectio
 
 \section{Multigrid for the shallow-ice mass conservation problem} \label{sec:sia}
 
-\subsection*{The SIA obstacle problem}  Now we will consider an obstacle problem, a nonlinear version of the Poisson equation \eqref{eq:poisson}, namely the steady and isothermal shallow-ice approximation (SIA) model for ice surface elevation \cite{Bueleretal2005,Huybrechtsetal1996,vanderVeen2013}.  The weak form of this model is a nonlinear variational inequality (VI), but as usual we state the problem in strong form first.
+\subsection{The SIA obstacle problem} \label{subsec:siaproblem}  Now we will consider an obstacle problem, a nonlinear version of the Poisson equation \eqref{eq:poisson}, namely the steady and isothermal shallow-ice approximation (SIA) model for ice surface elevation \cite{Bueleretal2005,Huybrechtsetal1996,vanderVeen2013}.  The weak form of this model is a nonlinear variational inequality (VI), but as usual we state the problem in strong form first.
 
 We must specify the data and parameters of the 1D model.  Suppose we are given a \emph{surface mass balance} function $a(x)$, of size $O(1)$ meters per year, and a \emph{bed elevation} (topography) function $b(x)$ in meters above sea level.  These data $a(x)$ and $b(x)$ are assumed to be time-independent.  Let $n>1$ be the (Glen) power, $\rhoi$ the ice density, and $g$ the acceleration of gravity.  Assuming isothermal conditions \cite{GreveBlatter2009}, let $A>0$ be the (constant) ice softness.  The values used in experiments are from \cite{Huybrechtsetal1996}: $n=3$, $\rhoi=910 \,\text{kg}\,\text{m}^{-3}$, $g=9.81 \,\text{m}\,\text{s}^{-2}$, and $A=10^{-16} \,\text{Pa}^n\,\text{a}^{-1}$.
 
@@ -1042,7 +1042,7 @@ A brief historical summary of the SIA problem may be helpful.  The model was fir
 non-smooth Newton multigrid method \cite{GraeserKornhuber2009} which tracks the inactive set.
 
 
-\subsection*{Nonlinear MCD cycles}  We propose to apply a nonlinear form of the MCD method to the SIA VI problem.  The method is, simultaneously, a \emph{full approximation storage} scheme \cite{Briggsetal2000,Trottenbergetal2001}, that is, a version of a well-known multilevel strategy for nonlinear PDEs, and a generalization the MCDL method of section \ref{sec:obstacle}.  This framework, which is both geometrically clear and relatively simple, should lead to more robust numerical implementations.  The first step is to look at a two-level method.
+\subsection{Nonlinear MCD cycles} \label{subsec:mcdn}  We propose to apply a nonlinear form of the MCD method to the SIA VI problem.  The method is, simultaneously, a \emph{full approximation storage} scheme \cite{Briggsetal2000,Trottenbergetal2001}, that is, a version of a well-known multilevel strategy for nonlinear PDEs, and a generalization the MCDL method of section \ref{sec:obstacle}.  This framework, which is both geometrically clear and relatively simple, should lead to more robust numerical implementations.  The first step is to look at a two-level method.
 
 As before our fine-level FE space is $\mathcal{V}^J \subset \mathcal{W}$, the space of continuous piecewise-linear functions with zero boundary values.  Suppose $b^J$ in $\mathcal{V}^J$ is the fine-level interpolant of the continuum bed $b$, and assume that an iterate $w^J$ in $\mathcal{V}^J$ is admissible in the sense that $w^J \ge b^J$.  As in section \ref{sec:obstacle} we define the fine-level defect constraint and corresponding set as
     $$\chi^J = b^J - w^J, \qquad \mathcal{D}^J = \{v\ge \chi^J\} \subset \mathcal{V}^J.$$
@@ -1094,7 +1094,7 @@ uses $\mR$ to generate a coarse-level thickness coefficient that is better.  Tha
 FIXME much to do
 
 
-\subsection*{The PNGS smoother}  The discretization of SIA VI \eqref{eq:siaVIresidual} proceeds essentially as for the VI form \eqref{eq:obstacleviresidual} of the classical obstacle problem.  One difference is that we will approximate the integral in \eqref{eq:siaN}, for the nonlinear operator $N(s)[v]$, using quadrature.  Also recall that when we apply an MCD scheme for an obstacle problem, the coarse-level correction involves transformations of the residual and obstacle from their continuum form to a different level-specific form.  Also, note that the bed elevation $b$ itself appears in the formula for $N(s)[v]$, and not just in defining $\mathcal{K}_b$.
+\subsection{The PNGS smoother} \label{subsec:pngs}  The discretization of SIA VI \eqref{eq:siaVIresidual} proceeds essentially as for the VI form \eqref{eq:obstacleviresidual} of the classical obstacle problem.  One difference is that we will approximate the integral in \eqref{eq:siaN}, for the nonlinear operator $N(s)[v]$, using quadrature.  Also recall that when we apply an MCD scheme for an obstacle problem, the coarse-level correction involves transformations of the residual and obstacle from their continuum form to a different level-specific form.  Also, note that the bed elevation $b$ itself appears in the formula for $N(s)[v]$, and not just in defining $\mathcal{K}_b$.
 
 Suppose $w$ in $\mathcal{V}^j \subset \mathcal{W}$ is an iterate on the $j$th level, an approximation of the surface elevation $s(x)$.  (Recall $\mathcal{V}^j$ contains all piecewise-linear functions with zero boundary values.)  The iterate can be written in hat functions,
 \begin{equation}
@@ -1162,9 +1162,9 @@ FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not t
 
 FIXME use Bueler profile to verify smoother only
 
-\subsection*{Convergence and performance results}  FIXME
+\subsection{Convergence and performance results} \label{subsec:siaperformance}  FIXME
 
-\subsection*{Performance of implicit evolving-geometry solvers}  FIXME use Halfar solution
+\subsection{Performance of implicit evolving-geometry solvers} \label{subsec:siaimplicit}  FIXME use Halfar solution
 
 %FIXME for 2D domains use Firedrake?
 
