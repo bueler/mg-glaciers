@@ -60,26 +60,50 @@ class SmootherObstacleProblem(ABC):
     def exact_available(self):
         '''Returns True if there is a valid uexact(x) method.'''
 
-def _poissondiagonalentry(mesh, p):
-    '''Compute the diagonal value of a(.,.) at hat function psi_p^j:
-       a(psi_p,psi_p) = int_0^1 (psi_p^j)'(x)^2 dx
-    Input mesh is of class MeshLevel1D.'''
-    assert 1 <= p <= mesh.m
-    return 2.0 / mesh.h
+def _pde2alpha(x):
+    return 2.0 + np.sin(2.0 * np.pi * x)
 
 class PGSPoisson(SmootherObstacleProblem):
     '''Class for the projected Gauss-Seidel (PGS) algorithm as a smoother
-    for the linear Poisson equation -u''=f with u(0)=u(1)=0.'''
+    for the linear Poisson equation - (alpha u')' = f with u(0)=u(L)=0.'''
+
+    def __init__(self, args, admissibleeps=1.0e-10):
+        super().__init__(args, admissibleeps=admissibleeps)
+        if self.args.poissoncase == 'pde2':
+            self.alpha = _pde2alpha
+        else:
+            self.alpha = None
+
+    def _diagonalentry(self, mesh, p):
+        '''Compute the diagonal value of a(.,.) at hat function psi_p^j:
+           a(psi_p,psi_p) = int_0^L alpha(x) (psi_p^j)'(x)^2 dx
+        Uses trapezoid rule if alpha(x) not constant.  Input mesh is of
+        class MeshLevel1D.'''
+        assert 1 <= p <= mesh.m
+        if self.alpha is not None:
+            xx = mesh.h * np.array([p-1,p,p+1])
+            aa = self.alpha(xx)
+            return (1.0 / (2.0 * mesh.h)) * (aa[0] + 2.0 * aa[1] + aa[2])
+        else:
+            return 2.0 / mesh.h
 
     def pointresidual(self, mesh, w, ell, p):
         '''Compute the value of the residual linear functional, in V^j', for given
         iterate w, at one interior hat function psi_p^j:
-           F(w)[psi_p^j] = int_0^1 w'(x) (psi_p^j)'(x) dx - ell(psi_p^j)
-        Input ell is in V^j'.  Input mesh is of class MeshLevel1D.'''
+           F(w)[psi_p^j] = int_0^L alpha(x) w'(x) (psi_p^j)'(x) dx - ell(psi_p^j)
+        Uses trapezoid rule if alpha(x) not constant.  Input ell is in V^j'.
+        Input mesh is of class MeshLevel1D.'''
         mesh.checklen(w)
         mesh.checklen(ell)
         assert 1 <= p <= mesh.m
-        return (1.0/mesh.h) * (2.0*w[p] - w[p-1] - w[p+1]) - ell[p]
+        if self.alpha is not None:
+            xx = mesh.h * np.array([p-1,p,p+1])
+            aa = self.alpha(xx)
+            zz = (aa[0] + aa[1]) * (w[p] - w[p-1]) \
+                 - (aa[1] + aa[2]) * (w[p+1] - w[p])
+            return (1.0 / (2.0 * mesh.h)) * zz - ell[p]
+        else:
+            return (1.0 / mesh.h) * (2.0*w[p] - w[p-1] - w[p+1]) - ell[p]
 
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected Gauss-Seidel sweep, with relaxation factor
@@ -96,7 +120,7 @@ class PGSPoisson(SmootherObstacleProblem):
         feasibility violations.'''
         self._checkrepairadmissible(mesh, w, phi)
         for p in self._sweepindices(mesh, forward=forward):
-            c = - self.pointresidual(mesh, w, ell, p) / _poissondiagonalentry(mesh, p)
+            c = - self.pointresidual(mesh, w, ell, p) / self._diagonalentry(mesh, p)
             w[p] = max(w[p] + self.args.omega * c, phi[p])
         mesh.WU += 1
 
@@ -107,8 +131,8 @@ class PGSPoisson(SmootherObstacleProblem):
         elif self.args.poissoncase == 'traditional':
             # maximum is at  2.0 + args.parabolay
             ph = 8.0 * x * (1.0 - x) + self.args.parabolay
-        elif self.args.poissoncase == 'unconstrained':
-            ph = - np.ones(np.shape(x))  # phi = -1.0 < u(x) = x^2 (1 - x^2)
+        elif self.args.poissoncase in ['pde1', 'pde2']:  # these u(x) are above axis
+            ph = - np.ones(np.shape(x))
         else:
             raise ValueError
         if self.args.random:
@@ -124,18 +148,20 @@ class PGSPoisson(SmootherObstacleProblem):
         return (not self.args.random) and (self.args.fscale == 1.0) \
                  and (self.args.parabolay == -1.0 or self.args.parabolay <= -2.25)
 
-    # **** problem-specific; other obstacle problems may not have these ****
-
     def source(self, x):
-        '''The source term f in the interior condition -u'' = f.'''
+        '''The source term f in the interior condition - (alpha u')' = f.'''
         if self.args.poissoncase == 'icelike':
             f = 8.0 * np.ones(np.shape(x))
             f[x < 0.2] = -16.0
             f[x > 0.8] = -16.0
         elif self.args.poissoncase == 'traditional':
             f = -2.0 * np.ones(np.shape(x))
-        elif self.args.poissoncase == 'unconstrained':
+        elif self.args.poissoncase == 'pde1':
             f = 12.0 * x * x - 2.0
+        elif self.args.poissoncase == 'pde2':
+            twopi = 2.0 * np.pi
+            f = - twopi * (10.0 - 2.0 * x) * np.cos(twopi * x) \
+                + 2.0 * (2.0 + np.sin(twopi * x))
         else:
             raise ValueError
         return self.args.fscale * f
@@ -164,8 +190,10 @@ class PGSPoisson(SmootherObstacleProblem):
                 u = x * (x - 1.0)   # solution without obstruction
             else:
                 raise NotImplementedError
-        elif self.args.poissoncase == 'unconstrained':
+        elif self.args.poissoncase == 'pde1':
             u = x * x * (1.0 - x * x)
+        elif self.args.poissoncase == 'pde2':
+            u = x * (10.0 - x)
         return u
 
 class PJacobiPoisson(PGSPoisson):
@@ -182,6 +210,6 @@ class PJacobiPoisson(PGSPoisson):
         self._checkrepairadmissible(mesh, w, phi)
         r = self.residual(mesh, w, ell)
         for p in self._sweepindices(mesh, forward=forward):
-            c = - r[p] / _poissondiagonalentry(mesh, p)
+            c = - r[p] / self._diagonalentry(mesh, p)
             w[p] = max(w[p] + self.args.omega * c, phi[p])
         mesh.WU += 1

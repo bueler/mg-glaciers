@@ -85,7 +85,7 @@ class Namespace:
         self.__dict__.update(kwargs)
 
 testargs = Namespace(jacobi=False, omega=1.0, printwarnings=False, randomseed=1,
-                     siaeta0=0.0)
+                     siaeta0=0.0, poissoncase='icelike')
 
 def test_poisson_pointresidual():
     '''Point-wise residual for Poisson.'''

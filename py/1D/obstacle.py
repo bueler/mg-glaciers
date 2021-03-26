@@ -119,7 +119,7 @@ parser.add_argument('-parabolay', type=float, default=-1.0, metavar='X',
                     help='vertical location of obstacle in -problem parabola (default X=-1.0)')
 parser.add_argument('-plain', action='store_true', default=False,
                     help='when used with -show or -o, only show exact solution and obstacle')
-parser.add_argument('-poissoncase', choices=['icelike', 'traditional', 'unconstrained'],
+parser.add_argument('-poissoncase', choices=['icelike', 'traditional', 'pde1', 'pde2'],
                     metavar='X', default='icelike',
                     help='determines obstacle and source function (default: %(default)s)')
 parser.add_argument('-printwarnings', action='store_true', default=False,
@@ -182,8 +182,11 @@ if args.problem == 'poisson':
         obsprob = PJacobiPoisson(args)
     else:
         obsprob = PGSPoisson(args)
+    L = 1.0
+    if args.poissoncase == 'pde2':
+        L = 10.0
     for j in range(levels):
-        hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=1.0)
+        hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=L)
 elif args.problem == 'sia':
     if not args.sweepsonly:
         raise NotImplementedError( \
