@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 
 INFILE = 'convergence.txt'
 MARKER = ['o','s','p']
-MARKERSIZE = [12.0,10.0,10.0]
-MARKERFACE = ['w','k','w']
-PROBLEMNAME = ['ice-like','traditional','unconstrained']
+MARKERSIZE = [11.0,10.0,10.0]
+MARKERFACE = ['k','k','w']
+PROBLEMNAME = ['ice-like','traditional','unconstrained']  # last is pde2
 
 SHOW = False
 def writeout(outname):
@@ -40,12 +40,12 @@ plt.figure(figsize=(7,6))
 for p in range(3):
     hh = h[prob==p]
     ee = err[prob==p]
-    q = np.polyfit(np.log(hh),np.log(ee),1)
+    q = np.polyfit(np.log(hh[hh<1.0e-2]),np.log(ee[hh<1.0e-2]),1)
     print('%10s: O(h^%.2f)' % (PROBLEMNAME[p],q[0]))
     plt.loglog(hh,ee,
                'k'+MARKER[p],ms=MARKERSIZE[p],mfc=MARKERFACE[p],
                label=PROBLEMNAME[p] + ' $O(h^{%.2f})$' % q[0])
-    plt.loglog(hh,np.exp(q[0]*np.log(hh) + q[1]),'k--',lw=0.5)
+    plt.loglog(hh[hh<1.0e-2],np.exp(q[0]*np.log(hh[hh<1.0e-2]) + q[1]),'k--',lw=0.5)
 plt.grid(True)
 plt.xlabel('h',fontsize=18.0)
 plt.ylabel(r'$\|u^h-u\|_2$',fontsize=18.0)
