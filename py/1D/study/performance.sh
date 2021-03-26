@@ -13,7 +13,7 @@ for OPTS in "-down 1 -up 0" "-down 0 -up 1" "-down 1 -up 1" "-down 1 -up 1 -jaco
     echo "*** solver = '$OPTS' ****"
     for JJ in 6 7 8 9 10 11 12 13 14 15; do
     #for JJ in 6 7 8 9 10 11 12; do
-        /usr/bin/time -f "real %e" python3 ../obstacle.py -poissoncase icelike -jfine $JJ $OPTS
+        /usr/bin/time -f "real %e" python3 ../obstacle.py -poissoncase icelike -J $JJ $OPTS
     done
 done
 
