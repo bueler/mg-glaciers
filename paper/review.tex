@@ -808,7 +808,7 @@ The following V-cycle pseudocode uses \pr{pgs} or \pr{pjacobi} as the smoother a
       $\phi^j = \chi^j - P\chi^{j-1}$ \qquad\qquad\qquad\quad \ct{down-obstacle} \\
       $y^j = 0$ \\
       $\text{\pr{smoother}}^{\text{\id{down}}}(j,y^j,a,\ell^j,\phi^j)$ \qquad\quad \ct{in-place smoothing in $\mathcal{K}^j$} \\
-      $F_p = a(y^j,\psi_p^j) - \ell[\psi_p^j]$ \\
+      $F_p = a(y^j,\psi_p^j) - \ell^j[\psi_p^j]$ \\
       $\ell^{j-1} = - R F$ \\-
     $y^0 = 0$ \\
     $\text{\pr{smoother}}^{\text{\id{coarse}}}(0,y^0,a,\ell^0,\chi^0)$ \\
@@ -1106,7 +1106,25 @@ for $y$ in $\mathcal{K}^{J-1}$ and all $v$ in $\mathcal{K}^{J-1}$.  The new line
    $$\ell^{J-1}[v] = N^{J-1}\left(\iR(w^J+y^J)\right)[v] - R F^J[v].$$
 where $R$ is canonical restriction.
 
-FIXME much to do
+\begin{pseudo*} \label{ps:mcdn-vcycle}
+\pr{mcdn-vcycle}(J,w^J,N,\ell^J,\chi^J,\id{down}=1,\id{coarse}=1,\id{up}=0)\text{:} \\+
+    $g^J = w^J$ \\
+    for $j=J$ downto $j=1$ \\+
+      $\chi^{j-1} = \mR \chi^j$ \\
+      $\phi^j = \chi^j - P\chi^{j-1}$ \\
+      $y^j = 0$ \\
+      $\text{\pr{smoother}}^{\text{\id{down}}}(j,g^j,y^j,N^j,\ell^j,\phi^j)$ \qquad \ct{smoothing in $\mathcal{K}^j$} \\
+      $F_p = N^j(g^j+y^j)[\psi_p^j] - \ell^j[\psi_p^j]$ \\
+      $\ell^{j-1} = - R F$ \\
+      $g^{j-1} = \iR(g^j + y^j)$ \\-
+    $y^0 = 0$ \\
+    $\text{\pr{smoother}}^{\text{\id{coarse}}}(0,g^0,y^0,N^0,\ell^0,\chi^0)$ \\
+    $z^0 = y^0$ \\
+    for $j=1$ to $j=J$ \\+
+      $z^j = P z^{j-1} + y^{j}$ \\
+      $\text{\pr{smoother}}^{\text{\id{up}}}(j,g^j,z^j,N^j,\ell^j,\chi^j)$ \qquad \ct{smoothing in $\mathcal{D}^j$} \\-
+    return $z^J$
+\end{pseudo*}
 
 FIXME possible idea: $\mR$ to generate a coarse-level thickness coefficient that is better than in \eqref{eq:siaVIFEFAS}.  That is, on the coarse level the nonlinear operator is slightly different; it is more ``$\pp$-Laplacian elliptic'' in the sense that the thickness-dependent coefficient is nonzero on a coarse-level superset of the fine-level nonzero set.
 
@@ -1174,6 +1192,15 @@ FIXME CONSIDER ADDING $\eta_0$ TO THICKNESS
 FIXME CONSIDER $w+c\eta_0\psi_p^j$ or $w+ch\psi_p^j$ SO $c$ IS UNITLESS
 
 However, unlike the corresponding problem for the classical obstacle problem, the solution of \eqref{eq:pngspointwisevi} cannot be found exactly.  Instead we set up a Newton iteration to compute $c$.  FIXME
+
+\begin{pseudo*} \label{ps:pngs}
+\pr{pngs}(j,w,z,N,\ell,\phi,\id{omega}=1)\text{:} \\+
+    \ct{check admissibility: $w\ge \phi$} \\
+    $F(w)[\cdot] := N(w)[\cdot] - \ell[\cdot]$ \\
+    for $p=1,\dots,m_j$ \\+
+        $c = FIXME$ \\
+        $z_p \gets \max\{z_p + \id{omega}\,c, \phi_p\}$
+\end{pseudo*}
 
 FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not too big)
 
