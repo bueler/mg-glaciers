@@ -112,10 +112,12 @@ FIXME Accessible introductions to FE methods are in \cite{Bueler2021,Elmanetal20
 
 FIXME cite for multigrid on classical obstacle \cite{BrandtCryer1983,Bueler2021,GraeserKornhuber2009}
 
+A brief historical summary of the SIA problem may be helpful.  The model was first solved by a finite difference scheme in \cite{Mahaffy1976}, and FE solutions are given in \cite{Calvoetal2002,JouvetBueler2012} among other places.  In fact, large-scale numerical applications of this model are common, and for examples see the high-resolution Greenland ice sheet model in section 4.2 of \cite{Bueler2016}, or the SIA applications as hybrid ice sheet model components \cite[for example]{Winkelmannetal2011}.  The idea that the glacier geometry solves an obstacle problem was introduced by \cite{Calvoetal2002} in the time-dependent, flat-bed case.  Existence was extended to non-flat beds by \cite{JouvetBueler2012}.  However, none of these references use multilevel methods.  Such methods were first applied by Jouvet and others \cite{Jouvetetal2013}, with further results in \cite{JouvetGraeser2013}, using a truncated non-smooth Newton multigrid method which tracks the inactive set \cite{GraeserKornhuber2009}.
 
-\section{Subspace decomposition, and geometric multigrid} \label{sec:subspace}
 
-\subsection{Finite elements for a Poisson model problem} \label{subsec:poissonfe}  In this section we will consider how to solve a simple differential equation, namely a linear Poisson-like problem
+\section{Geometric multigrid for a Poisson problem} \label{sec:subspace}
+
+\subsection{Finite elements for a simple differential equation} \label{subsec:poissonfe}  In this section we will consider how to solve a simple differential equation, namely a linear Poisson-like problem
 \begin{equation}
 - \big(\alpha(x)\,u'(x)\big)' = f(x) \quad \text{on} \quad 0 \le x \le 1, \label{eq:poisson}
 \end{equation}
@@ -486,7 +488,7 @@ monotone restriction $\mR$   & \eqref{eq:monotonerestriction} & $\mathcal{V}^j$ 
 We have now presented a basic GMG algorithm for linear PDEs via a particular FE viewpoint, namely the MSC approach pioneered by Xu \cite{Xu1992} and others.  The MSC viewpoint is foundational for multilevel, domain-decomposition, and other advanced algorithms \cite[for example]{Farrelletal2019}.  Our next step might be to show computational results demonstrating the efficiency of a GMG algorithm, giving evidence of optimal $O(m_J)$ time to solve the problem, and indeed such results appear in all of our multigrid references \cite{Braess2007,Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.  However, we first introduce a less-standard ``obstacle'' problem because it shows the essential free-boundary character of the glacier geometry problem.  Computational results appear in each of the next three sections.
 
 
-\section{Multilevel constraint decomposition (MCD) for the obstacle problem} \label{sec:obstacle}
+\section{Multilevel constraint decomposition (MCD) for the classical obstacle problem} \label{sec:obstacle}
 
 \subsection{An ice-like model problem} \label{subsec:obstacleproblem}  We now have a clear view of the GMG method, for a linear equation and from the MSC point of view.  However, as addressed in section \ref{sec:intro}, the main problem of how glacier geometry and ice velocity co-evolve in response to climatic inputs requires an inequality constraint for well-posedness.  The fact that the ice surface elevation is above the bed generates the land-terminating mass-conservation boundary condition.  This constraint, by itself, makes the problem nonlinear and reduces solution regularity, making it challenging to numerical methods.
 
@@ -1041,10 +1043,7 @@ A solution of \eqref{eq:siaVI} or \eqref{eq:siaVIresidual} is known to exist \ci
 \label{fig:siadatafigure}
 \end{figure}
 
-For numerical testing we will use the exact solution shown in Figure \ref{fig:siadatafigure}.  (See section 5.6.3 of \cite{GreveBlatter2009} or section 5.3 of \cite{vanderVeen2013} for specific formulas.)  It has a continuous surface mass balance function $a(x)$ which, like the classical obstacle problem solution shown in Figure \ref{fig:icelike}, has negative values towards either end of the interval.  This generates a free boundary, i.e.~an ablation-caused \emph{glacier margin}, but the gradient is singular at the margin.  Indeed, this $s(x)$ is \emph{not} in the space $\mathcal{W}$ because its margin shape goes like $s(x) \sim |x-x_m|^{1/2}$ if $x_m$ is the position of the margin \cite{Bueleretal2005}.  (In the $L=1800$ km case shown, exact margin positions are $x_m=900\pm 750$ km.)  We will return to this important regularity concern below.
-
-A brief historical summary of the SIA problem may be helpful.  The model was first solved by a finite difference scheme in \cite{Mahaffy1976}, and FE solutions are given in \cite{Calvoetal2002,JouvetBueler2012} among other places.  In fact, large-scale numerical applications of this model are common, and for examples see the high-resolution Greenland ice sheet model in section 4.2 of \cite{Bueler2016}, or the SIA applications as hybrid ice sheet model components \cite[for example]{Winkelmannetal2011}.  The idea that the glacier geometry solves an obstacle problem was introduced by \cite{Calvoetal2002} in the time-dependent, flat-bed case.  Existence was extended to non-flat beds by \cite{JouvetBueler2012}.  However, none of these references use multilevel methods.  These were first applied by Jouvet and others \cite{Jouvetetal2013}, with further results in \cite{JouvetGraeser2013}, using a truncated
-non-smooth Newton multigrid method \cite{GraeserKornhuber2009} which tracks the inactive set.
+For numerical testing we will use the exact solution shown in Figure \ref{fig:siadatafigure}.  (See section 5.6.3 of \cite{GreveBlatter2009} or section 5.3 of \cite{vanderVeen2013} for specific formulas.)  It has a continuous surface mass balance function $a(x)$ which, like the classical obstacle problem solution shown in Figure \ref{fig:icelike}, has negative values towards either end of the interval.  This generates a free boundary, i.e.~an ablation-caused \emph{glacier margin}, but note that the gradient is singular at this margin.  Indeed, $s(x)$ is \emph{not} in the space $\mathcal{W}$ because its margin shape goes like $s(x) \sim |x-x_m|^{1/2}$ if $x_m$ is the position of the margin \cite{Bueleretal2005}.  (In the $L=1800$ km case shown, exact margin positions are $x_m=900\pm 750$ km.)  We will return to this important regularity concern below.
 
 
 \subsection{Nonlinear MCD cycles} \label{subsec:mcdn}  We propose to apply a nonlinear form of the MCD method to the SIA VI problem.  The method is a \emph{full approximation storage} (FAS) scheme \cite{Briggsetal2000,Trottenbergetal2001}, a well-known multilevel strategy for nonlinear PDEs.  Simultaneously the method generalizes the MCDL method of section \ref{sec:obstacle}.  This framework, which is both geometrically clear and relatively simple, leads to robust and scalable numerical solutions of the steady SIA model.
