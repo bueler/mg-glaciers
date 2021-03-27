@@ -88,11 +88,11 @@ urlcolor=black    % ...
 
 
 \begin{document}
-\title[Geometric multigrid for glacier modeling]{Geometric multigrid for glacier modeling: \\ New techniques and concepts}
+\title[Geometric multigrid for glacier modeling]{Geometric multigrid for glacier modeling: \\ New concepts and algorithms}
 
 \author{Ed Bueler}
 
-\begin{abstract} FIXME: two principles in introduction: mass conservation complementarity, solver optimality.  four examples in sections \ref{sec:subspace}--\ref{sec:stokes}: poisson equation from subspace decomp point of view, obstacle problem by subset decomposition, monotone multigrid for implicitly-evolving SIA geometry, Schur-complement and Vanka Newton-multigrid for fixed-geometry Glen-Stokes
+\begin{abstract} FIXME: principles in introduction: mass conservation complementarity, solver optimality.  5 examples in sections \ref{sec:subspace}--\ref{sec:evolvingstokes}: poisson equation by geometric multigrid from subspace decomp point of view, obstacle problem by multilevel constraint decomposition (MCD), steady and implicitly-evolving SIA geometry by MCD, Schur-complement or Vanka Newton-multigrid for fixed-geometry Glen-Stokes, and MCD for evolving-geometry with Stokes dynamics
 \end{abstract}
 
 \maketitle
@@ -100,7 +100,7 @@ urlcolor=black    % ...
 \tableofcontents
 
 \thispagestyle{empty}
-\bigskip
+%\bigskip
 
 \section{Introduction} \label{sec:intro}
 
@@ -486,7 +486,7 @@ monotone restriction $\mR$   & \eqref{eq:monotonerestriction} & $\mathcal{V}^j$ 
 We have now presented a basic GMG algorithm for linear PDEs via a particular FE viewpoint, namely the MSC approach pioneered by Xu \cite{Xu1992} and others.  The MSC viewpoint is foundational for multilevel, domain-decomposition, and other advanced algorithms \cite[for example]{Farrelletal2019}.  Our next step might be to show computational results demonstrating the efficiency of a GMG algorithm, giving evidence of optimal $O(m_J)$ time to solve the problem, and indeed such results appear in all of our multigrid references \cite{Braess2007,Briggsetal2000,Bueler2021,Elmanetal2014,Trottenbergetal2001}.  However, we first introduce a less-standard ``obstacle'' problem because it shows the essential free-boundary character of the glacier geometry problem.  Computational results appear in each of the next three sections.
 
 
-\section{Constraint decomposition for the obstacle problem} \label{sec:obstacle}
+\section{Multilevel constraint decomposition (MCD) for the obstacle problem} \label{sec:obstacle}
 
 \subsection{An ice-like model problem} \label{subsec:obstacleproblem}  We now have a clear view of the GMG method, for a linear equation and from the MSC point of view.  However, as addressed in section \ref{sec:intro}, the main problem of how glacier geometry and ice velocity co-evolve in response to climatic inputs requires an inequality constraint for well-posedness.  The fact that the ice surface elevation is above the bed generates the land-terminating mass-conservation boundary condition.  This constraint, by itself, makes the problem nonlinear and reduces solution regularity, making it challenging to numerical methods.
 
@@ -646,7 +646,7 @@ for some tolerance \id{rtol}.
 
 The above projected iterations will serve as our smoothers, applied one or two times on each level, and as the coarse-level solver as well.  However, we are not yet prepared to build a multilevel method for problem \eqref{eq:feobstacleviresidual} because the nontrivial construction of the obstacles $\phi^j$ and residuals $F^j$ remains.  We need to decompose the continuum constraint $\varphi$ across the mesh-level hierarchy, and we need to construct admissible multilevel corrections.
 
-\subsection{Multilevel constraint decomposition (MCD)} \label{subsec:mcd}  How do we maintain admissibility throughout a multilevel cycle while not introducing high-frequencies?
+\subsection{Multilevel constraint decomposition} \label{subsec:mcd}  How do we maintain admissibility throughout a multilevel cycle while not introducing high-frequencies?
 
 Consider the coarse-level correction $e^{j-1}$ in a linear V-cycle (section \ref{sec:subspace}, equation \eqref{eq:coarsecorrection}), which is prolonged onto the $j$th level.  For an obstacle problem the resulting iterate would need to be admissible, i.e.~$w + P e^{j-1}$ would need to be above the obstacle, say $\varphi^j$.  However, as illustrated in Figure \ref{fig:prolongobstacle}, if the obstacles are interpolants of a (common) continuum obstacle $\varphi$ then an iterate which is admissible on the $j-1$ level is \emph{not} necessarily admissible on the $j$ level.  (In the glacier context, a coarse-mesh ice surface may be breached by the fine-mesh bed topography.)  We might try enforcing admissibility by \emph{truncation}, namely overwriting $\tilde w = w + Pe^{j-1}$ with $\max\{\tilde w, \varphi^j\}$.  However, this reintroduces high frequencies, requiring additional smoother effort to remove, and generally damaging multigrid convergence rates.
 
@@ -977,7 +977,7 @@ However, the corresponding figure for an unconstrained problem shows that the F-
 Many variations on V- and F-cycle strategies have not been tested in this section.  Most significantly, reference \cite{GraeserKornhuber2009} describes monotone, truncated, and Newton-based multigrid methods for obstacle problems which extend the MCD method.  These methods improve performance for the classical problem when the coincidence set (active set) is geometrically complicated, but they require greater implementation effort, essentially because they keep track of the discrete active set.  There is also the discrete complementarity-problem ``PFAS'' method of \cite{BrandtCryer1983} (see below), while \cite{Blumetal2004} proposes a ``cascadic'' approach with a conjugate-gradient smoother.
 
 
-\section{Multigrid for the shallow-ice mass conservation problem} \label{sec:sia}
+\section{MCD for the shallow-ice mass conservation problem} \label{sec:sia}
 
 \subsection{The SIA obstacle problem} \label{subsec:siaproblem}  Now we will consider an obstacle problem, a nonlinear version of the Poisson equation \eqref{eq:poisson}, namely the steady and isothermal shallow-ice approximation (SIA) model for ice surface elevation \cite{Bueleretal2005,Huybrechtsetal1996,vanderVeen2013}.  The weak form of this model is a nonlinear variational inequality (VI), but as usual we state the problem in strong form first.
 
@@ -1186,13 +1186,16 @@ FIXME use Bueler profile to verify smoother only
 %FIXME for 2D domains use Firedrake?
 
 
-\section{Multigrid for Glen-Stokes glacier flow} \label{sec:stokes}
+\section{Multigrid for fixed-geometry Glen-Stokes glacier flow} \label{sec:stokes}
 
 FIXME multigrid already used for Blatter-Pattyn model \cite{BrownSmithAhmadia2013}; for hybrid \cite{Jouvetetal2013,JouvetGraeser2013}; for Stokes \cite{IsaacStadlerGhattas2015} and \cite{Tuminaroetal2016} using AMG; one goal of this section is to make these approaches more understandable
 
-FIXME obstacle problem view extended to Stokes by \cite{WirbelJarosch2020}
-
 FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to Vanka monolithic smoother \cite{Farrelletal2019}
+
+
+\section{MCD for evolving-geometry Glen-Stokes flow} \label{sec:evolvingstokes}
+
+FIXME obstacle problem view extended to Stokes by \cite{WirbelJarosch2020}
 
 FIXME time-dependent runs
 
