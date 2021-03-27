@@ -56,7 +56,7 @@ for r in [0.4, 0.5, 0.6, 0.7]:
               color='k', lw=0.75)
     ax.add_patch(arc)
 plt.text(-0.2,0.7,r'$\mathcal{H}$',fontsize=fsize)
-plt.text(0.9,0.6,r'$\mathcal{K}$',fontsize=fsize)
+plt.text(0.9,0.6,r'$\mathcal{K}_\varphi$',fontsize=fsize)
 plt.axis('tight')
 plt.axis('off')
 plt.axis('equal')

@@ -534,17 +534,17 @@ The glacier problem also has a CP formulation (section \ref{sec:sia}; see also \
 
 \subsection{Weak formulation with constraints} \label{subsec:obstacleweak}  We now define a closed subset which incorporates the constraint:
 \begin{equation}
-\mathcal{K} = \left\{v \ge \varphi\right\} \subseteq \mathcal{H}.  \label{eq:Kdefine}
+\mathcal{K}_\varphi = \left\{v \ge \varphi\right\} \subseteq \mathcal{H}.  \label{eq:Kdefine}
 \end{equation}
-If $v$ is in $\mathcal{K}$ then we say $v$ is \emph{admissible}.  Note $\mathcal{K}$ is not a vector space, but it is \emph{convex}, that is, if $v,w$ are in $\mathcal{K}$ then any point on the line segment connecting them, $\theta v + (1-\theta) w$ for $0 \le \theta \le 1$, is also in $\mathcal{K}$.  One should also observe that $\mathcal{K}$ is a \emph{cone} with vertex at $\varphi$.  That is, if $v$ is in $\mathcal{K}$ then $\lambda(v-\varphi) + \varphi$ is also in $\mathcal{K}$ for any $\lambda \ge 0$; the ray from $\varphi$ through $v$ is in $\mathcal{K}$.
+If $v$ is in $\mathcal{K}_\varphi$ then we say $v$ is \emph{admissible}.  Note $\mathcal{K}_\varphi$ is not a vector space, but it is \emph{convex}, that is, if $v,w$ are in $\mathcal{K}_\varphi$ then any point on the line segment connecting them, $\theta v + (1-\theta) w$ for $0 \le \theta \le 1$, is also in $\mathcal{K}_\varphi$.  One should also observe that $\mathcal{K}_\varphi$ is a \emph{cone} with vertex at $\varphi$.  That is, if $v$ is in $\mathcal{K}_\varphi$ then $\lambda(v-\varphi) + \varphi$ is also in $\mathcal{K}_\varphi$ for any $\lambda \ge 0$; the ray from $\varphi$ through $v$ is in $\mathcal{K}_\varphi$.
 
 Derivation of the weak form involves multiplying the strong form \eqref{eq:obstaclecp} by a test function and integrating by parts.  The inequalities enter into the derivation; see \cite[Chapter 12]{Bueler2021}, \cite{JouvetBueler2012}, or \cite{KinderlehrerStampacchia1980} for details.  The result is a single \emph{variational inequality} (VI),
 \begin{equation}
-  a(u,v-u) \ge \ip{f}{v-u} \quad \text{ for all } v \text{ in } \mathcal{K}, \label{eq:obstaclevi}
+  a(u,v-u) \ge \ip{f}{v-u} \quad \text{ for all } v \text{ in } \mathcal{K}_\varphi, \label{eq:obstaclevi}
 \end{equation}
 using the same bilinear form $a$ defined in \eqref{eq:weakpoissonearly}.  Recalling \eqref{eq:residual}, the VI can be restated using the residual functional:
 \begin{equation}
-  F(u)[v-u] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}. \label{eq:obstacleviresidual}
+  F(u)[v-u] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}_\varphi. \label{eq:obstacleviresidual}
 \end{equation}
 
 Formulations \eqref{eq:obstaclecp} and \eqref{eq:obstacleviresidual} are equivalent up to the same regularity concerns which relate the strong and weak forms of a PDE.  (See reference \cite{Evans2010} regarding the solution regularity of PDEs, and \cite{KinderlehrerStampacchia1980} for the corresponding VI theory.)  However, some intuition for VIs is needed for understanding the current paper, and so, in an attempt to help, we provide a second weak form.
@@ -552,13 +552,13 @@ Formulations \eqref{eq:obstaclecp} and \eqref{eq:obstacleviresidual} are equival
 Inequality \eqref{eq:obstacleviresidual} is equivalent to \emph{constrained minimization} of an \emph{objective} functional $I$:
 \newcommand{\argmin}{\mathop{\mathrm{arg\text{-}min}}}
 \begin{equation}
-  u = \argmin_{w \text{ in } \mathcal{K}} I(w) \quad \text{where} \quad I(w) = \frac{1}{2} a(w,w) - \ip{f}{w}. \label{eq:obstaclemin}
+  u = \argmin_{w \text{ in } \mathcal{K}_\varphi} I(w) \quad \text{where} \quad I(w) = \frac{1}{2} a(w,w) - \ip{f}{w}. \label{eq:obstaclemin}
 \end{equation}
-That is, $u$ is the minimizer, over the constraint set $\mathcal{K}$, of the scalar, quadratic, and \emph{coercive} functional $I$.  (Coercive means that $I(w) \to +\infty$ as $\|w\|_{\mathcal{H}} \to \infty$ \cite{Evans2010}.)  Note that the unconstrained minimum of $I(w)$ over $\mathcal{H}$ may lie outside $\mathcal{K}$.  See Figure \ref{fig:cartoonplane}.
+That is, $u$ is the minimizer, over the constraint set $\mathcal{K}_\varphi$, of the scalar, quadratic, and \emph{coercive} functional $I$.  (Coercive means that $I(w) \to +\infty$ as $\|w\|_{\mathcal{H}} \to \infty$ \cite{Evans2010}.)  Note that the unconstrained minimum of $I(w)$ over $\mathcal{H}$ may lie outside $\mathcal{K}_\varphi$.  See Figure \ref{fig:cartoonplane}.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/cartoonplane.pdf}
-\caption{Variational inequality \eqref{eq:obstacleviresidual}, equivalently \eqref{eq:obstaclevigradient}, characterizes the minimum $u$ of $I(w)$ over the shaded convex cone $\mathcal{K}=\{v\ge \varphi\} \subset \mathcal{H}$.  Any vector $v-u$, for $v$ in $\mathcal{K}$, is within $90^\circ$ of $F(u) = \grad I(u)$.}
+\caption{Variational inequality \eqref{eq:obstacleviresidual}, equivalently \eqref{eq:obstaclevigradient}, characterizes the minimum $u$ of $I(w)$ over the shaded convex cone $\mathcal{K}_\varphi=\{v\ge \varphi\} \subset \mathcal{H}$.  Any vector $v-u$, for $v$ in $\mathcal{K}_\varphi$, is within $90^\circ$ of $F(u) = \grad I(u)$.}
 \label{fig:cartoonplane}
 \end{figure}
 
@@ -568,14 +568,14 @@ The (Gateaux) derivative of $I$ is a linear functional in $\mathcal{H}'$:
 \end{equation}
 In fact $\nabla I = F$, the residual, so the VI \eqref{eq:obstacleviresidual} can re-stated yet again:
 \begin{equation}
-  \nabla I(u)[v-u] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}. \label{eq:obstaclevigradient}
+  \nabla I(u)[v-u] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}_\varphi. \label{eq:obstaclevigradient}
 \end{equation}
 
-Formulation \eqref{eq:obstaclevigradient} permits a clear, geometrical meaning to the VI, as in the Figure.  The solution $u$ sits at a location in $\mathcal{K}$, often on the boundary, where any vector pointing into the admissible set, namely $v-u$ for $v$ in $\mathcal{K}$, points ``uphill'' on the graph of $I$.  That is, one cannot make minimization progress by moving $u$ to a distinct point $v$ in $\mathcal{K}$.  Identifying $\mathcal{H}$ and its dual space $\mathcal{H}'$, one might write \eqref{eq:obstaclevigradient} as ``$\ip{\nabla I(u)}{v-u} \ge 0$'': the angle between $\nabla I(u)$ and $v-u$ is at most 90 degrees.
+Formulation \eqref{eq:obstaclevigradient} permits a clear, geometrical meaning to the VI, as in the Figure.  The solution $u$ sits at a location in $\mathcal{K}_\varphi$, often on the boundary, where any vector pointing into the admissible set, namely $v-u$ for $v$ in $\mathcal{K}_\varphi$, points ``uphill'' on the graph of $I$.  That is, one cannot make minimization progress by moving $u$ to a distinct point $v$ in $\mathcal{K}_\varphi$.  Identifying $\mathcal{H}$ and its dual space $\mathcal{H}'$, one might write \eqref{eq:obstaclevigradient} as ``$\ip{\nabla I(u)}{v-u} \ge 0$'': the angle between $\nabla I(u)$ and $v-u$ is at most 90 degrees.
 
-The solutions shown in the earlier Figure \ref{fig:icelike} recall what points in $\mathcal{K}$ actually are, namely functions on $[0,1]$.  When a solution $u$ coincides with the obstacle $\varphi$ on a part of the domain then $u$ is on the boundary of $\mathcal{K}$.  In that case arbitrarily-small perturbations $\delta u$, from $\mathcal{H}$, will put $u+\delta u$ outside of $\mathcal{K}$.
+The solutions shown in the earlier Figure \ref{fig:icelike} recall what points in $\mathcal{K}_\varphi$ actually are, namely functions on $[0,1]$.  When a solution $u$ coincides with the obstacle $\varphi$ on a part of the domain then $u$ is on the boundary of $\mathcal{K}_\varphi$.  In that case arbitrarily-small perturbations $\delta u$, from $\mathcal{H}$, will put $u+\delta u$ outside of $\mathcal{K}_\varphi$.
 
-The glacier problems in sections \ref{sec:sia} and \ref{sec:stokes} will be formulated both as CPs like \eqref{eq:obstaclecp} and VIs like \eqref{eq:obstacleviresidual}.  However, for general bed elevation functions (obstacles) the glacier problem has no constrained minimization formulation like \eqref{eq:obstaclemin}, so the VI formulations have no interpretation like \eqref{eq:obstaclevigradient}.  The essential reason is the lack of a symmetry of the weak form; see \cite{JouvetBueler2012} for the argument in the SIA case.  However, for glacier problems we at least possess a map $F$, from $\mathcal{K}$ to $\mathcal{H}'$, and if $u$ solves the VI then, heuristically, $F(u)$ points perpendicularly into $\mathcal{K}$.  We may visualize the general VI form \eqref{eq:obstacleviresidual} essentially as in Figure \ref{fig:cartoonplane}, but without the contours of $I$ or the identification of $F$ as a gradient.
+The glacier problems in sections \ref{sec:sia} and \ref{sec:stokes} will be formulated both as CPs like \eqref{eq:obstaclecp} and VIs like \eqref{eq:obstacleviresidual}.  However, for general bed elevation functions (obstacles) the glacier problem has no constrained minimization formulation like \eqref{eq:obstaclemin}, so the VI formulations have no interpretation like \eqref{eq:obstaclevigradient}.  The essential reason is the lack of a symmetry of the weak form; see \cite{JouvetBueler2012} for the argument in the SIA case.  However, for glacier problems we at least possess a map $F$, from $\mathcal{K}_\varphi$ to $\mathcal{H}'$, and if $u$ solves the VI then, heuristically, $F(u)$ points perpendicularly into $\mathcal{K}_\varphi$.  We may visualize the general VI form \eqref{eq:obstacleviresidual} essentially as in Figure \ref{fig:cartoonplane}, but without the contours of $I$ or the identification of $F$ as a gradient.
 
 Regardless of how the classical obstacle problem is formulated, a \emph{free boundary} generally arises in the interior of the domain.  For example, on either side of the midpoint in Figure \ref{fig:icelike} there are locations where the solution first comes fully in contact with the obstacle.  At these locations both $u=\varphi$ and $u'=\varphi'$ hold, that is, the solution is tangent to the obstacle at the free boundary.  These simultaneous Dirichlet and Neumann conditions occur at a location which must be found as part of the solution; they characterize the free boundary \cite[Chapter V]{KinderlehrerStampacchia1980}.  The analogous conditions in the glacier problem are that both the ice thickness and the horizontal ice flux go to zero at a grounded glacier margin \cite{Bueler2016,JouvetBueler2012}.
 
@@ -708,7 +708,7 @@ From the obstacles $\phi^j$ we define closed, convex \emph{admissible (correctio
 \begin{equation}
 \mathcal{K}^j = \left\{v \ge \phi^j\right\} \subset \mathcal{V}^j \label{eq:defineKj}
 \end{equation}
-for $j=0,1,\dots,J$.  Because $\phi^j \le 0$, the zero function is admissible on every level.  On the finest level, note that $\phi^J$ is not the same as $\varphi^J$, and so $\mathcal{K}^J$ does not approximate $\mathcal{K}$.
+for $j=0,1,\dots,J$.  Because $\phi^j \le 0$, the zero function is admissible on every level.  On the finest level, note that $\phi^J$ is not the same as $\varphi^J$, and so $\mathcal{K}^J$ does not approximate $\mathcal{K}_\varphi$.
 
 We also define the $j$th-level \emph{defect constraint set}
 \begin{equation}
@@ -1219,7 +1219,7 @@ FIXME multigrid already used for Blatter-Pattyn model \cite{BrownSmithAhmadia201
 FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to Vanka monolithic smoother \cite{Farrelletal2019}
 
 
-\section{MCD for evolving-geometry Glen-Stokes flow} \label{sec:evolvingstokes}
+\section{MCD for the evolving-geometry Stokes model} \label{sec:evolvingstokes}
 
 FIXME obstacle problem view extended to Stokes by \cite{WirbelJarosch2020}
 
@@ -1279,7 +1279,7 @@ $\mathcal{H}$ & Hilbert space for the continuum problem; $\mathcal{H}=H_0^1[0,1]
 $I(w)$ & scalar-valued objective function; $I(w) = \frac{1}{2} a(v,v) - \ip{f}{v}$ for Poisson \\
 $J$ & level index of finest mesh \\
 $j$ & index of mesh level; $j=0,1,\dots,J$ from coarse to fine \\
-$\mathcal{K}$ & continuum constraint set; $\mathcal{K} = \{v \ge \varphi\} \subset \mathcal{H}$ \\
+$\mathcal{K}_\varphi$ & continuum constraint set; $\mathcal{K}_\varphi = \{v \ge \varphi\} \subset \mathcal{H}$ \\
 $\mathcal{K}^j$ & $j$th-level admissible functions; $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j$ \\
 $\ell[\cdot]$ & source linear functional, e.g.~$\ell[v] = \ip{f}{v}$ \\
 $\ell^j[\cdot]$ & $j$th-level source; usually a restriction of the $j+1$ level residual \\
