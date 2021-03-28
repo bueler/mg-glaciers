@@ -825,11 +825,12 @@ In agreement with Algorithm 4.7 in \cite{GraeserKornhuber2009}, the default \id{
 
 The following in-place solver adds an outer loop which sets-up the fine-level data $\chi^J$ and $\ell^J$, calls the V-cycle, and checks for convergence.  Note that one must call this solver with an admissible initial iterate; $w=\varphi^J$ is one possibility.  Compare \pr{msc-solver} in section \ref{sec:subspace}.
 \begin{pseudo*} \label{ps:mcdl-solver}
-\pr{mcdl-solver}(J,w^J,a,\ell^J,\varphi^J,\id{rtol}=10^{-3},\id{cyclemax}=100)\text{:} \\+
+\pr{mcdl-solver}(J,w^J,a,f,\varphi^J,\id{rtol}=10^{-3},\id{cyclemax}=100)\text{:} \\+
+    $F(z)[v] := a(z,v) - \ip{f}{v}$ \\
     $r_0=\|\hat\bF(w^J)\|$ \qquad\qquad\qquad\qquad\qquad \ct{initial CP residual norm; see \eqref{eq:cpresidual}} \\
     for $s=1,\dots,\id{cyclemax}$ \\+
         $\chi^J = \varphi^J - w^J$ \qquad\qquad\qquad\qquad\quad \ct{fine-level defect constraint} \\
-        $\tilde\ell^J[\cdot] := - F(w^J)[\cdot]$ \qquad\qquad\qquad\quad \ct{see \eqref{eq:restrictedrhslinearlevel}} \\
+        $\tilde\ell^J = - F(w^J)$ \qquad\qquad\qquad\qquad\qquad \ct{see \eqref{eq:restrictedrhslinearlevel}} \\
         $w^J\gets w^J+\pr{mcdl-vcycle}(J,a,\tilde\ell^J,\chi^J)$ \\
         if $\|\hat\bF(w^J)\| \le \id{rtol} \, r_0$ \\+
             break \\--
@@ -1112,12 +1113,12 @@ We can now be completely precise.  Recursively using \eqref{eq:siag} to define $
                           N^j(g^j)[v] - R \left(N^{j+1}(g^{j+1}+y^{j+1}) - \ell^{j+1}\right)[v], & j < J.
             \end{cases}  \label{eq:siaell}
 \end{equation}
-(This is essentially the same source term as in a standard FAS scheme \cite{Trottenbergetal2001}.)  The final form of the coarse-correction VI rewrites \eqref{eq:siaVIFEFASearly} by moving already-computed quantities, namely the source term \eqref{eq:siaell}, to the right:
+(This is essentially the same source term as in a standard FAS scheme \cite{Trottenbergetal2001}.)  The final form of the coarse-correction VI rewrites \eqref{eq:siaVIFEFASearly} by moving the source term \eqref{eq:siaell} to the right:
 \begin{equation}
 N^j(g^j+y)[v-y] \ge \ell^j[v-y]. \label{eq:siaVIFEFAS}
 \end{equation}
 
-FIXME V-cycle
+From this statement of the coarse-correction VI we can construct a V-cycle.  Exactly as pictured in Figure \ref{fig:mcdvcycle}, on descent we look for corrections $y^j$ from the down-admissible sets $\mathcal{K}^j$, but going upward we allow corrections $z^j$ from larger up-admissible sets $\mathcal{D}^j$.  We address the \pr{smoother} in the next subsection, as well as how the nonlinear, $j$th-level FE operator is actually constructed.  Compare the following pseudocode to \pr{mcdl-vcycle} on page \pageref{ps:mcdl-vcycle}:
 \begin{pseudo*} \label{ps:mcdn-vcycle}
 \pr{mcdn-vcycle}(J,w^J,N,\ell^J,\chi^J,\id{down}=1,\id{coarse}=1,\id{up}=0)\text{:} \\+
     $g^J = w^J$ \\
@@ -1126,7 +1127,7 @@ FIXME V-cycle
       $\phi^j = \chi^j - P\chi^{j-1}$ \\
       $y^j = 0$ \\
       $\text{\pr{smoother}}^{\text{\id{down}}}(j,g^j,y^j,N^j,\ell^j,\phi^j)$ \qquad \ct{smoothing in $\mathcal{K}^j$} \\
-      $F_p = N^j(g^j+y^j)[\psi_p^j] - \ell^j[\psi_p^j]$ \\
+      $F = N^j(g^j+y^j) - \ell^j$ \\
       $g^{j-1} = \iR(g^j + y^j)$ \\
       $\ell^{j-1} = N^{j-1}(g^{j-1}) - R F$ \\-
     $y^0 = 0$ \\
@@ -1138,18 +1139,22 @@ FIXME V-cycle
     return $z^J$
 \end{pseudo*}
 
-FIXME solver
-
-FIXME possible idea: $\mR$ to generate a coarse-level thickness coefficient that is better than in \eqref{eq:siaVIFEFAS}.  That is, on the coarse level the nonlinear operator is slightly different; it is more ``$\pp$-Laplacian elliptic'' in the sense that the thickness-dependent coefficient is nonzero on a coarse-level superset of the fine-level nonzero set.
+In basic usage we will iterate V-cycles until the norm of the CP residual has been reduced by a tolerance factor.  The following pseudocode essentially repeats \pr{mcdl-solver} on page \pageref{ps:mcdl-solver}.
+\begin{pseudo*} \label{ps:mcdn-solver}
+\pr{mcdn-solver}(J,w^J,N,a,b^J,\id{rtol}=10^{-3},\id{cyclemax}=100)\text{:} \\+
+    $r_0=\|\hat\bF(w^J)\|$ \qquad\qquad\qquad\qquad \ct{note $F(z)[\cdot] := N^J(z)[\cdot] - \ip{a}{\cdot}$}\\
+    for $s=1,\dots,\id{cyclemax}$ \\+
+        $\chi^J = b^J - w^J$ \\
+        $\ell^J = \ip{a}{\cdot}$ \\
+        $w^J\gets w^J+\pr{mcdn-vcycle}(J,w^J,N,\ell^J,\chi^J)$ \\
+        if $\|\hat\bF(w^J)\| \le \id{rtol} \, r_0$ \\+
+            break \\--
+\end{pseudo*}
 
 
 \subsection{Projected nonlinear Gauss-Seidel} \label{subsec:pngs}  The discretization of SIA VI \eqref{eq:siaVIresidual} proceeds essentially as for the VI form \eqref{eq:obstacleviresidual} of the classical obstacle problem.  One difference is that we will approximate the integral in \eqref{eq:siaN}, for the nonlinear operator $N(s)[v]$, using quadrature.  Also recall that when we apply an MCD scheme for an obstacle problem, the coarse-level correction involves transformations of the residual and obstacle from their continuum form to a different level-specific form.  Also, note that the bed elevation $b$ itself appears in the formula for $N(s)[v]$, and not just in defining $\mathcal{K}_b$.
 
-Suppose $w$ in $\mathcal{V}^j \subset \mathcal{W}$ is an iterate on the $j$th level, an approximation of the surface elevation $s(x)$.  (Recall $\mathcal{V}^j$ contains all piecewise-linear functions with zero boundary values.)  The iterate can be written in hat functions,
-\begin{equation}
-  w(x) = \sum_{q=1}^{m_j} w_q \psi_q^j(x) \label{eq:siatrialfunction}
-\end{equation}
-Suppose $\phi^j$ is the obstacle on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$.  (Note $\phi^j$ is \emph{not} generally the interpolant of the bed $b(x)$, but rather it is a defect obstacle; see below.)  Let
+Suppose $w$ in $\mathcal{V}^j \subset \mathcal{W}$ is an iterate on the $j$th level, an approximation of the surface elevation $s(x)$.  (Recall $\mathcal{V}^j$ contains all piecewise-linear functions with zero boundary values.)  The iterate can be written in hat functions, $w = \sum w_q \psi_q^j$.  Suppose $\phi^j$ is the obstacle on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$.  (Note $\phi^j$ is \emph{not} generally the interpolant of the bed $b(x)$, but rather it is a defect obstacle; see below.)  Let
 \begin{equation}
   \mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j \subset \mathcal{W}. \label{eq:siaadmissiblelevel}
 \end{equation}
@@ -1174,6 +1179,8 @@ This is a map from $w$ in $\mathcal{K}^j$ to $N^j(w)[\cdot]$ in $(\mathcal{V}^j)
 \begin{equation}
 F^j(w)[\cdot] = N^j(w)[\cdot] - \ell^j[\cdot]. \label{eq:siaresiduallevel}
 \end{equation}
+
+FIXME possible: $\mR$ to generate a coarse-level thickness coefficient that is better than in \eqref{eq:siaVIFEFAS}.  That is, on the coarse level the nonlinear operator is slightly different; it is more ``$\pp$-Laplacian elliptic'' in the sense that the thickness-dependent coefficient is nonzero on a coarse-level superset of the fine-level nonzero set.
 
 To construct a smoother we follow the VI derivation of the PGS smoother in the previous section, wherein one-dimensional VI \eqref{eq:pgspointwisevi} produced formula \eqref{eq:pgsformula}.  Recall that if $w$ is admissible on the $j$th level, i.e.~if $w\ge \phi^j$, then, for piecewise-linear finite elements, a point perturbation $w+c\psi_p^j$ is admissible if and only if $w_p+c \ge \phi_p$, equivalently $c \ge \phi_p - w_p$.  Thus, at the node $x_p^j$, our \emph{projected nonlinear Gauss-Seidel} (PNGS) smoother seeks a scalar $c \ge \phi_p - w_p$ which solves the following one-dimensional VI:
 \begin{equation}
@@ -1254,7 +1261,7 @@ FIXME time-dependent runs
 
 \section{Tables to assist the reader}
 
-This review has been written attempting to use the simplest effective language and notation, but the new concepts are still substantial, and furthermore a number of different algorithms are discussed.  This Appendix may help the reader in managing the terminology, starting with acronyms in Table \ref{tab:acronyms} and notation in Table \ref{tab:notation}.  Tables \ref{tab:pseudocodespoisson} and \ref{tab:pseudocodesobstacle} list pseudocodes, for sections \ref{sec:subspace} and \ref{sec:obstacle} respectively, by page number.  All Tables are arranged alphabetically where possible.
+This review has been written attempting to use the simplest effective language and notation, but the new concepts are still substantial, and furthermore a number of different algorithms are discussed.  This Appendix may help the reader in managing the terminology, starting with acronyms in Table \ref{tab:acronyms} and notation in Table \ref{tab:notation}.  Tables \ref{tab:pseudocodespoisson}--\ref{tab:pseudocodessia} list pseudocodes, for sections \ref{sec:subspace}--\ref{sec:sia} respectively, by page number.  All Tables are arranged alphabetically where possible.
 
 \bigskip
 
@@ -1354,6 +1361,17 @@ $\|\cdot\|_{\mathcal{H}}$ & norm on solution space; $\|f\|_{\mathcal{H}}^2 =\ip{
 \bottomrule
 \caption{Pseudocodes for the classical obstacle problem (section \ref{sec:obstacle}).}
 \label{tab:pseudocodesobstacle}
+\end{longtable}
+
+\begin{longtable}{l|l|l}
+\toprule
+\textbf{Name} {\Large$\strut$} & \textbf{Page} & \textbf{Description} \\ \hline
+\pr{mcdn-vcycle} & \pageref{ps:mcdn-vcycle} & FAS-type multilevel constraint decomposition (MCD) V-cycle \\
+\pr{mcdn-solver} & \pageref{ps:mcdn-solver} & MCD solver; calls \pr{mcdn-vcycle} \\
+\pr{pngs} & \pageref{ps:pngs} & projected nonlinear (Newton) GS iteration, a smoother \\ % final \\ required
+\bottomrule
+\caption{Pseudocodes for the SIA obstacle problem (section \ref{sec:sia}).}
+\label{tab:pseudocodessia}
 \end{longtable}
 
 \end{document}
