@@ -70,7 +70,7 @@ urlcolor=black    % ...
 \newcommand{\ip}[2]{\left<#1,#2\right>}
 
 \newcommand{\mR}{R^{\bm{\oplus}}}
-\newcommand{\iR}{R^{\text{i}}}
+\newcommand{\iR}{R^{\bullet}}
 
 \newcommand{\pp}{{\text{p}}}
 \newcommand{\qq}{{\text{q}}}
@@ -1057,66 +1057,67 @@ F(s)[v-s] \ge 0 \quad \text{for all } v \text{ in } \mathcal{K}_b, \label{eq:sia
 \end{equation}
 the same form as the classical obstacle problem VI \eqref{eq:obstacleviresidual} considered in section \ref{sec:obstacle}.  Regarding the intuition behind \eqref{eq:siaVIresidual}, see Figure \ref{fig:cartoonplane} and the accompanying text.  However, for general data $b(x)$, note that the $F$ defined in \eqref{eq:siaF} is \emph{not} the gradient of a scalar objective functional.
 
-\subsection{Nonlinear MCD cycles} \label{subsec:mcdn}  We now propose to apply a nonlinear form of the MCD method to the steady SIA VI problem \eqref{eq:siaVIresidual}.  The method is a \emph{full approximation storage} (FAS) scheme \cite{Briggsetal2000,Trottenbergetal2001}, a well-known multilevel strategy for nonlinear PDEs, and also the method generalizes the MCDL method of section \ref{sec:obstacle}.  This framework, which avoids the complexity of methods which track the inactive set (compare \cite{Bueler2016,Jouvetetal2013,JouvetGraeser2013}), leads to robust and scalable numerical solutions.
+\subsection{Nonlinear MCD cycles} \label{subsec:mcdn}  We now propose to apply a nonlinear form of the MCD method to the steady SIA VI problem \eqref{eq:siaVI}.  The method is a \emph{full approximation storage} (FAS) scheme, following a well-known multilevel strategy for nonlinear PDEs \cite{Briggsetal2000,Trottenbergetal2001}, and it extends the MCDL method of section \ref{sec:obstacle}.  This framework reduces the implementation complexity of methods which track the inactive set \cite{Bueler2016,Jouvetetal2013,JouvetGraeser2013}, and it leads to robust and scalable numerical solutions.
 
-As before, suppose our fine-level FE space is $\mathcal{V}^J \subset \mathcal{W}$, the space of continuous piecewise-linear functions with zero boundary values.  Suppose $b^J$ in $\mathcal{V}^J$ is the fine-level interpolant of the continuum bed $b$, and assume that our given iterate $w^J$ in $\mathcal{V}^J$ is admissible in the sense that $w^J \ge b^J$.  As in section \ref{sec:obstacle} we define the fine-level defect constraint, as a function and a set:
+As before, suppose our fine-level FE space is $\mathcal{V}^J \subset \mathcal{W}$, the space of continuous piecewise-linear functions with zero boundary values.  Suppose $b^J$ in $\mathcal{V}^J$ is the fine-level interpolant of the continuum bed $b$, and assume that our given iterate $w^J$ in $\mathcal{V}^J$ is admissible in the sense that $w^J \ge b^J$.  As in section \ref{sec:obstacle}, we define the fine-level defect constraint function and set:
     $$\chi^J = b^J - w^J, \qquad \mathcal{D}^J = \{v\ge \chi^J\} \subset \mathcal{V}^J.$$
-For a perturbation $z^J$ in $\mathcal{V}^J$, the perturbed iterate is admissible ($w^J + z^J \ge b^J$) if and only if $z^J$ is in $\mathcal{D}^J$.
+Recall that a perturbed iterate is admissible, $w^J + z^J \ge b^J$, if and only if $z^J$ is in $\mathcal{D}^J$.
 
-Suppose $N^J:\mathcal{D}^J \to (\mathcal{V}^J)'$ is an FE approximation of the nonlinear operator $N$ \eqref{eq:siaN}.  (We define such a $N^J$ in detail in subsection \ref{subsec:pngs} below.)  Let $\ell^J[v] = \ip{a}{v}$.  Our goal is to solve the fine-level FE version of VI \eqref{eq:siaVI} for an admissible perturbation $z^J$ in $\mathcal{D}^J$, that is,
+As defined in detail in the next subsection \ref{subsec:pngs}, let $N^J$ be an FE approximation of the nonlinear operator $N_\eps$ in \eqref{eq:siaN}.  Let $\ell^J[v] = \ip{a}{v}$.  Our goal is to solve the fine-level FE version of VI \eqref{eq:siaVI} for an admissible perturbation $z^J$ in $\mathcal{D}^J$, that is,
 \begin{equation}
 N^J(w^J+z^J)[v-z^J] \ge \ell^J[v-z^J] \label{eq:siaVIFEfinelevel}
 \end{equation}
-for all $v$ in $\mathcal{D}^J$.  Relative to \eqref{eq:siaVI}, note $s^J=w^J+z^J$ is the desired surface elevation result, and that $v - z^J = (w^J+v)-s^J$.
+for all $v$ in $\mathcal{D}^J$.  Relative to \eqref{eq:siaVI}, note that $s^J=w^J+z^J$ is the desired surface elevation result, and that $v - z^J = (w^J+v)-s^J$.  Finite-dimensional nonlinear VI \eqref{eq:siaVIFEfinelevel} suffices when applying a single-level method.
 
-Finite-dimensional nonlinear VI \eqref{eq:siaVIFEfinelevel} suffices when applying a single-level method.  However, to derive a coarse-level correction, and in keeping with the fundamental MCD idea from section \ref{sec:obstacle}, we split $z^J$ into admissible parts on each level.  As in section \ref{sec:obstacle}, we define a defect constraint $\chi^j$ and a (down-)obstacle $\phi^j$ on each level.  For $j=1,\dots,J$ let
+In keeping with the fundamental MCD idea from section \ref{sec:obstacle}, we derive a coarse-level correction by splitting $z^J$ into admissible parts on each level.  Recalling $\mR$ denotes the monotone restriction operator \eqref{eq:monotonerestriction}, for $j=1,\dots,J$ let
     $$\chi^{j-1} = \mR \chi^j, \qquad \phi^j = \chi^j - \chi^{j-1},$$
-and also define $\chi^{-1}=0$ so that $\phi^0=\chi^0$.  (Recall $\mR$ denotes the monotone restriction operator \eqref{eq:monotonerestriction}; see Table \ref{tab:transfers}.  Note that the telescoping-sum decomposition \eqref{eq:telescopingdecomposition} now holds.  (Figure \ref{fig:gooddecomposition} serves as a rough visualization, but with $\varphi^J$ replaced by $b^J$.)
-
-Furthermore, for $j=0,\dots,J$ let
+and define $\chi^{-1}=0$ so that $\phi^0=\chi^0$.  (See also Table \ref{tab:transfers}.)  The telescoping-sum decomposition \eqref{eq:telescopingdecomposition} now holds.  Furthermore, for $j=0,\dots,J$ let
     $$\mathcal{D}^j = \{v \ge \chi^j\}, \qquad \mathcal{K}^j = \{v \ge \phi^j\}$$
-be the up- and down-admissible subsets of $\mathcal{V}^j$.  Note that $\mathcal{D}^j = \sum_{k=0}^j \mathcal{K}^k$ for any $j$.
+be the up- and down-admissible subsets of $\mathcal{V}^j$, respectively.  Note that $\mathcal{D}^j = \sum_{k=0}^j \mathcal{K}^k$ for any $j$, and that Figure \ref{fig:gooddecomposition} serves as a rough visualization if $\varphi^J$ is replaced by $b^J$.
 
-Now suppose $y^J$ in $\mathcal{K}^J$ is an admissible perturbation of $w^J$ which \emph{approximately} satisfies
+Now suppose we have an admissible perturbation of $w^J$ which \emph{approximately} satisfies \eqref{eq:siaVIFEfinelevel}.  Specifically, suppose $y^{j+1},\dots,y^J$ in $\mathcal{K}^{j+1},\dots,\mathcal{K}^J$ have been computed, using smoothers like that described in subsection \ref{subsec:pngs}, so that $z^{j+1}=y^{j+1}+\dots+y^J$ approximately solves \eqref{eq:siaVIFEfinelevel}.  We then seek a coarser-level correction $y$ in $\mathcal{K}^j$ so that
 \begin{equation}
-N^J(w^J+y^J)[v-y^J] \ge \ell^J[v-y^J] \label{eq:siaVIFEfineK}
+N^{j+1}(w^J+z^{j+1}+y)[v-y] \ge \ell^{j+1}[v-y] \label{eq:siaVIFEprecoarseone}
 \end{equation}
-for all $v$ in $\mathcal{K}^J$.  (Because $y^J$ is from a smaller set than $z^J$, even solving \eqref{eq:siaVIFEfineK} exactly does not yield a solution of \eqref{eq:siaVIFEfinelevel}.)  In fact, suppose we have applied a fine-level smoother, so that the residual of \eqref{eq:siaVIFEfineK} is smooth.  (Such a smoother is described in subsection \ref{subsec:pngs}.)  Denote this $J$th-level residual, a linear functional in $(\mathcal{V}^J)'$, as
+for all $v$ in $\mathcal{K}^j$.  The source $\ell^{j+1}$ is in fact only defined below, but note $\ell^J[v] = \ip{a}{v}$.  Subtracting $N^{j+1}(w^J+z^{j+1})$ from both sides of \eqref{eq:siaVIFEprecoarseone} reveals the residual,
 \begin{equation}
-F^J[v] = N^J(w^J+y^J)[v] - \ell^J[v]. \label{eq:siaVIFEresidualfine}
+N^{j+1}(w^J+z^{j+1}+y)[v-y] - N^{j+1}(w^J+z^{j+1})[v-y] \ge - \tilde F^{j+1}[v-y], \label{eq:siaVIFEprecoarsetwo}
 \end{equation}
-One effect of the smoother is to make $F^J$ smooth.
+where
+\begin{equation}
+\tilde F^{j+1}[v] = N^{j+1}(w^J+z^{j+1})[v] - \ell^{j+1}[v].
+\end{equation}
+The effect of the smoothers was to make $\tilde F^{j+1}$ smooth in the sense that values $\tilde F^{j+1}[\psi_p^{j+1}]$ are relatively small in a CP residual \eqref{eq:cpresidual} sense.
 
-Next we seek a coarser-level correction $y$ in $\mathcal{K}^{J-1}$ so that
+Because \eqref{eq:siaVIFEprecoarsetwo} should be accurately-representable on the $j$th level, we propose the following coarse-correction VI for $y$ in $\mathcal{K}^j$, in preliminary form:
 \begin{equation}
-N^J(w^J+y^J+y)[v-y] \ge \ell^J[v-y] \label{eq:siaVIFEcoarseKearlyone}
+N^j(g^j+y)[v-y] - N^j(g^j)[v-y] \ge - R F^{j+1}[v-y], \label{eq:siaVIFEFASearly}
 \end{equation}
-for all $v$ in $\mathcal{K}^{J-1}$.  Subtracting $N^J(w^J+y^J)[\cdot]$ from both sides of \eqref{eq:siaVIFEcoarseKearlyone} reveals the residual:
-\begin{align}
-N^J(w^J+y^J+y)[v-y] - N^J(w^J+y^J)[v-y] &\ge \ell^J[v-y] - N^J(w^J+y^J)[v-y] \label{eq:siaVIFEcoarseKearlytwo} \\
-   &= - F^J[v-y]. \notag
-\end{align}
-Because the residual $F^J$ is smooth, and the difference of inputs on the left, namely $y$, is smooth, inequality \eqref{eq:siaVIFEcoarseKearlytwo} should be well-represented on the $J-1$ level.
+for all $v$ in $\mathcal{K}^j$.  Note $F^{j+1}[v] = N^{j+1}(g^{j+1}+y^{j+1})[v] - \ell^{j+1}[v]$.
 
-Thus we propose the following coarse-level VI:
-\begin{equation}
-N^{J-1}(\iR(w^J+y^J)+y)[v-y] - N^{J-1}(\iR(w^J+y^J))[v-y] \ge - R F^J[v-y], \label{eq:siaVIFEFASEARLY}
-\end{equation}
-for $y$ in $\mathcal{K}^{J-1}$ and all $v$ in $\mathcal{K}^{J-1}$.  This inequality applies canonical restriction $R$ (section \ref{sec:subspace} and Table \ref{tab:transfers}), and it uses new symbols $N^{J-1}$ and $\iR$.  The nonlinear operator $N^{J-1}$ will be detailed in subsection \ref{subsec:pngs}.  The needed \emph{injection restriction} $\iR:\mathcal{V}^j \to \mathcal{V}^{j-1}$ simply keeps the values of the solution at the coarse-level nodes and discards the fine-level nodes in between:
+Inequality \eqref{eq:siaVIFEFASearly} applies canonical restriction $R$ on the right, a linear transfer operator defined in section \ref{sec:subspace}, but it also uses a new symbol $g^j$.  They are defined using \emph{injection restriction} $\iR:\mathcal{V}^{j+1} \to \mathcal{V}^j$, which simply keeps the values of the solution at the coarse-level nodes and discards the fine-level nodes in between:
 \begin{equation}
   (\iR v)_p = v_{2p}, \label{eq:injectionrestriction}
 \end{equation}
-for $p=1,\dots,m_{j-1}$.  Note that $\iR$ preserves admissibility relative to the interpolated bed elevation data on each level: $v\ge b^j \implies \iR v \ge b^{j-1}$.
-
-Let
-   $$\ell^{J-1}[v] = N^{J-1}\left(\iR(w^J+y^J)\right)[v] - R F^J[v].$$
-This is the source term of our coarse-level equation, similar to the source term in the original FAS scheme \cite{Trottenbergetal2001}.  Using $\ell^{J-1}$ we may rewrite \eqref{eq:siaVIFEFASEARLY} as
+for $p=1,\dots,m_j$.  (See Table \ref{tab:transfers}.)  Note that $\iR$ preserves admissibility relative to the interpolated bed elevation data on each level: $v\ge b^{j+1} \implies \iR v \ge b^j$.  Now $g^j$ is the $j$th-level approximation to the solution $s^J$, before the correction $y$ from $\mathcal{K}^j$:
 \begin{equation}
-N^{J-1}\left(\iR(w^J+y^J) + y\right)[v-y] \ge \ell^{J-1}[v-y]. \label{eq:siaVIFEFAS}
+g^j = \begin{cases} w^J, & j=J \\
+                    \iR(g^{j+1} + y^{j+1}), & j < J.
+      \end{cases}  \label{eq:siag}
 \end{equation}
 
-FIXME
+We can now be completely precise.  Recursively using \eqref{eq:siag} to define $g^j$ from the next-finer correction $y^{j+1}$, let
+\begin{equation}
+\ell^j[v] = \begin{cases} \ip{a}{v}, & j=J \\
+                          N^j(g^j)[v] - R \left(N^{j+1}(g^{j+1}+y^{j+1}) - \ell^{j+1}\right)[v], & j < J.
+            \end{cases}  \label{eq:siaell}
+\end{equation}
+(This is essentially the same source term as in a standard FAS scheme \cite{Trottenbergetal2001}.)  The final form of the coarse-correction VI rewrites \eqref{eq:siaVIFEFASearly} by moving already-computed quantities, namely the source term \eqref{eq:siaell}, to the right:
+\begin{equation}
+N^j(g^j+y)[v-y] \ge \ell^j[v-y]. \label{eq:siaVIFEFAS}
+\end{equation}
 
+FIXME V-cycle
 \begin{pseudo*} \label{ps:mcdn-vcycle}
 \pr{mcdn-vcycle}(J,w^J,N,\ell^J,\chi^J,\id{down}=1,\id{coarse}=1,\id{up}=0)\text{:} \\+
     $g^J = w^J$ \\
@@ -1126,8 +1127,8 @@ FIXME
       $y^j = 0$ \\
       $\text{\pr{smoother}}^{\text{\id{down}}}(j,g^j,y^j,N^j,\ell^j,\phi^j)$ \qquad \ct{smoothing in $\mathcal{K}^j$} \\
       $F_p = N^j(g^j+y^j)[\psi_p^j] - \ell^j[\psi_p^j]$ \\
-      $\ell^{j-1} = - R F$ \\
-      $g^{j-1} = \iR(g^j + y^j)$ \\-
+      $g^{j-1} = \iR(g^j + y^j)$ \\
+      $\ell^{j-1} = N^{j-1}(g^{j-1}) - R F$ \\-
     $y^0 = 0$ \\
     $\text{\pr{smoother}}^{\text{\id{coarse}}}(0,g^0,y^0,N^0,\ell^0,\chi^0)$ \\
     $z^0 = y^0$ \\
@@ -1136,6 +1137,8 @@ FIXME
       $\text{\pr{smoother}}^{\text{\id{up}}}(j,g^j,z^j,N^j,\ell^j,\chi^j)$ \qquad \ct{smoothing in $\mathcal{D}^j$} \\-
     return $z^J$
 \end{pseudo*}
+
+FIXME solver
 
 FIXME possible idea: $\mR$ to generate a coarse-level thickness coefficient that is better than in \eqref{eq:siaVIFEFAS}.  That is, on the coarse level the nonlinear operator is slightly different; it is more ``$\pp$-Laplacian elliptic'' in the sense that the thickness-dependent coefficient is nonzero on a coarse-level superset of the fine-level nonzero set.
 
