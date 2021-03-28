@@ -1066,44 +1066,43 @@ be the up- and down-admissible subsets of $\mathcal{V}^j$.  Note that $\mathcal{
 
 Now suppose $y^J$ in $\mathcal{K}^J$ is an admissible perturbation of $w^J$ which \emph{approximately} satisfies
 \begin{equation}
-N^J(w^J+y^J)[v-y^J] \ge \ell_a[v-y^J] \label{eq:siaVIFEfineK}
+N^J(w^J+y^J)[v-y^J] \ge \ell^J[v-y^J] \label{eq:siaVIFEfineK}
 \end{equation}
-for all $v$ in $\mathcal{K}^J$.  (Because $y^J$ is from a smaller set than $z^J$, even solving \eqref{eq:siaVIFEfineK} exactly does not yield a solution of \eqref{eq:siaVIFEfinelevel}.)  In fact, suppose we have applied a fine-level smoother, as defined in subsection \ref{subsec:pngs}, so that the residual of \eqref{eq:siaVIFEfineK} is smooth.  Denote this $J$th-level residual, a linear functional in $(\mathcal{V}^J)'$, as
+for all $v$ in $\mathcal{K}^J$.  (Because $y^J$ is from a smaller set than $z^J$, even solving \eqref{eq:siaVIFEfineK} exactly does not yield a solution of \eqref{eq:siaVIFEfinelevel}.)  In fact, suppose we have applied a fine-level smoother, so that the residual of \eqref{eq:siaVIFEfineK} is smooth.  (Such a smoother is described in subsection \ref{subsec:pngs}.)  Denote this $J$th-level residual, a linear functional in $(\mathcal{V}^J)'$, as
 \begin{equation}
-F^J[v] = N^J(w^J+y^J)[v] - \ell_a[v]. \label{eq:siaVIFEresidualfine}
+F^J[v] = N^J(w^J+y^J)[v] - \ell^J[v]. \label{eq:siaVIFEresidualfine}
 \end{equation}
-The effect of the smoother is to make $F^J$ smooth and furthermore to make the difference between $w^J+y^J$ and the desired solution $s^J=w^J+z^J$ smooth.
+One effect of the smoother is to make $F^J$ smooth.
 
 Next we seek a coarser-level correction $y$ in $\mathcal{K}^{J-1}$ so that
 \begin{equation}
-N^J(w^J+y^J+y)[v-y] \ge \ell_a[v-y] \label{eq:siaVIFEcoarseKearlyone}
+N^J(w^J+y^J+y)[v-y] \ge \ell^J[v-y] \label{eq:siaVIFEcoarseKearlyone}
 \end{equation}
-for all $v$ in $\mathcal{K}^{J-1}$.  Now subtract $N^J(w^J+y^J)[\cdot]$ from both sides of \eqref{eq:siaVIFEcoarseKearlyone}.  This reveals the residual on the right:
+for all $v$ in $\mathcal{K}^{J-1}$.  Subtracting $N^J(w^J+y^J)[\cdot]$ from both sides of \eqref{eq:siaVIFEcoarseKearlyone} reveals the residual:
 \begin{align}
-N^J(w^J+y^J+y)[v-y] - N^J(w^J+y^J)[v-y] &\ge \ell_a[v-y] - N^J(w^J+y^J)[v-y] \label{eq:siaVIFEcoarseKearlytwo} \\
+N^J(w^J+y^J+y)[v-y] - N^J(w^J+y^J)[v-y] &\ge \ell^J[v-y] - N^J(w^J+y^J)[v-y] \label{eq:siaVIFEcoarseKearlytwo} \\
    &= - F^J[v-y]. \notag
 \end{align}
-Because the residual $F^J$ of \eqref{eq:siaVIFEfineK} is smooth, and the difference of inputs on the left, namely $y$, is smooth, inequality \eqref{eq:siaVIFEcoarseKearlytwo} should be well-represented on the $J-1$ level.
+Because the residual $F^J$ is smooth, and the difference of inputs on the left, namely $y$, is smooth, inequality \eqref{eq:siaVIFEcoarseKearlytwo} should be well-represented on the $J-1$ level.
 
-Thus we propose the following coarse-level equation, our first version of the FAS coarse-correction equation \cite{Trottenbergetal2001}:
+Thus we propose the following coarse-level VI:
 \begin{equation}
-N^{J-1}(\hat R(w^J+y^J)+y)[v-y] - N^{J-1}(\hat R(w^J+y^J))[v-y] \ge - R' F^J[v-y]. \label{eq:siaVIFEFASEARLY}
+N^{J-1}(\iR(w^J+y^J)+y)[v-y] - N^{J-1}(\iR(w^J+y^J))[v-y] \ge - R F^J[v-y], \label{eq:siaVIFEFASEARLY}
 \end{equation}
-
-FIXME new in above is a nonlinear operator $N^{J-1}$ (defined in next subsection)
-
-We define \emph{injection restriction} $\iR:\mathcal{V}^j \to \mathcal{V}^{j-1}$ by
+for $y$ in $\mathcal{K}^{J-1}$ and all $v$ in $\mathcal{K}^{J-1}$.  This inequality applies canonical restriction $R$ (section \ref{sec:subspace} and Table \ref{tab:transfers}), and it uses new symbols $N^{J-1}$ and $\iR$.  The nonlinear operator $N^{J-1}$ will be detailed in subsection \ref{subsec:pngs}.  The needed \emph{injection restriction} $\iR:\mathcal{V}^j \to \mathcal{V}^{j-1}$ simply keeps the values of the solution at the coarse-level nodes and discards the fine-level nodes in between:
 \begin{equation}
-  (\iR v)_p = v_{2p} \label{eq:injectionrestriction}
+  (\iR v)_p = v_{2p}, \label{eq:injectionrestriction}
 \end{equation}
+for $p=1,\dots,m_{j-1}$.  Note that $\iR$ preserves admissibility relative to the interpolated bed elevation data on each level: $v\ge b^j \implies \iR v \ge b^{j-1}$.
 
-FIXME note $\iR$ preserves admissibility in the original sense: $\iR:\{v\ge b^J\} \to \{v\ge b^{J-1}\}$.  We rewrite \eqref{eq:siaVIFEFASEARLY}
-\begin{equation}
-N^{J-1}\left(\iR(w^J+y^J) + y\right)[v-y] \ge \ell^{J-1}[v-y] \label{eq:siaVIFEFAS}
-\end{equation}
-for $y$ in $\mathcal{K}^{J-1}$ and all $v$ in $\mathcal{K}^{J-1}$.  The new linear function includes the restricted residual $F^J$ and the $y$-independent term moved from the left side:
+Let
    $$\ell^{J-1}[v] = N^{J-1}\left(\iR(w^J+y^J)\right)[v] - R F^J[v].$$
-where $R$ is canonical restriction.
+This is the source term of our coarse-level equation, similar to the source term in the original FAS scheme \cite{Trottenbergetal2001}.  Using $\ell^{J-1}$ we may rewrite \eqref{eq:siaVIFEFASEARLY} as
+\begin{equation}
+N^{J-1}\left(\iR(w^J+y^J) + y\right)[v-y] \ge \ell^{J-1}[v-y]. \label{eq:siaVIFEFAS}
+\end{equation}
+
+FIXME
 
 \begin{pseudo*} \label{ps:mcdn-vcycle}
 \pr{mcdn-vcycle}(J,w^J,N,\ell^J,\chi^J,\id{down}=1,\id{coarse}=1,\id{up}=0)\text{:} \\+
