@@ -1109,14 +1109,15 @@ We can now be completely precise.  Recursively using \eqref{eq:siag} to define $
 
 Starting from \eqref{eq:siaVIFEprecoarsetwo}, our preliminary form of the $j$th-level correction VI is then
 \begin{equation}
-N^j(g^j+y)[v-y] - N^j(g^j)[v-y] \ge - R \left(N^{j+1}(g^{j+1}+y^{j+1}) - \ell^{j+1}\right)[v-y], \label{eq:siaVIFEFASearly}
+N^j(g^j+y)[v-y^j] - N^j(g^j)[v-y^j] \ge - R \left(N^{j+1}(g^{j+1}+y^{j+1}) - \ell^{j+1}\right)[v-y^j]. \label{eq:siaVIFEFASearly}
 \end{equation}
-for all $v$ in $\mathcal{K}^j$.  Our desired form rewrites this by moving the source term \eqref{eq:siaell} to the right:
+Moving the source term \eqref{eq:siaell} to the right, we seek a correction $y^j$ in $\mathcal{K}^j$ so that
 \begin{equation}
-N^j(g^j+y)[v-y] \ge \ell^j[v-y]. \label{eq:siaVIFEFAS}
+N^j(g^j+y^j)[v-y^j] \ge \ell^j[v-y^j] \label{eq:siaVIFEFAS}
 \end{equation}
+for all $v$ in $\mathcal{K}^j$.
 
-From \eqref{eq:siag}, \eqref{eq:siaell}, and \eqref{eq:siaVIFEFAS} we can construct a V-cycle comparable to \pr{mcdl-vcycle} on page \pageref{ps:mcdl-vcycle}.  On descent we look for corrections $y^j$ from the down-admissible sets $\mathcal{K}^j$, but going upward we allow corrections $z^j$ from larger up-admissible sets $\mathcal{D}^j$ (Figure \ref{fig:mcdvcycle}).  The construction of the nonlinear operator $N^j$ is constructed in the next subsection, as is nontrivial construction of the \pr{pngs} smoother.
+From \eqref{eq:siag}, \eqref{eq:siaell}, and \eqref{eq:siaVIFEFAS} we can construct a V-cycle comparable to \pr{mcdl-vcycle} on page \pageref{ps:mcdl-vcycle}.  On descent we look for corrections $y^j$ from the down-admissible sets $\mathcal{K}^j$, but going upward we allow corrections $z^j$ from larger up-admissible sets $\mathcal{D}^j$ (Figure \ref{fig:mcdvcycle}).  The nonlinear operator $N^j$ is constructed in the next subsection, as is the nontrivial \pr{pngs} smoother.
 
 \begin{pseudo*} \label{ps:mcdn-vcycle}
 \pr{mcdn-vcycle}(J,w^J,N,\ell^J,\chi^J,\id{down}=1,\id{coarse}=1,\id{up}=0)\text{:} \\+
@@ -1150,67 +1151,67 @@ We propose to iterate \pr{mcdn-vcycle} until the norm of the CP residual has bee
             break \\--
 \end{pseudo*}
 
-\subsection{Projected nonlinear Gauss-Seidel} \label{subsec:pngs}  The discretization of SIA VI \eqref{eq:siaVIresidual} proceeds essentially as for the VI form \eqref{eq:obstacleviresidual} of the classical obstacle problem.  One difference is that we will approximate the integral in \eqref{eq:siaN}, for the nonlinear operator $N(s)[v]$, using quadrature.  Also recall that when we apply an MCD scheme for an obstacle problem, the coarse-level correction involves transformations of the residual and obstacle from their continuum form to a different level-specific form.  Also, note that the bed elevation $b$ itself appears in the formula for $N(s)[v]$, and not just in defining $\mathcal{K}_b$.
+% FIXME possible: $\mR$ generates a coarse-level thickness coefficient that is better than in \eqref{eq:siaVIFEFAS}; on the coarse level the nonlinear operator is slightly different; it is more ``$\pp$-Laplacian elliptic''
 
-Suppose $w$ in $\mathcal{V}^j \subset \mathcal{W}$ is an iterate on the $j$th level, an approximation of the surface elevation $s(x)$.  (Recall $\mathcal{V}^j$ contains all piecewise-linear functions with zero boundary values.)  The iterate can be written in hat functions, $w = \sum w_q \psi_q^j$.  Suppose $\phi^j$ is the obstacle on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$.  (Note $\phi^j$ is \emph{not} generally the interpolant of the bed $b(x)$, but rather it is a defect obstacle; see below.)  Let
-\begin{equation}
-  \mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j \subset \mathcal{W}. \label{eq:siaadmissiblelevel}
-\end{equation}
-Assume that $\ell^j[\cdot]$ is a linear functional with values $\ell^j[\psi_p^j] = \ell_p$.  (It is defined below as part of the coarse-level correction process.)  Also, define two helper functions
-\begin{equation}
-\mu(x) = |x|^{\pp-2} x, \qquad \tau_p(x)  = (x - b_p)^{\pp+1}, \label{eq:siahelperfcns}
-\end{equation}
-on $\RR$ and $x\ge b_p$, respectively.  These functions are continuously-differentiable with nonnegative derivatives $\mu'(x) = (\pp-1) |x|^{\pp-2}$ and $\tau_p'(x) = (\pp+1) (x-b_p)^{\pp}$, respectively.
+\subsection{FE discretization and projected nonlinear Gauss-Seidel} \label{subsec:pngs}  The discretization of SIA VI \eqref{eq:siaVI}, to generate either the single-level form \eqref{eq:siaVIFEfinelevel} or the coarse-level correction form \eqref{eq:siaVIFEFAS}, proceeds essentially as for the classical obstacle problem VI \eqref{eq:obstacleviresidual}.  One difference is that we will approximate the integral in the nonlinear operator $N_\eps$ using quadrature.  Another difference is that the bed elevation $b$ appears in the formula for $N_\eps$, and not just in defining the admissible sets.  In this subsection we first define the operator approximation $N^j$ and then consider a Gauss-Seidel smoother for the VI \eqref{eq:siaVIFEfinelevel} or \eqref{eq:siaVIFEFAS}.
 
-We will approximate the nonlinear operator $N$ \eqref{eq:siaN} on the $j$th-level.  Recalling that the support of $\psi_p^j$ is the interval $[x_p^j-h,x_p^j+h]$, the exact value is
+Suppose $w^j$ in $\mathcal{V}^j \subset \mathcal{W}$ is an iterate on the $j$th level, an approximation of the surface elevation $s_\eps$ which solves \eqref{eq:siaVI}, expanded in hat functions $w^j = \sum w_q \psi_q^j$.  (Recall $\mathcal{V}^j$ contains all piecewise-linear functions with zero boundary values.)  Assume $b^j$ interpolates the fine-level bed $b^J$ onto the $j$th level, i.e.~$b^j = \iR b^{j+1}$ for $j=0,\dots,J-1$, again expanded in the basis $b^j = \sum b_q \psi_q^j$.  Also, we give names to the power functions appearing in formula \eqref{eq:siaN} for $N_\eps$:
 \begin{equation}
-N(w)[\psi_p^j] = \int_{x_p^j-h}^{x_p^j+h} \Gamma (w-b)^{\pp+1} \mu(w') (\psi_p^j)'\,dx.  \label{eq:siaNlevelEARLY}
+\mu(x) = |x|^{\pp-2} x, \qquad \tau_q(x)  = (x - b_q + \eps)^{\pp+1}, \label{eq:siahelperfcns}
 \end{equation}
-Our approximation uses the trapezoid rule and the piecewise-linearity of the hat functions:
+for $x$ in $\RR$ and $x\ge b_q$, respectively.  Note that $\tau_q$ refers to a pointwise bed elevation value $b_q$.  These functions are continuously-differentiable with nonnegative derivatives $\mu'(x) = (\pp-1) |x|^{\pp-2}$ and $\tau_q'(x) = (\pp+1) (x-b_q + \eps)^{\pp}$, respectively.
+
+Recalling that the support of $\psi_p^j$ is the interval $[x_p^j-h,x_p^j+h]$, the exact value we want is
+\begin{equation}
+N_\eps(w^j)[\psi_p^j] = \int_{x_p^j-h}^{x_p^j+h} \Gamma (w^j-b+\eps)^{\pp+1} \mu((w^j)') (\psi_p^j)'\,dx.  \label{eq:siaNFEgoal}
+\end{equation}
+Here $b$ is the original bed elevation function, but to represent $N_\eps$ on the level we must approximate using the interpolated bed $b^j$.  Note that exact integration here is impossible for non-integer $\pp$, and tedious even for $\pp=2$ or the typical value $\pp=4$.  Thus our approximation to \eqref{eq:siaNFEgoal} uses $b^j$, the piecewise-linearity of the functions, and the trapezoid rule on each element:
 \begin{align}
-N^j(w)[\psi_p^j] &= \Gamma \left(\frac{\tau_{p-1}(w_{p-1}) + \tau_p(w_p)}{2}\right) \mu\left(\frac{w_p-w_{p-1}}{h}\right)\, \frac{+1}{h}\, h \notag \\
+N^j(w^j)[\psi_p^j] &= \Gamma \left(\frac{\tau_{p-1}(w_{p-1}) + \tau_p(w_p)}{2}\right) \mu\left(\frac{w_p-w_{p-1}}{h}\right)\, \frac{+1}{h}\, h \notag \\
     &\qquad\quad  + \Gamma \left(\frac{\tau_p(w_p) + \tau_{p+1}(w_{p+1})}{2}\right) \mu\left(\frac{w_{p+1}-w_p}{h}\right)\, \frac{-1}{h}\, h, \notag \\
     &= \frac{\Gamma}{2h^{\pp-1}} \Big[(\tau_{p-1}(w_{p-1}) + \tau_p(w_p)) \mu(w_p-w_{p-1})  \label{eq:siaNlevel} \\
     &\qquad\qquad\quad - (\tau_p(w_p) + \tau_{p+1}(w_{p+1})) \mu(w_{p+1}-w_p)\Big]. \notag
 \end{align}
-This is a map from $w$ in $\mathcal{K}^j$ to $N^j(w)[\cdot]$ in $(\mathcal{V}^j)'$.  Now we define the $j$th-level FE residual
+This defines a map from $w^j$ in $\{v \ge b^j\} \subset \mathcal{V}^j$ to $N^j(w^j)$ in $(\mathcal{V}^j)'$.
+
+Now assume that $\ell^j[\cdot]$ is a linear functional with values $\ell^j[\psi_p^j] = \ell_p$.  (In fact $\ell^j$ is defined in \eqref{eq:siaell}.)  This allows us to define the $j$th-level residual, again in $(\mathcal{V}^j)'$:
 \begin{equation}
-F^j(w)[\cdot] = N^j(w)[\cdot] - \ell^j[\cdot]. \label{eq:siaresiduallevel}
+F^j(w^j) = N^j(w^j) - \ell^j. \label{eq:siaresiduallevel}
 \end{equation}
 
-FIXME possible: $\mR$ to generate a coarse-level thickness coefficient that is better than in \eqref{eq:siaVIFEFAS}.  That is, on the coarse level the nonlinear operator is slightly different; it is more ``$\pp$-Laplacian elliptic'' in the sense that the thickness-dependent coefficient is nonzero on a coarse-level superset of the fine-level nonzero set.
+To construct a smoother for VI \eqref{eq:siaVIFEfinelevel} or \eqref{eq:siaVIFEFAS} we follow the derivation of the PGS smoother in the previous section.  Although a minimization-based derivation was possible for the classical obstacle problem, we showed that one-dimensional VI \eqref{eq:pgspointwisevi} also produced the PGS formula \eqref{eq:pgsformula}.
 
-To construct a smoother we follow the VI derivation of the PGS smoother in the previous section, wherein one-dimensional VI \eqref{eq:pgspointwisevi} produced formula \eqref{eq:pgsformula}.  Recall that if $w$ is admissible on the $j$th level, i.e.~if $w\ge \phi^j$, then, for piecewise-linear finite elements, a point perturbation $w+c\psi_p^j$ is admissible if and only if $w_p+c \ge \phi_p$, equivalently $c \ge \phi_p - w_p$.  Thus, at the node $x_p^j$, our \emph{projected nonlinear Gauss-Seidel} (PNGS) smoother seeks a scalar $c \ge \phi_p - w_p$ which solves the following one-dimensional VI:
+For solving \eqref{eq:siaVIFEFAS} we write $w^j=g^j+y^j$ where $g^j\ge b^j$ and $y^j$ is the correction to be computed on the $j$th level.  Supposing $\phi^j$ is the obstacle for corrections on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$, let $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j \subset \mathcal{W}$.  Note that $g^j+y^j \ge b^j$ follows if $y^j$ is in $\mathcal{K}^j$.\footnote{This formulation is correct for down-smoothers.  Slight modifications apply when solving VI \eqref{eq:siaVIFEfinelevel} in a single-level method or for \eqref{eq:siaVIFEFAS} when up-smoothing after the coarse-level correction.  In both of those cases, replace $\phi^j$ with $\chi^j$ and $y^j$ with $z^j$.}
+
+At the node $x_p^j$, our \emph{projected nonlinear Gauss-Seidel} (PNGS) smoother seeks a scalar $c \ge \phi_p - y_p$ which solves the following one-dimensional VI:
 \begin{equation}
-  F^j(w+c\psi_p^j)[(w+\tilde c\psi_p^j) - (w+c\psi_p^j)] \ge 0,  \label{eq:pngspointwiseviEARLY}
+  F^j(w^j+c\psi_p^j)[(w^j+\tilde c\psi_p^j) - (w^j+c\psi_p^j)] \ge 0,  \label{eq:pngspointwiseviEARLY}
 \end{equation}
-for all $\tilde c \ge \phi_p - w_p$.  By linearity, i.e.~because $F^j(w)$ is in $(\mathcal{V}^j)'$, we may write this as
+for all $\tilde c \ge \phi_p - y_p$.  By linearity we may write this as
 \begin{equation}
   (\tilde c - c) g(c) \ge 0,  \label{eq:pngspointwisevi}
 \end{equation}
-where
+where from \eqref{eq:siaNlevel}
 \begin{align}
-  g(c) &= F^j(w+c\psi_p^j)[\psi_p^j] = \frac{\Gamma}{2h^{\pp-1}} \Big[(\tau_{p-1}(w_{p-1}) + \tau_p(w_p+c)) \mu(w_p+c-w_{p-1}) \label{eq:pngspointwiseresidual}  \\
-       &\hspace{55mm} - (\tau_p(w_p+c) + \tau_{p+1}(w_{p+1})) \mu(w_{p+1}-w_p-c)\Big] - \ell_p \notag
+  g(c) &= F^j(g^j+y^j+c\psi_p^j)[\psi_p^j] = F^j(w^j+c\psi_p^j)[\psi_p^j] \label{eq:pngspointwiseresidual} \\
+       &= \frac{\Gamma}{2h^{\pp-1}} \Big[(\tau_{p-1}(w_{p-1}) + \tau_p(w_p +c)) \mu(w_p+c-w_{p-1}) \notag  \\
+       &\hspace{20mm} - (\tau_p(w_p+c) + \tau_{p+1}(w_{p+1})) \mu(w_{p+1}-w_p-c)\Big] - \ell_p \notag
 \end{align}
-is a differentiable function on $[\phi_p - w_p,+\infty)$.
+is a differentiable function on $[\phi_p - y_p,+\infty)$.  In using this formula it is important to remember that $w_p = g_p+y_p$ and so on.
 
-As was the situation for \eqref{eq:pgspointwisevi}, the solution of VI \eqref{eq:pngspointwisevi} is either the unique value $c$ in the admissible interval $[\phi_p - w_p,+\infty)$ such that $g(c)=0$, or it is the left endpoint of that interval.  In fact, regarding the practical matter of constructing a reliable smoother, it is important that we justify why VI \eqref{eq:pngspointwisevi} is well-posed in this sense.  
+In deriving \eqref{eq:pgspointwisevi} we used the fact that the corresponding scalar function $g(c)$ was linear and strictly-increasing.  It followed that the solution of VI \eqref{eq:pgspointwisevi} was either the unique value $c$ in the admissible interval such that $g(c)=0$, or it was the left endpoint of that interval.  The situation here is more complicated, and we must be careful regarding the practical matter of constructing a robust smoother.
 
-FIXME conflict between $[\phi_p - w_p,+\infty)$ and $[b_p - w_p,+\infty)$
-
-FIXME $g(c)$ may not be strictly increasing; its derivative is
+Let us start by providing a lower bound on the derivative $g'(c)$:
 \begin{align}
-  g'(c) &= \frac{\Gamma}{2h^{\pp-1}} \Big[\tau_p'(w_p+c) \left(\mu(w_p+c-w_{p-1}) -  \mu(w_{p+1}-w_p-c)\right) \label{eq:pngspointwisejacobian} \\
-        &\qquad\qquad + (\tau_{p-1}(w_{p-1}) + \tau_p(w_p+c)) \mu'(w_p+c-w_{p-1}) \notag \\
-        &\qquad\qquad + (\tau_p(w_p+c) + \tau_{p+1}(w_{p+1})) \mu'(w_{p+1}-w_p-c)\Big] \notag 
+  g'(c) &= \frac{\Gamma}{2h^{\pp-1}} \Big[\tau_p'(w_p+c) \left(\mu(w_p+c-w_{p-1}) -  \mu(w_{p+1}-w_p-c)\right) \label{eq:pngsderivativebound} \\
+        &\qquad\qquad\quad + (\tau_{p-1}(w_{p-1}) + \tau_p(w_p+c)) \mu'(w_p+c-w_{p-1}) \notag \\
+        &\qquad\qquad\quad + (\tau_p(w_p+c) + \tau_{p+1}(w_{p+1})) \mu'(w_{p+1}-w_p-c)\Big] \notag \\
+        &\ge \frac{\Gamma}{2h^{\pp-1}} \Big[\tau_p'(w_p+c) \mu'(\xi_p) (2(w_p+c) - w_{p-1} - w_{p+1}) \notag \\
+        &\qquad\qquad\quad + 2 \eps^{\pp+1} \left(\mu'(w_p+c-w_{p-1}) + \mu'(w_{p+1}-w_p-c)\right)\Big] \notag
 \end{align}
+for some $\xi_p$ in the interval between $w_p+c-w_{p-1}$ and $w_{p+1}-w_p-c$.  (We have used the mean value theorem on $\mu$ and fact that $\tau_p(x) = (x+b_p+\eps)^{\pp+1} \ge \eps^{\pp+1}$ when $x\ge b_p$.)  Note that derivatives $\mu'$ and $\tau_p'$ are nonnegative.
 
-FIXME CONSIDER ADDING $\eta_0$ TO THICKNESS
-
-FIXME CONSIDER $w+c\eta_0\psi_p^j$ or $w+ch\psi_p^j$ SO $c$ IS UNITLESS
-
-However, unlike the corresponding problem for the classical obstacle problem, the solution of \eqref{eq:pngspointwisevi} cannot be found exactly.  Instead we set up a Newton iteration to compute $c$.  FIXME
+FIXME In any case, unlike the corresponding problem for the classical obstacle problem, the solution of \eqref{eq:pngspointwisevi} cannot be found exactly.  Instead we set up a Newton iteration to compute $c$.
 
 \begin{pseudo*} \label{ps:pngs}
 \pr{pngs}(j,w,z,N,\ell,\phi,\id{omega}=1)\text{:} \\+
