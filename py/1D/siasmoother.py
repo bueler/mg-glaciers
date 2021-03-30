@@ -89,10 +89,20 @@ class PNGSSIA(SmootherObstacleProblem):
         return N - ell[p]
 
     def _showsingular(self, z):
+        '''Print a string indicating singular Jacobian points.'''
         Jstr = ''
         for k in range(len(z)):
             Jstr += '-' if z[k] == 0.0 else '*'
         print('%3d singulars: ' % sum(z > 0.0) + Jstr)
+
+    def _updatew(self, w, d, phi):
+        '''Update w[p] from computed (preliminary) Newton step d.  Ensures
+        admissibility and applies Newton-step limitation logic.'''
+        d = max(d, phi - w)                           # require admissible
+        d = np.sign(d) * min(abs(d), self.newtondmax) # limit huge steps
+        w += self.args.omega * d                      # take step
+        stopnow = (abs(self.args.omega * d) < self.newtondtol) # tiny step criterion
+        return w, stopnow
 
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected nonlinear Gauss-Seidel (PNGS) sweep over the
@@ -114,11 +124,9 @@ class PNGSSIA(SmootherObstacleProblem):
                     d = self.daccumulation if ell[p] > 0.0 else 0.0
                 else:
                     d = - (N - ell[p]) / Jac
-                d = max(d, phi[p] - w[p])                     # require admissible
-                d = np.sign(d) * min(abs(d), self.newtondmax) # limit huge steps
-                w[p] += self.args.omega * d                   # take step
-                if abs(self.args.omega * d) < self.newtondtol:
-                    break # stop iterations if tiny step
+                w[p], stopnow = self._updatew(w[p], d, phi[p])
+                if stopnow:
+                    break
         mesh.WU += self.newtonits  # overcounts WU if many points are active
         if self.args.showsingular and any(jaczeros != 0.0):
             self._showsingular(jaczeros)
@@ -201,15 +209,6 @@ class PNGSSIA(SmootherObstacleProblem):
 
 class PNJacobiSIA(PNGSSIA):
 
-    def _residualjacobian(self, mesh, w, ell):
-        '''Compute the residual and Jacobian at each point, returning a vector
-        for each.  Calls _pointN() for values.'''
-        F, J = mesh.zeros(), mesh.zeros()
-        for p in self._sweepindices(mesh, forward=True):
-            F[p], J[p] = self._pointN(mesh.h, mesh.b, w, p)
-            F[p] -= ell[p]
-        return F, J
-
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected nonlinear Jacobi sweep over the interior
         points p=1,...,m, for the SIA problem.  Compare PNGSSIA.smoothersweep()
@@ -220,18 +219,20 @@ class PNJacobiSIA(PNGSSIA):
         mesh.checklen(phi)
         assert hasattr(mesh, 'b')
         self._checkrepairadmissible(mesh, w, phi)
-        res, Jac = self._residualjacobian(mesh, w, ell)
-        jaczeros = 1.0 * (Jac == 0.0)
+        # compute residual and Jacobian at each point
+        res, Jac = mesh.zeros(), mesh.zeros()
+        for p in self._sweepindices(mesh, forward=True):
+            res[p], Jac[p] = self._pointN(mesh.h, mesh.b, w, p)
+            res[p] -= ell[p]
+        # update each w[p] value
         for p in self._sweepindices(mesh, forward=forward):
             for k in range(self.newtonits):
                 if Jac[p] == 0.0:
                     d = self.daccumulation if ell[p] > 0.0 else 0.0
                 else:
                     d = - res[p] / Jac[p]
-                d = max(d, phi[p] - w[p])                     # require admissible
-                d = np.sign(d) * min(abs(d), self.newtondmax) # limit huge steps
-                w[p] += self.args.omega * d                   # take step
-                if abs(self.args.omega * d) < self.newtondtol: # tiny step
+                w[p], stopnow = self._updatew(w[p], d, phi[p])
+                if stopnow:
                     break
         mesh.WU += self.newtonits  # overcount WU if many points are active
         if self.args.showsingular and any(jaczeros != 0.0):
