@@ -93,6 +93,8 @@ parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
                     help='in Poisson equation -u"=f this multiplies f (default X=1.0)')
 parser.add_argument('-irtol', type=float, default=1.0e-3, metavar='X',
                     help='norm of inactive residual is reduced by this factor (default X=1.0e-3)')
+parser.add_argument('-showsingular', action='store_true', default=False,
+                    help='on each sweep on each level, show where the point Jacobian was singular')
 parser.add_argument('-jacobi', action='store_true', default=False,
                     help='use Jacobi (additive) instead of Gauss-Seidel (multiplicative) for smoothing')
 parser.add_argument('-jcoarse', type=int, default=0, metavar='J',
