@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 '''Solve 1D obstacle problems by a multilevel constraint decomposition method.'''
 
-# best observed settings, measured by error norms, for generating solutions in 10 WU:
-#   for CASE in icelike traditional; do
-#     for JJ in 6 7 8 9 10 11 12 13 14 15 16; do
-#       ./obstacle.py -poissoncase $CASE -jfine $JJ -ni -nicycles 2 -cyclemax 3 -omega 1.5
-#     done
-#   done
-
 import sys
 import argparse
 import numpy as np
@@ -61,7 +54,8 @@ Solution is by the multilevel constraint decomposition (MCD) method of
 Tai (2003).  As in Alg. 4.7 of Gräser & Kornhuber (2009), we implement
 MCD using a monotone restriction operator which decomposes the defect
 obstacle.  Gräser & Kornhuber (2009) implement a down-slash cycle, but
-we extend this to up-slash and v-cycles as well.
+we extend this to up-slash and v-cycles as well.  Our default is an
+up-slash V(0,1) cycle.
 
 The smoother and the coarse-mesh solver are either projected Gauss-Seidel
 or projected Jacobi using a relaxation parameter (-omega).  These are
@@ -73,6 +67,8 @@ Get usage help with -h or --help.
 References:
   * Bueler, E. (2016). Stable finite volume element schemes for the
     shallow ice approximation. J. Glaciol. 62, 230--242.
+  * Bueler, E. (in prep.). Geometric multigrid for glacier modeling:
+    New concepts and algorithms.
   * Gräser, C., & Kornhuber, R. (2009). Multigrid methods for
     obstacle problems. J. Comput. Math. 27 (1), 1--44.
   * Tai, X.-C. (2003). Rate of convergence for some constraint
@@ -80,23 +76,19 @@ References:
     Numer. Math. 93 (4), 755--786.
 ''', formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('-coarse', type=int, default=1, metavar='N',
-                    help='PGS sweeps on coarsest grid (default=1)')
+                    help='smoother sweeps on coarsest grid (default=1)')
 parser.add_argument('-coarsestomega', type=float, default=1.0, metavar='X',
-                    help='relaxation factor in PGS, thus PSOR, on coarsest level (default X=1.0)')
+                    help='relaxation factor in smoother on coarsest level (default X=1.0)')
 parser.add_argument('-cyclemax', type=int, default=100, metavar='N',
-                    help='maximum number of multilevel cycles (default=100)')
+                    help='maximum number of (multilevel) cycles (default=100)')
 parser.add_argument('-diagnostics', action='store_true', default=False,
-                    help='additional diagnostics figures (use with -show or -o)')
-parser.add_argument('-down', type=int, default=1, metavar='N',
-                    help='PGS sweeps before coarse-mesh correction (default=1)')
+                    help='generate additional diagnostics figures (use with -show or -o)')
+parser.add_argument('-down', type=int, default=0, metavar='N',
+                    help='smoother sweeps before coarse-mesh correction (default=0)')
 parser.add_argument('-exactinitial', action='store_true', default=False,
                     help='initialize using exact solution')
-parser.add_argument('-fscale', type=float, default=1.0, metavar='X',
-                    help='in Poisson equation -u"=f this multiplies f (default X=1.0)')
 parser.add_argument('-irtol', type=float, default=1.0e-3, metavar='X',
                     help='norm of inactive residual is reduced by this factor (default X=1.0e-3)')
-parser.add_argument('-showsingular', action='store_true', default=False,
-                    help='on each sweep on each level, show where the point Jacobian was singular')
 parser.add_argument('-jacobi', action='store_true', default=False,
                     help='use Jacobi (additive) instead of Gauss-Seidel (multiplicative) for smoothing')
 parser.add_argument('-jcoarse', type=int, default=0, metavar='J',
@@ -110,28 +102,30 @@ parser.add_argument('-monitor', action='store_true', default=False,
 parser.add_argument('-monitorerr', action='store_true', default=False,
                     help='print the error (if available) after each cycle')
 parser.add_argument('-ni', action='store_true', default=False,
-                    help='use nested iteration for initial iterates (= F-cycle)')
+                    help='use nested iteration (F-cycle) for initial iterates')
 parser.add_argument('-nicascadic', action='store_true', default=False,
                     help='scheduled nested iteration (implies -ni)')
 parser.add_argument('-nicycles', type=int, default=1, metavar='N',
-                    help='nested iteration: cycles on levels before finest (default N=1)')
+                    help='cycles in nested iteration before finest (default N=1)')
 parser.add_argument('-o', metavar='FILE', type=str, default='',
-                    help='save plot at end in image file, e.g. PDF or PNG')
+                    help='save plot at end in image file, e.g. .pdf or .png')
 parser.add_argument('-omega', type=float, default=1.0, metavar='X',
                     help='relaxation factor in smoother (default X=1.0)')
-parser.add_argument('-parabolay', type=float, default=-1.0, metavar='X',
-                    help='vertical location of obstacle in -problem parabola (default X=-1.0)')
 parser.add_argument('-plain', action='store_true', default=False,
                     help='when used with -show or -o, only show exact solution and obstacle')
 parser.add_argument('-poissoncase', choices=['icelike', 'traditional', 'pde1', 'pde2'],
                     metavar='X', default='icelike',
                     help='determines obstacle and source function (default: %(default)s)')
+parser.add_argument('-poissonfscale', type=float, default=1.0, metavar='X',
+                    help='in Poisson equation -u"=f this multiplies f (default X=1.0)')
+parser.add_argument('-poissonparabolay', type=float, default=-1.0, metavar='X',
+                    help='vertical location of obstacle (default X=-1.0)')
 parser.add_argument('-printwarnings', action='store_true', default=False,
                     help='print pointwise feasibility warnings')
 parser.add_argument('-problem', choices=['poisson', 'sia'], metavar='X', default='poisson',
-                    help='determines entire obstacle problem (default: %(default)s)')
+                    help='determines obstacle problem (default: %(default)s)')
 parser.add_argument('-random', action='store_true', default=False,
-                    help='make a smooth random perturbation the obstacle')
+                    help='make a smooth random perturbation of the obstacle')
 parser.add_argument('-randomscale', type=float, default=1.0, metavar='X',
                     help='scaling of modes in -random perturbation (default X=1.0)')
 parser.add_argument('-randomseed', type=int, default=1, metavar='X',
@@ -142,12 +136,14 @@ parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-siaintervallength', type=float, default=1800.0e3, metavar='L',
                     help='solve SIA on [0,L] (default L=1800 km)')
+parser.add_argument('-siashowsingular', action='store_true', default=False,
+                    help='on each sweep on each level, show where the point Jacobian was singular')
 parser.add_argument('-sweepsonly', action='store_true', default=False,
-                    help='do smoother sweeps (PGS or PJacobi) as cycles, instead of multilevel')
+                    help='do smoother sweeps as cycles, instead of multilevel')
 parser.add_argument('-symmetric', action='store_true', default=False,
-                    help='use symmetric projected Gauss-Seidel sweeps (forward then backward)')
-parser.add_argument('-up', type=int, default=0, metavar='N',
-                    help='PGS sweeps after coarse-mesh correction (default=0; up>0 is V-cycle)')
+                    help='use symmetric Gauss-Seidel sweeps (forward then backward)')
+parser.add_argument('-up', type=int, default=1, metavar='N',
+                    help='smoother sweeps after coarse-mesh correction (default=1)')
 args, unknown = parser.parse_known_args()
 
 # provide usage help

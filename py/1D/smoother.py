@@ -146,8 +146,8 @@ class PGSPoisson(SmootherObstacleProblem):
         if self.args.poissoncase == 'icelike':
             ph = x * (1.0 - x)
         elif self.args.poissoncase == 'traditional':
-            # maximum is at  2.0 + args.parabolay
-            ph = 8.0 * x * (1.0 - x) + self.args.parabolay
+            # maximum is at  2.0 + args.poissonparabolay
+            ph = 8.0 * x * (1.0 - x) + self.args.poissonparabolay
         elif self.args.poissoncase in ['pde1', 'pde2']:  # these u(x) are above axis
             ph = - np.ones(np.shape(x))
         else:
@@ -162,8 +162,8 @@ class PGSPoisson(SmootherObstacleProblem):
         return ph
 
     def exact_available(self):
-        return (not self.args.random) and (self.args.fscale == 1.0) \
-                 and (self.args.parabolay == -1.0 or self.args.parabolay <= -2.25)
+        return (not self.args.random) and (self.args.poissonfscale == 1.0) \
+                 and (self.args.poissonparabolay == -1.0 or self.args.poissonparabolay <= -2.25)
 
     def source(self, x):
         '''The source term f in the interior condition - (alpha u')' = f.'''
@@ -181,7 +181,7 @@ class PGSPoisson(SmootherObstacleProblem):
                 + 2.0 * (2.0 + np.sin(twopi * x))
         else:
             raise ValueError
-        return self.args.fscale * f
+        return self.args.poissonfscale * f
 
     def exact(self, x):
         '''Exact solution u(x), if available.  Assumes x is a numpy array.'''
@@ -196,14 +196,14 @@ class PGSPoisson(SmootherObstacleProblem):
             u[left] = 8.0*x[left]**2 + c0*x[left] + c1
             u[right] = 8.0*(1.0-x[right])**2 + c0*(1.0-x[right]) + c1
         elif self.args.poissoncase == 'traditional':
-            if self.args.parabolay == -1.0:
+            if self.args.poissonparabolay == -1.0:
                 a = 1.0/3.0
                 def upoisson(x):
                     return x * (x - 18.0 * a + 8.0)
                 u = self.phi(x)
                 u[x < a] = upoisson(x[x < a])
                 u[x > 1.0-a] = upoisson(1.0 - x[x > 1.0-a])
-            elif self.args.parabolay <= -2.25:
+            elif self.args.poissonparabolay <= -2.25:
                 u = x * (x - 1.0)   # solution without obstruction
             else:
                 raise NotImplementedError

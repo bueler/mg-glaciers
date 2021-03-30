@@ -138,7 +138,7 @@ class PNGSSIA(SmootherObstacleProblem):
                 if stopnow:
                     break
         mesh.WU += self.newtonits  # overcounts WU if many points are active
-        if self.args.showsingular and any(jaczeros != 0.0):
+        if self.args.siashowsingular and any(jaczeros != 0.0):
             self._showsingular(jaczeros)
 
     def phi(self, x):
@@ -247,5 +247,5 @@ class PNJacobiSIA(PNGSSIA):
                 if stopnow:
                     break
         mesh.WU += self.newtonits  # overcount WU if many points are active
-        if self.args.showsingular and any(jaczeros != 0.0):
+        if self.args.siashowsingular and any(jaczeros != 0.0):
             self._showsingular(jaczeros)
