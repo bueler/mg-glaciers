@@ -94,35 +94,40 @@ class PNGSSIA(SmootherObstacleProblem):
             Jstr += '-' if z[k] == 0.0 else '*'
         print('%3d singulars: ' % sum(z > 0.0) + Jstr)
 
-    def _updatew(self, w, d, phi):
-        '''Update w[p] from computed (preliminary) Newton step d.  Ensures
+    def _updatey(self, y, d, phi):
+        '''Update y[p] from computed (preliminary) Newton step d.  Ensures
         admissibility and applies Newton-step limitation logic.'''
-        d = max(d, phi - w)                           # require admissible
+        d = max(d, phi - y)                           # require admissible: y >= phi
         d = np.sign(d) * min(abs(d), self.newtondmax) # limit huge steps
-        w += self.args.omega * d                      # take step
+        y += self.args.omega * d                      # take step
         stopnow = (abs(self.args.omega * d) < self.newtondtol) # tiny step criterion
-        return w, stopnow
+        return y, stopnow
 
-    def smoothersweep(self, mesh, w, ell, phi, forward=True):
+    def smoothersweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place projected nonlinear Gauss-Seidel (PNGS) sweep over the
-        interior points p=1,...,m, for the SIA problem on the iterate w.  Fixed
-        number of steps of the Newton method (newtonits).'''
-        mesh.checklen(w)
+        interior points p=1,...,m, for the SIA problem on the iterate w = g + y.
+        Here g = mesh.g is fixed in the iteration and y varies, and the
+        constraint is y >= phi.  Note that mesh.g and mesh.b (bed elevation)
+        must be set before calling this procedure.  Does a fixed number of
+        steps of the Newton method (newtonits).'''
+        mesh.checklen(y)
         mesh.checklen(ell)
         mesh.checklen(phi)
+        self._checkrepairadmissible(mesh, y, phi)
         assert hasattr(mesh, 'b')
         mesh.checklen(mesh.b)
-        self._checkrepairadmissible(mesh, w, phi)
+        assert hasattr(mesh, 'g')
+        mesh.checklen(mesh.g)
         jaczeros = mesh.zeros()
         for p in self._sweepindices(mesh, forward=forward):
             for k in range(self.newtonits):
-                N, Jac = self._pointN(mesh.h, mesh.b, w, p)
+                N, Jac = self._pointN(mesh.h, mesh.b, mesh.g + y, p)
                 if Jac == 0.0:
                     jaczeros[p] = 1.0
                     d = self.daccumulation if ell[p] > 0.0 else 0.0
                 else:
                     d = - (N - ell[p]) / Jac
-                w[p], stopnow = self._updatew(w[p], d, phi[p])
+                y[p], stopnow = self._updatey(y[p], d, phi[p])
                 if stopnow:
                     break
         mesh.WU += self.newtonits  # overcounts WU if many points are active
@@ -207,20 +212,22 @@ class PNGSSIA(SmootherObstacleProblem):
 
 class PNJacobiSIA(PNGSSIA):
 
-    def smoothersweep(self, mesh, w, ell, phi, forward=True):
+    def smoothersweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place projected nonlinear Jacobi sweep over the interior
-        points p=1,...,m, for the SIA problem.  Compare PNGSSIA.smoothersweep()
-        and PJacobiPoisson.smoothersweep().  Underrelaxation is expected;
-        try omega = 0.8.'''
-        mesh.checklen(w)
+        points p=1,...,m, for the SIA problem.  Compare PNGSSIA.smoothersweep().
+        Underrelaxation is expected; try omega = 0.5.'''
+        mesh.checklen(y)
         mesh.checklen(ell)
         mesh.checklen(phi)
+        self._checkrepairadmissible(mesh, y, phi)
         assert hasattr(mesh, 'b')
-        self._checkrepairadmissible(mesh, w, phi)
+        mesh.checklen(mesh.b)
+        assert hasattr(mesh, 'g')
+        mesh.checklen(mesh.g)
         # compute residual and Jacobian at each point
         res, Jac = mesh.zeros(), mesh.zeros()
         for p in self._sweepindices(mesh, forward=True):
-            res[p], Jac[p] = self._pointN(mesh.h, mesh.b, w, p)
+            res[p], Jac[p] = self._pointN(mesh.h, mesh.b, mesh.g + y, p)
             res[p] -= ell[p]
         # update each w[p] value
         for p in self._sweepindices(mesh, forward=forward):
@@ -229,7 +236,7 @@ class PNJacobiSIA(PNGSSIA):
                     d = self.daccumulation if ell[p] > 0.0 else 0.0
                 else:
                     d = - res[p] / Jac[p]
-                w[p], stopnow = self._updatew(w[p], d, phi[p])
+                y[p], stopnow = self._updatey(y[p], d, phi[p])
                 if stopnow:
                     break
         mesh.WU += self.newtonits  # overcount WU if many points are active

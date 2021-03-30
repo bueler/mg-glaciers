@@ -198,6 +198,8 @@ elif args.problem == 'sia':
                                    xmax=args.siaintervallength)
         # attach interpolated bed elevation to each mesh level
         hierarchy[j].b = obsprob.phi(hierarchy[j].xx())
+        # set g on each mesh level to zero (this is correct for sweepsolver())
+        hierarchy[j].g = hierarchy[j].zeros()
 
 # more usage help
 if args.monitorerr and not obsprob.exact_available():

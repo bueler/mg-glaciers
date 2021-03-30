@@ -143,6 +143,7 @@ def test_pngssia_smoothersweep():
     ml = MeshLevel1D(j=1, xmax=1800.0e3)   # note [0,xmax] = [0,1800] km
     prob = PNGSSIA(testargs)
     ml.b = ml.zeros()                      # attach bed elevation to mesh
+    ml.g = ml.zeros()                      # attach fixed portion of soluiton to mesh
     m = np.array([-1.0, 0.5, 0.5, 0.5, -1.0]) / prob.secpera
     s = np.array([0.0, 2500.0, 3100.0, 2500.0, 0.0])  # hand-adjusted so res is small!
     ell = ml.ellf(m)
