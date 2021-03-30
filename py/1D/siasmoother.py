@@ -1,5 +1,5 @@
-'''Module for PNGSSIA and PNJacobiSIA classes, derived class from
-SmootherObstacleProblem.  They provide the smoothers and exact solutions
+'''Module for PNGSSIA and PNJacobiSIA classes, a derived class from
+SmootherObstacleProblem.  Provides smoothers and exact solutions
 for the shallow ice approximation (SIA) ice flow model.'''
 
 __all__ = ['PNGSSIA', 'PNJacobiSIA']
@@ -12,7 +12,7 @@ class PNGSSIA(SmootherObstacleProblem):
     smoother for the nonlinear SIA obstacle problem for y in K = {v >= phi}:
        N(g + y)[v-y] >= ell[v-y]
     for all v in K, where
-       N(w)[v] = int_0^L Gamma (w - b + eps)^{n+2} |w'|^{n-1} w' v' dx
+       N(w)[v] = int_0^L Gamma (w - b + eps)^{p+1} |w'|^{p-2} w' v' dx
     with boundary values w(0) = w(L) = 0 on the interval [0,L].  Here b(x) is
     the bed topography and ell[v] = <a,v> on the finest level, where a(x)
     is the surface mass balance.  The data a(x), b(x) are assumed
@@ -58,32 +58,22 @@ class PNGSSIA(SmootherObstacleProblem):
         self.buelerH0 = 3600.0      # center thickness
         self.buelerxc = 900.0e3     # x coord of center in [0,xmax] = [0,1800] km
 
-    def _CC(self, h):
-        return self.Gamma / (2.0 * h**(self.pp-1.0))
-
-    def _tau3(self, w, b, p):
-        return (w[p-1:p+2] - b[p-1:p+2] + self.eps)**(self.pp + 1.0)
-
     def _pointN(self, h, b, w, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for
-        given iterate w(x) in V^j, at one interior hat function psi_p^j:
-           N(w)[psi_p^j] = int_{x_p-h}^{x_p+h} Gamma (w(x) - b(x) + eps)^{n+2}
-                                                * |w'(x)|^{n-1} w'(x) dx
-        Approximates using the trapezoid rule.'''
-        tau = self._tau3(w, b, p)
-        ds = w[p:p+2] - w[p-1:p+1]
-        mu = abs(ds)**(self.pp - 2.0) * ds
-        return self._CC(h) * ( (tau[0] + tau[1]) * mu[0] - (tau[1] + tau[2]) * mu[1] )
-
-    def _pointdNdw(self, h, b, w, p):
-        '''The derivative of N(w)[psi_p^j] with respect to w[p].'''
-        tau = self._tau3(w, b, p)
+        given iterate w(x) in V^j, at one hat function psi_p^j:
+           N(w)[psi_p^j] = int_I Gamma (w(x) - b(x) + eps)^{p+1} * |w'(x)|^{p-2} w'(x) dx
+        where I = [x_p - h, x_p + h].  Approximates using the trapezoid rule.
+        Also return dNdw, the derivative of N(w)[psi_p^j] with respect to w[p].'''
+        tau = (w[p-1:p+2] - b[p-1:p+2] + self.eps)**(self.pp + 1.0)
         dtau = (self.pp + 1.0) * (w[p] - b[p] + self.eps)**self.pp
         ds = w[p:p+2] - w[p-1:p+1]
         mu = abs(ds)**(self.pp - 2.0) * ds
         dmu = (self.pp - 1.0) * abs(ds)**(self.pp - 2.0)
-        return self._CC(h) * ( dtau * (mu[0] - mu[1]) + \
-                               (tau[0] + tau[1]) * dmu[0] + (tau[1] + tau[2]) * dmu[1] )
+        C = self.Gamma / (2.0 * h**(self.pp-1.0))
+        N = C * ( (tau[0] + tau[1]) * mu[0] - (tau[1] + tau[2]) * mu[1] )
+        dNdw = C * ( dtau * (mu[0] - mu[1]) + \
+                     (tau[0] + tau[1]) * dmu[0] + (tau[1] + tau[2]) * dmu[1] )
+        return N, dNdw
 
     def pointresidual(self, mesh, w, ell, p):
         '''Compute the value of the residual linear functional, in V^j', for
@@ -95,7 +85,8 @@ class PNGSSIA(SmootherObstacleProblem):
         mesh.checklen(ell)
         assert 1 <= p <= mesh.m
         assert hasattr(mesh, 'b')
-        return self._pointN(mesh.h, mesh.b, w, p) - ell[p]
+        N, _ = self._pointN(mesh.h, mesh.b, w, p)
+        return N - ell[p]
 
     def _showsingular(self, z):
         Jstr = ''
@@ -117,12 +108,12 @@ class PNGSSIA(SmootherObstacleProblem):
         jaczeros = mesh.zeros()
         for p in self._sweepindices(mesh, forward=forward):
             for k in range(self.newtonits):
-                Jac = self._pointdNdw(mesh.h, mesh.b, w, p)
+                N, Jac = self._pointN(mesh.h, mesh.b, w, p)
                 if Jac == 0.0:
                     jaczeros[p] = 1.0
                     d = self.daccumulation if ell[p] > 0.0 else 0.0
                 else:
-                    d = - (self._pointN(mesh.h, mesh.b, w, p) - ell[p]) / Jac
+                    d = - (N - ell[p]) / Jac
                 d = max(d, phi[p] - w[p])                     # require admissible
                 d = np.sign(d) * min(abs(d), self.newtondmax) # limit huge steps
                 w[p] += self.args.omega * d                   # take step
@@ -210,13 +201,14 @@ class PNGSSIA(SmootherObstacleProblem):
 
 class PNJacobiSIA(PNGSSIA):
 
-    def _jacobian(self, mesh, w):
-        '''Compute the Jacobian at each point, returning a vector.  Calls
-        _pointdNdw() for values.'''
-        J = mesh.zeros()
+    def _residualjacobian(self, mesh, w, ell):
+        '''Compute the residual and Jacobian at each point, returning a vector
+        for each.  Calls _pointN() for values.'''
+        F, J = mesh.zeros(), mesh.zeros()
         for p in self._sweepindices(mesh, forward=True):
-            J[p] = self._pointdNdw(mesh.h, mesh.b, w, p)
-        return J
+            F[p], J[p] = self._pointN(mesh.h, mesh.b, w, p)
+            F[p] -= ell[p]
+        return F, J
 
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected nonlinear Jacobi sweep over the interior
@@ -228,8 +220,7 @@ class PNJacobiSIA(PNGSSIA):
         mesh.checklen(phi)
         assert hasattr(mesh, 'b')
         self._checkrepairadmissible(mesh, w, phi)
-        res = self.residual(mesh, w, ell)
-        Jac = self._jacobian(mesh, w)
+        res, Jac = self._residualjacobian(mesh, w, ell)
         jaczeros = 1.0 * (Jac == 0.0)
         for p in self._sweepindices(mesh, forward=forward):
             for k in range(self.newtonits):
