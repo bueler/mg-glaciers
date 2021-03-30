@@ -5,7 +5,10 @@ approximation (SIA) obstacle problem.'''
 # TODO:
 #   * implement p=4 p-Laplacian example to see how much better it does
 #   * implement F-cycles
-#   * make -down 0 -up 1 the default everywhere
+#   * does +eps in thickness coefficient in N(w)[v] make things better? (PRELIMINARY: no)
+#   * does monotone increase (or decrease) on thickness coefficient in N(w)[v]
+#     on coarsening make things better?
+#   * how valuable are really-accurate solves on the coarsest levels? (PRELIMINARY: not very)
 
 __all__ = ['mcdnvcycle', 'mcdnsolver']
 
