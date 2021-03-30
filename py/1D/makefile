@@ -18,7 +18,7 @@ runobstacle_3:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -J 4 -down 0 -up 1" 1 3 "poisson traditional V(0,1) cycles"
 
 runobstacle_4:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 3 -sweepsonly -omega 1.5 -cyclemax 3" 1 4 "poisson icelike PGS sweeps over-relaxed"
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 3 -sweepsonly -omega 1.5 -cyclemax 3" 1 4 "poisson icelike PGS sweeps omega=1.5"
 
 runobstacle_5:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 4 -ni -cyclemax 1 -monitorerr" 1 5 "poisson icelike F-cycle V(1,0) cycle"
@@ -30,7 +30,7 @@ runobstacle_7:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 3 -monitorerr -diagnostics -o test7.png" 1 7 "poisson icelike V(1,0) cycles generate diagnostics"
 
 runobstacle_8:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase pde2 -J 3" 1 8 "poisson pde2 [unconstrained]"
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase pde2 -J 3" 1 8 "poisson pde2 [unconstrained] V(1,0) cycles"
 
 runobstacle_9:
 	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -J 2 -monitor -irtol 1.0e-1" 1 9 "sia PNGS sweeps"
