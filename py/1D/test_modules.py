@@ -33,11 +33,11 @@ def test_ml_cP():
     v = np.array([0.0, 1.0, 0.0])
     assert all(ml.cP(v) == [0.0, 0.5, 1.0, 0.5, 0.0])
 
-def test_ml_injectR():
+def test_ml_iR():
     '''Restriction of vectors (functions) by injection in MeshLevel1D.'''
     ml = MeshLevel1D(j=2)
     v = np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 0.0])
-    assert all(ml.injectR(v) == [0.0, 2.0, 4.0, 6.0, 0.0])
+    assert all(ml.iR(v) == [0.0, 2.0, 4.0, 6.0, 0.0])
 
 def test_ml_injectP():
     '''Prolongation of linear functionals by injection in MeshLevel1D.'''

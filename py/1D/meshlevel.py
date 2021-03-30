@@ -90,7 +90,7 @@ class MeshLevel1D():
             y[q] = 0.5 * ell[2*q-1] + ell[2*q] + 0.5 * ell[2*q+1]
         return y
 
-    def injectR(self, v):
+    def iR(self, v):
         '''Restrict a vector (function) ell on the current mesh (in V^j)
         to the next-coarser mesh, i.e. y = cR(v) in V^{j-1}, using
         injection.'''
