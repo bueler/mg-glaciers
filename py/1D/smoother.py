@@ -45,11 +45,21 @@ class SmootherObstacleProblem(ABC):
 
     @abstractmethod
     def phi(self, x):
-        '''Evaluate obstacle at location(s) x.'''
+        '''Evaluate obstacle phi at location(s) x.'''
 
     @abstractmethod
     def exact_available(self):
         '''Returns True if there is a valid uexact(x) method.'''
+
+    @abstractmethod
+    def source(self, x):
+        '''Evaluate source function f at location(s) x.'''
+
+    @abstractmethod
+    def exact(self, x):
+        '''Evaluate exact solution u at location(s) x.  Call exact_available()
+        first.  If exact solution is not available this function will raise
+        AssertionError or NotImplementedError.'''
 
 def _pde2alpha(x):
     return 2.0 + np.sin(2.0 * np.pi * x)
