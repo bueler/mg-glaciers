@@ -3,7 +3,13 @@ and numerical errors.'''
 
 import numpy as np
 
-__all__ = ['ObstacleMonitor']
+__all__ = ['indentprint', 'ObstacleMonitor']
+
+def indentprint(n, s):
+    '''Print 2n spaces and then string s.'''
+    for _ in range(n):
+        print('  ', end='')
+    print(s)
 
 class ObstacleMonitor():
     '''The monitor has an internal state so it is a class.'''

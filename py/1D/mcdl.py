@@ -1,24 +1,18 @@
 '''Module implementing the multilevel constraint decomposition (MCD) method
-of the Tai (2003) for the classical obstacle problem, i.e. for a linear
-interior PDE like the Poisson equation.'''
+for the classical obstacle problem, i.e. for a linear interior PDE like the
+Poisson equation.'''
 
 __all__ = ['mcdlvcycle', 'mcdlfcycle', 'mcdlsolver']
 
 import numpy as np
-from monitor import ObstacleMonitor
-
-def _indentprint(n, s):
-    '''Print 2n spaces and then string s.'''
-    for _ in range(n):
-        print('  ', end='')
-    print(s)
+from monitor import indentprint, ObstacleMonitor
 
 def _levelreport(indent, j, m, sweeps):
-    _indentprint(indent - j, 'level %d: %d sweeps over m=%d nodes' \
+    indentprint(indent - j, 'level %d: %d sweeps over m=%d nodes' \
                              % (j, sweeps, m))
 
 def _coarsereport(indent, m, sweeps):
-    _indentprint(indent, 'coarsest: %d sweeps over m=%d nodes' \
+    indentprint(indent, 'coarsest: %d sweeps over m=%d nodes' \
                          % (sweeps, m))
 
 def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
