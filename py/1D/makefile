@@ -41,14 +41,17 @@ runobstacle_10:
 runobstacle_11:
 	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -showsingular -J 4 -cyclemax 6 -monitor" 1 11 "sia PNGS sweeps show singular points"
 
-test_obstacle: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 runobstacle_10 runobstacle_11
+runobstacle_12:
+	-@./../testit.sh obstacle.py "-problem sia -J 4 -irtol 1.0e-1 -down 0 -up 1 -symmetric -monitor" 1 12 "sia V(0,1) cycles symmetric"
+
+test_obstacle: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 runobstacle_10 runobstacle_11 runobstacle_12
 
 testbanner:
 	@echo "**** TESTING obstacle.py ****"
 
 test: testbanner test_obstacle
 
-.PHONY: clean runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 runobstacle_10 runobstacle_11 test_obstacle testmodules test testbanner
+.PHONY: clean runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 runobstacle_10 runobstacle_11 runobstacle_12 test_obstacle testmodules test testbanner
 
 clean:
 	@rm -f maketmp tmp difftmp *.png *.pdf
