@@ -13,12 +13,14 @@ import argparse
 import numpy as np
 
 from meshlevel import MeshLevel1D
-from mcdl import mcdlvcycle, mcdlfcycle, mcdlsolver
 from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
 from smoother import PGSPoisson, PJacobiPoisson
 from siasmoother import PNGSSIA, PNJacobiSIA
+
+from mcdl import mcdlfcycle, mcdlsolver
+from mcdn import mcdnsolver
 
 parser = argparse.ArgumentParser(description='''
 Solve 1D obstacle problems by a multilevel constraint decomposition method.
@@ -187,8 +189,8 @@ if args.problem == 'poisson':
     for j in range(levels):
         hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=L)
 elif args.problem == 'sia':
-    if not args.sweepsonly:
-        raise NotImplementedError('MCD is not ready for SIA.  Use -sweepsonly.')
+    if args.ni:
+        raise NotImplementedError('F-cycles not implemented for SIA')
     if args.jacobi:
        obsprob = PNJacobiSIA(args)
     else:
@@ -198,8 +200,8 @@ elif args.problem == 'sia':
                                    xmax=args.siaintervallength)
         # attach interpolated bed elevation to each mesh level
         hierarchy[j].b = obsprob.phi(hierarchy[j].xx())
-        # set g on each mesh level to zero (this is correct for sweepsolver())
-        hierarchy[j].g = hierarchy[j].zeros()
+        if args.sweepsonly:
+            hierarchy[j].g = hierarchy[j].zeros()
 
 # more usage help
 if args.monitorerr and not obsprob.exact_available():
@@ -263,8 +265,12 @@ if itermax > 0:
         sweepssolver(args, obsprob, hierarchy[-1], ellf, phi, uu, mon,
                      iters=itermax, irnorm0=irnorm)
     else:
-        mcdlsolver(args, obsprob, levels-1, hierarchy, ellf, phi, uu, mon,
-                   iters=itermax, irnorm0=irnorm)
+        if args.problem == 'poisson':
+            mcdlsolver(args, obsprob, levels-1, hierarchy, ellf, phi, uu, mon,
+                       iters=itermax, irnorm0=irnorm)
+        elif args.problem == 'sia':
+            mcdnsolver(args, obsprob, levels-1, hierarchy, ellf, phi, uu, mon,
+                       iters=itermax, irnorm0=irnorm)
 
 # accumulate work units from values stored in hierarchy
 WUsum = 0.0

@@ -75,6 +75,13 @@ class PNGSSIA(SmootherObstacleProblem):
                      (tau[0] + tau[1]) * dmu[0] + (tau[1] + tau[2]) * dmu[1] )
         return N, dNdw
 
+    def applyN(self, mesh, w):
+        '''Apply N to w to get N(w) in (V^j)'.'''
+        Nw = mesh.zeros()
+        for p in self._sweepindices(mesh, forward=True):
+            Nw[p], _ = self._pointN(mesh.h, mesh.b, w, p)
+        return Nw
+
     def residual(self, mesh, w, ell):
         '''Compute the residual functional for given iterate w.  Note
         ell is a source term in V^j'.'''
