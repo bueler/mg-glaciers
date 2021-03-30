@@ -38,14 +38,17 @@ runobstacle_9:
 runobstacle_10:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase pde2 -J 3" 1 10
 
-test_obstacle: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 runobstacle_10
+runobstacle_11:
+	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -showsingular -J 4 -cyclemax 6 -monitor" 1 11
+
+test_obstacle: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 runobstacle_10 runobstacle_11
 
 testbanner:
 	@echo "**** TESTING obstacle.py ****"
 
 test: testbanner test_obstacle
 
-.PHONY: clean runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 runobstacle_10 test_obstacle testmodules test testbanner
+.PHONY: clean runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 runobstacle_10 runobstacle_11 test_obstacle testmodules test testbanner
 
 clean:
 	@rm -f maketmp tmp difftmp *.png *.pdf

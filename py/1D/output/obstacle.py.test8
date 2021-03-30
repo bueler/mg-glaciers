@@ -1,4 +1,4 @@
   0:  |ir(u)|_2 = 6.7014e-01
-  1:  |ir(u)|_2 = 5.6937e-01  (rate 0.8496)
-  2:  |ir(u)|_2 = 5.0013e-01  (rate 0.8784)
-fine level 3 (m=15): using 2 applications of smoother -> 4.000 WU:  |u-uexact|_2 = 2.3182e+04
+  1:  |ir(u)|_2 = 5.4111e-01  (rate 0.8074)
+  2:  |ir(u)|_2 = 4.7694e-01  (rate 0.8814)
+fine level 3 (m=15): using 2 applications of smoother -> 4.000 WU:  |u-uexact|_2 = 2.0852e+04

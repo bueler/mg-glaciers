@@ -133,12 +133,11 @@ class PNGSSIA(SmootherObstacleProblem):
             self._showsingular(jaczeros)
 
     def phi(self, x):
-        '''Generally the bed elevations depend on self.args, but for now we
-        have a flat bed.'''
+        '''For now we have a flat bed.'''
         return np.zeros(np.shape(x))
 
     def exact_available(self):
-        '''For now we just do use the Bueler profile, an exact solution.'''
+        '''For now we use the Bueler profile, an exact solution.'''
         return True
 
     def exact(self, x):
