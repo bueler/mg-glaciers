@@ -87,15 +87,6 @@ class Namespace:
 testargs = Namespace(jacobi=False, omega=1.0, printwarnings=False, randomseed=1,
                      siaeta0=0.0, poissoncase='icelike', showsingular=False)
 
-def test_poisson_pointresidual():
-    '''Point-wise residual for Poisson.'''
-    ml = MeshLevel1D(j=1)
-    prob = PGSPoisson(testargs)
-    f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
-    w = f.copy()
-    assert prob.pointresidual(ml, w, ml.ellf(f), 1) == - 0.5 * ml.h
-    assert prob.pointresidual(ml, w, ml.ellf(f), 2) == - 4.0
-
 def test_poisson_residual():
     '''Residual for Poisson.'''
     ml = MeshLevel1D(j=1)

@@ -35,18 +35,9 @@ class SmootherObstacleProblem(ABC):
         return ind
 
     @abstractmethod
-    def pointresidual(self, mesh, w, ell, p):
-        '''Compute the residual functional for given iterate w at a point p.'''
-
     def residual(self, mesh, w, ell):
         '''Compute the residual functional for given iterate w.  Note
         ell is a source term in V^j'.  Calls _pointresidual() for values.'''
-        mesh.checklen(w)
-        mesh.checklen(ell)
-        F = mesh.zeros()
-        for p in range(1, mesh.m+1):
-            F[p] = self.pointresidual(mesh, w, ell, p)
-        return F
 
     @abstractmethod
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
@@ -74,36 +65,40 @@ class PGSPoisson(SmootherObstacleProblem):
         else:
             self.alpha = None
 
-    def _diagonalentry(self, mesh, p):
+    def _diagonalentry(self, h, p):
         '''Compute the diagonal value of a(.,.) at hat function psi_p^j:
            a(psi_p,psi_p) = int_0^L alpha(x) (psi_p^j)'(x)^2 dx
-        Uses trapezoid rule if alpha(x) not constant.  Input mesh is of
-        class MeshLevel1D.'''
-        assert 1 <= p <= mesh.m
+        Uses trapezoid rule if alpha(x) not constant.'''
         if self.alpha is not None:
-            xx = mesh.h * np.array([p-1,p,p+1])
+            xx = h * np.array([p-1,p,p+1])
             aa = self.alpha(xx)
-            return (1.0 / (2.0 * mesh.h)) * (aa[0] + 2.0 * aa[1] + aa[2])
+            return (1.0 / (2.0 * h)) * (aa[0] + 2.0 * aa[1] + aa[2])
         else:
-            return 2.0 / mesh.h
+            return 2.0 / h
 
-    def pointresidual(self, mesh, w, ell, p):
+    def _pointresidual(self, h, w, ell, p):
         '''Compute the value of the residual linear functional, in V^j', for given
         iterate w, at one interior hat function psi_p^j:
            F(w)[psi_p^j] = int_0^L alpha(x) w'(x) (psi_p^j)'(x) dx - ell(psi_p^j)
-        Uses trapezoid rule if alpha(x) not constant.  Input ell is in V^j'.
-        Input mesh is of class MeshLevel1D.'''
-        mesh.checklen(w)
-        mesh.checklen(ell)
-        assert 1 <= p <= mesh.m
+        Uses trapezoid rule if alpha(x) not constant.  Input ell is in V^j'.'''
         if self.alpha is not None:
-            xx = mesh.h * np.array([p-1,p,p+1])
+            xx = h * np.array([p-1,p,p+1])
             aa = self.alpha(xx)
             zz = (aa[0] + aa[1]) * (w[p] - w[p-1]) \
                  - (aa[1] + aa[2]) * (w[p+1] - w[p])
-            return (1.0 / (2.0 * mesh.h)) * zz - ell[p]
+            return (1.0 / (2.0 * h)) * zz - ell[p]
         else:
-            return (1.0 / mesh.h) * (2.0*w[p] - w[p-1] - w[p+1]) - ell[p]
+            return (1.0 / h) * (2.0*w[p] - w[p-1] - w[p+1]) - ell[p]
+
+    def residual(self, mesh, w, ell):
+        '''Compute the residual functional for given iterate w.  Note
+        ell is a source term in V^j'.  Calls _pointresidual() for values.'''
+        mesh.checklen(w)
+        mesh.checklen(ell)
+        F = mesh.zeros()
+        for p in range(1, mesh.m+1):
+            F[p] = self._pointresidual(mesh.h, w, ell, p)
+        return F
 
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected Gauss-Seidel sweep, with relaxation factor
@@ -118,9 +113,12 @@ class PGSPoisson(SmootherObstacleProblem):
             w[p] <- max(w[p] + omega c, phi[p]).
         Input mesh is of class MeshLevel1D.  Returns the number of pointwise
         feasibility violations.'''
+        mesh.checklen(w)
+        mesh.checklen(ell)
+        mesh.checklen(phi)
         self._checkrepairadmissible(mesh, w, phi)
         for p in self._sweepindices(mesh, forward=forward):
-            c = - self.pointresidual(mesh, w, ell, p) / self._diagonalentry(mesh, p)
+            c = - self._pointresidual(mesh.h, w, ell, p) / self._diagonalentry(mesh.h, p)
             w[p] = max(w[p] + self.args.omega * c, phi[p])
         mesh.WU += 1
 
@@ -210,6 +208,6 @@ class PJacobiPoisson(PGSPoisson):
         self._checkrepairadmissible(mesh, w, phi)
         r = self.residual(mesh, w, ell)
         for p in self._sweepindices(mesh, forward=forward):
-            c = - r[p] / self._diagonalentry(mesh, p)
+            c = - r[p] / self._diagonalentry(mesh.h, p)
             w[p] = max(w[p] + self.args.omega * c, phi[p])
         mesh.WU += 1

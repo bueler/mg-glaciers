@@ -75,18 +75,17 @@ class PNGSSIA(SmootherObstacleProblem):
                      (tau[0] + tau[1]) * dmu[0] + (tau[1] + tau[2]) * dmu[1] )
         return N, dNdw
 
-    def pointresidual(self, mesh, w, ell, p):
-        '''Compute the value of the residual linear functional, in V^j', for
-        given iterate w(x) in V^j, at one interior hat function psi_p^j:
-           F(w)[psi_p^j] = N(w)[psi_p^j] - ell[psi_p^j]
-        Input ell is in V^j'.  Input mesh is of class MeshLevel1D, with attached
-        bed elevation mesh.b.'''
+    def residual(self, mesh, w, ell):
+        '''Compute the residual functional for given iterate w.  Note
+        ell is a source term in V^j'.'''
         mesh.checklen(w)
         mesh.checklen(ell)
-        assert 1 <= p <= mesh.m
         assert hasattr(mesh, 'b')
-        N, _ = self._pointN(mesh.h, mesh.b, w, p)
-        return N - ell[p]
+        F = mesh.zeros()
+        for p in self._sweepindices(mesh, forward=True):
+            F[p], _ = self._pointN(mesh.h, mesh.b, w, p)
+            F[p] -= ell[p]
+        return F
 
     def _showsingular(self, z):
         '''Print a string indicating singular Jacobian points.'''

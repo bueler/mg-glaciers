@@ -19,9 +19,7 @@ class PJacobiStokes(SmootherObstacleProblem):
         self.nglen = nglen
         self.A = A
 
-    def pointresidual(self, mesh, w, ell, p):
-        FIXME: avoid this
-
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected nonlinear Jacobi sweep over the interior
         points p=1,...,m, for the Stokes problem, calling Firedrake to solve.'''
+        FIXME
