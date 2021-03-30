@@ -34,6 +34,14 @@ class SmootherObstacleProblem(ABC):
             ind = range(mesh.m, 0, -1)  # m,...,1
         return ind
 
+    def smoother(self, iters, mesh, w, ell, phi, forward=True, symmetric=False):
+        '''Apply iters sweeps of obstacle-problem smoother on mesh to modify w in
+        place.'''
+        for _ in range(iters):
+            self.smoothersweep(mesh, w, ell, phi, forward=forward)
+            if symmetric:
+                self.smoothersweep(mesh, w, ell, phi, forward=not forward)
+
     @abstractmethod
     def residual(self, mesh, w, ell):
         '''Compute the residual functional for given iterate w.  Note
@@ -41,7 +49,8 @@ class SmootherObstacleProblem(ABC):
 
     @abstractmethod
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
-        '''Apply obstacle-problem smoother on mesh to modify w in place.'''
+        '''Apply one sweep of obstacle-problem smoother on mesh to modify w in
+        place.'''
 
     @abstractmethod
     def phi(self, x):

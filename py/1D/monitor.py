@@ -1,5 +1,5 @@
-'''Module for the ObstacleMonitor class.  Evaluates residual norms, suitable for
-obstacle problems.'''
+'''Module for the ObstacleMonitor class.  Evaluates and prints residual norms
+and numerical errors.'''
 
 import numpy as np
 

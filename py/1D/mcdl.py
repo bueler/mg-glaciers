@@ -1,5 +1,6 @@
 '''Module implementing the multilevel constraint decomposition (MCD) method
-of the Tai (2003) for the classical obstacle problem (i.e. linear interior PDE).'''
+of the Tai (2003) for the classical obstacle problem, i.e. for a linear
+interior PDE like the Poisson equation.'''
 
 __all__ = ['mcdlvcycle', 'mcdlfcycle', 'mcdlsolver']
 
@@ -19,12 +20,6 @@ def _levelreport(indent, j, m, sweeps):
 def _coarsereport(indent, m, sweeps):
     _indentprint(indent, 'coarsest: %d sweeps over m=%d nodes' \
                          % (sweeps, m))
-
-def _smoother(obsprob, s, mesh, v, ell, phi, forward=True, symmetric=False):
-    for _ in range(s):
-        obsprob.smoothersweep(mesh, v, ell, phi, forward=forward)
-        if symmetric:
-            obsprob.smoothersweep(mesh, v, ell, phi, forward=not forward)
 
 def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
     '''Apply one V-cycle of the multilevel constraint decomposition method of
@@ -52,8 +47,8 @@ def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
         if args.mgview:
             _levelreport(levels-1, k, hierarchy[k].m, args.down)
         hierarchy[k].y = hierarchy[k].zeros()
-        _smoother(obsprob, args.down, hierarchy[k], hierarchy[k].y,
-                  hierarchy[k].ell, phi, symmetric=args.symmetric)
+        obsprob.smoother(args.down, hierarchy[k], hierarchy[k].y,
+                         hierarchy[k].ell, phi, symmetric=args.symmetric)
         # update and canonically-restrict the residual
         hierarchy[k-1].ell = - hierarchy[k].cR(obsprob.residual(hierarchy[k],
                                                                 hierarchy[k].y,
@@ -63,8 +58,8 @@ def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
     if args.mgview:
         _coarsereport(levels-1, hierarchy[0].m, args.coarse)
     hierarchy[0].y = hierarchy[0].zeros()
-    _smoother(obsprob, args.coarse, hierarchy[0], hierarchy[0].y,
-              hierarchy[0].ell, hierarchy[0].chi, symmetric=args.symmetric)
+    obsprob.smoother(args.coarse, hierarchy[0], hierarchy[0].y,
+                     hierarchy[0].ell, hierarchy[0].chi, symmetric=args.symmetric)
 
     # upward
     z = hierarchy[0].y
@@ -75,9 +70,9 @@ def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
             # up smoother; up-obstacle is chi[k] not phi (see paper)
             if args.mgview:
                 _levelreport(levels-1, k, hierarchy[k].m, up)
-            _smoother(obsprob, args.up, hierarchy[k], z,
-                      hierarchy[k].ell, hierarchy[k].chi,
-                      symmetric=args.symmetric, forward=False)
+            obsprob.smoother(args.up, hierarchy[k], z,
+                             hierarchy[k].ell, hierarchy[k].chi,
+                             symmetric=args.symmetric, forward=False)
 
     return z
 
