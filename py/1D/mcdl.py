@@ -29,7 +29,7 @@ def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
 
     # set up
     assert args.down >= 0 and args.up >= 0 and args.coarse >= 0
-    assert len(ell) == hierarchy[J].m + 2
+    hierarchy[J].checklen(ell)
     hierarchy[J].ell = ell
 
     # downward
@@ -64,11 +64,10 @@ def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
         if args.up > 0:
             # up smoother; up-obstacle is chi[k] not phi (see paper)
             if args.mgview:
-                _levelreport(levels-1, k, hierarchy[k].m, up)
+                _levelreport(levels-1, k, hierarchy[k].m, args.up)
             obsprob.smoother(args.up, hierarchy[k], z,
                              hierarchy[k].ell, hierarchy[k].chi,
                              symmetric=args.symmetric, forward=False)
-
     return z
 
 def mcdlfcycle(args, obsprob, J, hierarchy):
