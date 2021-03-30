@@ -1,17 +1,1 @@
-  0:  |u-uexact|_2 = 2.1894e-01
-  1:  |u-uexact|_2 = 1.2029e-01
-  2:  |u-uexact|_2 = 7.1742e-02
-  3:  |u-uexact|_2 = 4.7930e-02
-  4:  |u-uexact|_2 = 3.6888e-02
-  5:  |u-uexact|_2 = 3.1585e-02
-  6:  |u-uexact|_2 = 2.9049e-02
-  7:  |u-uexact|_2 = 2.7852e-02
-  8:  |u-uexact|_2 = 2.7291e-02
-  9:  |u-uexact|_2 = 2.7026e-02
-  10:  |u-uexact|_2 = 2.6902e-02
-  11:  |u-uexact|_2 = 2.6844e-02
-fine level 3 (m=15): using 11 V(1,0) cycles -> 20.625 WU:  |u-uexact|_2 = 2.6844e-02
-saving final iterate and obstacle to test3.png ...
-saving residual and inactive residual to resid_test3.png ...
-saving hierarchical decomposition to decomp_test3.png ...
-saving "ice-like" decomposition to icedec_test3.png ...
+fine level 4 (m=31): using 9 V(0,1) cycles -> 17.438 WU:  |u-uexact|_2 = 5.6360e-04
