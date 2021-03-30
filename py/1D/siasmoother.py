@@ -106,13 +106,12 @@ class PNGSSIA(SmootherObstacleProblem):
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected nonlinear Gauss-Seidel (PNGS) sweep over the
         interior points p=1,...,m, for the SIA problem on the iterate w.  Fixed
-        number of steps of the Newton method (newtonits) with protection
-        against taking huge steps (pngsdmax).  Avoids further iteration if
-        first step is small (pngsdtol).'''
+        number of steps of the Newton method (newtonits).'''
         mesh.checklen(w)
         mesh.checklen(ell)
         mesh.checklen(phi)
         assert hasattr(mesh, 'b')
+        mesh.checklen(mesh.b)
         self._checkrepairadmissible(mesh, w, phi)
         jaczeros = mesh.zeros()
         for p in self._sweepindices(mesh, forward=forward):

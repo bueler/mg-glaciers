@@ -163,8 +163,7 @@ if args.down + args.up == 0:
 if args.nicascadic:
     args.ni = True
 if args.ni and args.random:
-    # FIXME
-    raise NotImplementedError('combination of -ni and -random is not yet implemented')
+    raise NotImplementedError('combination of -ni and -random is not implemented')
 if args.nicycles > args.cyclemax:
     print('usage ERROR: nested iteration V-cycles count toward total; -nicycles <= -cyclemax')
     sys.exit(4)
@@ -189,8 +188,7 @@ if args.problem == 'poisson':
         hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=L)
 elif args.problem == 'sia':
     if not args.sweepsonly:
-        raise NotImplementedError( \
-            'The constraint decomposition theory is not ready for SIA.  Use -sweepsonly.')
+        raise NotImplementedError('MCD is not ready for SIA.  Use -sweepsonly.')
     if args.jacobi:
        obsprob = PNJacobiSIA(args)
     else:

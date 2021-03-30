@@ -19,8 +19,9 @@ def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
     '''Apply one V-cycle of the multilevel constraint decomposition method of
     Tai (2003).  This is stated in Alg. 4.7 in Graeser & Kornhuber (2009)
     as a down-slash V(1,0) cycle.  Our implementation allows any V(down,up)
-    cycle.  Input args is a dictionary with parameters.  The smoother is
-    projected Gauss-Seidel or projected Jacobi according to argument obsprob.
+    cycle.  Input args is a dictionary with parameters.  Input obsprob is
+    of type SmootherObstacleProblem.  The smoother is projected Gauss-Seidel
+    or projected Jacobi according to args.jacobi.
     Note hierarchy[j] is of type MeshLevel1D.  This method generates all defect
     constraints hierarchy[j].chi for j < J, but it uses hierarchy[J].chi, which
     must be set in advance.  The input linear functional ell is in V^J'.
