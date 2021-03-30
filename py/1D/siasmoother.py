@@ -35,68 +35,90 @@ class PNGSSIA(SmootherObstacleProblem):
         self.rhoi = rhoi            # kg m-3
         self.nglen = nglen
         self.A = A                  # Pa-3 s-1
+        # convenience constant
         self.Gamma = 2.0 * self.A * (self.rhoi * self.g)**self.nglen \
                      / (self.nglen + 2.0)
+        self.pp = self.nglen + 1.0  # as in p-Laplacian
+        # regularization thickness
+        self.eps = 100.0
+        # Newton's method parameters (used in PNGS and PNJacobi smoothers)
+        self.newtonits = 2          # number of Newton its
+        self.newtondtol = 1.0e-8    # don't continue Newton if d is this small
+        self.newtondmax = 1000.0    # never move surface by more than this amount
         # parameters for Bueler profile (exact solution) matching Bueler (2016);
         #   see also van der Veen (2013) section 5.3
         self.buelerL = 750.0e3      # half-width of sheet
         self.buelerH0 = 3600.0      # center thickness
         self.buelerxc = 900.0e3     # x coord of center in [0,xmax] = [0,1800] km
-        # numerical parameters in smoother
-        self.newtonits = 2          # number of Newton its
-        self.newtondtol = 1.0e-8    # don't continue Newton if d is this small
-        self.newtondmax = 1000.0    # never move surface by more than this amount
-        self.newtonHmin = 100.0     # protect divide by zero in smoother
-        self.newtonslopemin = 1.0e-4 # protect divide by zero in smoother
+
+    def _CC(self, h):
+        return self.Gamma / (2.0 * h**(self.pp-1.0))
+
+    def _tau3(self, w, b, p):
+        return (w[p-1:p+2] - b[p-1:p+2] + self.eps)**(self.pp + 1.0)
+
+    def _pointN(self, h, b, w, p):
+        '''Compute nonlinear operator value N(w)[psi_p^j], for
+        given iterate w(x) in V^j, at one interior hat function psi_p^j:
+           N(w)[psi_p^j] = int_{x_p-h}^{x_p+h} Gamma (w(x) - b(x) + eps)^{n+2} |w'(x)|^{n-1} w'(x) dx
+        Approximates using the trapezoid rule.'''
+        tau = self._tau3(w, b, p)
+        ds = w[p:p+2] - w[p-1:p+1]
+        mu = abs(ds)**(self.pp - 2.0) * ds
+        return self._CC(h) * ( (tau[0] + tau[1]) * mu[0] - (tau[1] + tau[2]) * mu[1] )
+
+    def _pointdNdw(self, h, b, w, p):
+        '''The derivative of N(w)[psi_p^j] with respect to w[p].'''
+        tau = self._tau3(w, b, p)
+        dtau = (self.pp + 1.0) * (w[p] - b[p] + self.eps)**self.pp
+        ds = w[p:p+2] - w[p-1:p+1]
+        mu = abs(ds)**(self.pp - 2.0) * ds
+        dmu = (self.pp - 1.0) * abs(ds)**(self.pp - 2.0)
+        return self._CC(h) * (dtau * (mu[0] - mu[1]) + (tau[0] + tau[1]) * dmu[0] + (tau[1] + tau[2]) * dmu[1] )
 
     def pointresidual(self, mesh, w, ell, p):
         '''Compute the value of the residual linear functional, in V^j', for
         given iterate w(x) in V^j, at one interior hat function psi_p^j:
-           F(w)[psi_p^j] = int_0^L Gamma (w(x) - b(x))^{n+2} |w'(x)|^{n-1} w'(x) dx
-                           - ell[psi_p^j]
+           F(w)[psi_p^j] = N(w)[psi_p^j] - ell[psi_p^j]
         Input ell is in V^j'.  Input mesh is of class MeshLevel1D, with attached
         bed elevation mesh.b.'''
         mesh.checklen(w)
         mesh.checklen(ell)
         assert 1 <= p <= mesh.m
         assert hasattr(mesh, 'b')
-        CC = self.Gamma / (2.0 * mesh.h**self.nglen)
-        HP = (w[p-1:p+2] - mesh.b[p-1:p+2] + self.args.siaeta0)**(self.nglen + 2.0)
-        ds = w[p:p+2] - w[p-1:p+1]
-        mu = abs(ds)**(self.nglen - 1.0) * ds
-        meat = (HP[0] + HP[1]) * mu[0] - (HP[1] + HP[2]) * mu[1]
-        return CC * meat - ell[p]
-
-    def _pointjacobian(self, mesh, w, p):
-        '''The derivative of pointresidual() with respect to w[p].'''
-        mesh.checklen(w)
-        assert 1 <= p <= mesh.m
-        assert hasattr(mesh, 'b')
-        C = self.Gamma / (2.0 * mesh.h**self.nglen)
-        # protects divide by zero in smoother:
-        Hpos = np.maximum(w[p-1:p+2] - mesh.b[p-1:p+2] + self.args.siaeta0, self.newtonHmin)
-        HP = Hpos**(self.nglen + 2.0)
-        # protects divide by zero in smoother:
-        ads = np.maximum(abs(w[p:p+2] - w[p-1:p+1]), mesh.h * self.newtonslopemin)
-        dmu = self.nglen * ads**(self.nglen - 1.0)
-        return C * ( (HP[0] + HP[1]) * dmu[0] + (HP[1] + HP[2]) * dmu[1] )
+        return self._pointN(mesh.h, mesh.b, w, p) - ell[p]
 
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
-        '''Do in-place projected nonlinear Gauss-Seidel sweep over the interior
-        points p=1,...,m, for the SIA problem on the iterate w.  Does a fixed
-        number of steps of the  Newton method (newtonits) with protection
-        against taking huge steps (newtondmax).  Avoids further iteration if
-        first step is small (newtondtol).'''
+        '''Do in-place projected nonlinear Gauss-Seidel (PNGS) sweep over the
+        interior points p=1,...,m, for the SIA problem on the iterate w.  Fixed
+        number of steps of the Newton method (newtonits) with protection
+        against taking huge steps (pngsdmax).  Avoids further iteration if
+        first step is small (pngsdtol).'''
+        mesh.checklen(w)
+        mesh.checklen(ell)
+        mesh.checklen(phi)
+        assert hasattr(mesh, 'b')
         self._checkrepairadmissible(mesh, w, phi)
+        Jaczero = mesh.zeros()
         for p in self._sweepindices(mesh, forward=forward):
             for k in range(self.newtonits):
-                d = - self.pointresidual(mesh, w, ell, p) / self._pointjacobian(mesh, w, p)
+                Jac = self._pointdNdw(mesh.h, mesh.b, w, p)
+                if Jac == 0.0:
+                    Jaczero[p] = 1.0
+                    d = +1.0
+                else:
+                    d = - (self._pointN(mesh.h, mesh.b, w, p) - ell[p]) / Jac
                 d = max(d, phi[p] - w[p])                     # require admissible
                 d = np.sign(d) * min(abs(d), self.newtondmax) # limit huge steps
                 w[p] += self.args.omega * d                   # take step
                 if abs(self.args.omega * d) < self.newtondtol:
                     break # stop iterations if tiny step
-        mesh.WU += self.newtonits  # overcount WU if many points are active
+        mesh.WU += self.newtonits  # overcounts WU if many points are active
+        if any(Jaczero != 0.0):
+            Jstr = ''
+            for k in range(len(Jaczero)):
+                Jstr += '-' if Jaczero[k] == 0.0 else '*'
+            print(Jstr)
 
     def phi(self, x):
         '''Generally the bed elevations depend on self.args, but for now we
@@ -177,29 +199,32 @@ class PNGSSIA(SmootherObstacleProblem):
 
 class PNJacobiSIA(PNGSSIA):
 
-    def _jacobian(self, mesh, s):
+    def _jacobian(self, mesh, w):
         '''Compute the Jacobian at each point, returning a vector.  Calls
-        _pointjacobian() for values.'''
-        mesh.checklen(s)
+        _pointdNdw() for values.'''
         J = mesh.zeros()
-        for p in range(1, mesh.m+1):
-            J[p] = self._pointjacobian(mesh, s, p)
+        for p in self._sweepindices(mesh, forward=True):
+            J[p] = self._pointdNdw(mesh.h, mesh.b, w, p)
         return J
 
-    def smoothersweep(self, mesh, s, ell, phi, forward=True):
+    def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected nonlinear Jacobi sweep over the interior
         points p=1,...,m, for the SIA problem.  Compare PNGSSIA.smoothersweep()
         and PJacobiPoisson.smoothersweep().  Underrelaxation is expected;
         try omega = 0.8.'''
-        self._checkrepairadmissible(mesh, s, phi)
-        res = self.residual(mesh, s, ell)
-        Jac = self._jacobian(mesh, s)
+        mesh.checklen(w)
+        mesh.checklen(ell)
+        mesh.checklen(phi)
+        assert hasattr(mesh, 'b')
+        self._checkrepairadmissible(mesh, w, phi)
+        res = self.residual(mesh, w, ell)
+        Jac = self._jacobian(mesh, w)
         for p in self._sweepindices(mesh, forward=forward):
             for k in range(self.newtonits):
                 d = - res[p] / Jac[p]
-                d = max(d, phi[p] - s[p])                     # require admissible
+                d = max(d, phi[p] - w[p])                     # require admissible
                 d = np.sign(d) * min(abs(d), self.newtondmax) # limit huge steps
-                s[p] += self.args.omega * d                   # take step
+                w[p] += self.args.omega * d                   # take step
                 if abs(self.args.omega * d) < self.newtondtol: # tiny step
                     break
         mesh.WU += self.newtonits  # overcount WU if many points are active

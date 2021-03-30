@@ -27,10 +27,10 @@ runobstacle_6:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jacobi -omega 0.85 -monitor -irtol 1.0e-2" 1 6
 
 runobstacle_7:
-	-@./../testit.sh obstacle.py "-problem sia -siaeta0 0.0 -sweepsonly -J 2 -monitor -irtol 1.0e-1" 1 7
+	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -J 2 -monitor -irtol 1.0e-1" 1 7
 
 runobstacle_8:
-	-@./../testit.sh obstacle.py "-problem sia -siaeta0 0.0 -exactinitial -sweepsonly -jacobi -omega 0.5 -J 3 -monitor -cyclemax 2" 1 8
+	-@./../testit.sh obstacle.py "-problem sia -exactinitial -sweepsonly -jacobi -omega 0.5 -J 3 -monitor -cyclemax 2" 1 8
 
 runobstacle_9:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -J 4 -down 0 -up 1" 1 9

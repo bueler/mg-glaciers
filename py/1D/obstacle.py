@@ -136,8 +136,6 @@ parser.add_argument('-randommodes', type=int, default=30, metavar='N',
                     help='number of sinusoid modes in -random perturbation (default N=30)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
-parser.add_argument('-siaeta0', type=float, default=100.0, metavar='L',
-                    help='regularize thickness in SIA model by adding this value (default 100 m)')
 parser.add_argument('-siaintervallength', type=float, default=1800.0e3, metavar='L',
                     help='solve SIA on [0,L] (default L=1800 km)')
 parser.add_argument('-sweepsonly', action='store_true', default=False,
