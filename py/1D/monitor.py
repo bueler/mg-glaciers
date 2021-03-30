@@ -5,11 +5,11 @@ import numpy as np
 
 __all__ = ['indentprint', 'ObstacleMonitor']
 
-def indentprint(n, s):
+def indentprint(n, s, end='\n'):
     '''Print 2n spaces and then string s.'''
     for _ in range(n):
         print('  ', end='')
-    print(s)
+    print(s, end=end)
 
 class ObstacleMonitor():
     '''The monitor has an internal state so it is a class.'''
@@ -36,9 +36,8 @@ class ObstacleMonitor():
     def irerr(self, w, ell, phi, indent=0):
         '''Report inactive residual norm and error if available.'''
         irnorm = self.mesh.l2norm(self.inactiveresidual(w, ell, phi))
-        ind = indent * '  '
         if self.residuals:
-            print(ind + '  %d:  |ir(u)|_2 = %.4e' % (self.s, irnorm), end='')
+            indentprint(indent, '  %d:  |ir(u)|_2 = %.4e' % (self.s, irnorm), end='')
             if self.lastirnorm is not None and self.lastirnorm > 0.0:
                 print('  (rate %.4f)' % (irnorm/self.lastirnorm))
             else:
@@ -48,6 +47,6 @@ class ObstacleMonitor():
         if self.errors:
             if self.uex is not None:
                 errnorm = self.mesh.l2norm(w - self.uex)
-                print(ind + '  %d:  |u-uexact|_2 = %.4e' % (self.s, errnorm))
+                indentprint(indent, '  %d:  |u-uexact|_2 = %.4e' % (self.s, errnorm))
         self.s += 1
         return irnorm, errnorm
