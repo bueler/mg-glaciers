@@ -164,9 +164,6 @@ if args.nicascadic:
     args.ni = True
 if args.ni and args.random:
     raise NotImplementedError('combination of -ni and -random is not implemented')
-if args.nicycles > args.cyclemax:
-    print('usage ERROR: nested iteration V-cycles count toward total; -nicycles <= -cyclemax')
-    sys.exit(4)
 
 # hierarchy will be a list of MeshLevel1D with indices [0,..,levels-1]
 assert args.jcoarse >= 0
