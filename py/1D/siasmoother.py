@@ -54,6 +54,8 @@ class PNGSSIA(SmootherObstacleProblem):
         self.newtonits = 2          # number of Newton its
         self.newtondtol = 1.0e-8    # don't continue Newton if d is this small
         self.newtondmax = 5000.0    # never move surface by more than this amount
+        # initialize with a pile of ice equal this duration of accumulation
+        self.magicinitializationage = 3000.0 * self.secpera
         # parameters for Bueler profile (exact solution) matching Bueler (2016);
         #   see also van der Veen (2013) section 5.3
         self.buelerL = 750.0e3      # half-width of sheet
@@ -199,6 +201,11 @@ class PNGSSIA(SmootherObstacleProblem):
         if any(abs(X) >= 1.0):
             m[abs(X) >= 1.0] = min(m)
         return m
+
+    def initial(self, x):
+        '''Default initial shape is a stack of ice where surface mass
+        balance is positive.'''
+        return self.magicinitializationage * np.maximum(0.0,self.source(x))
 
     def datafigure(self, mesh):
         '''Show data phi, source, exact in a basic figure.'''

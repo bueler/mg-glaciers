@@ -70,6 +70,10 @@ class SmootherObstacleProblem(ABC):
         first.  If exact solution is not available this function will raise
         AssertionError or NotImplementedError.'''
 
+    def initial(self, x):
+        '''Generate default initial shape.'''
+        return np.maximum(self.phi(x), 0.0)
+
 def _pde2alpha(x):
     return 2.0 + np.sin(2.0 * np.pi * x)
 

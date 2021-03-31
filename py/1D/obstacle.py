@@ -219,14 +219,7 @@ mon = ObstacleMonitor(obsprob, mesh, uex=uex,
 if args.exactinitial:
     uu = obsprob.exact(mesh.xx())
 else:
-    if args.problem == 'poisson':
-        # default; sometimes better than phifine when phifine
-        #   is negative in places (e.g. -problem parabola)
-        uu = np.maximum(phi, mesh.zeros())
-    elif args.problem == 'sia':
-        # FIXME nonzero-thickness initial iterate scheme using ell
-        #   (i.e. mass balance); create obsprob method for default initial?
-        uu = mesh.zeros()
+    uu = obsprob.initial(mesh.xx())
 
 # get (and print if requested) residual norm and error for initial iterate
 irnorm, _ = mon.irerr(uu, ellf, phi, indent=0)

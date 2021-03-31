@@ -4,10 +4,8 @@ approximation (SIA) obstacle problem.'''
 
 # TODO:
 #   * implement p=4 p-Laplacian example to see how much better it does
-#   * monitor error using power of thickness
 #   * build convergence and performance studies
 #   * implement random-bed case
-#   * implement better initial iterate, e.g. 1000a * max{a,0}
 
 # PERFORMANCE QUESTIONS:
 #   * does +eps in thickness coefficient in N(w)[v] make things better? (PRELIMINARY: no)
@@ -92,7 +90,7 @@ def mcdnfcycle(args, obsprob, J, hierarchy):
 
     assert args.ni
     phi = obsprob.phi(hierarchy[0].xx())
-    w = phi.copy()     # FIXME consider better initial iterate
+    w = obsprob.initial(hierarchy[0].xx())
     for j in range(J+1):
         mesh = hierarchy[j]
         # create monitor on this mesh using exact solution if available
@@ -135,8 +133,8 @@ def mcdnsolver(args, obsprob, J, hierarchy, ella, b, w, monitor,
         return
     for s in range(iters):
         mesh.b = b
-        mesh.chi = b - w                       # defect obstacle
-        w += mcdnvcycle(args, obsprob, J, hierarchy, w, ella, levels=J+1)  # FIXME: not obviously the correct args
+        mesh.chi = b - w
+        w += mcdnvcycle(args, obsprob, J, hierarchy, w, ella, levels=J+1)
         irnorm, errnorm = monitor.irerr(w, ella, b, indent=0)
         if irnorm > 100.0 * irnorm0:
             print('WARNING:  irnorm > 100 irnorm0')
