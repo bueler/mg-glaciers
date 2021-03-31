@@ -5,4 +5,4 @@ level 1: 1 sweeps over m=31 nodes
 level 1: 1 sweeps over m=31 nodes
   coarsest: 1 sweeps over m=15 nodes
   2:  |u-uexact|_2 = 4.5981e-02
-fine level 4 (m=31): using 2 V(1,0) cycles -> 3.000 WU:  |u-uexact|_2 = 4.5981e-02
+J=4 (m=31): 2 V(1,0) cycles -> 3.000 WU;  |u-uexact|_2 = 4.598e-02

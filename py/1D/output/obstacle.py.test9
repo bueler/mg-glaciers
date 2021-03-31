@@ -7,4 +7,4 @@
   6:  |ir(u)|_2 = 5.1387e-01  (rate 0.7588)
   7:  |ir(u)|_2 = 4.0124e-01  (rate 0.7808)
   8:  |ir(u)|_2 = 3.1444e-01  (rate 0.7837)
-fine level 2 (m=7): using 8 applications of sym. smoother -> 32.000 WU:  |u-uexact|_2 = 7.1729e+05
+J=2 (m=7): 8 applications of sym. smoother -> 32.000 WU;  |u-uexact|_2 = 7.173e+05, |u^r-uexact^r|_p = 1.676e+10

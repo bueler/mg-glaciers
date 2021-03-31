@@ -15,4 +15,4 @@ WARNING:  irnorm > 100 irnorm0
   5:  |ir(u)|_2 = 6.1815e+01  (rate 0.3091)
  10 singulars: -****---------------------******-
   6:  |ir(u)|_2 = 2.6094e+01  (rate 0.4221)
-fine level 4 (m=31): using 6 applications of smoother -> 12.000 WU:  |u-uexact|_2 = 1.6536e+06
+J=4 (m=31): 6 applications of smoother -> 12.000 WU;  |u-uexact|_2 = 1.654e+06, |u^r-uexact^r|_p = 5.143e+10

@@ -9,4 +9,4 @@
   8:  |ir(u)|_2 = 1.2453e-01  (rate 0.7849)
   9:  |ir(u)|_2 = 9.5168e-02  (rate 0.7642)
   10:  |ir(u)|_2 = 7.2493e-02  (rate 0.7617)
-fine level 4 (m=31): using 10 sym. V(0,1) cycles -> 77.500 WU:  |u-uexact|_2 = 3.2203e+05
+J=4 (m=31): 10 sym. V(0,1) cycles -> 77.500 WU;  |u-uexact|_2 = 3.220e+05, |u^r-uexact^r|_p = 6.545e+09

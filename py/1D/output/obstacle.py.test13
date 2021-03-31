@@ -11,4 +11,4 @@
   0:  |ir(u)|_2 = 4.1856e+00
   1:  |ir(u)|_2 = 4.1841e-01  (rate 0.1000)
   2:  |ir(u)|_2 = 1.7394e-01  (rate 0.4157)
-fine level 3 (m=15): F-cycle + 0 V(1,1) cycles -> 24.000 WU:  |u-uexact|_2 = 2.1668e+05
+J=3 (m=15): F-cycle + 0 V(1,1) cycles -> 24.000 WU;  |u-uexact|_2 = 2.167e+05, |u^r-uexact^r|_p = 6.346e+09
