@@ -83,6 +83,31 @@ class VisObstacle():
             plt.xlabel('x')
         _output(filename, 'final iterate and obstacle')
 
+    def finalSIApower(self, filename=''):
+        '''Generate graphic showing final iterate and exact solution
+        by power of thickness, on finest mesh.'''
+        self.mesh.checklen(self.u)
+        xx = self.mesh.xx() / 1000.0
+        if self.uex is not None:
+            plt.figure(figsize=(15.0, 10.0))
+            plt.subplot(2, 1, 1)
+        else:
+            plt.figure(figsize=(15.0, 8.0))
+        Hr = (self.u - self.phi)**self.obsprob.rr
+        Cnorm = max(Hr)   # normalization constant
+        plt.plot(xx, Hr / Cnorm, 'k', label='$H^r$', linewidth=4.0)
+        if self.uex is not None:
+            self.mesh.checklen(self.uex)
+            Hexr = (self.uex - self.phi)**self.obsprob.rr
+            plt.plot(xx, Hexr / Cnorm, 'g', label='$H_{ex}^r$')
+        plt.legend()
+        if self.uex is not None:
+            plt.subplot(2, 1, 2)
+            plt.plot(xx, (Hr - Hexr) / Cnorm, 'k')
+            plt.ylabel('$H^r - H_{ex}^r$ (normalized)')
+        plt.xlabel('x (km)')
+        _output(filename, 'power of final thickness (SIA)')
+
     def residuals(self, filename=''):
         '''Generate graphic showing residual and inactive residual vectors.'''
         xx = self.mesh.xx()
@@ -146,6 +171,11 @@ class VisObstacle():
                 self.plain(filename=self.args.o)
             else:
                 self.final(filename=self.args.o)
+                if self.args.problem == 'sia':
+                    hpname = ''
+                    if len(self.args.o) > 0:
+                        hpname = 'thicknesspower_' + self.args.o
+                    self.finalSIApower(filename=hpname)
         if self.args.diagnostics:
             rname = ''
             if len(self.args.o) > 0:
