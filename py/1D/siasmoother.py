@@ -42,7 +42,9 @@ class PNGSSIA(SmootherObstacleProblem):
         # convenience constant
         self.Gamma = 2.0 * self.A * (self.rhoi * self.g)**self.nglen \
                      / (self.nglen + 2.0)
-        self.pp = self.nglen + 1.0  # as in p-Laplacian
+        # important powers
+        self.pp = self.nglen + 1.0                      # = 4; p-Laplacian
+        self.rr = (2.0 * self.nglen + 2.0) / self.nglen # = 8/3; error reporting
         # regularization thickness
         self.eps = 0.0              # m
         # step surface upward this much if Jacobian is zero and the
