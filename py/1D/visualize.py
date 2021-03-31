@@ -60,15 +60,27 @@ class VisObstacle():
         solution (if available) on finest mesh.'''
         self.mesh.checklen(self.u)
         xx = self.mesh.xx()
-        plt.figure(figsize=(15.0, 8.0))
+        if self.args.problem == 'sia':
+            xx /= 1000.0
+        if self.uex is not None:
+            plt.figure(figsize=(15.0, 10.0))
+            plt.subplot(2, 1, 1)
+        else:
+            plt.figure(figsize=(15.0, 8.0))
         plt.plot(xx, self.u, 'k', label='final iterate', linewidth=4.0)
         if self.uex is not None:
             self.mesh.checklen(self.uex)
             plt.plot(xx, self.uex, 'g', label='exact solution')
         plt.plot(xx, self.phi, 'r', label='obstacle')
-        plt.axis('tight')
         plt.legend()
-        plt.xlabel('x')
+        if self.uex is not None:
+            plt.subplot(2, 1, 2)
+            plt.plot(xx, self.u - self.uex, 'k')
+            plt.ylabel('$u-u_{ex}$')
+        if self.args.problem == 'sia':
+            plt.xlabel('x (km)')
+        else:
+            plt.xlabel('x')
         _output(filename, 'final iterate and obstacle')
 
     def residuals(self, filename=''):
