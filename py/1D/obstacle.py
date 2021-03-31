@@ -74,7 +74,9 @@ References:
   * Tai, X.-C. (2003). Rate of convergence for some constraint
     decomposition methods for nonlinear variational inequalities.
     Numer. Math. 93 (4), 755--786.
-''', formatter_class=argparse.RawTextHelpFormatter)
+''',
+    formatter_class=argparse.RawTextHelpFormatter,
+    allow_abbrev=False)  # bug in python 3.8 causes this to be ignored
 parser.add_argument('-coarse', type=int, default=1, metavar='N',
                     help='smoother sweeps on coarsest grid (default=1)')
 parser.add_argument('-coarsestomega', type=float, default=1.0, metavar='X',
@@ -147,7 +149,7 @@ parser.add_argument('-up', type=int, default=1, metavar='N',
 args, unknown = parser.parse_known_args()
 
 # provide usage help
-if unknown:
+if len(unknown) > 0:
     print('usage ERROR: unknown arguments ... try -h or --help for usage')
     sys.exit(1)
 if args.show and args.o:
