@@ -33,7 +33,7 @@ runobstacle_8:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase pde2 -J 3" 1 8 "poisson pde2 [unconstrained] V(1,0) cycles"
 
 runobstacle_9:
-	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -J 2 -monitor -irtol 1.0e-1" 1 9 "sia PNGS sweeps"
+	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -symmetric -J 2 -monitor -irtol 1.0e-1" 1 9 "sia PNGS sweeps"
 
 runobstacle_10:
 	-@./../testit.sh obstacle.py "-problem sia -exactinitial -sweepsonly -jacobi -omega 0.5 -J 3 -monitor -cyclemax 2" 1 10 "sia PJacobi sweeps omega=0.5 exact initial"

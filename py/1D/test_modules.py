@@ -150,5 +150,6 @@ def test_pngssia_smoothersweep():
     res = prob.residual(ml, s, ell)
     prob.smoothersweep(ml, s, ell, ml.b)
     prob.smoothersweep(ml, s, ell, ml.b)
+    prob.smoothersweep(ml, s, ell, ml.b)
     newres = prob.residual(ml, s, ell)
     assert ml.l2norm(newres) < ml.l2norm(res)

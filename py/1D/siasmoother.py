@@ -51,7 +51,7 @@ class PNGSSIA(SmootherObstacleProblem):
         # Newton's method parameters (used in PNGS and PNJacobi smoothers)
         self.newtonits = 2          # number of Newton its
         self.newtondtol = 1.0e-8    # don't continue Newton if d is this small
-        self.newtondmax = 1000.0    # never move surface by more than this amount
+        self.newtondmax = 5000.0    # never move surface by more than this amount
         # parameters for Bueler profile (exact solution) matching Bueler (2016);
         #   see also van der Veen (2013) section 5.3
         self.buelerL = 750.0e3      # half-width of sheet
