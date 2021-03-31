@@ -21,7 +21,7 @@ runobstacle_4:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 3 -sweepsonly -omega 1.5 -cyclemax 3" 1 4 "poisson icelike PGS sweeps omega=1.5"
 
 runobstacle_5:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 4 -ni -cyclemax 1 -down 1 -up 0 -monitorerr" 1 5 "poisson icelike F-cycle V(1,0) cycle"
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 4 -ni -cyclemax 1 -down 1 -up 0 -monitorerr" 1 5 "poisson icelike F-cycle using V(1,0) cycle"
 
 runobstacle_6:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jacobi -omega 0.85 -monitor -irtol 1.0e-2" 1 6 "poisson icelike V(0,1) cycles Jacobi smoother"
@@ -44,14 +44,17 @@ runobstacle_11:
 runobstacle_12:
 	-@./../testit.sh obstacle.py "-problem sia -J 4 -irtol 1.0e-1 -symmetric -monitor" 1 12 "sia V(0,1) cycles symmetric"
 
-test_obstacle: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 runobstacle_10 runobstacle_11 runobstacle_12
+runobstacle_13:
+	-@./../testit.sh obstacle.py "-problem sia -J 3 -down 1 -up 1 -monitor -ni -nicycles 2 -cyclemax 2" 1 13 "sia F-cycle using two V(1,1) cycles"
+
+test_obstacle: runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 runobstacle_10 runobstacle_11 runobstacle_12 runobstacle_13
 
 testbanner:
 	@echo "**** TESTING obstacle.py ****"
 
 test: testbanner test_obstacle
 
-.PHONY: clean runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 runobstacle_10 runobstacle_11 runobstacle_12 test_obstacle testmodules test testbanner
+.PHONY: clean runobstacle_1 runobstacle_2 runobstacle_3 runobstacle_4 runobstacle_5 runobstacle_6 runobstacle_7 runobstacle_8 runobstacle_9 runobstacle_10 runobstacle_11 runobstacle_12 runobstacle_13 test_obstacle testmodules test testbanner
 
 clean:
 	@rm -f maketmp tmp difftmp *.png *.pdf
