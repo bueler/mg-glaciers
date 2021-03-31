@@ -4,13 +4,18 @@ approximation (SIA) obstacle problem.'''
 
 # TODO:
 #   * implement p=4 p-Laplacian example to see how much better it does
-#   * implement F-cycles
+#   * monitor error using power of thickness
+#   * build convergence and performance studies
+#   * implement random-bed case
+#   * implement better initial iterate, e.g. 1000a * max{a,0}
+
+# PERFORMANCE QUESTIONS:
 #   * does +eps in thickness coefficient in N(w)[v] make things better? (PRELIMINARY: no)
 #   * does monotone increase (or decrease) on thickness coefficient in N(w)[v]
 #     on coarsening make things better?
 #   * how valuable are really-accurate solves on the coarsest levels? (PRELIMINARY: not very)
 
-__all__ = ['mcdnvcycle', 'mcdnsolver']
+__all__ = ['mcdnvcycle', 'mcdnfcycle', 'mcdnsolver']
 
 import numpy as np
 from monitor import indentprint, ObstacleMonitor
@@ -81,10 +86,44 @@ def mcdnvcycle(args, obsprob, J, hierarchy, w, ell, levels=None):
                              symmetric=args.symmetric, forward=False)
     return z
 
+def mcdnfcycle(args, obsprob, J, hierarchy):
+    '''Apply an MCDN F-cycle, i.e. nested iteration.  This method calls
+    mcdnvcycle().  Compare mcdlfcycle().'''
+
+    assert args.ni
+    phi = obsprob.phi(hierarchy[0].xx())
+    w = phi.copy()     # FIXME consider better initial iterate
+    for j in range(J+1):
+        mesh = hierarchy[j]
+        # create monitor on this mesh using exact solution if available
+        uex = None
+        if obsprob.exact_available():
+            uex = obsprob.exact(mesh.xx())
+        mon = ObstacleMonitor(obsprob, mesh, uex=uex,
+                              printresiduals=args.monitor, printerrors=args.monitorerr)
+        # how many cycles?
+        iters = args.nicycles
+        if args.nicascadic:
+            # very simple model for number of cycles; compare Blum et al 2004
+            iters *= int(np.ceil(1.5**(J-j)))
+        # do V cycles
+        mesh.b = obsprob.phi(mesh.xx())
+        ella = mesh.ellf(obsprob.source(mesh.xx()))  # source functional ell[v] = <f,v>
+        for s in range(iters):
+            mon.irerr(w, ella, phi, indent=J-j)       # print norms at stdout
+            mesh.chi = phi - w                        # defect obstacle
+            w += mcdnvcycle(args, obsprob, j, hierarchy, w, ella, levels=j+1)
+        mon.irerr(w, ella, phi, indent=J-j)
+        # obstacle and initial iterate for next level; prolong and truncate current solution
+        if j < J:
+            phi = obsprob.phi(hierarchy[j+1].xx())
+            w = np.maximum(phi, hierarchy[j+1].cP(w))
+    return w
+
 def mcdnsolver(args, obsprob, J, hierarchy, ella, b, w, monitor,
                iters=100, irnorm0=None):
     '''Apply V-cycles of the MCDN method until convergence by an inactive
-    residual norm tolerance.  Calls mcdnvcycle().'''
+    residual norm tolerance.  Calls mcdnvcycle().  Compare mcdlsolver().'''
 
     mesh = hierarchy[J]
     mesh.checklen(ella)

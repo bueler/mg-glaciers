@@ -96,8 +96,7 @@ def mcdlfcycle(args, obsprob, J, hierarchy):
             mon.irerr(w, ellf, phi, indent=J-j)       # print norms at stdout
             mesh.chi = phi - w                        # defect obstacle
             ell = - obsprob.residual(mesh, w, ellf)   # starting source
-            y = mcdlvcycle(args, obsprob, j, hierarchy, ell, levels=j+1)
-            w += y
+            w += mcdlvcycle(args, obsprob, j, hierarchy, ell, levels=j+1)
         mon.irerr(w, ellf, phi, indent=J-j)
         # obstacle and initial iterate for next level; prolong and truncate current solution
         if j < J:

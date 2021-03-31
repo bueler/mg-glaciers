@@ -13,7 +13,7 @@ from smoother import PGSPoisson, PJacobiPoisson
 from siasmoother import PNGSSIA, PNJacobiSIA
 
 from mcdl import mcdlfcycle, mcdlsolver
-from mcdn import mcdnsolver
+from mcdn import mcdnfcycle, mcdnsolver
 
 parser = argparse.ArgumentParser(description='''
 Solve 1D obstacle problems by a multilevel constraint decomposition method.
@@ -187,8 +187,6 @@ if args.problem == 'poisson':
     for j in range(levels):
         hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=L)
 elif args.problem == 'sia':
-    if args.ni:
-        raise NotImplementedError('F-cycles not implemented for SIA')
     if args.jacobi:
        obsprob = PNJacobiSIA(args)
     else:
@@ -236,7 +234,10 @@ irnorm, _ = mon.irerr(uu, ellf, phi, indent=0)
 
 # do F-cycle first if requested; counts as first iterate
 if args.ni:
-    uu = mcdlfcycle(args, obsprob, levels-1, hierarchy)
+    if args.problem == 'poisson':
+        uu = mcdlfcycle(args, obsprob, levels-1, hierarchy)
+    elif args.problem == 'sia':
+        uu = mcdnfcycle(args, obsprob, levels-1, hierarchy)
 
 # fine-level smoother-sweeps-only alternative to mcdlsolver()
 def sweepssolver(args, obsprob, mesh, ellf, phi, w, monitor,
