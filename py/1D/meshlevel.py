@@ -51,6 +51,12 @@ class MeshLevel1D():
         return np.sqrt(self.h * (0.5*u[0]*u[0] + np.sum(u[1:-1]*u[1:-1]) \
                                  + 0.5*u[-1]*u[-1]))
 
+    def lqnorm(self, q, u):
+        '''L^q[0,L] norm of a function, computed with trapezoid rule.'''
+        self.checklen(u)
+        assert q >= 1.0
+        return (self.h * (0.5*u[0]**q + np.sum(u[1:-1]**q) + 0.5*u[-1]**q))**(1.0/q)
+
     def ellf(self, f):
         '''Represent the linear functional (in (V^j)') which is the inner
         product with a function f (in V^j):
