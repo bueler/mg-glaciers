@@ -3,15 +3,19 @@ of the multilevel constraint decomposition (MCD) method for the shallow ice
 approximation (SIA) obstacle problem.'''
 
 # TODO:
-#   * implement p=4 p-Laplacian example to see how much better it does
-#   * build convergence and performance studies
-#   * implement random-bed case
+#   * compare write-up to functions below
+#   * implement p=4 p-Laplacian obstacle problem; how much better?
+#   * convergence and performance studies
+#   * implement random-bed case (for performance only)
+#   * implement multiple ice sheets case (for performance only; requires e.g. -jcoarse 4)
 
 # PERFORMANCE QUESTIONS:
-#   * does +eps in thickness coefficient in N(w)[v] make things better? (PRELIMINARY: no)
+#   * does +eps in thickness coefficient in N(w)[v] make things better?
+#     (PRELIMINARY ANSWER: no)
 #   * does monotone increase (or decrease) on thickness coefficient in N(w)[v]
 #     on coarsening make things better?
-#   * how valuable are really-accurate solves on the coarsest levels? (PRELIMINARY: not very)
+#   * how valuable are really-accurate solves on the coarsest levels?
+#     (PRELIMINARY ANSWER: within V-cycle, not important, but e.g. -ni -nicycles 16 is a good idea)
 
 __all__ = ['mcdnvcycle', 'mcdnfcycle', 'mcdnsolver']
 
