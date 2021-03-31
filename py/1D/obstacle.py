@@ -214,7 +214,9 @@ uex = None
 if obsprob.exact_available():
     uex = obsprob.exact(mesh.xx())
 mon = ObstacleMonitor(obsprob, mesh, uex=uex,
-                      printresiduals=args.monitor, printerrors=args.monitorerr)
+                      printresiduals=args.monitor, printerrors=args.monitorerr,
+                      extraerrorpower=None if args.problem == 'poisson' else obsprob.rr,
+                      extraerrornorm=None if args.problem == 'poisson' else obsprob.pp)
 
 # initialization on fine mesh
 if args.exactinitial:
@@ -277,7 +279,7 @@ for j in range(levels):
     WUsum += hierarchy[j].WU / 2**(levels - 1 - j)
 
 # report on computation including numerical error, WU, infeasibles
-method = 'using '
+method = ''
 if args.ni:
     method = 'F-cycle + '
 symstr = 'sym. ' if args.symmetric else ''
@@ -287,14 +289,17 @@ else:
     method += '%d %sV(%d,%d) cycles' % (mon.s - 1, symstr, args.down, args.up)
 if obsprob.exact_available():
     uex = obsprob.exact(hierarchy[-1].xx())
-    error = ':  |u-uexact|_2 = %.4e' % mesh.l2norm(uu-uex)
+    error = ';  |u-uexact|_2 = %.3e' % mesh.l2norm(uu - uex)
+    if args.problem == 'sia':
+        error += ', |u^r-uexact^r|_p = %.3e' % \
+                 mesh.lqnorm(obsprob.pp, uu**obsprob.rr - uex**obsprob.rr)
 else:
     uex = None
     error = ''
 inadstr = ''
 if obsprob.inadmissible > 0:
     inadstr = ' (%d inadmissibles)' % obsprob.inadmissible
-print('fine level %d (m=%d): %s -> %.3f WU%s%s' \
+print('J=%d (m=%d): %s -> %.3f WU%s%s' \
       % (args.J, mesh.m, method, WUsum, error, inadstr))
 
 # graphical output if desired
