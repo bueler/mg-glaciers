@@ -78,6 +78,8 @@ class PNGSPLap(SmootherObstacleProblem):
         '''Update y[p] from computed (preliminary) Newton step d.  Ensures
         admissibility and applies Newton-step limitation logic.'''
         d = max(d, phi - y)                           # require admissible: y >= phi
+        if d > 1.0:
+            d = 1.0
         y += self.args.omega * d                      # take step
         stopnow = (abs(self.args.omega * d) < self.newtondtol) # tiny step criterion
         return y, stopnow
