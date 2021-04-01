@@ -14,4 +14,4 @@ testargs = Namespace(jacobi=False, omega=1.0, printwarnings=False, randomseed=1,
 
 prob = PNGSPLap(testargs)
 ml = MeshLevel1D(j=10, xmax=1.0)
-prob.datafigure(ml)
+prob.exactfigure(ml)
