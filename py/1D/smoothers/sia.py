@@ -65,7 +65,8 @@ class PNGSSIA(SmootherObstacleProblem):
     def _pointN(self, h, b, w, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for
         given iterate w(x) in V^j, at one hat function psi_p^j:
-           N(w)[psi_p^j] = int_I Gamma (w(x) - b(x) + eps)^{p+1} * |w'(x)|^{p-2} w'(x) dx
+           N(w)[psi_p^j] = int_I Gamma (w(x) - b(x) + eps)^{p+1}
+                                       * |w'(x)|^{p-2} w'(x) (psi_p^j)'(x) dx
         where I = [x_p - h, x_p + h].  Approximates using the trapezoid rule.
         Also return dNdw, the derivative of N(w)[psi_p^j] with respect to w[p].'''
         tau = (w[p-1:p+2] - b[p-1:p+2] + self.eps)**(self.pp + 1.0)
@@ -97,13 +98,6 @@ class PNGSSIA(SmootherObstacleProblem):
             F[p], _ = self._pointN(mesh.h, mesh.b, w, p)
             F[p] -= ell[p]
         return F
-
-    def _showsingular(self, z):
-        '''Print a string indicating singular Jacobian points.'''
-        Jstr = ''
-        for k in range(len(z)):
-            Jstr += '-' if z[k] == 0.0 else '*'
-        print('%3d singulars: ' % sum(z > 0.0) + Jstr)
 
     def _updatey(self, y, d, phi):
         '''Update y[p] from computed (preliminary) Newton step d.  Ensures
@@ -142,8 +136,8 @@ class PNGSSIA(SmootherObstacleProblem):
                 if stopnow:
                     break
         mesh.WU += self.newtonits  # overcounts WU if many points are active
-        if self.args.siashowsingular and any(jaczeros != 0.0):
-            self._showsingular(jaczeros)
+        if self.args.showsingular and any(jaczeros != 0.0):
+            self.showsingular(jaczeros)
 
     def phi(self, x):
         '''For now we have a flat bed.'''
@@ -256,5 +250,7 @@ class PNJacobiSIA(PNGSSIA):
                 if stopnow:
                     break
         mesh.WU += self.newtonits  # overcount WU if many points are active
-        if self.args.siashowsingular and any(jaczeros != 0.0):
-            self._showsingular(jaczeros)
+        if self.args.showsingular:
+            jaczeros = np.array(Jac == 0.0)
+            if any(jaczeros != 0.0):
+                self.showsingular(jaczeros)

@@ -10,6 +10,7 @@ from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
 from smoothers.poisson import PGSPoisson, PJacobiPoisson
+from smoothers.plap import PNGSPLap, PNJacobiPLap
 from smoothers.sia import PNGSSIA, PNJacobiSIA
 
 from mcdl import mcdlfcycle, mcdlsolver
@@ -124,7 +125,7 @@ parser.add_argument('-poissonparabolay', type=float, default=-1.0, metavar='X',
                     help='vertical location of obstacle (default X=-1.0)')
 parser.add_argument('-printwarnings', action='store_true', default=False,
                     help='print pointwise feasibility warnings')
-parser.add_argument('-problem', choices=['poisson', 'sia'], metavar='X', default='poisson',
+parser.add_argument('-problem', choices=['poisson', 'plap', 'sia'], metavar='X', default='poisson',
                     help='determines obstacle problem (default: %(default)s)')
 parser.add_argument('-random', action='store_true', default=False,
                     help='make a smooth random perturbation of the obstacle')
@@ -136,10 +137,10 @@ parser.add_argument('-randommodes', type=int, default=30, metavar='N',
                     help='number of sinusoid modes in -random perturbation (default N=30)')
 parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
+parser.add_argument('-showsingular', action='store_true', default=False,
+                    help='on each sweep on each level, show where the point Jacobian was singular')
 parser.add_argument('-siaintervallength', type=float, default=1800.0e3, metavar='L',
                     help='solve SIA on [0,L] (default L=1800 km)')
-parser.add_argument('-siashowsingular', action='store_true', default=False,
-                    help='on each sweep on each level, show where the point Jacobian was singular')
 parser.add_argument('-sweepsonly', action='store_true', default=False,
                     help='do smoother sweeps as cycles, instead of multilevel')
 parser.add_argument('-symmetric', action='store_true', default=False,
@@ -165,41 +166,43 @@ if args.nicascadic:
 if args.ni and args.random:
     raise NotImplementedError('combination of -ni and -random is not implemented')
 
-# hierarchy will be a list of MeshLevel1D with indices [0,..,levels-1]
+# determine correct interval
+L = 1.0
+if args.problem == 'poisson' and args.poissoncase == 'pde2':
+    L = 10.0
+elif args.problem == 'sia':
+    L = args.siaintervallength
+
+# hierarchy is a list of MeshLevel1D with indices [0,..,levels-1]
 assert args.jcoarse >= 0
 assert args.J >= args.jcoarse
 levels = args.J - args.jcoarse + 1
 hierarchy = [None] * (levels)             # list [None,...,None]
+for j in range(levels):
+    hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=L)
 
 # set up obstacle problem with smoother (class SmootherObstacleProblem)
-#   and meshes on correct interval
 if args.problem == 'poisson':
-    if args.jacobi:
-        obsprob = PJacobiPoisson(args)
-    else:
-        obsprob = PGSPoisson(args)
-    L = 1.0
-    if args.poissoncase == 'pde2':
-        L = 10.0
-    for j in range(levels):
-        hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=L)
+    obsprob = PJacobiPoisson(args) if args.jacobi else PGSPoisson(args)
+elif args.problem == 'plap':
+    obsprob = PNJacobiPLap(args) if args.jacobi else PNGSPLap(args)
 elif args.problem == 'sia':
-    if args.jacobi:
-       obsprob = PNJacobiSIA(args)
-    else:
-       obsprob = PNGSSIA(args)
-    for j in range(levels):
-        hierarchy[j] = MeshLevel1D(j=j+args.jcoarse,
-                                   xmax=args.siaintervallength)
-        # attach interpolated bed elevation to each mesh level
-        hierarchy[j].b = obsprob.phi(hierarchy[j].xx())
-        if args.sweepsonly:
-            hierarchy[j].g = hierarchy[j].zeros()
+    obsprob = PNJacobiSIA(args) if args.jacobi else PNGSSIA(args)
 
 # more usage help
 if args.monitorerr and not obsprob.exact_available():
     print('usage ERROR: -monitorerr but exact solution and error not available')
     sys.exit(5)
+
+# attach fields to hierarchy if needed
+if args.sweepsonly and args.problem in ['plap', 'sia']:
+    # nonlinear cases: fixed part of iterate is zeroed-out for sweepsonly
+    for j in range(levels):
+        hierarchy[j].g = hierarchy[j].zeros()
+if args.problem == 'sia':
+    # attach interpolated bed elevation to each mesh level
+    for j in range(levels):
+        hierarchy[j].b = obsprob.phi(hierarchy[j].xx())
 
 # fine-level problem data
 mesh = hierarchy[-1]
@@ -212,8 +215,8 @@ if obsprob.exact_available():
     uex = obsprob.exact(mesh.xx())
 mon = ObstacleMonitor(obsprob, mesh, uex=uex,
                       printresiduals=args.monitor, printerrors=args.monitorerr,
-                      extraerrorpower=None if args.problem == 'poisson' else obsprob.rr,
-                      extraerrornorm=None if args.problem == 'poisson' else obsprob.pp)
+                      extraerrorpower=obsprob.rr if args.problem == 'sia' else None,
+                      extraerrornorm=obsprob.pp if args.problem == 'sia' else None)
 
 # initialization on fine mesh
 if args.exactinitial:
@@ -221,17 +224,20 @@ if args.exactinitial:
 else:
     uu = obsprob.initial(mesh.xx())
 
-# get (and print if requested) residual norm and error for initial iterate
+# residual norm for initial iterate
 irnorm, _ = mon.irerr(uu, ellf, phi, indent=0)
+
+# decide on using MCDL or MCDN
+linear = (args.problem == 'poisson')
 
 # do F-cycle first if requested; counts as first iterate
 if args.ni:
-    if args.problem == 'poisson':
+    if linear:
         uu = mcdlfcycle(args, obsprob, levels-1, hierarchy)
-    elif args.problem == 'sia':
+    else:
         uu = mcdnfcycle(args, obsprob, levels-1, hierarchy)
 
-# fine-level smoother-sweeps-only alternative to mcdlsolver()
+# apply sweeps of fine-level smoother (versus mcdXsolver())
 def sweepssolver(args, obsprob, mesh, ellf, phi, w, monitor,
                  iters=100, irnorm0=None):
     if irnorm0 == 0.0:
@@ -256,10 +262,10 @@ if itermax > 0:
         sweepssolver(args, obsprob, hierarchy[-1], ellf, phi, uu, mon,
                      iters=itermax, irnorm0=irnorm)
     else:
-        if args.problem == 'poisson':
+        if linear:
             mcdlsolver(args, obsprob, levels-1, hierarchy, ellf, phi, uu, mon,
                        iters=itermax, irnorm0=irnorm)
-        elif args.problem == 'sia':
+        else:
             mcdnsolver(args, obsprob, levels-1, hierarchy, ellf, phi, uu, mon,
                        iters=itermax, irnorm0=irnorm)
 
