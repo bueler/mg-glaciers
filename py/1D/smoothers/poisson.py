@@ -44,6 +44,9 @@ class PGSPoisson(SmootherObstacleProblem):
         else:
             return (1.0 / h) * (2.0*w[p] - w[p-1] - w[p+1]) - ell[p]
 
+    def applyoperator(self, mesh, w):
+        raise NotImplementedError
+
     def residual(self, mesh, w, ell):
         '''Compute the residual functional for given iterate w.  Note
         ell is a source term in V^j'.  Calls _pointresidual() for values.'''

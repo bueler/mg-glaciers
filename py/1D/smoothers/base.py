@@ -43,6 +43,12 @@ class SmootherObstacleProblem(ABC):
                 self.smoothersweep(mesh, w, ell, phi, forward=not forward)
 
     @abstractmethod
+    def applyoperator(self, mesh, w):
+        '''Apply only the operator to w to generate a linear functional
+        in (V^j)'.  Linear: a(w,.).  Nonlinear: N(w)[.].  Generally not
+        needed for linear case, so it can raise NotImplementedError.'''
+
+    @abstractmethod
     def residual(self, mesh, w, ell):
         '''Compute the residual functional for given iterate w.  Note
         ell is a source term in V^j'.  Calls _pointresidual() for values.'''

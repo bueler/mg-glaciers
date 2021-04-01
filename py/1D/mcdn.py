@@ -64,8 +64,9 @@ def mcdnvcycle(args, obsprob, J, hierarchy, w, ell, levels=None):
         hierarchy[k-1].g = hierarchy[k].iR(wk)
         # update residual and determine source on next level down
         F = obsprob.residual(hierarchy[k], wk, hierarchy[k].ell)
-        hierarchy[k-1].ell = obsprob.applyN(hierarchy[k-1], hierarchy[k-1].g) \
-                             - hierarchy[k].cR(F)
+        hierarchy[k-1].ell = \
+            obsprob.applyoperator(hierarchy[k-1], hierarchy[k-1].g) \
+            - hierarchy[k].cR(F)
 
     # coarse mesh solver = smoother sweeps on correction y
     if args.mgview:
