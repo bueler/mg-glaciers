@@ -7,6 +7,10 @@ __all__ = ['PNGSPLap', 'PNJacobiPLap']
 # apparently good settings:
 # $ for JJ in 1 2 3 4 5 6 7 8 9 10; do ./obstacle.py -problem plap -J $JJ -irtol 1.0e-8 -cyclemax 1000 -symmetric -down 1 -ni; done
 
+# issues:
+#   * PNJacobiPLap has wild behavior
+#   * this is unregularized p-Laplacian ... consider + eps?
+
 import numpy as np
 from smoothers.base import SmootherObstacleProblem
 

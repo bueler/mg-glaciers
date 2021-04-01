@@ -33,13 +33,13 @@ run_8:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase pde2 -J 3" 1 8 "poisson pde2 [unconstrained] V(1,0) cycles"
 
 run_9:
-	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -symmetric -J 2 -monitor -irtol 1.0e-2" 1 9 "sia PNGS sweeps"
+	-@./../testit.sh obstacle.py "-problem plap -symmetric -down 1 -monitor" 1 9 "plap PNGS V(1,1) cycles symmetric"
 
 run_10:
-	-@./../testit.sh obstacle.py "-problem sia -exactinitial -sweepsonly -jacobi -omega 0.5 -J 3 -monitor -cyclemax 2" 1 10 "sia PJacobi sweeps omega=0.5 exact initial"
+	-@./../testit.sh obstacle.py "-problem plap -symmetric -down 1 -up 2 -monitor -ni -nicycles 2 -jacobi -omega 0.5" 1 10 "plap PNJacobi F-cycle using 2 V(1,2) cycles symmetric [WILD]"
 
 run_11:
-	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -siashowsingular -J 4 -cyclemax 6 -monitor" 1 11 "sia PNGS sweeps show singular points"
+	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -showsingular -J 4 -cyclemax 6 -monitor" 1 11 "sia PNGS sweeps show singular points"
 
 run_12:
 	-@./../testit.sh obstacle.py "-problem sia -J 4 -irtol 1.0e-2 -symmetric -monitor" 1 12 "sia V(0,1) cycles symmetric"
@@ -47,14 +47,20 @@ run_12:
 run_13:
 	-@./../testit.sh obstacle.py "-problem sia -J 3 -down 1 -up 1 -monitor -ni -nicycles 2 -cyclemax 2" 1 13 "sia F-cycle using two V(1,1) cycles"
 
-test_obstacle: run_1 run_2 run_3 run_4 run_5 run_6 run_7 run_8 run_9 run_10 run_11 run_12 run_13
+run_14:
+	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -symmetric -J 2 -monitor -irtol 1.0e-2" 1 14 "sia PNGS sweeps"
+
+run_15:
+	-@./../testit.sh obstacle.py "-problem sia -exactinitial -sweepsonly -jacobi -omega 0.5 -J 3 -monitor -cyclemax 2" 1 15 "sia PJacobi sweeps omega=0.5 exact initial"
+
+test_obstacle: run_1 run_2 run_3 run_4 run_5 run_6 run_7 run_8 run_9 run_10 run_11 run_12 run_13 run_14 run_15
 
 testbanner:
 	@echo "**** test: RUNS OF obstacle.py ****"
 
 test: testbanner test_obstacle
 
-.PHONY: clean test_obstacle testmodules test testbanner run_1 run_2 run_3 run_4 run_5 run_6 run_7 run_8 run_9 run_10 run_11 run_12 run_13
+.PHONY: clean test_obstacle testmodules test testbanner run_1 run_2 run_3 run_4 run_5 run_6 run_7 run_8 run_9 run_10 run_11 run_12 run_13 run_14 run_15
 
 clean:
 	@rm -f maketmp tmp difftmp *.png *.pdf

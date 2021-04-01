@@ -10,9 +10,11 @@ The available solver algorithms are:
 
   * sweeps (`-sweepsonly`) of projected Gauss-Seidel (PGS) or Jacobi iteration smoothers, which require a Newton iteration in the nonlinear SIA case (PNGS, PNJacobi)
 
-There are two kinds of problems:
+There are three obstacle problems:
 
   * `-problem poisson` solves the classical obstacle problem, with default "ice-like" geometry
+
+  * `-problem plap` solves a p=4 p-Laplacian problem, with "bridge" geometry
 
   * `-problem sia` solves the shallow ice approximation for a steady-state dome on a flat bed
 
@@ -28,7 +30,7 @@ Solve the classical obstacle problem slowly using single-level PGS:
 
         $ ./obstacle.py -sweepsonly -cyclemax 1000 -J 4
 
-Higher resolution and different options:
+Higher resolution and different options for SIA:
 
         $ ./obstacle.py -problem sia -J 11 -jcoarse 1 -irtol 1.0e-7 -ni -nicycles 2 -show -diagnostics -monitor
 

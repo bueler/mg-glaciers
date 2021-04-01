@@ -1,0 +1,4 @@
+  0:  |ir(u)|_2 = 6.7014e-01
+  1:  |ir(u)|_2 = 5.4111e-01  (rate 0.8074)
+  2:  |ir(u)|_2 = 4.7694e-01  (rate 0.8814)
+J=3 (m=15): 2 applications of smoother -> 4.000 WU;  |u-uexact|_2 = 2.085e+04, |u^r-uexact^r|_p = 7.157e+08

@@ -1,0 +1,5 @@
+  0:  |ir(u)|_2 = 1.7741e+02
+  1:  |ir(u)|_2 = 5.8858e+00  (rate 0.0332)
+  2:  |ir(u)|_2 = 2.4141e+00  (rate 0.4102)
+  3:  |ir(u)|_2 = 1.5179e+00  (rate 0.6288)
+J=2 (m=7): 3 applications of sym. smoother -> 12.000 WU;  |u-uexact|_2 = 1.162e+06, |u^r-uexact^r|_p = 2.996e+10
