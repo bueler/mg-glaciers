@@ -6,7 +6,8 @@ which is the smoother and coarse-level solver for the Stokes ice flow model.'''
 #   * use projected weighted Jacobi because pointwise residual modifications
 #     are not obvious and might be expensive
 
-from smoother import SmootherObstacleProblem
+import numpy as np
+from smoothers.base import SmootherObstacleProblem
 
 class PJacobiStokes(SmootherObstacleProblem):
     '''FIXME'''

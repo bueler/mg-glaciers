@@ -3,8 +3,8 @@ directory, or via "make mtest".'''
 
 import numpy as np
 from meshlevel import MeshLevel1D
-from smoother import PGSPoisson
-from siasmoother import PNGSSIA
+from smoothers.poisson import PGSPoisson
+from smoothers.sia import PNGSSIA
 
 def test_ml_basics():
     '''Basic MeshLevel1D functionality.'''

@@ -5,7 +5,7 @@ for the shallow ice approximation (SIA) ice flow model.'''
 __all__ = ['PNGSSIA', 'PNJacobiSIA']
 
 import numpy as np
-from smoother import SmootherObstacleProblem
+from smoothers.base import SmootherObstacleProblem
 
 class PNGSSIA(SmootherObstacleProblem):
     '''Class for the projected nonlinear Gauss-Seidel (PNGS) algorithm as a

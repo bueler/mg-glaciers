@@ -58,4 +58,4 @@ test: testbanner test_obstacle
 
 clean:
 	@rm -f maketmp tmp difftmp *.png *.pdf
-	@rm -rf __pycache__ .pytest_cache/
+	@rm -rf __pycache__ smoothers/__pycache__ .pytest_cache/

@@ -9,8 +9,8 @@ from meshlevel import MeshLevel1D
 from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
-from smoother import PGSPoisson, PJacobiPoisson
-from siasmoother import PNGSSIA, PNJacobiSIA
+from smoothers.poisson import PGSPoisson, PJacobiPoisson
+from smoothers.sia import PNGSSIA, PNJacobiSIA
 
 from mcdl import mcdlfcycle, mcdlsolver
 from mcdn import mcdnfcycle, mcdnsolver
