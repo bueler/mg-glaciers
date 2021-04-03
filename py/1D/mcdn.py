@@ -33,14 +33,19 @@ def mcdnvcycle(args, obsprob, J, hierarchy, w, ell, levels=None):
     '''Apply one V-cycle of the nonlinear MCD method.  Input args is a
     dictionary with parameters.  Input obsprob is of type
     SmootherObstacleProblem.  The smoother is projected nonlinear Gauss-Seidel
-    or projected nonlinear Jacobi according to args.jacobi.  Note hierarchy[j]
-    is of type MeshLevel1D.  This method generates all the defect constraints hierarchy[j].chi for j < J, but it requires hierarchy[J].chi to be set in
-    advance.  Note that hierarchy[j].b must also be defined for
-    all mesh levels.  The input iterate w is in V^j and the input linear
-    functional ell is in V^J'.  The coarse solver is the same as the smoother.'''
+    or projected nonlinear Jacobi according to args.jacobi; see the
+    p-Laplacian and SIA cases in smoothers/{plap.py|sia.py}.
 
-    # set up
+    Note hierarchy[j] is of type MeshLevel1D.  This method generates all
+    the defect constraints hierarchy[j].chi for j < J, but it requires
+    hierarchy[J].chi to be set before calling.  Also, hierarchy[j].b must
+    be defined for all mesh levels.  The input iterate w is in V^j and
+    linear functional ell is in V^J'.  The coarse solver is the same as
+    the smoother.'''
+
     assert args.down >= 0 and args.up >= 0 and args.coarse >= 0
+
+    # set up on finest level
     hierarchy[J].checklen(w)
     hierarchy[J].checklen(ell)
     hierarchy[J].ell = ell
@@ -48,21 +53,22 @@ def mcdnvcycle(args, obsprob, J, hierarchy, w, ell, levels=None):
 
     # downward
     for k in range(J, 0, -1):
-        # compute new bed and defect constraint using monotone restriction
+        # compute next defect constraint using monotone restriction
         hierarchy[k-1].chi = hierarchy[k].mR(hierarchy[k].chi)
         # define down-obstacle
         phi = hierarchy[k].chi - hierarchy[k].cP(hierarchy[k-1].chi)
-        # down-smooth the correction y
+        # smooth the correction y
         if args.mgview:
             _levelreport(levels-1, k, hierarchy[k].m, args.down)
         hierarchy[k].y = hierarchy[k].zeros()
         obsprob.smoother(args.down, hierarchy[k], hierarchy[k].y,
                          hierarchy[k].ell, phi, symmetric=args.symmetric)
-        # determine fixed part of solution on next level down
+        # update residual
         wk = hierarchy[k].g + hierarchy[k].y
-        hierarchy[k-1].g = hierarchy[k].iR(wk)
-        # update residual and determine source on next level down
         F = obsprob.residual(hierarchy[k], wk, hierarchy[k].ell)
+        # g^{k-1} is current solution restricted onto next-coarsest level
+        hierarchy[k-1].g = hierarchy[k].iR(wk)
+        # source on next-coarsest level
         hierarchy[k-1].ell = \
             obsprob.applyoperator(hierarchy[k-1], hierarchy[k-1].g) \
             - hierarchy[k].cR(F)
@@ -75,18 +81,18 @@ def mcdnvcycle(args, obsprob, J, hierarchy, w, ell, levels=None):
                      hierarchy[0].ell, hierarchy[0].chi, symmetric=args.symmetric)
 
     # upward
-    z = hierarchy[0].y
+    hierarchy[0].z = hierarchy[0].y
     for k in range(1, J+1):
         # accumulate corrections
-        z = hierarchy[k].cP(z) + hierarchy[k].y
+        hierarchy[k].z = hierarchy[k].cP(hierarchy[k-1].z) + hierarchy[k].y
         if args.up > 0:
-            # up-smooth corrections y;  obstacle is chi[k] not phi (see paper)
+            # smooth the correction y;  up-obstacle is chi[k] not phi (see paper)
             if args.mgview:
                 _levelreport(levels-1, k, hierarchy[k].m, args.up)
-            obsprob.smoother(args.up, hierarchy[k], z,
+            obsprob.smoother(args.up, hierarchy[k], hierarchy[k].z,
                              hierarchy[k].ell, hierarchy[k].chi,
                              symmetric=args.symmetric, forward=False)
-    return z
+    return hierarchy[J].z
 
 def mcdnfcycle(args, obsprob, J, hierarchy):
     '''Apply an MCDN F-cycle, i.e. nested iteration.  This method calls
