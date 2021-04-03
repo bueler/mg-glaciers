@@ -96,56 +96,53 @@ def mcdnvcycle(args, obsprob, J, hierarchy, w, ell, levels=None):
 
 def mcdnfcycle(args, obsprob, J, hierarchy):
     '''Apply an MCDN F-cycle, i.e. nested iteration.  This method calls
-    mcdnvcycle().  Compare mcdlfcycle().'''
+    mcdnvcycle().  Note hierarchy[j].b must be defined for all mesh levels.
+    Compare mcdlfcycle().'''
 
     assert args.ni
-    phi = obsprob.phi(hierarchy[0].xx())
     w = obsprob.initial(hierarchy[0].xx())
     for j in range(J+1):
-        mesh = hierarchy[j]
         # create monitor on this mesh using exact solution if available
         uex = None
         if obsprob.exact_available():
-            uex = obsprob.exact(mesh.xx())
-        mon = ObstacleMonitor(obsprob, mesh, uex=uex,
-                              printresiduals=args.monitor, printerrors=args.monitorerr)
+            uex = obsprob.exact(hierarchy[j].xx())
+        mon = ObstacleMonitor(obsprob, hierarchy[j], uex=uex,
+                              printresiduals=args.monitor, printerrors=args.monitorerr,
+                              extraerrorpower=obsprob.rr if args.problem == 'sia' else None,
+                              extraerrornorm=obsprob.pp if args.problem == 'sia' else None)
         # how many cycles?
         iters = args.nicycles
         if args.nicascadic:
             # very simple model for number of cycles; compare Blum et al 2004
             iters *= int(np.ceil(1.5**(J-j)))
         # do V cycles
-        mesh.b = obsprob.phi(mesh.xx())
-        ella = mesh.ellf(obsprob.source(mesh.xx()))  # source functional ell[v] = <f,v>
+        ella = hierarchy[j].ellf(obsprob.source(hierarchy[j].xx())) # source functional <a,.>
         for s in range(iters):
-            mon.irerr(w, ella, phi, indent=J-j)       # print norms at stdout
-            mesh.chi = phi - w                        # defect obstacle
+            mon.irerr(w, ella, hierarchy[j].b, indent=J-j)  # print norms at stdout
+            hierarchy[j].chi = hierarchy[j].b - w           # defect obstacle
             w += mcdnvcycle(args, obsprob, j, hierarchy, w, ella, levels=j+1)
-        mon.irerr(w, ella, phi, indent=J-j)
+        mon.irerr(w, ella, hierarchy[j].b, indent=J-j)
         # obstacle and initial iterate for next level; prolong and truncate current solution
         if j < J:
-            phi = obsprob.phi(hierarchy[j+1].xx())
-            w = np.maximum(phi, hierarchy[j+1].cP(w))
+            w = np.maximum(hierarchy[j+1].b, hierarchy[j+1].cP(w))
     return w
 
-def mcdnsolver(args, obsprob, J, hierarchy, ella, b, w, monitor,
+def mcdnsolver(args, obsprob, J, hierarchy, ella, w, monitor,
                iters=100, irnorm0=None):
     '''Apply V-cycles of the MCDN method until convergence by an inactive
     residual norm tolerance.  Calls mcdnvcycle().  Compare mcdlsolver().'''
 
     mesh = hierarchy[J]
     mesh.checklen(ella)
-    mesh.checklen(b)
     mesh.checklen(w)
     if irnorm0 == None:
         irnorm0, _ = monitor.irerr(w, ella, b, indent=0)
     if irnorm0 == 0.0:
         return
     for s in range(iters):
-        mesh.b = b
-        mesh.chi = b - w
+        mesh.chi = mesh.b - w
         w += mcdnvcycle(args, obsprob, J, hierarchy, w, ella, levels=J+1)
-        irnorm, errnorm = monitor.irerr(w, ella, b, indent=0)
+        irnorm, errnorm = monitor.irerr(w, ella, mesh.b, indent=0)
         if irnorm > 100.0 * irnorm0:
             print('WARNING:  irnorm > 100 irnorm0')
         if irnorm <= args.irtol * irnorm0:

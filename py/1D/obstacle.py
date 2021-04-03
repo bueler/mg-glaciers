@@ -195,14 +195,14 @@ if args.monitorerr and not obsprob.exact_available():
     sys.exit(5)
 
 # attach fields to hierarchy if needed
-if args.sweepsonly and args.problem in ['plap', 'sia']:
-    # nonlinear cases: fixed part of iterate is zeroed-out for sweepsonly
-    for j in range(levels):
-        hierarchy[j].g = hierarchy[j].zeros()
-if args.problem == 'sia':
+if args.problem in ['plap', 'sia']:
     # attach interpolated bed elevation to each mesh level
     for j in range(levels):
         hierarchy[j].b = obsprob.phi(hierarchy[j].xx())
+    if args.sweepsonly:
+        # nonlinear cases: fixed part of iterate is zero in sweepsonly
+        for j in range(levels):
+            hierarchy[j].g = hierarchy[j].zeros()
 
 # fine-level problem data
 mesh = hierarchy[-1]
@@ -266,7 +266,7 @@ if itermax > 0:
             mcdlsolver(args, obsprob, levels-1, hierarchy, ellf, phi, uu, mon,
                        iters=itermax, irnorm0=irnorm)
         else:
-            mcdnsolver(args, obsprob, levels-1, hierarchy, ellf, phi, uu, mon,
+            mcdnsolver(args, obsprob, levels-1, hierarchy, ellf, uu, mon,
                        iters=itermax, irnorm0=irnorm)
 
 # accumulate work units from values stored in hierarchy
