@@ -84,8 +84,14 @@ class Namespace:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
-testargs = Namespace(jacobi=False, omega=1.0, printwarnings=False, randomseed=1,
-                     siaeta0=0.0, poissoncase='icelike', showsingular=False)
+testargs = Namespace(jacobi=False,
+                     newtonits=2,
+                     omega=1.0,
+                     poissoncase='icelike',
+                     printwarnings=False,
+                     randomseed=1,
+                     showsingular=False,
+                     siaeps=0.0)
 
 def test_poisson_residual():
     '''Residual for Poisson.'''
