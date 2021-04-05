@@ -1186,54 +1186,96 @@ This defines a map from $w^j$ in $\{v \ge b^j\} \subset \mathcal{V}^j$ to $N^j(w
 
 For convergence and performance comparisons versus the more-degenerate SIA problem, will also solve the $\pp$-Laplacian obstacle problem.  Its operator formula, implicit the weak form \eqref{eq:plaplacianpoisson}, is computed exactly using \eqref{eq:siaNlevel}, but with $\Gamma = 1$ and $\tau_q(\xi)=1$: $N^j(w^j)[\psi_p^j] = h^{1-\pp} \left[\mu(w_p-w_{p-1}) - \mu(w_{p+1}-w_p)\right]$.
 
-\subsection{Projected nonlinear Gauss-Seidel} \label{subsec:pngs}  To construct a smoother for VI \eqref{eq:siaVIFEfinelevel} or \eqref{eq:siaVIFEFAS} we follow the derivation of the PGS smoother in the previous section.  Although a minimization-based derivation was possible for the classical obstacle problem, we showed that one-dimensional VI \eqref{eq:pgspointwisevi} also produced the PGS formula \eqref{eq:pgsformula}.  FIXME: FURTHER DIFFERENCES BECAUSE USE NEWTON AND NEED PROTECTION AGAINST HUGE UPWARD SEARCH DIRECTIONS
+\subsection{Projected nonlinear Gauss-Seidel} \label{subsec:pngs}  To construct a smoother for VI \eqref{eq:siaVIFEfinelevel} or \eqref{eq:siaVIFEFAS} we follow the derivation of the PGS smoother in section \ref{sec:obstacle}.  Although a minimization-based derivation was possible for that classical obstacle problem, we also showed that one-dimensional VI \eqref{eq:pgspointwisevi} produced the PGS formula \eqref{eq:pgsformula}.  The smoother here will again use a one-dimensional VI for the SIA problem, but it will take a fixed number of Newton steps at each point, and we will need to respond when the SIA form degenerates.
 
-For solving \eqref{eq:siaVIFEFAS} we write $w^j=g^j+y^j$ where $g^j\ge b^j$ and $y^j$ is the correction to be computed on the $j$th level.  Supposing $\phi^j$ is the obstacle for corrections on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$, let $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j \subset \mathcal{W}$.  Note that $g^j+y^j \ge b^j$ follows if $y^j$ is in $\mathcal{K}^j$.\footnote{This formulation is correct for down-smoothers.  Slight modifications apply when solving VI \eqref{eq:siaVIFEfinelevel} in a single-level method or for \eqref{eq:siaVIFEFAS} when up-smoothing after the coarse-level correction.  In both of those cases, replace $\phi^j$ with $\chi^j$ and $y^j$ with $z^j$.}
+For solving \eqref{eq:siaVIFEFAS}, $\phi^j$ is the obstacle on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$, and $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j \subset \mathcal{W}$.  Note that $g^j+y^j \ge b^j$ follows if $y^j$ is in $\mathcal{K}^j$.
 
-At the node $x_p^j$, our \emph{projected nonlinear Gauss-Seidel} (PNGS) smoother seeks a scalar $c \ge \phi_p - y_p$ which solves the following one-dimensional VI:
+For single-level VI \eqref{eq:siaVIFEfinelevel}, or for \eqref{eq:siaVIFEFAS} when up-smoothing after the coarse-level correction,  in the following formulas replace $\phi^j$ with $\chi^j$, $\mathcal{K}^j$ with $\mathcal{D}^j$, and $y^j$ with $z^j$.
+
+At the node $x_p^j$, our \emph{projected nonlinear Gauss-Seidel} (PNGS) smoother seeks a scalar $c$ such that $c \ge \phi_p - y_p$ which solves the following one-dimensional VI:
 \begin{equation}
-  F^j(w^j+c\psi_p^j)[(w^j+\tilde c\psi_p^j) - (w^j+c\psi_p^j)] \ge 0,  \label{eq:pngspointwiseviEARLY}
+N^j(g^j+y^j+c\psi_p^j)[(\tilde c - c) \psi_p^j] \ge \ell^j[(\tilde c - c) \psi_p^j] \label{eq:pngspointwiseviEARLY}
 \end{equation}
-for all $\tilde c \ge \phi_p - y_p$.  By linearity we may write this as
+for all scalars $\tilde c$ such that $\tilde c \ge \phi_p - y_p$.
+(Note that $(\tilde c - c) \psi_p^j = (g^j+y^j+\tilde c\psi_p^j) - (g^j+y^j+c\psi_p^j)$.)  By linearity we may write this as
 \begin{equation}
-  (\tilde c - c) g(c) \ge 0,  \label{eq:pngspointwisevi}
+  (\tilde c - c) \rho(c) \ge 0,  \label{eq:pngspointwisevi}
 \end{equation}
-where from \eqref{eq:siaNlevel}
+where, using \eqref{eq:siaNlevel} to identify the power functions $\tau_q$ and $\mu$ from \eqref{eq:siahelperfcns}, and defining $w_p=g_p+y_p$ and $\ell_p=\ell^j[\psi_p^j]$, we have the following scalar \emph{pointwise residual} function
 \begin{align}
-  g(c) &= F^j(g^j+y^j+c\psi_p^j)[\psi_p^j] = F^j(w^j+c\psi_p^j)[\psi_p^j] \label{eq:pngspointwiseresidual} \\
+  \rho(c) &= N^j(g^j+y^j+c\psi_p^j)[\psi_p^j] - \ell^j[\psi_p^j] \label{eq:pngspointwiseresidual} \\
        &= \frac{\Gamma}{2h^{\pp-1}} \Big[(\tau_{p-1}(w_{p-1}) + \tau_p(w_p +c)) \mu(w_p+c-w_{p-1}) \notag  \\
-       &\hspace{20mm} - (\tau_p(w_p+c) + \tau_{p+1}(w_{p+1})) \mu(w_{p+1}-w_p-c)\Big] - \ell_p \notag
+       &\hspace{20mm} - (\tau_p(w_p+c) + \tau_{p+1}(w_{p+1})) \mu(w_{p+1}-w_p-c)\Big] - \ell_p. \notag
 \end{align}
-is a differentiable function on $[\phi_p - y_p,+\infty)$.  In using this formula it is important to remember that $w_p = g_p+y_p$ where $g_p$ is fixed and $y_p$ is the solution variable.
+In using this formula keep in mind that $w^j = g^j+y^j$ is the current estimate of the ice surface, but $g^j$ is fixed while $y^j$ is the actual solution variable.
 
-In deriving \eqref{eq:pgspointwisevi} we used the fact that the corresponding scalar function $g(c)$ was linear and strictly-increasing.  It followed that the solution of VI \eqref{eq:pgspointwisevi} was either the unique value $c$ in the admissible interval such that $g(c)=0$, or it was the left endpoint of that interval.  The situation here is more complicated, and we must be careful regarding the practical matter of constructing a robust smoother.
+Now, the pointwise residual $\rho(c)$ is differentiable on $[\phi_p - y_p,+\infty)$, an interval which always includes $c=0$.  When we derived \eqref{eq:pgspointwisevi} we used the fact that the corresponding pointwise residual was both linear and strictly-increasing, from which it followed that the solution of one-dimensional VI \eqref{eq:pgspointwisevi} was either the unique value $c$ in the admissible interval which made the scalar function zero, or it was the left endpoint of the interval.  Here we would ``want'' $\rho'(c)$ in \eqref{eq:pngspointwiseresidual} to always be positive, indeed it would be nice if it were bounded away from zero by uniform ellipticity.  However, this is not true in either the SIA or $\pp$-Laplacian problem (if $\pp>2$).  As noted above (subsection \ref{subsec:siaproblem}), our SIA nonlinear operator $N(w)$ degenerates in two different ways, so we must proceed carefully to construct a robust smoother.
 
-Let us start by providing a lower bound on the derivative $g'(c)$:
+Lower bounds on the derivative $\rho'(c)$ are possible.  By the product rule, the mean value theorem, the fact that $\tau_q(x) = (x+b_q+\eps)^{\pp+1} \ge \eps^{\pp+1}$ when $x\ge b_q$, and that fact that $\mu'\ge 0$,
 \begin{align}
-  g'(c) &= \frac{\Gamma}{2h^{\pp-1}} \Big[\tau_p'(w_p+c) \left(\mu(w_p+c-w_{p-1}) -  \mu(w_{p+1}-w_p-c)\right) \label{eq:pngsderivativebound} \\
+  \rho'(c) &= \frac{\Gamma}{2h^{\pp-1}} \Big[\tau_p'(w_p+c) \left(\mu(w_p+c-w_{p-1}) -  \mu(w_{p+1}-w_p-c)\right) \label{eq:pngsderivativebound} \\
         &\qquad\qquad\quad + (\tau_{p-1}(w_{p-1}) + \tau_p(w_p+c)) \mu'(w_p+c-w_{p-1}) \notag \\
         &\qquad\qquad\quad + (\tau_p(w_p+c) + \tau_{p+1}(w_{p+1})) \mu'(w_{p+1}-w_p-c)\Big] \notag \\
         &\ge \frac{\Gamma}{2h^{\pp-1}} \Big[\tau_p'(w_p+c) \mu'(\xi_p) (2(w_p+c) - w_{p-1} - w_{p+1}) \notag \\
-        &\qquad\qquad\quad + 2 \eps^{\pp+1} \left(\mu'(w_p+c-w_{p-1}) + \mu'(w_{p+1}-w_p-c)\right)\Big] \notag
+        &\qquad\qquad\quad + 2 \eps^{\pp+1} \left(\mu'(w_p+c-w_{p-1}) + \mu'(w_{p+1}-w_p-c)\right)\Big] \notag \\
+        &\ge \frac{\Gamma}{2h^{\pp-1}} \tau_p'(w_p+c) \mu'(\xi_p) (2(w_p+c) - w_{p-1} - w_{p+1}) \notag
 \end{align}
-for some $\xi_p$ in the interval between $w_p+c-w_{p-1}$ and $w_{p+1}-w_p-c$.  (We have used the mean value theorem on $\mu$ and fact that $\tau_p(x) = (x+b_p+\eps)^{\pp+1} \ge \eps^{\pp+1}$ when $x\ge b_p$.)  Note that derivatives $\mu'$ and $\tau_p'$ are nonnegative.
+(Note that taking $\eps=0$ does not change the final bound.)  Recalling that $\tau_q'$ is also nonnegative, $\rho'(c)$ can be negative only when
+    $$0 > 2(w_p+c) - w_{p-1} - w_{p+1} \approx - h^2\left(w^j(x) + c \psi_p^j(x)\right)''\Big|_{x_p^j},$$
+that is, when the updated surface $w^j(x) + c \psi_p^j(x)$ is convex (concave up) at $x_p^j$.  This situation is most likely to occur when $x_p^j$ is the estimated margin location.
 
-FIXME In any case, unlike the corresponding problem for the classical obstacle problem, the solution of \eqref{eq:pngspointwisevi} cannot be found exactly.  Instead we set up a Newton iteration to compute $c$.
+Lower bound \eqref{eq:pngsderivativebound} also applies in the easier $\pp$-Laplacian case.  Then $\Gamma=1$ and $\tau_q(\xi)=1$ (constant) so we have $\rho'(c)\ge 0$, but $\rho'(c)$ is again not bounded away from zero.
 
-\begin{pseudo*} \label{ps:pngs}
-\pr{pngs}(j,w,z,N,\ell,\phi,\id{omega}=1)\text{:} \\+
-    \ct{check admissibility: $w\ge \phi$} \\
-    $F(w)[\cdot] := N(w)[\cdot] - \ell[\cdot]$ \\
-    for $p=1,\dots,m_j$ \\+
-        $c = FIXME$ \\
-        $z_p \gets \max\{z_p + \id{omega}\,c, \phi_p\}$
+Unlike the corresponding problem for the classical obstacle problem, the solution of \eqref{eq:pngspointwisevi} cannot be found exactly.  Instead we set up a Newton iteration to compute $y^j$ pointwise, which in simple form would say
+\begin{equation}
+    c = -\rho(0) / \rho'(0), \qquad y_p \gets y_p + c. \label{eq:pngspointNewton}
+\end{equation}
+However, because $\rho'(0)$ may be arbitrarily small or even zero, each such Newton step must be protected.  In the case where $\rho'(0)=0$ exactly, the flow is not telling us anything about how the current surface should move, and indeed this usually happens at ice-free locations.  If $\ell_p > 0$ and we are at an ice-free location then accumulation is occurring, and we simply increase the surface by a fixed, small distance \id{caccum}, with default value 10 m.  Otherwise we leave $c=0$.  On the other hand, if $\rho'(0)$ is small then we compute $c$.  In the case that $c$ is large and positive we limit it by \id{cupmax}, with large default value 5000 m, while if $c$ is negative we limit it (as usual) by enforcing admissiblity.  Note that the downward limitation is intrinsic to one-sided obstacle problems, but the upward limitation relates to the failure of uniform ellipticity.
+
+For clarity we isolate this logic into a pseudocode.  Consider a point $x_p^j$ and note we seek $c$ in the interval $[\phi_p-y_p,+\infty)$.  We assume $r=\rho(0)$ and $\delta=\rho'(0)$ have already been computed at the point.
+\begin{pseudo*} \label{ps:pointupdate}
+\pr{pointupdate}(r,\delta,\phi_p,y_p,\ell_p,\id{cupmax}=5000\, m,\id{caccum}=10\, m)\text{:} \\+
+    if $\delta = 0$ \\+
+        if $\ell_p > 0$ and $y_p = 0$ \\+
+            return \id{caccum}  \qquad\qquad\quad \ct{move upward if accumulation at ice-free} \\-
+        else \\+
+            return $0$ \qquad\qquad\qquad\qquad \ct{no information on how to move} \\--
+    else \\+
+        $c = - r / \delta$ \qquad\qquad\qquad\qquad\qquad \ct{pure Newton step} \\
+        $c = \max(c, \phi_p-y_p)$ \qquad\qquad\qquad\, \ct{ensure admissibility} \\
+        return $\min(c, \id{cupmax})$ \qquad\qquad\quad \ct{limit large upward steps}
 \end{pseudo*}
 
-FIXME PNGS same in $\pp$-Laplacian but now we are exposed to only one of the degeneracies
+Now we have the following pseudocode for an SIA or $\pp$-Laplacian smoother.
+\begin{pseudo*} \label{ps:pngs}
+\pr{pngs}(j,g^j,y^j,N^j,\ell^j,\phi^j,\id{newtonits}=2,\id{omega}=1)\text{:} \\+
+    \ct{check admissibility: $y^j \ge \phi^j$} \\
+    for $p=1,\dots,m_j$ \\+
+        for $k=1,\dots,\id{newtonits}$ \\+
+            $\rho(c) := N^j(g^j+y^j+c\psi_p^j)[\psi_p^j] - \ell^j[\psi_p^j]$ \\
+            $c = \pr{pointupdate}(\rho(0), \rho'(0),\phi_p,y_p,\ell_p)$ \\
+            $y_p \gets y_p + \id{omega}\,c$
+\end{pseudo*}
+As before there is a Jacobi version.
+\begin{pseudo*} \label{ps:pnjacobi}
+\pr{pnjacobi}(j,g^j,y^j,N^j,\ell^j,\phi^j)\text{:} \\+
+    \ct{check admissibility: $y^j \ge \phi^j$} \\
+    FIXME \\
+    for $p=1,\dots,m_j$ \\+
+        for $k=1,\dots,\id{newtonits}$ \\+
+            $\rho(c) := N^j(g^j+y^j+c\psi_p^j)[\psi_p^j] - \ell^j[\psi_p^j]$ \\
+            $c = \pr{pointupdate}(\rho(0), \rho'(0),\phi_p,y_p,\ell_p)$ \\
+            $y_p \gets y_p + \id{omega}\,c$
+\end{pseudo*}
 
-FIXME PNJacobi
+FIXME $\pp$-Laplacian case the same as possible
 
-\subsection{Convergence and performance results} \label{subsec:siaperformance}  FIXME first use Bueler profile to verify smoother only; FIXME how do results depend on number of newton its in smoother; FIXME V-cycles and F-cycles on Bueler profile, then performance measurements on a random bed; FIXME regarding singularities compare to $\pp$-Laplacian performance; FIXME speculate for 2D domains use Firedrake, better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not too big)
+FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not too big)
+
+\subsection{Convergence and performance results} \label{subsec:siaperformance}  FIXME first $\pp$-Laplacian
+% $ for JJ in 1 2 3 4 5 6 7 8 9 10 11 12 13; do timer ./obstacle.py -problem plap -showsingular -J $JJ -cyclemax 10000 -irtol 1.0e-7 -down 1 -symmetric; done
+
+FIXME first use Bueler profile to verify smoother only; FIXME how do results depend on number of newton its in smoother; FIXME V-cycles and F-cycles on Bueler profile, then performance measurements on a random bed; FIXME regarding singularities compare to $\pp$-Laplacian performance
 
 \subsection{Performance of implicit evolving-geometry solvers} \label{subsec:siaimplicit}  FIXME use Halfar solution
 
@@ -1373,7 +1415,9 @@ $\|\cdot\|_{\mathcal{H}}$ & norm on solution space; $\|f\|_{\mathcal{H}}^2 =\ip{
 \pr{mcdn-fcycle} & \pageref{ps:mcdn-fcycle} & MCD F-cycle (nested iteration); calls \pr{mcdn-vcycle} \\
 \pr{mcdn-vcycle} & \pageref{ps:mcdn-vcycle} & FAS-type nonlinear MCD V-cycle \\
 \pr{mcdn-solver} & \pageref{ps:mcdn-solver} & MCD solver; calls \pr{mcdn-vcycle} \\
-\pr{pngs} & \pageref{ps:pngs} & projected nonlinear (Newton) GS iteration, a smoother \\ % final \\ required
+\pr{pnjacobi} & \pageref{ps:pnjacobi} & projected nonlinear (Newton) Jacobi iteration, a smoother \\
+\pr{pngs} & \pageref{ps:pngs} & projected nonlinear (Newton) GS iteration, a smoother \\
+\pr{pointupdate} & \pageref{ps:pointupdate} & pointwise Newton step logic for a degenerate nonlinear operator \\ % final \\ required
 \bottomrule
 \caption{Pseudocodes for the SIA obstacle problem (section \ref{sec:sia}).}
 \label{tab:pseudocodessia}
