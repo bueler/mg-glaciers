@@ -1,6 +1,6 @@
-'''Module for PNGSPLap and PNJacobiPLap classes, a derived class from
-SmootherObstacleProblem.  Provides smoothers and exact solutions
-for the p-Laplacian obstacle problem.'''
+'''Module for PNGSPLap and PNJacobiPLap classes, a derived class of
+SmootherObstacleProblem.  Provides smoothers and exact solutions for the
+p-Laplacian obstacle problem.'''
 
 __all__ = ['PNGSPLap', 'PNJacobiPLap']
 
@@ -70,7 +70,7 @@ class PNGSPLap(SmootherObstacleProblem):
         '''Update y[p] from computed (preliminary) Newton step d.  Ensures
         admissibility and applies Newton-step limitation logic.'''
         d = max(d, phi - y)               # require admissible: y >= phi
-        d = min(d, self.newtonupwardmax)
+        d = min(d, self.newtonupwardmax)  # don't allow large upward steps
         y += self.args.omega * d          # take step
         return y
 
