@@ -1,15 +1,16 @@
-'''Module for PNGSSIA and PNJacobiSIA classes, a derived class from
-SmootherObstacleProblem.  Provides smoothers and exact solutions
-for the shallow ice approximation (SIA) ice flow model.'''
+'''Module for PNsmootherSIA class, a derived class from
+SmootherObstacleProblem.  Provides GS and Jacobi smoothers, and an exact
+solution, for the shallow ice approximation (SIA) ice flow model.'''
 
-__all__ = ['PNGSSIA', 'PNJacobiSIA']
+__all__ = ['PNsmootherSIA']
 
 import numpy as np
 from smoothers.base import SmootherObstacleProblem
 
-class PNGSSIA(SmootherObstacleProblem):
-    '''Class for the projected nonlinear Gauss-Seidel (PNGS) algorithm as a
-    smoother for the nonlinear SIA obstacle problem for y in K = {v >= phi}:
+class PNsmootherSIA(SmootherObstacleProblem):
+    '''Class for the projected nonlinear Gauss-Seidel (PNGS) and Jacobi
+    (PNJacobi) algorithms as smoothers for the nonlinear SIA obstacle problem
+    for y in K = {v >= phi}:
        N(g + y)[v-y] >= ell[v-y]
     for all v in K, where
        N(w)[v] = int_0^L Gamma (w - b + eps)^{p+1} |w'|^{p-2} w' v' dx
@@ -20,33 +21,28 @@ class PNGSSIA(SmootherObstacleProblem):
     Parameters n and Gamma are set at object construction.  Note p = n+1
     in the p-Laplacian interpretation.
 
-    The PNGS smoother uses a fixed number of Newton iterations (-newtonits) at
-    each point.  The Newton iteration uses two other parameters:
-      * newtonupwardmax:  when mass balance is positive at an ice-free location
-        then the Newton step is formally infinite, so we limit the step.
+    The smoother uses a fixed number of Newton iterations (-newtonits) at
+    each point.  The Newton iteration uses two other parameters; see
+    pointupdate().
 
     This class can also compute the "Bueler profile" exact solution.'''
 
-    def __init__(self, args, admissibleeps=1.0e-10,
-                 g=9.81, rhoi=910.0, nglen=3.0, A=1.0e-16/31556926.0):
+    def __init__(self, args, admissibleeps=1.0e-10):
         super().__init__(args, admissibleeps=admissibleeps)
-        self.args = args
-        self.secpera = 31556926.0   # seconds per year
-        self.g = g                  # m s-2
-        self.rhoi = rhoi            # kg m-3
-        self.nglen = nglen
-        self.A = A                  # Pa-3 s-1
+        self.secpera = 31556926.0        # seconds per year
+        self.g = 9.81                    # m s-2
+        self.rhoi = 910.0                # kg m-3
+        self.nglen = 3.0
+        self.A = 1.0e-16 / self.secpera  # Pa-3 s-1
         # convenience constant
         self.Gamma = 2.0 * self.A * (self.rhoi * self.g)**self.nglen \
                      / (self.nglen + 2.0)
         # important powers
         self.pp = self.nglen + 1.0                      # = 4; p-Laplacian
         self.rr = (2.0 * self.nglen + 2.0) / self.nglen # = 8/3; error reporting
-        # step surface upward this much if Jacobian is zero and the
-        #   source term corresponds to accumulation at the point
-        self.daccumulation = 10.0   # m
-        # parameter in PNGS and PNJacobi smoothers
-        self.newtonupwardmax = 5000.0 # never move surface up by more than this
+        # parameters used in pointupdate()
+        self.caccum = 10.0          # m
+        self.cupmax = 5000.0        # m; never move surface up by more than this
         # initialize with a pile of ice equal this duration of accumulation
         self.magicinitage = 3000.0 * self.secpera
         # parameters for Bueler profile (exact solution) matching Bueler (2016);
@@ -55,20 +51,22 @@ class PNGSSIA(SmootherObstacleProblem):
         self.buelerH0 = 3600.0      # center thickness
         self.buelerxc = 900.0e3     # x coord of center in [0,xmax]=[0,1800] km
 
-    def _pointN(self, h, b, w, p):
+    def _pointN(self, mesh, w, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for
         given iterate w(x) in V^j, at one hat function psi_p^j:
            N(w)[psi_p^j] = int_I Gamma (w(x) - b(x) + eps)^{p+1}
                                        * |w'(x)|^{p-2} w'(x) (psi_p^j)'(x) dx
         where I = [x_p - h, x_p + h].  Approximates using the trapezoid rule.
         Also return dNdw, the derivative of N(w)[psi_p^j] with respect to w[p].'''
+        assert hasattr(mesh, 'h')
+        assert hasattr(mesh, 'b')
         eps = self.args.siaeps
-        tau = (w[p-1:p+2] - b[p-1:p+2] + eps)**(self.pp + 1.0)
-        dtau = (self.pp + 1.0) * (w[p] - b[p] + eps)**self.pp
+        tau = (w[p-1:p+2] - mesh.b[p-1:p+2] + eps)**(self.pp + 1.0)
+        dtau = (self.pp + 1.0) * (w[p] - mesh.b[p] + eps)**self.pp
         ds = w[p:p+2] - w[p-1:p+1]
         mu = abs(ds)**(self.pp - 2.0) * ds
         dmu = (self.pp - 1.0) * abs(ds)**(self.pp - 2.0)
-        C = self.Gamma / (2.0 * h**(self.pp-1.0))
+        C = self.Gamma / (2.0 * mesh.h**(self.pp-1.0))
         N = C * ( (tau[0] + tau[1]) * mu[0] - (tau[1] + tau[2]) * mu[1] )
         dNdw = C * ( dtau * (mu[0] - mu[1]) + \
                      (tau[0] + tau[1]) * dmu[0] + (tau[1] + tau[2]) * dmu[1] )
@@ -78,7 +76,7 @@ class PNGSSIA(SmootherObstacleProblem):
         '''Apply nonlinear operator N to w to get N(w) in (V^j)'.'''
         Nw = mesh.zeros()
         for p in self._sweepindices(mesh, forward=True):
-            Nw[p], _ = self._pointN(mesh.h, mesh.b, w, p)
+            Nw[p], _ = self._pointN(mesh, w, p)
         return Nw
 
     def residual(self, mesh, w, ell):
@@ -86,51 +84,82 @@ class PNGSSIA(SmootherObstacleProblem):
         ell is a source term in V^j'.'''
         mesh.checklen(w)
         mesh.checklen(ell)
-        assert hasattr(mesh, 'b')
         F = mesh.zeros()
         for p in self._sweepindices(mesh, forward=True):
-            F[p], _ = self._pointN(mesh.h, mesh.b, w, p)
+            F[p], _ = self._pointN(mesh, w, p)
             F[p] -= ell[p]
         return F
 
-    def _updatey(self, y, d, phi):
-        '''Update y[p] from computed (preliminary) Newton step d.  Ensures
-        admissibility and applies Newton-step limitation logic.'''
-        d = max(d, phi - y)                 # require admissible: y >= phi
-        d = min(d, self.newtonupwardmax)    # limit huge upward steps
-        y += self.args.omega * d            # take step
-        return y
+    def pointupdate(self, r, delta, yp, phip, ellp):
+        '''Compute update value c, for y[p] += c, from pointwise residual
+        r = rho(0) and pointwise Jacobian delta = rho'(0).'''
+        if delta == 0.0:
+            if ellp > 0.0 and yp == 0.0:
+                return self.caccum    # move upward if accumulation at ice-free
+            else:
+                return 0.0            # no information on how to move
+        else:
+            c = - r / delta           # pure Newton step
+            c = max(c, phip - yp)     # ensure admissibility: y >= phi
+            c = min(c, self.cupmax)   # limit large upward steps
+            return c
 
     def smoothersweep(self, mesh, y, ell, phi, forward=True):
+        '''Do either in-place GS or Jacobi smoothing.'''
+        mesh.checklen(y)
+        mesh.checklen(ell)
+        mesh.checklen(phi)
+        self._checkrepairadmissible(mesh, y, phi)
+        assert hasattr(mesh, 'g')
+        mesh.checklen(mesh.g)
+        if self.args.jacobi:
+            self.jacobisweep(mesh, y, ell, phi, forward=forward)
+        else:
+            self.gssweep(mesh, y, ell, phi, forward=forward)
+        mesh.WU += self.args.newtonits
+
+    def gssweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place projected nonlinear Gauss-Seidel (PNGS) sweep over the
         interior points p=1,...,m, for the SIA problem on the iterate w = g + y.
         Here g = mesh.g is fixed in the iteration and y varies, and the
         constraint is y >= phi.  Note that mesh.g and mesh.b (bed elevation)
         must be set before calling this procedure.  Does a fixed number of
         steps of the Newton method (newtonits).'''
-        mesh.checklen(y)
-        mesh.checklen(ell)
-        mesh.checklen(phi)
-        self._checkrepairadmissible(mesh, y, phi)
-        assert hasattr(mesh, 'b')
-        mesh.checklen(mesh.b)
-        assert hasattr(mesh, 'g')
-        mesh.checklen(mesh.g)
         jaczeros = mesh.zeros()
+        # update each y[p] value
         for p in self._sweepindices(mesh, forward=forward):
             for k in range(self.args.newtonits):
-                N, Jac = self._pointN(mesh.h, mesh.b, mesh.g + y, p)
-                if Jac == 0.0:
+                r, delta = self._pointN(mesh, mesh.g + y, p)
+                if delta == 0.0:
                     jaczeros[p] = 1.0
-                    d = self.daccumulation if ell[p] > 0.0 else 0.0
-                else:
-                    d = - (N - ell[p]) / Jac
-                if d == 0.0:
+                r -= ell[p]
+                c = self.pointupdate(r, delta, y[p], phi[p], ell[p])
+                if c == 0.0:
                     break
-                y[p] = self._updatey(y[p], d, phi[p])
-        mesh.WU += self.args.newtonits
+                y[p] += self.args.omega * c
         if self.args.showsingular and any(jaczeros != 0.0):
             self.showsingular(jaczeros)
+
+    def jacobisweep(self, mesh, y, ell, phi, forward=True):
+        '''Do in-place projected nonlinear Jacobi sweep over the interior
+        points p=1,...,m, for the SIA problem.  Compare PNGSSIA.smoothersweep().
+        Underrelaxation is expected; try omega = 0.5.'''
+        # compute residual and Jacobian at each point
+        r, delta = mesh.zeros(), mesh.zeros()
+        for p in self._sweepindices(mesh, forward=True):
+            r[p], delta[p] = self._pointN(mesh, mesh.g + y, p)
+            r[p] -= ell[p]
+        # update each y[p] value
+        for p in self._sweepindices(mesh, forward=forward):
+            for k in range(self.args.newtonits):
+                c = self.pointupdate(r[p], delta[p], y[p], phi[p], ell[p])
+                if c == 0.0:
+                    break
+                y[p] += self.args.omega * c
+        if self.args.showsingular:
+            jaczeros = np.array(delta == 0.0)
+            if any(jaczeros != 0.0):
+                self.showsingular(jaczeros)
 
     def phi(self, x):
         '''For now we have a flat bed.'''
@@ -211,39 +240,3 @@ class PNGSSIA(SmootherObstacleProblem):
         plt.xticks([0.0,300.0,600.0,900.0,1200.0,1500.0,1800.0],fontsize=12.0)
         plt.yticks(fontsize=12.0)
         plt.savefig('siadatafigure.pdf', bbox_inches='tight')
-
-
-class PNJacobiSIA(PNGSSIA):
-
-    def smoothersweep(self, mesh, y, ell, phi, forward=True):
-        '''Do in-place projected nonlinear Jacobi sweep over the interior
-        points p=1,...,m, for the SIA problem.  Compare PNGSSIA.smoothersweep().
-        Underrelaxation is expected; try omega = 0.5.'''
-        mesh.checklen(y)
-        mesh.checklen(ell)
-        mesh.checklen(phi)
-        self._checkrepairadmissible(mesh, y, phi)
-        assert hasattr(mesh, 'b')
-        mesh.checklen(mesh.b)
-        assert hasattr(mesh, 'g')
-        mesh.checklen(mesh.g)
-        # compute residual and Jacobian at each point
-        res, Jac = mesh.zeros(), mesh.zeros()
-        for p in self._sweepindices(mesh, forward=True):
-            res[p], Jac[p] = self._pointN(mesh.h, mesh.b, mesh.g + y, p)
-            res[p] -= ell[p]
-        # update each w[p] value
-        for p in self._sweepindices(mesh, forward=forward):
-            for k in range(self.args.newtonits):
-                if Jac[p] == 0.0:
-                    d = self.daccumulation if ell[p] > 0.0 else 0.0
-                else:
-                    d = - res[p] / Jac[p]
-                if d == 0.0:
-                    break
-                y[p] = self._updatey(y[p], d, phi[p])
-        mesh.WU += self.args.newtonits
-        if self.args.showsingular:
-            jaczeros = np.array(Jac == 0.0)
-            if any(jaczeros != 0.0):
-                self.showsingular(jaczeros)

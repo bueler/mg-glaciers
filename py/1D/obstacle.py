@@ -10,8 +10,8 @@ from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
 from smoothers.poisson import PGSPoisson, PJacobiPoisson
-from smoothers.plap import PNGSPLap, PNJacobiPLap
-from smoothers.sia import PNGSSIA, PNJacobiSIA
+from smoothers.plap import PNsmootherPLap
+from smoothers.sia import PNsmootherSIA
 
 from mcdl import mcdlfcycle, mcdlsolver
 from mcdn import mcdnfcycle, mcdnsolver
@@ -188,11 +188,11 @@ for j in range(levels):
 
 # set up obstacle problem with smoother (class SmootherObstacleProblem)
 if args.problem == 'poisson':
-    obsprob = PJacobiPoisson(args) if args.jacobi else PGSPoisson(args)
+    obsprob = PJacobiPoisson(args) if args.jacobi else PGSPoisson(args)  # FIXME make PsmootherPoisson, and factor smoothersweep() into two
 elif args.problem == 'plap':
-    obsprob = PNJacobiPLap(args) if args.jacobi else PNGSPLap(args)
+    obsprob = PNsmootherPLap(args)
 elif args.problem == 'sia':
-    obsprob = PNJacobiSIA(args) if args.jacobi else PNGSSIA(args)
+    obsprob = PNsmootherSIA(args)
 
 # more usage help
 if args.monitorerr and not obsprob.exact_available():

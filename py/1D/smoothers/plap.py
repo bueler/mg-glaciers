@@ -1,13 +1,13 @@
-'''Module for PNGSPLap and PNJacobiPLap classes, a derived class of
-SmootherObstacleProblem.  Provides smoothers and exact solutions for the
-p-Laplacian obstacle problem.'''
+'''Module for PNsmootherPLap classes, a derived class of PNsmootherSIA.
+Provides GS and Jacobi smoothers, and an exact solution, for the p-Laplacian
+obstacle problem.'''
 
-__all__ = ['PNGSPLap', 'PNJacobiPLap']
+__all__ = ['PNsmootherPLap']
 
 import numpy as np
-from smoothers.base import SmootherObstacleProblem
+from smoothers.sia import PNsmootherSIA
 
-class PNGSPLap(SmootherObstacleProblem):
+class PNsmootherPLap(PNsmootherSIA):
     '''Smoother for the p-Laplacian obstacle problem with p=4:
         - (|u'(x)|^2 u'(x))' = f(x),  u(x) >= phi(x)
     with u(0)=u(1)=0.
@@ -28,79 +28,35 @@ class PNGSPLap(SmootherObstacleProblem):
     Given a, the first equation says 0.5 a (1 - a) + C = 0.25 sin(3 pi a)
     so C = 0.18318033594477562.  See exact() and exactfigure().
 
-    In other ways this example is just a simplification of the SIA smoothers
-    PNGSSIA and PNJacobiSIA.'''
+    In other ways just a simplification of the SIA smoother PNsmootherSIA.'''
 
     def __init__(self, args, admissibleeps=1.0e-10):
         super().__init__(args, admissibleeps=admissibleeps)
-        self.args = args
-        # parameters used in PNGS and PNJacobi smoother
-        self.newtonupwardmax = 1.0  # never move surface up by more than this
+        # parameter used in pointupdate()
+        self.cupmax = 1.0  # never move surface up by more than this
 
-    def _pointN(self, h, w, p):
+    def _pointN(self, mesh, w, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for
         given iterate w(x) in V^j, at one hat function psi_p^j:
            N(w)[psi_p^j] = int_I |w'(x)|^2 w'(x) (psi_p^j)'(x) dx
         where I = [x_p - h, x_p + h].  Also return dNdw, the derivative
         of N(w)[psi_p^j] with respect to w[p].'''
+        assert hasattr(mesh, 'h')
         dw = w[p:p+2] - w[p-1:p+1]
-        N = (1.0 / h**3) * (dw[0]**3.0 - dw[1]**3.0)
-        dNdw = (3.0 / h**3) * (dw[0]**2.0 + dw[1]**2.0)
+        N = (1.0 / mesh.h**3) * (dw[0]**3.0 - dw[1]**3.0)
+        dNdw = (3.0 / mesh.h**3) * (dw[0]**2.0 + dw[1]**2.0)
         return N, dNdw
 
-    def applyoperator(self, mesh, w):
-        '''Apply nonlinear operator N to w to get N(w) in (V^j)'.'''
-        Nw = mesh.zeros()
-        for p in self._sweepindices(mesh, forward=True):
-            Nw[p], _ = self._pointN(mesh.h, w, p)
-        return Nw
-
-    def residual(self, mesh, w, ell):
-        '''Compute the residual functional for given iterate w.  Note
-        ell is a source term in V^j'.'''
-        mesh.checklen(w)
-        mesh.checklen(ell)
-        F = mesh.zeros()
-        for p in self._sweepindices(mesh, forward=True):
-            F[p], _ = self._pointN(mesh.h, w, p)
-            F[p] -= ell[p]
-        return F
-
-    def _updatey(self, y, d, phi):
-        '''Update y[p] from computed (preliminary) Newton step d.  Ensures
-        admissibility and applies Newton-step limitation logic.'''
-        d = max(d, phi - y)               # require admissible: y >= phi
-        d = min(d, self.newtonupwardmax)  # don't allow large upward steps
-        y += self.args.omega * d          # take step
-        return y
-
-    def smoothersweep(self, mesh, y, ell, phi, forward=True):
-        '''Do in-place projected nonlinear Gauss-Seidel (PNGS) sweep over the
-        interior points p=1,...,m, on the iterate w = g + y.  Here g = mesh.g
-        is fixed in the iteration while y varies; the constraint is y >= phi.
-        Note that mesh.g must be set before calling this procedure.  Does a
-        fixed number of steps of the Newton method (newtonits).'''
-        mesh.checklen(y)
-        mesh.checklen(ell)
-        mesh.checklen(phi)
-        self._checkrepairadmissible(mesh, y, phi)
-        assert hasattr(mesh, 'g')
-        mesh.checklen(mesh.g)
-        jaczeros = mesh.zeros()
-        for p in self._sweepindices(mesh, forward=forward):
-            for k in range(self.args.newtonits):
-                N, Jac = self._pointN(mesh.h, mesh.g + y, p)
-                if Jac == 0.0:
-                    jaczeros[p] = 1.0
-                    d = 0.0
-                else:
-                    d = - (N - ell[p]) / Jac
-                if d == 0.0:
-                    break
-                y[p] = self._updatey(y[p], d, phi[p])
-        mesh.WU += self.args.newtonits
-        if self.args.showsingular and any(jaczeros != 0.0):
-            self.showsingular(jaczeros)
+    def pointupdate(self, r, delta, yp, phip, ellp):
+        '''Compute update value c, for y[p] += c, from pointwise residual
+        r = rho(0) and pointwise Jacobian delta = rho'(0).'''
+        if delta == 0.0:
+            return 0.0                # no information on how to move
+        else:
+            c = - r / delta           # pure Newton step
+            c = max(c, phip - yp)     # ensure admissibility: y >= phi
+            c = min(c, self.cupmax)   # limit large upward steps
+            return c
 
     def source(self, x):
         return 3.0 * (x - 0.5)**2
@@ -109,6 +65,10 @@ class PNGSPLap(SmootherObstacleProblem):
         '''Obstacle.'''
         #return np.maximum(0.0, 0.25 * np.sin(3.0 * np.pi * x))
         return 0.25 * np.sin(3.0 * np.pi * x)
+
+    def initial(self, x):
+        '''Default initial shape.'''
+        return np.maximum(self.phi(x), 0.0)
 
     def exact_available(self):
         return True
@@ -147,35 +107,3 @@ class PNGSPLap(SmootherObstacleProblem):
         plt.legend(fontsize=12.0)
         plt.xlabel('x', fontsize=12.0)
         plt.savefig('plapfigure.pdf', bbox_inches='tight')
-
-
-class PNJacobiPLap(PNGSPLap):
-    '''Jacobi smoother derived class of PNGSPLap.'''
-
-    def smoothersweep(self, mesh, y, ell, phi, forward=True):
-        '''Do in-place projected nonlinear Jacobi sweep.'''
-        mesh.checklen(y)
-        mesh.checklen(ell)
-        mesh.checklen(phi)
-        self._checkrepairadmissible(mesh, y, phi)
-        assert hasattr(mesh, 'g')
-        mesh.checklen(mesh.g)
-        # compute residual and Jacobian at each point
-        res, Jac = mesh.zeros(), mesh.zeros()
-        for p in self._sweepindices(mesh, forward=True):
-            res[p], Jac[p] = self._pointN(mesh.h, mesh.g + y, p)
-            res[p] -= ell[p]
-        for p in self._sweepindices(mesh, forward=forward):
-            for k in range(self.args.newtonits):
-                if Jac[p] == 0.0:
-                    d = 0.0
-                else:
-                    d = - res[p] / Jac[p]
-                if d == 0.0:
-                    break
-                y[p] = self._updatey(y[p], d, phi[p])
-        mesh.WU += self.args.newtonits
-        if self.args.showsingular:
-            jaczeros = np.array(Jac == 0.0)
-            if any(jaczeros != 0.0):
-                self.showsingular(jaczeros)
