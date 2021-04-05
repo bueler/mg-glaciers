@@ -9,10 +9,10 @@ mtest:
 	python3 -m pytest
 
 run_1:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -poissonparabolay -3.0 -J 1 -sweepsonly -symmetric" 1 1 "poisson traditional [unconstrained] PGS sweeps symmetric"
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -poissonparabolay -3.0 -J 1 -sweepsonly -symmetric" 1 1 "poisson traditional PGS sweeps"
 
 run_2:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -J 4 -jcoarse 3 -cyclemax 2 -down 1 -up 0 -monitorerr -mgview" 1 2 "poisson traditional V(1,0) cycles monitor error and multigrid"
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -J 4 -jcoarse 3 -cyclemax 2 -down 1 -up 0 -monitorerr -mgview" 1 2 "poisson traditional V(1,0) cycles monitor error"
 
 run_3:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -J 4" 1 3 "poisson traditional V(0,1) cycles"
@@ -27,7 +27,7 @@ run_6:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jacobi -omega 0.85 -monitor -irtol 1.0e-2" 1 6 "poisson icelike V(0,1) cycles Jacobi smoother"
 
 run_7:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 3 -down 1 -up 1 -monitorerr -diagnostics -o test7.png" 1 7 "poisson icelike V(1,1) cycles generate diagnostics"
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 3 -down 1 -up 1 -monitorerr -diagnostics -o test7.png" 1 7 "poisson icelike V(1,1) cycles diagnostics"
 
 run_8:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase pde2 -J 3" 1 8 "poisson pde2 [unconstrained] V(1,0) cycles"
@@ -36,7 +36,7 @@ run_9:
 	-@./../testit.sh obstacle.py "-problem plap -symmetric -down 1 -monitor" 1 9 "plap PNGS V(1,1) cycles symmetric"
 
 run_10:
-	-@./../testit.sh obstacle.py "-problem plap -symmetric -down 1 -up 2 -monitor -ni -nicycles 2 -jacobi -omega 0.5" 1 10 "plap PNJacobi F-cycle using 2 V(1,2) cycles symmetric [WILD]"
+	-@./../testit.sh obstacle.py "-problem plap -symmetric -down 1 -up 2 -monitor -ni -nicycles 2 -jacobi -omega 0.5" 1 10 "plap PNJacobi F-cycle using 2 V(1,2) cycles"
 
 run_11:
 	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -showsingular -J 4 -cyclemax 6 -monitor" 1 11 "sia PNGS sweeps show singular points"
