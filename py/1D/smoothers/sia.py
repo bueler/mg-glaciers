@@ -20,13 +20,10 @@ class PNGSSIA(SmootherObstacleProblem):
     Parameters n and Gamma are set at object construction.  Note p = n+1
     in the p-Laplacian interpretation.
 
-    The PNGS smoother sweep uses a fixed number of Newton iterations at each
-    point.  This involves three parameters:
-      * newtonits:       number of iterations
-      * newtondmax:      when mass balance is positive at an ice-free
-                         location then the Newton step is formally
-                         infinite, so we limit the step.
-      * newtondtol:      stop if Newton step is this small.
+    The PNGS smoother uses a fixed number of Newton iterations (-newtonits) at
+    each point.  The Newton iteration uses two other parameters:
+      * newtonupwardmax:  when mass balance is positive at an ice-free location
+        then the Newton step is formally infinite, so we limit the step.
 
     This class can also compute the "Bueler profile" exact solution.'''
 
@@ -45,22 +42,18 @@ class PNGSSIA(SmootherObstacleProblem):
         # important powers
         self.pp = self.nglen + 1.0                      # = 4; p-Laplacian
         self.rr = (2.0 * self.nglen + 2.0) / self.nglen # = 8/3; error reporting
-        # regularization thickness
-        self.eps = 0.0              # m
         # step surface upward this much if Jacobian is zero and the
         #   source term corresponds to accumulation at the point
         self.daccumulation = 10.0   # m
-        # Newton's method parameters (used in PNGS and PNJacobi smoothers)
-        self.newtonits = 2          # number of Newton its
-        self.newtondtol = 1.0e-8    # don't continue Newton if d is this small
-        self.newtondmax = 5000.0    # never move surface by more than this amount
+        # parameter in PNGS and PNJacobi smoothers
+        self.newtonupwardmax = 5000.0 # never move surface up by more than this
         # initialize with a pile of ice equal this duration of accumulation
-        self.magicinitializationage = 3000.0 * self.secpera
+        self.magicinitage = 3000.0 * self.secpera
         # parameters for Bueler profile (exact solution) matching Bueler (2016);
         #   see also van der Veen (2013) section 5.3
         self.buelerL = 750.0e3      # half-width of sheet
         self.buelerH0 = 3600.0      # center thickness
-        self.buelerxc = 900.0e3     # x coord of center in [0,xmax] = [0,1800] km
+        self.buelerxc = 900.0e3     # x coord of center in [0,xmax]=[0,1800] km
 
     def _pointN(self, h, b, w, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for
@@ -69,8 +62,9 @@ class PNGSSIA(SmootherObstacleProblem):
                                        * |w'(x)|^{p-2} w'(x) (psi_p^j)'(x) dx
         where I = [x_p - h, x_p + h].  Approximates using the trapezoid rule.
         Also return dNdw, the derivative of N(w)[psi_p^j] with respect to w[p].'''
-        tau = (w[p-1:p+2] - b[p-1:p+2] + self.eps)**(self.pp + 1.0)
-        dtau = (self.pp + 1.0) * (w[p] - b[p] + self.eps)**self.pp
+        eps = self.args.siaeps
+        tau = (w[p-1:p+2] - b[p-1:p+2] + eps)**(self.pp + 1.0)
+        dtau = (self.pp + 1.0) * (w[p] - b[p] + eps)**self.pp
         ds = w[p:p+2] - w[p-1:p+1]
         mu = abs(ds)**(self.pp - 2.0) * ds
         dmu = (self.pp - 1.0) * abs(ds)**(self.pp - 2.0)
@@ -102,11 +96,10 @@ class PNGSSIA(SmootherObstacleProblem):
     def _updatey(self, y, d, phi):
         '''Update y[p] from computed (preliminary) Newton step d.  Ensures
         admissibility and applies Newton-step limitation logic.'''
-        d = max(d, phi - y)                           # require admissible: y >= phi
-        d = np.sign(d) * min(abs(d), self.newtondmax) # limit huge steps
-        y += self.args.omega * d                      # take step
-        stopnow = (abs(self.args.omega * d) < self.newtondtol) # tiny step criterion
-        return y, stopnow
+        d = max(d, phi - y)                 # require admissible: y >= phi
+        d = min(d, self.newtonupwardmax)    # limit huge upward steps
+        y += self.args.omega * d            # take step
+        return y
 
     def smoothersweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place projected nonlinear Gauss-Seidel (PNGS) sweep over the
@@ -125,17 +118,17 @@ class PNGSSIA(SmootherObstacleProblem):
         mesh.checklen(mesh.g)
         jaczeros = mesh.zeros()
         for p in self._sweepindices(mesh, forward=forward):
-            for k in range(self.newtonits):
+            for k in range(self.args.newtonits):
                 N, Jac = self._pointN(mesh.h, mesh.b, mesh.g + y, p)
                 if Jac == 0.0:
                     jaczeros[p] = 1.0
                     d = self.daccumulation if ell[p] > 0.0 else 0.0
                 else:
                     d = - (N - ell[p]) / Jac
-                y[p], stopnow = self._updatey(y[p], d, phi[p])
-                if stopnow:
+                if d == 0.0:
                     break
-        mesh.WU += self.newtonits  # overcounts WU if many points are active
+                y[p] = self._updatey(y[p], d, phi[p])
+        mesh.WU += self.args.newtonits
         if self.args.showsingular and any(jaczeros != 0.0):
             self.showsingular(jaczeros)
 
@@ -199,7 +192,7 @@ class PNGSSIA(SmootherObstacleProblem):
     def initial(self, x):
         '''Default initial shape is a stack of ice where surface mass
         balance is positive.'''
-        return self.magicinitializationage * np.maximum(0.0,self.source(x))
+        return self.magicinitage * np.maximum(0.0,self.source(x))
 
     def datafigure(self, mesh):
         '''Show data phi, source, exact in a basic figure.'''
@@ -241,15 +234,15 @@ class PNJacobiSIA(PNGSSIA):
             res[p] -= ell[p]
         # update each w[p] value
         for p in self._sweepindices(mesh, forward=forward):
-            for k in range(self.newtonits):
+            for k in range(self.args.newtonits):
                 if Jac[p] == 0.0:
                     d = self.daccumulation if ell[p] > 0.0 else 0.0
                 else:
                     d = - res[p] / Jac[p]
-                y[p], stopnow = self._updatey(y[p], d, phi[p])
-                if stopnow:
+                if d == 0.0:
                     break
-        mesh.WU += self.newtonits  # overcount WU if many points are active
+                y[p] = self._updatey(y[p], d, phi[p])
+        mesh.WU += self.args.newtonits
         if self.args.showsingular:
             jaczeros = np.array(Jac == 0.0)
             if any(jaczeros != 0.0):

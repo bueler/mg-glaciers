@@ -4,13 +4,6 @@ for the p-Laplacian obstacle problem.'''
 
 __all__ = ['PNGSPLap', 'PNJacobiPLap']
 
-# apparently good settings:
-# $ for JJ in 1 2 3 4 5 6 7 8 9 10; do ./obstacle.py -problem plap -J $JJ -irtol 1.0e-8 -cyclemax 1000 -symmetric -down 1 -ni; done
-
-# issues:
-#   * PNJacobiPLap has wild behavior
-#   * this is unregularized p-Laplacian ... consider + eps?
-
 import numpy as np
 from smoothers.base import SmootherObstacleProblem
 
@@ -41,9 +34,8 @@ class PNGSPLap(SmootherObstacleProblem):
     def __init__(self, args, admissibleeps=1.0e-10):
         super().__init__(args, admissibleeps=admissibleeps)
         self.args = args
-        # Newton's method parameters (used in PNGS smoother)
-        self.newtonits = 2          # number of Newton its
-        self.newtondtol = 1.0e-12   # don't continue Newton if d is this small
+        # parameters used in PNGS and PNJacobi smoother
+        self.newtonupwardmax = 1.0  # never move surface up by more than this
 
     def _pointN(self, h, w, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for
@@ -77,12 +69,10 @@ class PNGSPLap(SmootherObstacleProblem):
     def _updatey(self, y, d, phi):
         '''Update y[p] from computed (preliminary) Newton step d.  Ensures
         admissibility and applies Newton-step limitation logic.'''
-        d = max(d, phi - y)                           # require admissible: y >= phi
-        if d > 1.0:
-            d = 1.0
-        y += self.args.omega * d                      # take step
-        stopnow = (abs(self.args.omega * d) < self.newtondtol) # tiny step criterion
-        return y, stopnow
+        d = max(d, phi - y)               # require admissible: y >= phi
+        d = min(d, self.newtonupwardmax)
+        y += self.args.omega * d          # take step
+        return y
 
     def smoothersweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place projected nonlinear Gauss-Seidel (PNGS) sweep over the
@@ -98,17 +88,17 @@ class PNGSPLap(SmootherObstacleProblem):
         mesh.checklen(mesh.g)
         jaczeros = mesh.zeros()
         for p in self._sweepindices(mesh, forward=forward):
-            for k in range(self.newtonits):
+            for k in range(self.args.newtonits):
                 N, Jac = self._pointN(mesh.h, mesh.g + y, p)
                 if Jac == 0.0:
                     jaczeros[p] = 1.0
                     d = 0.0
                 else:
                     d = - (N - ell[p]) / Jac
-                y[p], stopnow = self._updatey(y[p], d, phi[p])
-                if stopnow:
+                if d == 0.0:
                     break
-        mesh.WU += self.newtonits  # overcounts WU if many points are active
+                y[p] = self._updatey(y[p], d, phi[p])
+        mesh.WU += self.args.newtonits
         if self.args.showsingular and any(jaczeros != 0.0):
             self.showsingular(jaczeros)
 
@@ -176,15 +166,15 @@ class PNJacobiPLap(PNGSPLap):
             res[p], Jac[p] = self._pointN(mesh.h, mesh.g + y, p)
             res[p] -= ell[p]
         for p in self._sweepindices(mesh, forward=forward):
-            for k in range(self.newtonits):
+            for k in range(self.args.newtonits):
                 if Jac[p] == 0.0:
                     d = 0.0
                 else:
                     d = - res[p] / Jac[p]
-                y[p], stopnow = self._updatey(y[p], d, phi[p])
-                if stopnow:
+                if d == 0.0:
                     break
-        mesh.WU += self.newtonits  # overcounts WU if many points are active
+                y[p] = self._updatey(y[p], d, phi[p])
+        mesh.WU += self.args.newtonits
         if self.args.showsingular:
             jaczeros = np.array(Jac == 0.0)
             if any(jaczeros != 0.0):

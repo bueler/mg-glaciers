@@ -104,6 +104,8 @@ parser.add_argument('-monitor', action='store_true', default=False,
                     help='print the inactive-set residual norm after each cycle')
 parser.add_argument('-monitorerr', action='store_true', default=False,
                     help='print the error (if available) after each cycle')
+parser.add_argument('-newtonits', type=int, default=2, metavar='N',
+                    help='Newton iterations in nonlinear smoothers (default N=1)')
 parser.add_argument('-ni', action='store_true', default=False,
                     help='use nested iteration (F-cycle) for initial iterates')
 parser.add_argument('-nicascadic', action='store_true', default=False,
@@ -139,7 +141,10 @@ parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-showsingular', action='store_true', default=False,
                     help='on each sweep on each level, show where the point Jacobian was singular')
-parser.add_argument('-siaintervallength', type=float, default=1800.0e3, metavar='L',
+parser.add_argument('-siaeps', type=float, default=0.0, metavar='X',
+                    help='regularizing thickness in SIA smoother (default 0 m)')
+parser.add_argument('-siaintervallength', type=float, default=1800.0e3,
+                    metavar='L',
                     help='solve SIA on [0,L] (default L=1800 km)')
 parser.add_argument('-sweepsonly', action='store_true', default=False,
                     help='do smoother sweeps as cycles, instead of multilevel')
