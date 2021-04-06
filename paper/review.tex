@@ -123,11 +123,13 @@ A brief historical summary of the SIA problem may be helpful.  The model was fir
 \end{equation}
 with Dirichlet boundary conditions $u(0)=u(1)=0$, using a finite element discretization and a multigrid method.  The data $\alpha(x)$ and $f(x)$ are assumed to be sufficiently well-behaved for the computations which follow, and we assume $\alpha(x)$ is bounded and positive so the problem is elliptic \cite{Evans2010}: $0 < c_1 \le \alpha(x) \le c_2$.  Over the course of the next three sections, this simple problem will evolve into a realistic model for glacier geometry.
 
-Our numerical approximation of \eqref{eq:poisson}, and of all differential equations in sections \ref{sec:subspace}--\ref{sec:sia}, uses a mesh of $m$ interior \emph{nodes} (points) $x_p$ on $(0,1)$.  The $m+1$ intervals between the nodes are the \emph{elements}.  The numerical solution $u^h(x)$ is then a linear combination of the piecewise-linear \emph{hat functions} $\psi_p(x)$, shown in Figure \ref{fig:finehats}, one for each interior node:
+Our numerical approximation of \eqref{eq:poisson} uses a mesh of $m$ interior \emph{nodes} (points) $x_p$ on $(0,1)$.  The $m+1$ intervals between the nodes are the \emph{elements}.  The numerical solution $u^h(x)$ is a linear combination of the piecewise-linear \emph{hat functions} $\psi_p(x)$, shown in Figure \ref{fig:finehats}, one for each interior node:
 \begin{equation}
 u^h(x) = \sum_{p=1}^m u_p \psi_p(x). \label{eq:trialsolution}
 \end{equation}
-Each hat function $\psi_p(x)$ is continuous on $[0,1]$, linear on each element, and satisfies $\psi_p(x_q) = \delta_{pq}$.  The set $\{\psi_p(x)\}_{p=1}^m$ is a \emph{nodal basis} of the space $\mathcal{V}^h$ of continuous and piecewise-linear functions, because the coefficients equal the function values, i.e.~$u_p=u^h(x_p)$, and in a computer program these coefficients will be formed into a (column) vector $\bu=\{u_p\}$ in $\RR^m$.  Note that the derivative of $u^h(x)$ is well-defined on the elements, thus almost everywhere, but not at the nodes.
+Each hat function $\psi_p(x)$ is continuous on $[0,1]$, linear on each element, and satisfies $\psi_p(x_q) = \delta_{pq}$.  Note that the derivative of $u^h(x)$ is well-defined on the elements, thus almost everywhere, but not at the nodes.
+
+Let $\mathcal{V}^h$ be the space of continuous and piecewise-linear functions.  The set $\{\psi_p(x)\}_{p=1}^m$ is a \emph{nodal basis} of $\mathcal{V}^h$ because the coefficients equal the function values, i.e.~$u_p=u^h(x_p)$.  In a computer program these coefficients will be formed into a (column) vector $\bu=\{u_p\}$ in $\RR^m$.
 
 \begin{figure}
 \includegraphics[width=0.65\textwidth]{genfigs/finehats.pdf}
@@ -135,9 +137,9 @@ Each hat function $\psi_p(x)$ is continuous on $[0,1]$, linear on each element, 
 \label{fig:finehats}
 \end{figure}
 
-As usual in numerical differential equations, we are interested in the fine-mesh limit where $m$ is large.  However, what is the need for a high-resolution mesh, i.e.~a large value of $m$ and small spacing between the nodes $x_p$?  For an ice sheet model, the need is obvious: a high-resolution mesh can capture realistically-bumpy bed topography and/or climatic mass-balance with large, local spatial variations.  These inputs roughly correspond in problem \eqref{eq:poisson} to variations in the coefficient function $\alpha(x)$ and the source function $f(x)$, respectively.  That is, we will need the mesh to be high-resolution so as to capture the fine scales in these model input data.  In addition, as address in sections \ref{sec:obstacle}--\ref{sec:stokes}, a fine mesh will allow precise modeling of glacier extent and the location of glacier margins.
+As usual for numerical solutions of differential equations, we are interested in the fine-mesh limit where $m$ is large.  However, what is the need for a high-resolution mesh in practice, i.e.~a large value of $m$ and small spacing between the nodes $x_p$?  For an ice sheet model, the need is obvious: a high-resolution mesh can capture realistically-bumpy bed topography and/or spatially-varying climatic mass-balance with large, local variations.  These inputs roughly correspond in problem \eqref{eq:poisson} to variations in the coefficient function $\alpha(x)$ and the source function $f(x)$, respectively.  That is, we want a high-resolution mesh to capture the fine scales in the model input data.  In addition, as address in sections \ref{sec:obstacle}--\ref{sec:stokes}, a fine mesh will allow precise modeling of glacier extent and glacier margin location.
 
-Our application of multigrid ideas to glacier problems will use finite element (FE) concepts, and therefore we must rephrase \eqref{eq:poisson} into \emph{weak form} using integrals.  (The original equation will then be called the \emph{strong form}.)  To do this we suppose that the solution $u(x)$ comes from a vector space $\mathcal{H}$ of functions which have values of zero at $x=0$ and $x=1$, and which are smooth enough to make sense in the form which follows.  While we will not over-use mathematical language, in fact $\mathcal{H}=H_0^1[0,1]=W_0^{1,2}[0,1]$ is a Hilbert and Sobolev space \cite[for example]{Evans2010} consisting of functions with one square-integrable derivative.  Also, we assume $\alpha(x)$ is at least in $L^\infty[0,1]$ and $f(x)$ at least in $L^2[0,1]$.
+Our application of multigrid ideas to glacier problems will use finite element (FE) concepts, and therefore we must rephrase \eqref{eq:poisson} into \emph{weak form} using integrals.  (The original equation will then be called the \emph{strong form}.)  To do this we suppose that the solution $u(x)$ comes from a vector space $\mathcal{H}$ of functions which have values of zero at $x=0$ and $x=1$, and which are smooth enough to make sense in what follows.  While we will not over-use mathematical language, in fact $\mathcal{H}=H_0^1[0,1]=W_0^{1,2}[0,1]$ is a Hilbert and Sobolev space \cite[for example]{Evans2010} consisting of functions with one square-integrable derivative.  Also, we assume $\alpha(x)$ is in $L^\infty[0,1]$ and $f(x)$ in $L^2[0,1]$.
 
 The weak form arises by multiplying both sides of \eqref{eq:poisson} by a \emph{test function} from $\mathcal{H}$ and integrating by parts so that only first derivatives remain.  Denoting the test function as $v(x)$, integrating on $[0,1]$, and using $v(0)=v(1)=0$, we find
 \begin{equation}
@@ -147,43 +149,43 @@ We now write this equation more compactly as
 \begin{equation}
   a(u,v) = \ip{f}{v}, \label{eq:weakpoisson}
 \end{equation}
-defining each side as in \eqref{eq:weakpoissonearly}; we seek $u$ in $\mathcal{H}$ so that \eqref{eq:weakpoisson} holds for all $v$ in $\mathcal{H}$.  The left side functional $a(u,v)$ is linear in each argument (\emph{bilinear}) while the right side defines a \emph{linear functional} $\ell[v] = \ip{f}{v}$ acting on $v$ in $\mathcal{H}$.  (The convenience of such abstract notation will become clear as we describe multilevel algorithms.)
+defining each side as in \eqref{eq:weakpoissonearly}; we seek $u$ in $\mathcal{H}$ so that \eqref{eq:weakpoisson} holds for all $v$ in $\mathcal{H}$.  The left side $a(u,v)$ is linear in each argument (\emph{bilinear}) while the right side defines a \emph{linear functional} $\ell[v] = \ip{f}{v}$ acting on $v$ in $\mathcal{H}$.  The convenience of such abstract notation will become clearer as we describe multilevel algorithms.
 
-Our FE method seeks a solution $u^h$ in $\mathcal{V}^h$ of the same, but now finite-dimensional, weak-form,
+Our FE method seeks a solution $u^h$ in $\mathcal{V}^h$ of the same weak form \eqref{eq:weakpoisson}.  The problem is now finite-dimensional:
 \begin{equation}
   a(u^h,v) = \ip{f}{v},  \label{eq:feweakpoisson}
 \end{equation}
-for all test functions $v$ in $\mathcal{V}^h$.  However, $\mathcal{V}^h$ is a subset of $\mathcal{H}$ so we can compare $u^h$ and $u$.  In fact, by subtracting \eqref{eq:feweakpoisson} from \eqref{eq:weakpoisson} we see that the \emph{numerical error} $u-u^h$ satisfies the simple equation $a(u-u^h,v)=0$ for all $v$ in $\mathcal{V}^h$.  That is, the numerical error is orthogonal, in the sense determined by $a(\cdot,\cdot)$, to the finite-dimensional subspace $\mathcal{V}^h$.  Standard FE arguments then show that the error goes to zero as $h$ goes to zero \cite{Braess2007,Elmanetal2014}.
+for all test functions $v$ in $\mathcal{V}^h$.  Because $\mathcal{V}^h$ is a subset of $\mathcal{H}$, we can compare $u^h$ and $u$.  In fact, by subtracting \eqref{eq:feweakpoisson} from \eqref{eq:weakpoisson} we see that the \emph{numerical error} $u-u^h$ satisfies $a(u-u^h,v)=0$ for all $v$ in $\mathcal{V}^h$.  That is, the numerical error is orthogonal, in the sense of $a(\cdot,\cdot)$, to the finite-dimensional subspace $\mathcal{V}^h$.  Standard FE arguments then show that the error goes to zero as $h$ goes to zero \cite{Braess2007,Elmanetal2014}.
 
 One may substitute formula \eqref{eq:trialsolution} for $u^h$ into \eqref{eq:feweakpoisson} to derive a linear system
 \begin{equation}
 A \bu = \bbf, \label{eq:linearsystem}
 \end{equation}
-where $A$ is an $m\times m$ matrix and $\bbf$ is in $\RR^m$.  Each equation (row) in system \eqref{eq:linearsystem} is constructed by using a hat function as a test function; substitution of $v=\psi_p$ gives the $p$th equation.  The matrix $A$ has entries $a_{pq} = a(\psi_p,\psi_q)$, is symmetric, and is positive definite.  For the right side one defines entries $f_p = \ip{f}{\psi_p}$ to form the vector $\bbf = \{f_p\}$.  For the 1D problem here, only three values $a_{p,p-1}, a_{p,p}, a_{p,p+1}$ are nonzero in row $p$, so $A$ is tridiagonal.  (Writing these entries in detail, a worthy exercise, may remind the reader of finite difference approximations for the Laplacian.)
+where $A$ is an $m\times m$ matrix and $\bbf$ is in $\RR^m$.  Each equation (row) in system \eqref{eq:linearsystem} is constructed by using a hat function as a test function; substitution of $v=\psi_p$ gives the $p$th equation.  The matrix $A$, which has entries $a_{pq} = a(\psi_p,\psi_q)$, is symmetric and positive definite.  For the right side one defines entries $f_p = \ip{f}{\psi_p}$ to form the vector $\bbf = \{f_p\}$.  For the 1D problem here, only three values $a_{p,p-1}, a_{p,p}, a_{p,p+1}$ are nonzero in row $p$, so $A$ is tridiagonal.  Writing these entries in detail may remind the reader of finite difference approximations of the Laplacian.
 
 Depending on the form of $\alpha(x)$, the matrix entries
 \begin{equation}
   a_{pq} = \int_0^1 \alpha(x) \psi_p'(x) \psi_q'(x)\,dx \label{eq:poissonentries}
 \end{equation}
-may be computed either exactly, or approximately by quadrature, and similar considerations apply to the values $f_p = \int_0^1 f(x) \psi_p(x)\,dx$.  The errors arising from doing these integrals by quadrature will have only a modest effect on the accuracy of the whole FE method \cite{Braess2007}.
+may be computed exactly or approximately by quadrature.  Similar considerations apply to the values $f_p = \int_0^1 f(x) \psi_p(x)\,dx$.  The errors arising from quadrature have only a slight effect on the accuracy of the whole FE method \cite{Braess2007}.
 
-The most straightforward way to solve assembled linear system \eqref{eq:linearsystem} would be via a ``direct'' method like Gaussian elimination.  In 2D and 3D problems, where the number of unknowns $m$ is large, such direct methods need much more that $O(m)$ operations to solve the system, while, as noted in the introduction, our applications demand optimal $O(m)$ solution methods, or nearly so.  Furthermore, excluding the current section, all of our problems will be nonlinear, thus no finite-time direct method will be available anyway.  Thus we will generally not assemble matrices, but instead construct rapidly-convergent iterations using easy-to-implement pointwise iterations and multiple mesh levels.
+The most straightforward way to solve assembled linear system \eqref{eq:linearsystem} would be via a ``direct'' method like Gaussian elimination.  In 2D and 3D problems, where the number of unknowns $m$ is large, such direct methods need many more that $O(m)$ operations to solve the system, while, as noted in the introduction, high-resolution ice sheet applications demand optimal $O(m)$ solution methods, or nearly so.  Furthermore, excluding the current section, all of our problems will be nonlinear, thus no finite-time direct method will be available anyway.  Thus we will not assemble matrices, but instead construct rapidly-convergent iterations using easy-to-implement pointwise iterations and multiple mesh levels.
 
-Our solution methods will be phrased in terms of ``residuals''.  Suppose $w$ in $\mathcal{V}^h$ is any estimate of the solution $u^h$ of \eqref{eq:feweakpoisson}.  We define the \emph{residual} of $w$ as a linear functional acting on $v$ in $\mathcal{V}^h$:
+Our solution methods will be phrased in terms of ``residuals'', which need to be clearly defined.  Suppose $w$ in $\mathcal{V}^h$ is any estimate of the solution $u^h$ of \eqref{eq:feweakpoisson}.  We define the \emph{residual} of $w$ as a linear functional acting on $v$ in $\mathcal{V}^h$:
 \begin{equation}
   F(w)[v] = a(w,v) - \ip{f}{v}.  \label{eq:residual}
 \end{equation}
-Finding $u^h$ is equivalent to making all components of its residual, i.e.~all values $F(w)[v]$ for $v$ in $\mathcal{V}^h$, zero:
+Finding $u^h$ is equivalent to making all components of its residual, that is
 \begin{equation}
-  F(u^h)[v]=0 \qquad \text{ if and only if } \qquad a(u^h,v)=\ip{f}{v}. \label{eq:residualweakequivalence}
+  F(u^h)[v]=0 \qquad \text{ if and only if } \qquad a(u^h,v)=\ip{f}{v} \label{eq:residualweakequivalence}
 \end{equation}
+for all $v$ in $\mathcal{V}^h$.
 
-Given $w$ which does not already solve \eqref{eq:feweakpoisson}, we will iteratively update it using simple operations which make residual components $F(w)[v]$ smaller.  Similarly to \eqref{eq:trialsolution}, we may represent $w$ using the basis of hat functions, i.e.~$w = \sum w_q \psi_q$ with $w_q = w(x_q)$, and then compute a component in this basis using the linearity of $a(\cdot,\cdot)$:
+Given an iterate $w$ which does not already solve \eqref{eq:feweakpoisson}, we will update it using simple operations which make the residual components $F(w)[v]$ smaller.  To do this we will represent $w$ using the basis of hat functions, i.e.~$w = \sum w_q \psi_q$ with $w_q = w(x_q)$, and then compute a component in this basis using the linearity of $a(\cdot,\cdot)$:
 \begin{equation}
   F(w)[\psi_p] = \sum_{q=1}^{m} a(\psi_q,\psi_p) \,w(x_q) - \ip{f}{\psi_p}.  \label{eq:residualpoisson}
 \end{equation}
-
-The number of nonzero terms in sum \eqref{eq:residualpoisson} is equal to the number of hat functions $\psi_q$ whose support overlaps the support of $\psi_p$.  This number is at most three in the current 1D case, and for general 2D and 3D meshes it remains small if the elements do not have small angles \cite{Braess2007}.  Thus the computation of a component $F(w)[\psi_p]$ requires $O(1)$ work, so computing all components of a residual linear functional $F(w)$ requires $O(m)$ work.  This observation about the cost of evaluating a residual is foundational in all of our methods.
+The number of nonzero terms in sum \eqref{eq:residualpoisson} is equal to the number of hat functions $\psi_q$ whose support overlaps the support of $\psi_p$.  This number is at most three in the current 1D case, and for general 2D and 3D meshes the number remains small (if the elements do not have small angles \cite{Braess2007}).  Thus the computation of a component $F(w)[\psi_p]$ requires $O(1)$ work, so computing all components of a residual linear functional $F(w)$ requires $O(m)$ work.  This observation about the cost of evaluating a residual is fundamental to all of our methods.
 
 \subsection{Coarse mesh levels and subspace decompositions} \label{subsec:coarselevels}  From the above simple FE scheme we now take the first steps to build a \emph{multilevel} scheme.  Consider an enlarged set of hat functions:
     $$\underbrace{\psi_1(x),\dots,\psi_m(x)}_{\text{existing fine level}},\underbrace{\psi_{m+1}(x),\dots,\psi_M(x)}_{\text{\small coarser levels}}$$
@@ -194,13 +196,13 @@ For example, two coarser levels, derived from the fine level in Figure \ref{fig:
 \smallskip
 
 \includegraphics[width=0.55\textwidth]{genfigs/coarsesthats.pdf}
-\caption{Coarser levels are additional sets of hat functions which spread over a greater distance.}
+\caption{Coarser levels amount to additional sets of hat functions which spread over a greater distance.}
 \label{fig:coarsehats}
 \end{figure}
 
-On 2D and 3D meshes this manner of constructing coarse-mesh hats is less straightforward, and it is more common to start from a coarse mesh and refine level-by-level up to the finest.  In any case, our methods are not restricted to equally-spaced meshes, and models with a high-resolution structured mesh \cite[for example]{Bueler2016,Winkelmannetal2011} are among our target applications. We will return to these mesh-generation issues in section \ref{sec:sia}.
+On 2D and 3D meshes this manner of constructing coarse-mesh hats is less straightforward, and it is more common to start from a coarse mesh and refine level-by-level up to the finest.  In any case, our methods are not restricted to equally-spaced meshes, though models with high-resolution structured meshes \cite[for example]{Bueler2016,Winkelmannetal2011} are among our target applications.
 
-We need notation for the levels.  Suppose that the coarsest level is indexed as $j=0$ and the finest as $j=J$, and that the hat functions $\psi_p^j(x)$, for $p=1,\dots,m_j$, form the $j$th level.  The interior nodes $x_p^j$ use the same multilevel indexing scheme.  For example, Figures \ref{fig:finehats} and \ref{fig:coarsehats} show a three-level scheme ($J=2$) with $m_2=7$ fine-level, $m_1=3$ middle-level, and $m_0=1$ coarsest-level hat functions.  The original mesh has $m_2+1=8$ elements, divisible by four, so this three-level coarsening was allowed.  Note that the original fine level has now gained a superscript $J$; the original hats are $\psi_p^J(x)$ and the original nodes are $x_p^J$.
+We need notation for the levels.  Suppose that the coarsest level is indexed as $j=0$ and the finest as $j=J$, and that the hat functions $\psi_p^j(x)$, for $p=1,\dots,m_j$, form the $j$th level.  The interior nodes $x_p^j$ use the same multilevel indexing scheme.  Figures \ref{fig:finehats} and \ref{fig:coarsehats} show a three-level scheme ($J=2$) with $m_2=7$ fine-level, $m_1=3$ middle-level, and $m_0=1$ coarsest-level hat functions.  The original mesh has $m_2+1=8$ elements, divisible by four, so three-level coarsening was allowed.  Note that the original fine level has now gained a superscript $J$; the original hats are $\psi_p^J(x)$ and the original nodes are $x_p^J$.
 
 On each level the hat functions are linearly-independent and form a basis for a vector space:
 \begin{equation}
@@ -214,23 +216,23 @@ In fact, the coefficients are
 \begin{equation}
   c_{pq} = \psi_p^{j-1}(x_q^j) \label{eq:nodalcoefficients}
 \end{equation}
-because $\{\psi_q^j\}$ form a nodal basis.  Nonzero coefficients $c_{pq}$ therefore occur only when a fine-level node $x_q^j$ is in the non-zero set (the open \emph{support}) of a coarser hat $\psi_p^{j-1}(x)$.  Statements \eqref{eq:hatcombination} and \eqref{eq:nodalcoefficients}, while simple, will be used throughout this paper when we need to pass between levels.
+because $\{\psi_q^j\}$ form a nodal basis.  Nonzero coefficients $c_{pq}$ therefore occur only when a fine-level node $x_q^j$ is in the non-zero set (the open \emph{support}) of a coarser hat $\psi_p^{j-1}(x)$.  Statements \eqref{eq:hatcombination} and \eqref{eq:nodalcoefficients}, while simple, will be used throughout the paper when we need to pass between levels.
 
 A \emph{multilevel subspace decomposition} is now described by the vector-space sum:
 \begin{equation}
   \mathcal{V}^h = \mathcal{V}^0 + \mathcal{V}^1 + \dots + \mathcal{V}^J. \label{eq:subspacedecomposition}
 \end{equation}
-This decomposition will be useful despite the facts that the subspaces are nested and the final term $\mathcal{V}^J$ is actually equal to the whole FE space $\mathcal{V}^h$.  Equation \eqref{eq:subspacedecomposition} asserts that a piecewise-linear function in $\mathcal{V}^h$ \emph{can} be written as a linear combination of hat functions from all the levels, but there is no unique representation.  A multilevel method will use this decomposition to find the components of the solution in $\mathcal{V}^h$ via fast computations on all levels $\mathcal{V}^j$.
+This decomposition will be useful despite the facts that the subspaces are nested.  In fact, the final term $\mathcal{V}^J$ is actually equal to the whole FE space $\mathcal{V}^h$.  Equation \eqref{eq:subspacedecomposition} asserts that a piecewise-linear function in $\mathcal{V}^h$ \emph{can} be written as a linear combination of hat functions from all the levels, but there is no unique representation.  A multilevel method will use this decomposition to find the components of the solution in $\mathcal{V}^h$ via fast computations on all levels $\mathcal{V}^j$.
 
-Using our hat function bases, a subspace decomposition provides an approximate \emph{scale of frequencies}.  Informally, the value of the inner product of a function $g(x)$ with a fine-level hat, $\ip{g}{\psi_p^J}$, is, relative to the norm $\|g\| = \ip{g}{g}^{1/2}$, mostly a measure of its high-frequency content at $x_p^J$.  The inner product with a coarser-mesh hat $\psi_p^j$, by contrast, measures lower frequency content because it averages over many fine-mesh nodes.  If decomposition \eqref{eq:subspacedecomposition} were instead a Fourier decomposition, with each $\mathcal{V}^j$ spanned by waves of disjoint frequency ranges, then the sum would be orthogonal and the ``scale of frequencies'' meaning would be exact.  Our decompositions will always involve overlapping ranges of frequencies, but our multilevel methods will reduce the energy of the error on each level $\mathcal{V}^j$, and on coarser levels this will rapidly reduce the low frequencies present in the error.
+Using our hat function bases, a subspace decomposition provides an approximate \emph{scale of frequencies} in the following informal sense.  The value of the inner product of a function $g(x)$ with a fine-level hat, $\ip{g}{\psi_p^J}$, is, relative to the norm $\|g\| = \ip{g}{g}^{1/2}$, mostly a measure of its high-frequency content at $x_p^J$.  The inner product with a coarser-mesh hat $\psi_p^j$, by contrast, measures lower frequency content because it averages over many fine-mesh nodes.  If decomposition \eqref{eq:subspacedecomposition} were instead a Fourier decomposition, with each $\mathcal{V}^j$ spanned by waves of disjoint frequency ranges, then the sum would be orthogonal and the ``scale of frequencies'' meaning would be exact.  Our decompositions will always involve overlapping and nonorthogonal ranges of frequencies, but multilevel methods will reduce the energy of the high frequencies in the error on each level $\mathcal{V}^j$.  Doing this on all levels will rapidly reduce the whole error.
 
-\subsection{Gauss-Seidel, Jacobi, and explicit time-stepping as smoothers} \label{subsec:smoothers}  Our first solution method for FE problem \eqref{eq:feweakpoisson}, called \emph{Gauss-Seidel} (GS) iteration, is sequential and point-wise \emph{relaxation} of the residual \eqref{eq:residual}.  Though matrices are often used to present such classical iteration algorithms \cite[for example]{Bueler2021,Greenbaum1997}, we present them using only residuals and hat functions, a beneficial approach when we consider nonlinear glacier models.
+\subsection{Gauss-Seidel, Jacobi, and explicit time-stepping as smoothers} \label{subsec:smoothers}  Our first solution method for FE problem \eqref{eq:feweakpoisson}, called \emph{Gauss-Seidel} (GS) iteration, is sequential and point-wise \emph{relaxation} of the residual \eqref{eq:residual}.  Though matrices are often used to present this classical iteration algorithms \cite[for example]{Bueler2021,Greenbaum1997}, we present it using only residuals and hat functions/  The same approach will be beneficial when we consider nonlinear glacier models.
 
-The $j$th-level GS algorithm sweeps through the mesh nodes $x_p^j$, modifying the iterate $w(x)$ by a multiple of $\psi_p^j$ to make that residual value zero.  That is, we compute $c$ so that
+The GS algorithm on the $j$th level sweeps through the mesh nodes $x_p^j$, modifying the iterate $w(x)$ by a multiple of $\psi_p^j$ to make that residual value zero.  That is, at each node we compute $c$ so that
 \begin{equation}
   F(w+c\,\psi_p^j)[\psi_p^j] = 0.  \label{eq:gaussseidelpoint}
 \end{equation}
-Observe that $a(\cdot,\cdot)$ is bilinear and that $F(w+c\,\psi_p^j)[\psi_p^j] = F(w)[\psi_p^j] + c\, a(\psi_p^j,\psi_p^j)$.  Define $\ell[v] = \ip{f}{v}$, a linear functional.  In these terms, GS is the following algorithm which modifies $w$ in place:
+Observe that $a(\cdot,\cdot)$ is bilinear and thus that $F(w+c\,\psi_p^j)[\psi_p^j] = F(w)[\psi_p^j] + c\, a(\psi_p^j,\psi_p^j)$.  Define $\ell[v] = \ip{f}{v}$, a linear functional.  In these terms, GS is the following algorithm which modifies $w$ in place:
 \begin{pseudo*} \label{ps:gs-sweep}
 \pr{gs-sweep}(j,w,a,\ell,\id{omega}=1)\text{:} \\+
     $F(w)[\cdot] := a(w,\cdot) - \ell[\cdot]$ \\
@@ -238,11 +240,11 @@ Observe that $a(\cdot,\cdot)$ is bilinear and that $F(w+c\,\psi_p^j)[\psi_p^j] =
         $\displaystyle c = - F(w)[\psi_p^j]\, \big/ \,a(\psi_p^j,\psi_p^j)$  \\
         $w \gets w + \id{omega} \,c \,\psi_p^j$
 \end{pseudo*}
-So that such methods will generalize, we regard the bilinear form $a$ and the linear functional $\ell$ as inputs, and build the residual internally.
+So that such methods will generalize, we regard the bilinear form $a$ and the linear functional $\ell$ as inputs, and build the residual when needed.
 
 Assuming that value $a(\psi_p^j,\psi_q^j)$ and $\ell[\psi_p^j] = \ip{f}{\psi_p^j}$ are computed in $O(1)$ work, one application of \pr{gs-sweep} requires $O(m_j)$ work.  Though \pr{gs-sweep} only works as stated for a linear equation in the form of \eqref{eq:feweakpoisson}, it can be modified to solve nonlinear systems by applying a few steps of Newton's iteration to each scalar equation $f(c) = F(w+c\,\psi_p^j)[\psi_p^j] = 0$; see section \ref{sec:sia}.
 
-What does a sweep of GS do to an iterate $w$?  By sequentially making the residual zero on each hat function we intend that the residual becomes smaller.  However, modifying $w$ to make the residual zero at one place generally means that previously-zeroed locations are no longer zero because the equations are non-trivially coupled.  One can prove for the Poisson problem that this iteration, applied on the fine level, converges to the solution $u^h$ of \eqref{eq:feweakpoisson} \cite[for example]{Greenbaum1997}, but that is not our focus.  Instead, a key observation is that such a sweep is a fast \emph{smoother} of the (algebraic) error $e=w-u^h$, even when it is slow to make this error small.
+What does a sweep of GS do to an iterate $w$?  By sequentially making the residual zero on each hat function we intend that the residual becomes smaller.  However, modifying $w$ to make the residual zero at one place means that previously-zeroed locations are no longer zero because the equations are non-trivially coupled.  Nonetheless one can prove for the Poisson problem that this iteration, applied soley on the fine level, converges to the solution $u^h$ of \eqref{eq:feweakpoisson} \cite[for example]{Greenbaum1997}, but that is not our focus.  Instead, a key observation is that such a sweep is a fast \emph{smoother} of the (algebraic) error $e=w-u^h$, even when it is slow to make the whole error small.
 
 Informally, the formula for $c$ in \textsc{gs-sweep} combines neighboring values of $w$ so as to flatten a peak or trough in the error.  An example is shown in Figure \ref{fig:residualpoints}, where we start with a non-smooth initial iterate $w$ on an $m_J=6$ mesh; its residual $F(w)$ and error $e$ are at the top.  The Figure shows the residual and error after each step in the \textbf{for} loop in \pr{gs-sweep}, indicating the location which is zeroed.  (We plot the linear functionals $F(w)$ as piecewise-constant functions with values $F(w)[\psi_p^J]$.)  While both the residual and error become smaller in norm, the strongest effect is the damping of high frequencies.
 
@@ -252,13 +254,13 @@ Informally, the formula for $c$ in \textsc{gs-sweep} combines neighboring values
 \label{fig:residualpoints}
 \end{figure}
 
-One may describe the smoothing property of GS quantitatively by considering the frequencies which are supported on a mesh having spacing $h$.  The highest-frequency faithfully-represented mode is the sawtooth with (spatial) frequency $\sigma=(2h)^{-1}$.  For a 1D Poisson equation, with constant coefficient $\alpha$, one GS sweep multiplies all modes with frequencies higher than $\frac{1}{2} \sigma$ by factors of at most $1/\sqrt{5}\approx 0.45$ (for sufficiently-fine meshes \cite[Chapter 4]{Briggsetal2000}).  That is, a GS sweep \emph{strongly damps the highest half} of the frequencies in the error, though the particular damping factor depends on the dimension and the differential operator.
+One may describe the smoothing property of GS quantitatively by considering the frequencies which are supported on a mesh having spacing $h$.  The highest-frequency faithfully-represented mode is the sawtooth with (spatial) frequency $\sigma=(2h)^{-1}$.  For a 1D Poisson equation, with one GS sweep multiplies all modes with frequencies higher than $\frac{1}{2} \sigma$ by factors of at most $1/\sqrt{5}\approx 0.45$ (for sufficiently-fine meshes \cite[Chapter 4]{Briggsetal2000}).  That is, a GS sweep \emph{strongly damps the highest half} of the frequencies in the error.  Note that the particular damping factor depends on the dimension and the differential operator.
 
 One may also adjust the \emph{relaxation factor} \id{omega} in \pr{gs-sweep} away from its default value \id{omega} $=1$, which yields \emph{successive over-relaxation} for \id{omega} $>1$.  This iteration has superior properties as a stand-alone solver \cite{Greenbaum1997}, but it is no better than GS as a smoother.
 
 Algorithm \pr{gs-sweep} has no dependence on the dimension of the problem.  In particular, for any linear elliptic PDE which can be written in weak form \eqref{eq:weakpoisson}, \pr{gs-sweep} applies as stated with $m_j$ denoting the number of $j$th-level mesh nodes and $\psi_p^j$ the corresponding hat functions.  However, the rate of convergence and the smoothing efficiency of GS iterations depend on the details of the PDE, including its dimension.
 
-Note that GS involves repeatedly re-evaluating the pointwise residual, i.e.~computing $F(w)[\psi_p^j]$ after each update of $w$.  Where each evaluation of a point residual is expensive, for instance when a residual evaluation is non-local (see section \ref{sec:stokes}), an alternative is to evaluate the residual vector (i.e.~at all points) once at the start of the iteration.  The resulting \emph{(weighted) Jacobi} method is parallel in the sense that iterate updates can then be done in any order.
+Note that GS involves repeatedly re-evaluating the pointwise residual, i.e.~computing $F(w)[\psi_p^j]$ after each update of $w$.  Where each evaluation of a point residual is expensive, for instance when a residual evaluation is non-local (see section \ref{sec:stokes}), an alternative is to evaluate the residual vector (i.e.~at all points) once at the start of the iteration.  The resulting \emph{(weighted) Jacobi} method is parallel in the sense that pointwise updates can then be done in any order.
 
 \begin{pseudo*} \label{ps:jacobi-sweep}
 \pr{jacobi-sweep}(j,w,a,\ell,\id{omega}=0.67)\text{:} \\+
@@ -268,9 +270,9 @@ Note that GS involves repeatedly re-evaluating the pointwise residual, i.e.~comp
         $w \gets w + \id{omega} \,c \,\psi_p^j$
 \end{pseudo*}
 
-The Jacobi iteration with relaxation factor \id{omega} $=1$ is neither a rapid solution method nor an effective smoother---no damping is applied to the highest-frequency sawtooth---but underrelaxation can be a good smoother.  For a 1D Poisson equation and optimal factor \id{omega} $=\frac{2}{3}$, the method multiplies all frequencies higher than $\frac{1}{2} \sigma$ by at most $\frac{1}{3}$ \cite[Chapter 4]{Briggsetal2000}.  Other optimal factors are known for 2D and 3D Poisson equation, and to varying degrees this good smoother performance extends to other PDEs.  One disadvantage of Jacobi is the need to store the starting residual $\br = \{r_p\}$, which doubles the required storage versus \pr{gs-sweep}.
+The Jacobi iteration with relaxation factor \id{omega} $=1$ is neither a rapid solution method nor an effective smoother---no damping is applied to the highest-frequency sawtooth---but underrelaxation can be a good smoother.  For a 1D Poisson equation and optimal factor \id{omega} $=\frac{2}{3}$, the method multiplies all frequencies higher than $\frac{1}{2} \sigma$ by at most $\frac{1}{3}$ \cite[Chapter 4]{Briggsetal2000}.  Other optimal factors are known for 2D and 3D Poisson equation, and to varying degrees this good smoother performance extends to other PDEs.
 
-These smoother considerations seem to be separate from how evolving-geometry glacier models have been designed.  Most ice sheet models proceed by explicit time-stepping of their complicated, coupled equations \cite[for example]{Winkelmannetal2011}.  However, it turns out that such time-stepping is closely related to Jacobi smoothing.  Consider the time-dependent problem corresponding to the $\alpha=1$ case of \eqref{eq:poisson}, namely the \emph{heat equation}
+These smoother considerations seem to be separate from how evolving-geometry glacier models have been designed in the past.  Most ice sheet models proceed by explicit time-stepping of their complicated, coupled equations \cite[for example]{Winkelmannetal2011}.  However, it turns out that such time-stepping is closely related to Jacobi smoothing.  Consider the time-dependent problem corresponding to the $\alpha=1$ case of \eqref{eq:poisson}, namely the \emph{heat equation}
 \begin{equation}
 u_t = u_{xx} + f, \qquad u(t,0)=u(t,1)=0, \label{eq:heat}
 \end{equation}
@@ -286,16 +288,16 @@ Equation \eqref{eq:feheat} with $v=\psi_p^j$ generates an ODE system for the coe
 \begin{equation}
 \sum_{q=1}^{m_j} \ip{\psi_p^j}{\psi_q^j} u^h(t,x_p^j) = - F(u^h)[\psi_p^j] \label{eq:odeheatearly}
 \end{equation}
-Identifying the \emph{mass matrix} $B$ with entries $b_{pq} = \ip{\psi_p^j}{\psi_q^j}$, which is an easily inverted matrix with $O(1)$ condition number \cite{Elmanetal2014}, and we can write the ODE system as
+Identifying the \emph{mass matrix} $B$ with entries $b_{pq} = \ip{\psi_p^j}{\psi_q^j}$, which is an easily inverted matrix with $O(1)$ condition number \cite{Elmanetal2014}, we can write the ODE system as
 \begin{equation}
 u^h(t,x_p^j)' = - (B^{-1} F(u^h)[\cdot])_p. \label{eq:odeheat}
 \end{equation}
 
-Suppose we discretize time with spacing $\Delta t$ and approximate consecutive states $u^h(t,x)$, $u^h(t+\Delta t,x)$ by $w(x)$, $\tilde w(x)$, respectively.  Using the forward Euler method, \eqref{eq:odeheat} becomes
+Suppose we discretize time using spacing $\Delta t$ and then we approximate the consecutive states $u^h(t,x)$, $u^h(t+\Delta t,x)$ by $w(x)$, $\tilde w(x)$, respectively.  Then, using the forward Euler method, \eqref{eq:odeheat} becomes
 \begin{equation}
 \frac{\tilde w_p - w_p}{\Delta t} = - (B^{-1} F(w)[\cdot])_p. \label{eq:forwardeulerheat}
 \end{equation}
-Let us write this time-step as a pseudocode which takes the current values $w$ and computes the new values $\tilde w$.  Up to the inversion of the mass matrix $B$, and choosing to compute the updated iterate in-place, we have a method similar to \pr{jacobi-sweep}:
+Let us write this time-step as a pseudocode which takes the current values $w$ and computes the new values $\tilde w$.  Up to the inversion of the mass matrix $B$, and choosing to compute the updated iterate in-place, this is the same method as \pr{jacobi-sweep}:
 \begin{pseudo*} \label{ps:euler-timestep}
 \pr{euler-timestep}(j,w,a,\ell,\id{deltat})\text{:} \\+
     $F_p = a(w,\psi_p^j) - \ell[\psi_p^j]$ \\
@@ -303,9 +305,9 @@ Let us write this time-step as a pseudocode which takes the current values $w$ a
         $\displaystyle c = - (B^{-1} F)_p$  \\
         $w \gets w + \id{deltat}\, c\, \psi_p^j$ \\-
 \end{pseudo*}
-In particular, the time step \id{deltat} apparently plays the role of \id{omega} in \pr{jacobi-sweep}.  However, the change $c$ to the value $w_p$ is not divided by the diagonal entries $a(\psi_p^j,\psi_p^j)$, as in the Jacobi iteration, so for \emph{conditional stability} \cite{Bueler2021} one must choose \id{deltat} $=O(h^2)$.
+In particular, the time step \id{deltat} plays the role of \id{omega} in \pr{jacobi-sweep}.  However, the change $c$ to the value $w_p$ is not divided by the diagonal entries $a(\psi_p^j,\psi_p^j)$, as in the Jacobi iteration, so for \emph{conditional stability} \cite{Bueler2021} one must choose \id{deltat} $=O(h^2)$.
 
-In summary, the GS and Jacobi iterations act as smoothers when applied to the Poisson problem \eqref{eq:poisson}.  Subject to stability restrictions on the time step, forward Euler time-stepping for the corresponding heat equation \eqref{eq:heat} is also a smoother.  Applied on a single mesh level, these methods are all slow to converge.  Optimal performance therefore depends on applying such smoothers on different mesh levels.  We will see in sections \ref{sec:sia} and \ref{sec:stokes} that new nonlinear smoothers are required, and that smoother choice is nontrivial for glacier problems, but fortunately the space of possible smoothers is sufficiently large.
+In summary, the GS and Jacobi iterations act as smoothers when applied to the Poisson problem \eqref{eq:poisson}.  Subject to severe stability restrictions on the time step, forward Euler time-stepping for the corresponding heat equation \eqref{eq:heat} is also a smoother.  Applied on a single mesh level, these methods are all slow to converge.  Optimal solver performance therefore depends on applying such smoothers on different mesh levels.
 
 \subsection{Multilevel subspace corrections} \label{subsec:msc}  When a smoother is applied on a given level $j$, whether once or a few times, the error and residual of the iterate no longer contain much energy in high-frequency modes.  It makes sense to switch to smoothing on the $j-1$ level to remove energy in lower frequencies.  That is, we correct the residual on the next-coarser level.
 
@@ -339,20 +341,20 @@ Furthermore one may repeat the smoother on each level, or go up-and-down the mes
 \label{fig:msccycles}
 \end{figure}
 
-These MSC cycles improve a fine-level iterate $w$ but they do not (generally) exactly solve problem \eqref{eq:feweakpoisson}.  Instead one applies them iteratively, testing for convergence using a tolerance on the norm of the fine-level residual.  (An alternative view of MSC algorithms would treat them as preconditioners \cite[for example]{Bueler2021}, but we will not need this idea.)  For example, one may require the residual to decrease from its initial value by a certain factor:
+These MSC cycles improve a fine-level iterate $w^J$ but they do not (generally) exactly solve problem \eqref{eq:feweakpoisson}.  Instead one should apply them iteratively, testing for convergence using a tolerance on the norm of the fine-level residual.  (An alternative view of MSC algorithms would treat them as preconditioners \cite{Bueler2021}, but we will not need this view.)  For example, one may require the residual to decrease from its initial value by a certain factor:
 \begin{pseudo*} \label{ps:msc-solver}
-\pr{msc-solver}(w,a,\ell,\id{rtol}=10^{-4})\text{:} \\+
-    $F_p = a(w,\psi_p^J) - \ell[\psi_p^J]$ \\
+\pr{msc-solver}(w^J,a,\ell,\id{rtol}=10^{-4})\text{:} \\+
+    $F_p = a(w^J,\psi_p^J) - \ell[\psi_p^J]$ \\
     $r_0 = \|F\|$ \\
     repeat \\+
         \pr{msc-cycle}(w,a,\ell) \qquad\qquad \ct{\pr{cycle}=\pr{downslash}$|$\pr{upslash}$|$\pr{vcycle}} \\
-        $F_p = a(w,\psi_p^J) - \ell[\psi_p^J]$ \\-
+        $F_p = a(w^J,\psi_p^J) - \ell[\psi_p^J]$ \\-
     until $\|F\| \le r_0\, \id{rtol}$ \\
-    return $w$
+    return $w^J$
 \end{pseudo*}
-Note that the user needs to provide an initial iterate $w=w^{(0)}$ on the fine ($J$) level.
+Note that the user needs to provide an initial iterate $w^J$ on the fine level.
 
-Such simply-stated MSC schemes appeared late in the history of multigrid \cite{Xu1992}, but they contain the core multigrid ideas and consequent performance.  The following theorem applies to linear elliptic PDEs in any dimension, if given by a symmetric and positive bilinear form.
+Such simply-stated MSC schemes appeared late in the history of multigrid \cite{Xu1992}, but they contain the core multigrid ideas and consequent performance.  The following theorem applies to linear elliptic PDEs in any dimension, if defined by a symmetric and positive bilinear form.
 
 \begin{theorem} \label{thm:mscconvergence}  Let $u^h$ be the exact solution of FE weak form \eqref{eq:feweakpoisson}.  Suppose $w^{(s)}$ is computed by from $s$ applications of \pr{msc-downslash}, \pr{msc-upslash}, or \pr{msc-vcycle} on the fine ($J$th) level, starting with any $w^{(0)}$.  There is $\rho<1$, independent of $h$, so that
 \begin{equation}
@@ -360,7 +362,7 @@ Such simply-stated MSC schemes appeared late in the history of multigrid \cite{X
 \end{equation}
 \end{theorem}
 
-Each cycle reduces the error by a mesh-independent factor $\rho<1$, called the \emph{multigrid convergence rate} \cite{Braess2007}.  The proof, by \cite{Neuss1998}, extends an earlier Jacobi smoothing result \cite{BraessHackbusch1983} to include GS smoothing; see also \cite[Thm.~3.10]{GraeserKornhuber2009}.  The convergence rate $\rho$ does not depend on the fine-mesh spacing $h$, nor on the number of fine-mesh degrees of freedom $m_J$, nor even the number of levels $J$.  It does depend on the element aspect ratios (\emph{shape regularity} \cite{Elmanetal2014}) in the mesh, though this is not relevant in 1D, and on the \emph{ellipticity bound} $\alpha_0=\inf_x \alpha(x)$ of the PDE.  It is common for a V-cycle to have a smaller $\rho$ than a slash cycle, but the latter do less work per cycle, so in section \ref{sec:obstacle}, when we present computational results, we will count computational work and run time, and not just cycles.
+Each cycle therefore reduces the error by a mesh-independent factor $\rho<1$, called the \emph{multigrid convergence rate} \cite{Braess2007}.  The proof, by \cite{Neuss1998}, extends an earlier Jacobi smoothing result \cite{BraessHackbusch1983} to include GS smoothing; see also \cite[Thm.~3.10]{GraeserKornhuber2009}.  The convergence rate $\rho$ does not depend on the fine-mesh spacing $h$, nor on the number of fine-mesh degrees of freedom $m_J$, nor even the number of levels $J$.  It does depend on the element aspect ratios (\emph{shape regularity} \cite{Elmanetal2014}) in the mesh, though this is not relevant in 1D, and on the \emph{ellipticity bound} $\alpha_0=\inf_x \alpha(x)$ of the PDE.  It is common for a V-cycle to have a smaller $\rho$ than a slash cycle, but the latter do less work per cycle, so in section \ref{sec:obstacle}, when we present computational results, we will count computational work and run time, and not just cycles.
 
 It follows from \eqref{eq:mscconvergence} that if we want the error norm $e^{(s)} = \|w^{(s)}-u^h\|_{\mathcal{H}}$ to be reduced to below some small level $\eps>0$ then we should do $s>(\log\eps - \log e^{(0)})/\log \rho$ iterations.  That is, we need $s=O(|\log\eps|)$ iterations.  (Note that $h$ and $J$ are related by logarithms; in our case $h=(m_J+1)^{-1}=2^{-(J+1)}$ so $J = O(\log m_J) = O(|\log h|)$.)  On the other hand, the error norms in \eqref{eq:mscconvergence} are not generally computable.  An error norm is, however, bounded by the computable residual norm up to a (mesh-dependent) matrix condition number \cite[Chapter 2]{Bueler2016}.
 
