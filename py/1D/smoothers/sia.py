@@ -113,9 +113,11 @@ class PNsmootherSIA(SmootherObstacleProblem):
         assert hasattr(mesh, 'g')
         mesh.checklen(mesh.g)
         if self.args.jacobi:
-            self.jacobisweep(mesh, y, ell, phi, forward=forward)
+            jaczeros = self.jacobisweep(mesh, y, ell, phi, forward=forward)
         else:
-            self.gssweep(mesh, y, ell, phi, forward=forward)
+            jaczeros = self.gssweep(mesh, y, ell, phi, forward=forward)
+        if self.args.showsingular and any(jaczeros != 0.0):
+            self.showsingular(jaczeros)
         mesh.WU += self.args.newtonits
 
     def gssweep(self, mesh, y, ell, phi, forward=True):
@@ -128,38 +130,33 @@ class PNsmootherSIA(SmootherObstacleProblem):
         jaczeros = mesh.zeros()
         # update each y[p] value
         for p in self._sweepindices(mesh, forward=forward):
-            for k in range(self.args.newtonits):
+            for _ in range(self.args.newtonits):
                 r, delta = self._pointN(mesh, mesh.g + y, p)
                 if delta == 0.0:
                     jaczeros[p] = 1.0
                 r -= ell[p]
                 c = self.pointupdate(r, delta, y[p], phi[p], ell[p])
-                if c == 0.0:
-                    break
                 y[p] += self.args.omega * c
-        if self.args.showsingular and any(jaczeros != 0.0):
-            self.showsingular(jaczeros)
+        return jaczeros
 
     def jacobisweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place projected nonlinear Jacobi sweep over the interior
         points p=1,...,m, for the SIA problem.  Compare PNGSSIA.smoothersweep().
         Underrelaxation is expected; try omega = 0.5.'''
         # compute residual and Jacobian at each point
+        jaczeros = mesh.zeros()
         r, delta = mesh.zeros(), mesh.zeros()
-        for p in self._sweepindices(mesh, forward=True):
-            r[p], delta[p] = self._pointN(mesh, mesh.g + y, p)
-            r[p] -= ell[p]
-        # update each y[p] value
-        for p in self._sweepindices(mesh, forward=forward):
-            for k in range(self.args.newtonits):
+        for _ in range(self.args.newtonits):
+            for p in self._sweepindices(mesh, forward=True):
+                r[p], delta[p] = self._pointN(mesh, mesh.g + y, p)
+                r[p] -= ell[p]
+                if delta[p] == 0.0:
+                    jaczeros[p] = 1.0
+            # update each y[p] value
+            for p in self._sweepindices(mesh, forward=forward):
                 c = self.pointupdate(r[p], delta[p], y[p], phi[p], ell[p])
-                if c == 0.0:
-                    break
                 y[p] += self.args.omega * c
-        if self.args.showsingular:
-            jaczeros = np.array(delta == 0.0)
-            if any(jaczeros != 0.0):
-                self.showsingular(jaczeros)
+        return jaczeros
 
     def phi(self, x):
         '''For now we have a flat bed.'''
