@@ -1186,13 +1186,9 @@ This defines a map from $w^j$ in $\{v \ge b^j\} \subset \mathcal{V}^j$ to $N^j(w
 
 For convergence and performance comparisons versus the more-degenerate SIA problem, will also solve the $\pp$-Laplacian obstacle problem.  Its operator formula, implicit the weak form \eqref{eq:plaplacianpoisson}, is computed exactly using \eqref{eq:siaNlevel}, but with $\Gamma = 1$ and $\tau_q(\xi)=1$: $N^j(w^j)[\psi_p^j] = h^{1-\pp} \left[\mu(w_p-w_{p-1}) - \mu(w_{p+1}-w_p)\right]$.
 
-\subsection{Projected nonlinear Gauss-Seidel} \label{subsec:pngs}  To construct a smoother for VI \eqref{eq:siaVIFEfinelevel} or \eqref{eq:siaVIFEFAS} we follow the derivation of the PGS smoother in section \ref{sec:obstacle}.  Although a minimization-based derivation was possible for that classical obstacle problem, we also showed that one-dimensional VI \eqref{eq:pgspointwisevi} produced the PGS formula \eqref{eq:pgsformula}.  The smoother here will again use a one-dimensional VI for the SIA problem, but it will take a fixed number of Newton steps at each point, and we will need to respond when the SIA form degenerates.
+\subsection{Projected nonlinear smoothers} \label{subsec:pngs}  To construct smoothers for VI \eqref{eq:siaVIFEfinelevel} or \eqref{eq:siaVIFEFAS} we follow the derivation of the PGS smoother in section \ref{sec:obstacle}.  Although a minimization-based derivation was possible for that classical obstacle problem, we also showed that one-dimensional VI \eqref{eq:pgspointwisevi} produced the PGS formula \eqref{eq:pgsformula}, and the smoothers here will again use a one-dimensional VI.  However, because the problem is nonlinear it will take a fixed number of Newton steps at each point, and where the SIA form degenerates we need special logic.  We describe how to apply a smoother for \eqref{eq:siaVIFEFAS}, and later note the simple replacements for \eqref{eq:siaVIFEfinelevel}.
 
-For solving \eqref{eq:siaVIFEFAS}, $\phi^j$ is the obstacle on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$, and $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j \subset \mathcal{W}$.  Note that $g^j+y^j \ge b^j$ follows if $y^j$ is in $\mathcal{K}^j$.
-
-For single-level VI \eqref{eq:siaVIFEfinelevel}, or for \eqref{eq:siaVIFEFAS} when up-smoothing after the coarse-level correction,  in the following formulas replace $\phi^j$ with $\chi^j$, $\mathcal{K}^j$ with $\mathcal{D}^j$, and $y^j$ with $z^j$.
-
-At the node $x_p^j$, our \emph{projected nonlinear Gauss-Seidel} (PNGS) smoother seeks a scalar $c$ such that $c \ge \phi_p - y_p$ which solves the following one-dimensional VI:
+In \eqref{eq:siaVIFEFAS}, assuming we are going down in a V-cycle, $\phi^j$ is the obstacle on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$, and $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j \subset \mathcal{W}$.  Note that $g^j+y^j \ge b^j$ follows if $y^j$ is in $\mathcal{K}^j$.  At the node $x_p^j$, our smoother will seek a scalar $c$ so that $c \ge \phi_p - y_p$ and it solves the following one-dimensional VI:
 \begin{equation}
 N^j(g^j+y^j+c\psi_p^j)[(\tilde c - c) \psi_p^j] \ge \ell^j[(\tilde c - c) \psi_p^j] \label{eq:pngspointwiseviEARLY}
 \end{equation}
@@ -1246,7 +1242,7 @@ For clarity we isolate this logic into a pseudocode.  Consider a point $x_p^j$ a
         return $\min(c, \id{cupmax})$ \qquad\qquad\quad \ct{limit large upward steps}
 \end{pseudo*}
 
-Now we have the following pseudocode for an SIA or $\pp$-Laplacian smoother.
+If the pointwise problems are done with all the current values of the iterate then our smoother is \emph{projected nonlinear Gauss-Seidel} (PNGS).  For either the SIA or $\pp$-Laplacian problems we have the following pseudocode.
 \begin{pseudo*} \label{ps:pngs}
 \pr{pngs}(j,g^j,y^j,N^j,\ell^j,\phi^j,\id{newtonits}=2,\id{omega}=1)\text{:} \\+
     \ct{check admissibility: $y^j \ge \phi^j$} \\
@@ -1256,28 +1252,39 @@ Now we have the following pseudocode for an SIA or $\pp$-Laplacian smoother.
             $c = \pr{pointupdate}(\rho(0), \rho'(0),\phi_p,y_p,\ell_p)$ \\
             $y_p \gets y_p + \id{omega}\,c$
 \end{pseudo*}
-As before there is a Jacobi version.
+As before there is a \emph{projected nonlinear Jacobi} version.  In this case the loops are reversed because the residual and Jacobian must be updated before each sweep.
 \begin{pseudo*} \label{ps:pnjacobi}
-\pr{pnjacobi}(j,g^j,y^j,N^j,\ell^j,\phi^j)\text{:} \\+
+\pr{pnjacobi}(j,g^j,y^j,N^j,\ell^j,\phi^j,\id{newtonits}=2,\id{omega}=0.67)\text{:} \\+
     \ct{check admissibility: $y^j \ge \phi^j$} \\
-    FIXME \\
-    for $p=1,\dots,m_j$ \\+
-        for $k=1,\dots,\id{newtonits}$ \\+
-            $\rho(c) := N^j(g^j+y^j+c\psi_p^j)[\psi_p^j] - \ell^j[\psi_p^j]$ \\
-            $c = \pr{pointupdate}(\rho(0), \rho'(0),\phi_p,y_p,\ell_p)$ \\
+    for $k=1,\dots,\id{newtonits}$ \\+
+        $\rho_p(c) := N^j(g^j+y^j+c\psi_p^j)[\psi_p^j] - \ell^j[\psi_p^j]$ \\
+        $r_p, \delta_p = \rho_p(0), \rho_p'(0)$ \qquad\qquad\qquad\qquad \ct{compute for all $p$}\\
+        for $p=1,\dots,m_j$ \\+
+            $c = \pr{pointupdate}(r_p, \delta_p,\phi_p,y_p,\ell_p)$ \\
             $y_p \gets y_p + \id{omega}\,c$
 \end{pseudo*}
+Here the default value of \id{omega} is just a place-holder, because stable values must be determined by experimentation.
 
-FIXME $\pp$-Laplacian case the same as possible
+For single-level VI \eqref{eq:siaVIFEfinelevel}, or for \eqref{eq:siaVIFEFAS} when up-smoothing after the coarse-level correction, make the following replacements in formulas and pseudocodes: $\phi^j \to \chi^j$, $\mathcal{K}^j \to \mathcal{D}^j$, $y^j \to z^j$.
+
+The above formulas and pseudocodes also apply to the $\pp$-Laplacian obstacle problem---see \eqref{eq:plaplacianpoisson}---with only minimal modifications as follows: $\Gamma=1$ and $\tau_q(\xi)=1$ in formulas for $N(w)[v]$ and $\rho(c)$; \id{cupmax} $=1$ and \id{caccum} $=0$ in the $\pp$-Laplacian implementation of \pr{pointupdate}.
 
 FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not too big)
 
-\subsection{Convergence and performance results} \label{subsec:siaperformance}  FIXME first $\pp$-Laplacian
+\subsection{Convergence and performance results} \label{subsec:siaperformance}  FIXME first SIA sweeps only on Bueler profile
+
+FIXME how do results depend on newton its, GS vs Jacobi with a couple of omega values
+
+FIXME V-cycles and F-cycles on Bueler profile
+
+FIXME performance measurements on a random bed
+
+FIXME regarding SIA singularities compare to $\pp$-Laplacian performance
 % $ for JJ in 1 2 3 4 5 6 7 8 9 10 11 12 13; do timer ./obstacle.py -problem plap -showsingular -J $JJ -cyclemax 10000 -irtol 1.0e-7 -down 1 -symmetric; done
 
-FIXME first use Bueler profile to verify smoother only; FIXME how do results depend on number of newton its in smoother; FIXME V-cycles and F-cycles on Bueler profile, then performance measurements on a random bed; FIXME regarding singularities compare to $\pp$-Laplacian performance
-
 \subsection{Performance of implicit evolving-geometry solvers} \label{subsec:siaimplicit}  FIXME use Halfar solution
+
+FIXME can we see cross-over relative to explicit time-stepping?
 
 
 \section{Multigrid for fixed-geometry Glen-Stokes glacier flow} \label{sec:stokes}
