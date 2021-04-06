@@ -74,6 +74,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
 
     def applyoperator(self, mesh, w):
         '''Apply nonlinear operator N to w to get N(w) in (V^j)'.'''
+        mesh.checklen(w)
         Nw = mesh.zeros()
         for p in self._sweepindices(mesh, forward=True):
             Nw[p], _ = self._pointN(mesh, w, p)
