@@ -17,18 +17,15 @@ from mcdl import mcdlfcycle, mcdlsolver
 from mcdn import mcdnfcycle, mcdnsolver
 
 parser = argparse.ArgumentParser(description='''
-Solve 1D obstacle problems by a multilevel constraint decomposition method.
-
-The problem:  For given Banach space X, and given an obstacle phi in X,
+Solve 1D obstacle problems:  For given Banach space X and obstacle phi in X,
 find u in the closed, convex subset
     K = {v in X | v >= phi}
 so that the variational inequality (VI) holds,
     F(u)[v-u] >= 0   for all v in K.
 Note u solves an interior PDE in the inactive set {x | u(x) > phi(x)}.
+We solve three such problems:
 
-We solve two particular problems:
-
-1. For classical obstacle problem (smoother.py):
+1. -problem poisson = classical obstacle problem:
     X = H_0^1[0,1]
     phi (obstacle)
     f (source) is in L^2[0,1]
@@ -39,8 +36,18 @@ We solve two particular problems:
     F(u)[v] = a(u,v) - ell[v]
     PDE is Poisson equation  - u'' = f
 
-2. For shallow ice approximation (SIA) obstacle problem (Bueler 2016)
-   (siasmoother.py):
+2. -problem plap = p-Laplacian (p=4) obstacle problem:
+    X = W_0^{1,p}[0,1]
+    phi (obstacle)
+    f (source) is in L^q[0,1]
+    ell[v] = <f,v>
+              /1
+    N(u)[v] = |  |u'|^{p-2} u' v dx
+              /0
+    F(u)[v] = N(u)[v] - ell[v]
+    PDE is p-Laplacian equation  - (|u'|^{p-2} u')' = f
+
+3. -problem sia = shallow ice approximation (SIA) obstacle problem:
     X = W_0^{1,p}[0,xmax]  where p = n + 1
     b = phi (bed elevation)
     a (mass balance) is in L^q[0,xmax]
@@ -48,7 +55,7 @@ We solve two particular problems:
               /xmax
     N(s)[v] = |     Gamma (s-b)^{n+2} |s'|^{n-1} s' v dx
               /0
-    F(u)[v] = N(u)[v] - ell[v]
+    F(s)[v] = N(s)[v] - ell[v]
     PDE is SIA equation  - (Gamma (s-b)^{n+2} |s'|^{n-1} s')' = a
 
 Solution is by the multilevel constraint decomposition (MCD) method of
@@ -63,7 +70,7 @@ or projected Jacobi using a relaxation parameter (-omega).  These are
 nonlinear for problem 2, using a fixed number of Newton iterations at each
 point.  Option -sweepsonly reverts to using these smoothers on a single level.
 
-Get usage help with -h or --help.
+Get usage help with -h.
 
 References:
   * Bueler, E. (2016). Stable finite volume element schemes for the
