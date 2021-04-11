@@ -12,10 +12,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 INFILE = 'performance.txt'
-SOLVERNAME = ['V(1,0)', 'V(0,1)', 'V(1,1)', 'V(1,1)-J']
-MARKER = ['o','s','v','D']
-MARKERSIZE = [12.0,11.0,10.0,9.0]
-MARKERFACE = ['w','w','k','k']
+SOLVERNAME = ['V(1,0)', 'V(0,1)', 'V(1,1)', 'V(0,2)', 'V(0,2)-Jacobi']
+MARKER = ['v','^','d','o','o']
+MARKERSIZE = [10.0,10.0,10.0,10.0,10.0]
+MARKERFACE = ['w','w','w','w','k']
 
 SHOW = False
 def writeout(outname):
@@ -29,7 +29,8 @@ print('reading %s ...' % INFILE)
 v = np.array(np.loadtxt(INFILE))
 
 N = 10  # number of different resolutions
-assert len(v[:,0]) == 4*N   # 4 solver+problem combinations
+scount = len(SOLVERNAME)
+assert len(v[:,0]) == scount * N   #  solver+problem combinations
 
 # columns:  solver J m cycles WU time
 solver = v[:,0]
@@ -41,7 +42,7 @@ time = v[:,5]
 
 # cycles versus m
 plt.figure(figsize=(7,6))
-for s in range(4):  # s=solver
+for s in range(scount):  # s=solver
     mm = m[solver==s]
     ccycles = cycles[solver==s]
     q = np.polyfit(np.log(mm),np.log(ccycles),1)
@@ -51,16 +52,16 @@ for s in range(4):  # s=solver
 plt.grid(True)
 plt.xlabel('$m$',fontsize=18.0)
 plt.ylabel('iterations',fontsize=18.0)
-plt.axis([100.0,1.0e5,0.0,55.0])
+plt.axis([100.0,1.0e5,0.0,70.0])
 plt.xticks(fontsize=14.0)
 plt.yticks(fontsize=14.0)
 plt.minorticks_off()
-plt.legend(loc='lower right',fontsize=14.0)
+plt.legend(loc='upper left',fontsize=14.0)
 writeout('mcdl-cycles.pdf')
 
 # work units versus m
 plt.figure(figsize=(7,6))
-for s in range(4):  # s=solver
+for s in range(scount):  # s=solver
     mm = m[solver==s]
     WUU = WU[solver==s]
     q = np.polyfit(np.log(mm),np.log(WUU),1)
@@ -70,7 +71,7 @@ for s in range(4):  # s=solver
 plt.grid(True)
 plt.xlabel('$m$',fontsize=18.0)
 plt.ylabel('WU',fontsize=18.0)
-plt.axis([100.0,1.0e5,0.0,210.0])
+plt.axis([100.0,1.0e5,0.0,250.0])
 plt.xticks(fontsize=14.0)
 plt.yticks(fontsize=14.0)
 plt.minorticks_off()
@@ -79,7 +80,7 @@ writeout('mcdl-wu.pdf')
 
 # (time/m) versus m; skip three coarsest
 plt.figure(figsize=(7,6))
-for s in range(4):  # s=solver
+for s in range(scount):  # s=solver
     mm = m[solver==s]
     timeper = time[solver==s] / mm
     mmall = mm[mm > 1000]
@@ -95,9 +96,9 @@ for s in range(4):  # s=solver
 plt.grid(True)
 plt.xlabel('$m$',fontsize=18.0)
 plt.ylabel('time (ms) per $m$',fontsize=18.0)
-plt.axis([900.0,1.0e5,0.0,1.5])
+plt.axis([900.0,1.0e5,0.0,1.1])
 plt.xticks(fontsize=14.0)
 plt.yticks(fontsize=14.0)
 plt.minorticks_off()
-plt.legend(loc='lower right',fontsize=14.0)
+plt.legend(loc='lower left',fontsize=14.0)
 writeout('mcdl-timeper.pdf')
