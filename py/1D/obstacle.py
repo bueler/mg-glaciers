@@ -150,8 +150,8 @@ parser.add_argument('-sweepsnotalternate', action='store_true', default=False,
                     help='normally sweeps alternate direction; stop doing this')
 parser.add_argument('-sweepsonly', action='store_true', default=False,
                     help='do smoother sweeps as cycles, instead of multilevel')
-parser.add_argument('-up', type=int, default=1, metavar='N',
-                    help='smoother sweeps after coarse-mesh correction (default=1)')
+parser.add_argument('-up', type=int, default=2, metavar='N',
+                    help='smoother sweeps after coarse-mesh correction (default=2)')
 args, unknown = parser.parse_known_args()
 
 # provide usage help

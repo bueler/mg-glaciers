@@ -1,1 +1,1 @@
-J=4 (m=31): 9 PGS V(0,1) cycles -> 17.438 WU;  |u-uexact|_2 = 5.636e-04
+J=4 (m=31): 6 PGS V(0,2) cycles -> 22.875 WU;  |u-uexact|_2 = 5.843e-04

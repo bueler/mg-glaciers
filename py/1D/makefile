@@ -15,7 +15,7 @@ run_2:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -J 4 -jcoarse 3 -cyclemax 2 -down 1 -up 0 -monitorerr -mgview" 1 2 "poisson traditional V(1,0) cycles monitor error"
 
 run_3:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -J 4" 1 3 "poisson traditional V(0,1) cycles"
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -J 4" 1 3 "poisson traditional V(0,2) cycles"
 
 run_4:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 3 -sweepsonly -omega 1.5 -cyclemax 3" 1 4 "poisson icelike PGS sweeps omega=1.5"
@@ -24,25 +24,25 @@ run_5:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 4 -ni -cyclemax 1 -down 1 -up 0 -monitorerr" 1 5 "poisson icelike F-cycle using V(1,0) cycle"
 
 run_6:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jacobi -omega 0.85 -monitor -irtol 1.0e-2" 1 6 "poisson icelike V(0,1) cycles Jacobi smoother"
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jacobi -omega 0.85 -monitor" 1 6 "poisson icelike V(0,2) cycles Jacobi smoother"
 
 run_7:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 3 -down 1 -up 1 -monitorerr -diagnostics -o test7.png" 1 7 "poisson icelike V(1,1) cycles diagnostics"
 
 run_8:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase pde2 -J 3" 1 8 "poisson pde2 [unconstrained] V(1,0) cycles"
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase pde2 -J 3" 1 8 "poisson pde2 [unconstrained] V(0,2) cycles"
 
 run_9:
 	-@./../testit.sh obstacle.py "-problem plap -up 2 -monitor" 1 9 "plap PNGS V(0,2) cycles"
 
 run_10:
-	-@./../testit.sh obstacle.py "-problem plap -down 1 -up 2 -monitor -ni -nicycles 2 -jacobi -omega 0.5" 1 10 "plap PNJacobi F-cycle using 2 V(1,2) cycles"
+	-@./../testit.sh obstacle.py "-problem plap -down 1 -monitor -ni -nicycles 2 -jacobi -omega 0.5" 1 10 "plap PNJacobi F-cycle using 2 V(1,2) cycles"
 
 run_11:
 	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -showsingular -J 4 -cyclemax 6 -monitor" 1 11 "sia PNGS sweeps show singular points"
 
 run_12:
-	-@./../testit.sh obstacle.py "-problem sia -J 4 -irtol 1.0e-2 -monitor" 1 12 "sia V(0,1) cycles"
+	-@./../testit.sh obstacle.py "-problem sia -up 1 -J 4 -irtol 1.0e-2 -monitor" 1 12 "sia V(0,1) cycles"
 
 run_13:
 	-@./../testit.sh obstacle.py "-problem sia -J 3 -down 1 -up 1 -monitor -ni -nicycles 2 -cyclemax 2" 1 13 "sia F-cycle using two V(1,1) cycles"
