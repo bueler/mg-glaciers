@@ -6,12 +6,12 @@ set -e
 #   $ ./siaasymp.sh >& out.siaasymp
 
 # quick view results:
-#   $ grep -B 4 case out.siaasymp |less
+#   $ grep -B 4 cycles out.siaasymp |less
 
 # OTHER PARAMETERS TO CONSIDER:
 #   -newtonits 1|2|3
 
-for SMOOTHER in "" "-down 1" "-down 2" "-jacobi -omega 0.6" "-jacobi -omega 0.5" "-jacobi -omega 0.4" "-jacobi -omega 0.3"; do
+for SMOOTHER in "" "-down 1" "-down 2" "-jacobi -omega 0.6" "-jacobi -omega 0.5" "-jacobi -omega 0.4"; do
     for JJ in 6 8 10; do
         OPTS="-problem sia -exactinitial -monitor -irtol 1.0e-8 -J $JJ $SMOOTHER"
         echo "case: " $OPTS
