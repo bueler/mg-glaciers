@@ -43,7 +43,7 @@ def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
             _levelreport(levels-1, k, hierarchy[k].m, args.down)
         hierarchy[k].y = hierarchy[k].zeros()
         obsprob.smoother(args.down, hierarchy[k], hierarchy[k].y,
-                         hierarchy[k].ell, phi, symmetric=args.symmetric)
+                         hierarchy[k].ell, phi)
         # update and canonically-restrict the residual
         hierarchy[k-1].ell = - hierarchy[k].cR(obsprob.residual(hierarchy[k],
                                                                 hierarchy[k].y,
@@ -54,7 +54,7 @@ def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
         _coarsereport(levels-1, hierarchy[0].m, args.coarse)
     hierarchy[0].y = hierarchy[0].zeros()
     obsprob.smoother(args.coarse, hierarchy[0], hierarchy[0].y,
-                     hierarchy[0].ell, hierarchy[0].chi, symmetric=args.symmetric)
+                     hierarchy[0].ell, hierarchy[0].chi)
 
     # upward
     z = hierarchy[0].y
@@ -66,8 +66,7 @@ def mcdlvcycle(args, obsprob, J, hierarchy, ell, levels=None):
             if args.mgview:
                 _levelreport(levels-1, k, hierarchy[k].m, args.up)
             obsprob.smoother(args.up, hierarchy[k], z,
-                             hierarchy[k].ell, hierarchy[k].chi,
-                             symmetric=args.symmetric, forward=False)
+                             hierarchy[k].ell, hierarchy[k].chi)
     return z
 
 def mcdlfcycle(args, obsprob, J, hierarchy):

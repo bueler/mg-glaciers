@@ -1,5 +1,6 @@
   0:  |ir(u)|_2 = 1.7741e+02
-  1:  |ir(u)|_2 = 5.8858e+00  (rate 0.0332)
-  2:  |ir(u)|_2 = 2.4141e+00  (rate 0.4102)
-  3:  |ir(u)|_2 = 1.5179e+00  (rate 0.6288)
-J=2 (m=7): 3 applications of sym. smoother -> 12.000 WU;  |u-uexact|_2 = 1.162e+06, |u^r-uexact^r|_p = 2.996e+10
+  1:  |ir(u)|_2 = 1.2050e+01  (rate 0.0679)
+  2:  |ir(u)|_2 = 2.4470e+00  (rate 0.2031)
+  3:  |ir(u)|_2 = 2.1044e+00  (rate 0.8600)
+  4:  |ir(u)|_2 = 1.6773e+00  (rate 0.7970)
+J=2 (m=7): 4 applications of PNGS smoother -> 8.000 WU;  |u-uexact|_2 = 1.210e+06, |u^r-uexact^r|_p = 3.263e+10

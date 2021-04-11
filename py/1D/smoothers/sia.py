@@ -50,6 +50,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
         self.buelerL = 750.0e3      # half-width of sheet
         self.buelerH0 = 3600.0      # center thickness
         self.buelerxc = 900.0e3     # x coord of center in [0,xmax]=[0,1800] km
+        self.name = 'PNJac' if self.args.jacobi else 'PNGS'
 
     def _pointN(self, mesh, w, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for

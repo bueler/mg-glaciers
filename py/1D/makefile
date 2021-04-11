@@ -9,7 +9,7 @@ mtest:
 	python3 -m pytest
 
 run_1:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -poissonparabolay -3.0 -J 1 -sweepsonly -symmetric" 1 1 "poisson traditional PGS sweeps"
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -poissonparabolay -3.0 -J 1 -sweepsonly" 1 1 "poisson traditional PGS sweeps"
 
 run_2:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase traditional -J 4 -jcoarse 3 -cyclemax 2 -down 1 -up 0 -monitorerr -mgview" 1 2 "poisson traditional V(1,0) cycles monitor error"
@@ -33,22 +33,22 @@ run_8:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase pde2 -J 3" 1 8 "poisson pde2 [unconstrained] V(1,0) cycles"
 
 run_9:
-	-@./../testit.sh obstacle.py "-problem plap -symmetric -down 1 -monitor" 1 9 "plap PNGS V(1,1) cycles symmetric"
+	-@./../testit.sh obstacle.py "-problem plap -up 2 -monitor" 1 9 "plap PNGS V(0,2) cycles"
 
 run_10:
-	-@./../testit.sh obstacle.py "-problem plap -symmetric -down 1 -up 2 -monitor -ni -nicycles 2 -jacobi -omega 0.5" 1 10 "plap PNJacobi F-cycle using 2 V(1,2) cycles"
+	-@./../testit.sh obstacle.py "-problem plap -down 1 -up 2 -monitor -ni -nicycles 2 -jacobi -omega 0.5" 1 10 "plap PNJacobi F-cycle using 2 V(1,2) cycles"
 
 run_11:
 	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -showsingular -J 4 -cyclemax 6 -monitor" 1 11 "sia PNGS sweeps show singular points"
 
 run_12:
-	-@./../testit.sh obstacle.py "-problem sia -J 4 -irtol 1.0e-2 -symmetric -monitor" 1 12 "sia V(0,1) cycles symmetric"
+	-@./../testit.sh obstacle.py "-problem sia -J 4 -irtol 1.0e-2 -monitor" 1 12 "sia V(0,1) cycles"
 
 run_13:
 	-@./../testit.sh obstacle.py "-problem sia -J 3 -down 1 -up 1 -monitor -ni -nicycles 2 -cyclemax 2" 1 13 "sia F-cycle using two V(1,1) cycles"
 
 run_14:
-	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -symmetric -J 2 -monitor -irtol 1.0e-2" 1 14 "sia PNGS sweeps"
+	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -J 2 -monitor -irtol 1.0e-2" 1 14 "sia PNGS sweeps"
 
 run_15:
 	-@./../testit.sh obstacle.py "-problem sia -exactinitial -sweepsonly -jacobi -omega 0.5 -J 3 -monitor -cyclemax 2" 1 15 "sia PJacobi sweeps omega=0.5 exact initial"

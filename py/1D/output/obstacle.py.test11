@@ -11,4 +11,4 @@
   5:  |ir(u)|_2 = 1.0821e+00  (rate 0.3344)
  11 singulars: -*****--------------------******-
   6:  |ir(u)|_2 = 7.1665e-01  (rate 0.6623)
-J=4 (m=31): 6 applications of smoother -> 12.000 WU;  |u-uexact|_2 = 1.820e+06, |u^r-uexact^r|_p = 4.953e+10
+J=4 (m=31): 6 applications of PNGS smoother -> 12.000 WU;  |u-uexact|_2 = 1.820e+06, |u^r-uexact^r|_p = 4.953e+10

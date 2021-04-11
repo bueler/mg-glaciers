@@ -15,6 +15,7 @@ class SmootherObstacleProblem(ABC):
         self.inadmissible = 0  # count of repaired admissibility violations
         # fix the random seed for repeatability
         np.random.seed(self.args.randomseed)
+        self.name = 'base'
 
     def _checkrepairadmissible(self, mesh, w, phi):
         '''Check and repair feasibility.'''
@@ -41,13 +42,17 @@ class SmootherObstacleProblem(ABC):
             Jstr += '-' if z[k] == 0.0 else '*'
         print('%3d singulars: ' % sum(z > 0.0) + Jstr)
 
-    def smoother(self, iters, mesh, w, ell, phi, forward=True, symmetric=False):
-        '''Apply iters sweeps of obstacle-problem smoother on mesh to modify w in
-        place.'''
+    def smoother(self, iters, mesh, w, ell, phi):
+        '''Apply iters sweeps of obstacle-problem smoother on mesh to modify w in place.  Alternate directions (unless overridden).'''
+        forward = True
         for _ in range(iters):
             self.smoothersweep(mesh, w, ell, phi, forward=forward)
-            if symmetric:
-                self.smoothersweep(mesh, w, ell, phi, forward=not forward)
+            if not self.args.sweepsnotalternate:
+                forward = not forward
+
+    def initial(self, x):
+        '''Generate default initial shape.'''
+        return np.maximum(self.phi(x), 0.0)
 
     @abstractmethod
     def applyoperator(self, mesh, w):
@@ -82,7 +87,3 @@ class SmootherObstacleProblem(ABC):
         '''Evaluate exact solution u at location(s) x.  Call exact_available()
         first.  If exact solution is not available this function will raise
         AssertionError or NotImplementedError.'''
-
-    def initial(self, x):
-        '''Generate default initial shape.'''
-        return np.maximum(self.phi(x), 0.0)

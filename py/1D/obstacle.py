@@ -146,10 +146,10 @@ parser.add_argument('-siaeps', type=float, default=0.0, metavar='X',
 parser.add_argument('-siaintervallength', type=float, default=1800.0e3,
                     metavar='L',
                     help='solve SIA on [0,L] (default L=1800 km)')
+parser.add_argument('-sweepsnotalternate', action='store_true', default=False,
+                    help='normally sweeps alternate direction; stop doing this')
 parser.add_argument('-sweepsonly', action='store_true', default=False,
                     help='do smoother sweeps as cycles, instead of multilevel')
-parser.add_argument('-symmetric', action='store_true', default=False,
-                    help='use symmetric Gauss-Seidel sweeps (forward then backward)')
 parser.add_argument('-up', type=int, default=1, metavar='N',
                     help='smoother sweeps after coarse-mesh correction (default=1)')
 args, unknown = parser.parse_known_args()
@@ -250,8 +250,6 @@ def sweepssolver(args, obsprob, mesh, ellf, phi, w, monitor,
     for s in range(iters):
         # smoother sweeps on finest level
         obsprob.smoothersweep(mesh, w, ellf, phi)
-        if args.symmetric:
-            obsprob.smoothersweep(mesh, w, ellf, phi, forward=False)
         irnorm, errnorm = monitor.irerr(w, ellf, phi, indent=0)
         if irnorm > 100.0 * irnorm0:
             print('WARNING:  irnorm > 100 irnorm0')
@@ -283,11 +281,10 @@ for j in range(levels):
 method = ''
 if args.ni:
     method = 'F-cycle + '
-symstr = 'sym. ' if args.symmetric else ''
 if args.sweepsonly:
-    method += '%d applications of %ssmoother' % (mon.s - 1, symstr)
+    method += '%d applications of %s smoother' % (mon.s - 1, obsprob.name)
 else:
-    method += '%d %sV(%d,%d) cycles' % (mon.s - 1, symstr, args.down, args.up)
+    method += '%d %s V(%d,%d) cycles' % (mon.s - 1, obsprob.name, args.down, args.up)
 if obsprob.exact_available():
     uex = obsprob.exact(hierarchy[-1].xx())
     error = ';  |u-uexact|_2 = %.3e' % mesh.l2norm(uu - uex)

@@ -18,6 +18,7 @@ class PGSPoisson(SmootherObstacleProblem):
             self.alpha = _pde2alpha
         else:
             self.alpha = None
+        self.name = 'PGS'
 
     def _diagonalentry(self, h, p):
         '''Compute the diagonal value of a(.,.) at hat function psi_p^j:
@@ -168,3 +169,4 @@ class PJacobiPoisson(PGSPoisson):
             c = - r[p] / self._diagonalentry(mesh.h, p)
             w[p] = max(w[p] + self.args.omega * c, phi[p])
         mesh.WU += 1
+        self.name = 'PJac'

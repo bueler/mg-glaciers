@@ -19,6 +19,7 @@ class PJacobiStokes(SmootherObstacleProblem):
         self.rhoi = rhoi
         self.nglen = nglen
         self.A = A
+        self.name = 'PNJac'
 
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected nonlinear Jacobi sweep over the interior
