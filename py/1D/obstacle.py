@@ -298,6 +298,8 @@ if obsprob.exact_available():
     if args.problem == 'sia':
         error += ', |u^r-uexact^r|_p = %.3e' % \
                  mesh.lqnorm(obsprob.pp, uu**obsprob.rr - uex**obsprob.rr)
+    elif args.problem == 'plap':
+        error += ', |u-uexact|_p = %.3e' % mesh.lqnorm(obsprob.pp, uu - uex)
 else:
     uex = None
     error = ''

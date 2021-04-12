@@ -12,4 +12,4 @@
   1:  |ir(u)|_2 = 4.4579e-05  (rate 0.0054)
   2:  |ir(u)|_2 = 8.3787e-07  (rate 0.0188)
   1:  |ir(u)|_2 = 4.5708e-08  (rate 0.0000)
-J=3 (m=15): F-cycle + 1 PNJac V(1,2) cycles -> 45.750 WU;  |u-uexact|_2 = 6.132e-03
+J=3 (m=15): F-cycle + 1 PNJac V(1,2) cycles -> 45.750 WU;  |u-uexact|_2 = 6.132e-03, |u-uexact|_p = 6.797e-03
