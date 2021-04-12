@@ -125,7 +125,11 @@ parser.add_argument('-omega', type=float, default=1.0, metavar='X',
                     help='relaxation factor in smoother (default X=1.0)')
 parser.add_argument('-plain', action='store_true', default=False,
                     help='when used with -show or -o, only show exact solution and obstacle')
-parser.add_argument('-poissoncase', choices=['icelike', 'traditional', 'pde1', 'pde2'],
+parser.add_argument('-plapcase', choices=['pile','bridge'], metavar='X',
+                    default='pile',
+                    help='determines obstacle and source function (default: %(default)s)')
+parser.add_argument('-poissoncase',
+                    choices=['icelike', 'traditional', 'pde1', 'pde2'],
                     metavar='X', default='icelike',
                     help='determines obstacle and source function (default: %(default)s)')
 parser.add_argument('-poissonfscale', type=float, default=1.0, metavar='X',

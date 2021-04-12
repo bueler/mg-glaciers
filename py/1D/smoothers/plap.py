@@ -1,5 +1,5 @@
 '''Module for PNsmootherPLap classes, a derived class of PNsmootherSIA.
-Provides GS and Jacobi smoothers, and an exact solution, for the p-Laplacian
+Provides GS and Jacobi smoothers, and two exact solutions, for the p-Laplacian
 obstacle problem.'''
 
 __all__ = ['PNsmootherPLap']
@@ -10,12 +10,28 @@ from smoothers.sia import PNsmootherSIA
 class PNsmootherPLap(PNsmootherSIA):
     '''Smoother for the p-Laplacian obstacle problem with p=4:
         - (|u'(x)|^2 u'(x))' = f(x),  u(x) >= phi(x)
-    with u(0)=u(1)=0.
+    with u(0)=u(1)=0.  Two exact solutions are implemented, both symmetric
+    around x=0.5:
 
-    One "bridge" exact solution is implemented, symmetric around x=0.5:
+    1. "pile":
+    Data
+        c = ((4/3) (0.2)^(-1/3) - 1)^3 = 2.096994368090019
+        f(x) = 1 on [0.3,0.7] and -c on [0,0.3) or (0.7,1]
+        phi(x) = 0
+    We force u(0.5)=0.2, symmetry around x=0.5, and free boundaries at x=0.1
+    and x=0.9.  Integrating and using u'(0.5)=0 and u(0.5)=0.2 get
+        u(x) = 0.2 - (3/4) |x-0.5|^(4/3)  on [0.3,0.7]
+    On [0.1,0.3] or [0.7,0.9] we have u'(x)^3 = -c(0.4 - |x-0.5|) from the
+    free boundary, thus
+        u(x) = 0.2 - (3/4) (0.2)^(4/3)
+               - (3/4) c^(1/3) ( (0.2)^(4/3) - (0.4 - |x-0.5|)^(4/3) )
+    Finally
+        u(x)=0 on [0,0.1] or [0.9,1].
+
+    2. "bridge":
+    Data
         f(x) = 3 (x-0.5)^2
         phi(x) = 0.25 sin(3 pi x)
-    (Actually we take phi(x) = max(0, 0.25 sin(3 pi x).)
     Integrating once using u'(0.5)=0 from symmetry, get
         - (u'(x))^3 = (x-0.5)^3
     so u'(x) = 0.5 - x and u(x) = 0.5 x (1 - x) + C, thus u(x) is a downward
@@ -34,6 +50,8 @@ class PNsmootherPLap(PNsmootherSIA):
         super().__init__(args, admissibleeps=admissibleeps)
         # parameter used in pointupdate()
         self.cupmax = 1.0  # never move surface up by more than this
+        # constant in "pile" exact solution:
+        self.cpile = ( (4.0/3.0) * 5.0**(1.0/3.0) - 1.0 )**3.0
 
     def _pointN(self, mesh, w, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for
@@ -59,22 +77,35 @@ class PNsmootherPLap(PNsmootherSIA):
             return c
 
     def source(self, x):
-        return 3.0 * (x - 0.5)**2
+        '''Source f(x) in -(|u'|^2 u')' = f.'''
+        if self.args.plapcase == 'pile':
+            f = np.ones(np.shape(x))
+            f[x < 0.3] = - self.cpile
+            f[x > 0.7] = - self.cpile
+            return f
+        elif self.args.plapcase == 'bridge':
+            f = 3.0 * (x - 0.5)**2
+        return f
 
     def phi(self, x):
-        '''Obstacle.'''
-        #return np.maximum(0.0, 0.25 * np.sin(3.0 * np.pi * x))
-        return 0.25 * np.sin(3.0 * np.pi * x)
+        '''Obstacle phi(x).'''
+        if self.args.plapcase == 'pile':
+            return np.zeros(np.shape(x))
+        elif self.args.plapcase == 'bridge':
+            return 0.25 * np.sin(3.0 * np.pi * x)
 
     def initial(self, x):
         '''Default initial shape.'''
-        return np.maximum(self.phi(x), 0.0)
+        if self.args.plapcase == 'pile':
+            return x * (1.0 - x)  # needs to be positive to have any movement
+        elif self.args.plapcase == 'bridge':
+            return np.maximum(self.phi(x), 0.0)
 
     def exact_available(self):
         return True
 
     def _solvefora(self):
-        '''Find constant in exact solution by root finding on system
+        '''Find constant in "bridge" exact solution by root finding on system
             u(a) = phi(a), u'(a) = phi'(a)
         The solution is in (0,1/6) and close to 0.15.'''
         def ff(a):
@@ -90,12 +121,23 @@ class PNsmootherPLap(PNsmootherSIA):
 
     def exact(self, x):
         '''Exact solution.'''
-        a = 0.1508874586825051
-        C = 0.18318033594477562
-        u = self.phi(x)
-        mid = (x > a) * (x < 1.0 - a)
-        u[mid] = 0.5 * x[mid] * (1.0 - x[mid]) + C
-        return u
+        if self.args.plapcase == 'pile':
+            u = np.zeros(np.shape(x))
+            xam = abs(x - 0.5)
+            mid = (xam <= 0.2)
+            next = (xam > 0.2) * (xam < 0.4)
+            r = 4.0 / 3.0
+            u[mid] = 0.2 - 0.75 * xam[mid]**r
+            u[next] = 0.2 - 0.75 * 0.2**r - 0.75 * self.cpile**(1.0/3.0) \
+                        * ( 0.2**r - (0.4 - xam[next])**r )
+            return u
+        elif self.args.plapcase == 'bridge':
+            a = 0.1508874586825051
+            C = 0.18318033594477562
+            u = self.phi(x)
+            mid = (x > a) * (x < 1.0 - a)
+            u[mid] = 0.5 * x[mid] * (1.0 - x[mid]) + C
+            return u
 
     def exactfigure(self, mesh):
         '''Show exact solution in a basic figure.'''
@@ -106,4 +148,6 @@ class PNsmootherPLap(PNsmootherSIA):
         plt.plot(x, self.exact(x), 'k--', label='$u_{exact}$')
         plt.legend(fontsize=12.0)
         plt.xlabel('x', fontsize=12.0)
-        plt.savefig('plapfigure.pdf', bbox_inches='tight')
+        fname = 'plapfigure.pdf'
+        print('saving image of plap exact solution to %s ...' % fname)
+        plt.savefig(fname, bbox_inches='tight')

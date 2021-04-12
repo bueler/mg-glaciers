@@ -33,10 +33,10 @@ run_8:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase pde2 -J 3" 1 8 "poisson pde2 [unconstrained] V(0,2) cycles"
 
 run_9:
-	-@./../testit.sh obstacle.py "-problem plap -up 2 -monitor" 1 9 "plap PNGS V(0,2) cycles"
+	-@./../testit.sh obstacle.py "-problem plap -plapcase bridge -up 2 -monitor" 1 9 "plap PNGS V(0,2) cycles"
 
 run_10:
-	-@./../testit.sh obstacle.py "-problem plap -down 1 -monitor -ni -nicycles 2 -jacobi -omega 0.5" 1 10 "plap PNJacobi F-cycle using 2 V(1,2) cycles"
+	-@./../testit.sh obstacle.py "-problem plap -plapcase bridge -down 1 -monitor -ni -nicycles 2 -jacobi -omega 0.5" 1 10 "plap PNJacobi F-cycle using 2 V(1,2) cycles"
 
 run_11:
 	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -showsingular -J 4 -cyclemax 6 -monitor" 1 11 "sia PNGS sweeps show singular points"
