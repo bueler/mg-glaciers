@@ -986,21 +986,21 @@ Many variations on V- and F-cycle strategies have not been tested in this sectio
 
 \subsection{The shallow-ice obstacle problem} \label{subsec:siaproblem}  Now we consider a nonlinear obstacle problem, namely the steady and isothermal shallow-ice approximation (SIA) model \cite{Bueleretal2005,Huybrechtsetal1996,vanderVeen2013}, in one dimension for now.  The strong form of the model is a nonlinear complementarity problem (CP) and the weak form is a nonlinear variational inequality (VI).
 
-Starting with the data and parameters, suppose we are given a \emph{surface mass balance} function $a(x)$, of size $O(1)$ meters per year, and a \emph{bed elevation} (topography) function $b(x)$ in meters above sea level.  These data $a(x)$ and $b(x)$ are assumed to be time-independent.  Let $n>1$ be the (Glen) power, $\rhoi$ the ice density, and $g$ the acceleration of gravity.  Assuming isothermal conditions \cite{GreveBlatter2009}, let $A>0$ be the (constant) ice softness.\footnote{The values used in experiments are from \cite{Huybrechtsetal1996}: $n=3$, $\rhoi=910 \,\text{kg}\,\text{m}^{-3}$, $g=9.81 \,\text{m}\,\text{s}^{-2}$, and $A=10^{-16} \,\text{Pa}^n\,\text{a}^{-1}$.}  These parameters combine into a convenience constant $\Gamma = 2 A (\rhoi g)^n / (n+2)$.
+Starting with the data and parameters, we are given a \emph{surface mass balance} function $a(x)$, of size $O(1)$ meters per year, and a \emph{bed elevation} (topography) function $b(x)$ in meters above sea level, and both are assumed to be time-independent.  Let $n>1$ be the (Glen) power, $\rhoi$ the ice density, and $g$ the acceleration of gravity.  Assuming isothermal conditions \cite{GreveBlatter2009}, let $A>0$ be the (constant) ice softness.\footnote{The values used in experiments are from \cite{Huybrechtsetal1996}: $n=3$, $\rhoi=910 \,\text{kg}\,\text{m}^{-3}$, $g=9.81 \,\text{m}\,\text{s}^{-2}$, and $A=10^{-16} \,\text{Pa}^n\,\text{a}^{-1}$.}  These parameters combine into a convenience constant $\Gamma = 2 A (\rhoi g)^n / (n+2)$.
 
 The SIA equation determines the \emph{ice surface elevation} $s(x)$, also in meters above sea level, on the part of the domain where $s>b$:
 \begin{equation}
 - \left(\Gamma (s-b)^{n+2} |s'|^{n-1} s'\right)' = a.  \label{eq:sia}
 \end{equation}
-However, as discussed in section \ref{sec:obstacle}, this strong form is actually a CP comparable to \eqref{eq:obstaclecp}:
+However, exactly as in section \ref{sec:obstacle}, this strong form is actually a CP:
 \begin{align}
 s - b &\ge 0, \label{eq:siacp} \\
 - \left(\Gamma (s-b)^{n+2} |s'|^{n-1} s'\right)' - a &\ge 0 \notag \\
 (s-b) \left[-\left(\Gamma (s-b)^{n+2} |s'|^{n-1} s'\right)' - a\right] &= 0 \notag
 \end{align}
-This CP applies on a fixed interval $[0,L]$, a superset of the glaciated area, with $L$ of order $O(10)$ to $O(1000)$ kilometers.  The data $a(x)$, $b(x)$ must be defined on this entire interval.  Noting that $H=s-b$ is the \emph{ice thickness}, the first inequality constraint could be stated as the nonnegativity of thickness, with the zero function as the obstacle, and indeed the model is stated this way in \cite{Bueler2016,JouvetBueler2012, Jouvetetal2013,JouvetGraeser2013}; see also \cite{Bueler2020}.
+Similar to CP \eqref{eq:obstaclecp}, this one applies on a fixed interval $[0,L]$, a superset of the glaciated area, with $L$ of order $O(10)$ to $O(1000)$ kilometers.  The data $a(x)$, $b(x)$ are defined on this entire interval.
 
-Stating the weak form corresponding to \eqref{eq:siacp} requires choosing appropriate function spaces.  It helps to refer to a better-understood, but still nonlinear, problem.  Let $\pp=n+1>2$ and consider the $\pp$-\emph{Laplacian equation}.  The solution and test functions live in the Sobolev space of functions with zero boundary values and $\pp$th-power integrable first derivatives:
+Stating the weak form corresponding to \eqref{eq:siacp} requires choosing appropriate function spaces.  It helps to refer to a simpler and better-understood, but still nonlinear, problem.  Let $\pp=n+1>2$ and consider the $\pp$-\emph{Laplacian equation} \cite{Ciarlet2002,DiBenedetto2012}.  The solution and test functions live in the Sobolev space of functions with zero boundary values and $\pp$th-power integrable first derivatives:
 \begin{equation}
 \mathcal{W} = W_0^{1,\pp}[0,L]  \label{eq:defineW}
 \end{equation}
@@ -1008,13 +1008,13 @@ The strong form of the equation is $-(|u'|^{\pp-2} u')' = f$ and the weak form i
 \begin{equation}
 \int_0^L |u'|^{\pp-2} u' v'\,dx = \int_0^L f v\,dx \text{ for all $v$ in $\mathcal{W}$.}  \label{eq:plaplacianpoisson}
 \end{equation}
-Equation \eqref{eq:plaplacianpoisson} is relatively well-understood because the calculus of variations can be applied---see \cite[section 5.3]{Ciarlet2002} and \cite{BarrettLiu1993}---and the corresponding obstacle problem is well-behaved \cite[for example]{ChoeLewis1991}.  A unique solution $u$ in $\mathcal{W}$ exists as long as the source $f$ defines a bounded linear functional on $\mathcal{W}$, for which it suffices that $f$ is in $L^\qq[0,L]$ for $\pp^{-1}+\qq^{-1}=1$.  Note that the $\pp>2$ case, corresponding to shear-thinning ice with $n>1$, the $\pp$-Laplacian operator is \emph{degenerate} \cite{DiBenedetto2012} in the sense that $|u'|^{\pp-2}$ may go to zero.
+Equation \eqref{eq:plaplacianpoisson} is relatively well-understood because the calculus of variations can be applied---see \cite[section 5.3]{Ciarlet2002} and \cite{BarrettLiu1993}---and the corresponding obstacle problem is also well-behaved \cite[for example]{ChoeLewis1991}.  A unique solution $u$ in $\mathcal{W}$ exists as long as the source $f$ defines a bounded linear functional on $\mathcal{W}$, for which it suffices that $f$ is in $L^\qq[0,L]$ for $\pp^{-1}+\qq^{-1}=1$, and if the obstacle is in $\mathcal{W}$.  Note that the $\pp>2$ case, corresponding to shear-thinning ice ($n>1$), the $\pp$-Laplacian operator is \emph{degenerate} \cite{DiBenedetto2012} in the sense that $|u'|^{\pp-2}$ may go to zero.
 
-Returning to the SIA model, assume that $a$ is in $L^q[0,L]$ and that the obstacle $b$ is in $\mathcal{W}$, including $b(0)=b(L)=0$.  Tentatively we seek a solution $s$ from the admissible set
+Returning to the SIA model, assume that $a$ is in $L^q[0,L]$ and $b$ is in $\mathcal{W}$, including $b(0)=b(L)=0$.  Tentatively we seek a solution $s$ from the admissible set
 \begin{equation}
 \mathcal{K}_b = \left\{v \ge b\right\} \subset \mathcal{W}.  \label{eq:siaK}
 \end{equation}
-If we assume $s$ is a well-behaved solution to CP \eqref{eq:siacp}, we multiply \eqref{eq:sia} by a test function $v$ from $\mathcal{K}_b$, and integrate by parts, then a nonlinear operator $N:\mathcal{K}_b \to \mathcal{W}'$ appears, namely
+If we assume $s$ is a well-behaved solution to CP \eqref{eq:siacp}, we multiply \eqref{eq:sia} by a test function $v$ from $\mathcal{K}_b$, and integrate by parts.  A nonlinear operator $N:\mathcal{K}_b \to \mathcal{W}'$ appears, namely
 \begin{equation}
 N(s)[v] = \int_0^L \Gamma (s-b)^{\pp+1} |s'|^{\pp-2} s' v'\,dx. \label{eq:siaNunreg}
 \end{equation}
@@ -1024,9 +1024,11 @@ N(s)[v-s] \ge \ip{a}{v-s}, \label{eq:siaVIunreg}
 \end{equation}
 where $\ip{a}{v} = \int_0^L a(x) v(x)\,dx$ is the usual inner product (i.e.~dual pairing \cite{KinderlehrerStampacchia1980}).
 
-Why is this at all ``tentative''?  Whether written in strong form \eqref{eq:siacp} or weak form \eqref{eq:siaVIunreg}, the SIA problem has a well-known ``double nonlinearity'' \cite{Calvoetal2002}.  As a nonlinear elliptic equation, it has both porous medium \cite{Evans2010} and $\pp$-Laplacian types. Compared to \eqref{eq:plaplacianpoisson}, the SIA operator does not uniformly act like the $\pp$-Laplacian because the thickness-dependent coefficient $(s-b)^{\pp+1}$ may also degenerate to zero.  The nonlinear form $N(s)$ degenerates when either the thickness $s-b$ goes to zero or the surface slope $|s'|$ goes to zero.
+Why is this at all ``tentative''?  It turns out that the correct function space for \eqref{eq:siaVIunreg} has not been identified, and actually $\mathcal{W}$ is inadequate.  This situation requires some clarification, which we now attempt.
 
-It follows from the double nonlinearity that we do not actually expect the solution $s$ to \eqref{eq:siaVIunreg} to be in the Sobolev space $\mathcal{W}$.  For example, consider the flat-bed exact solution shown in Figure \ref{fig:siadatafigure}, which we will use for numerical testing.  (See section 5.6.3 of \cite{GreveBlatter2009} or section 5.3 of \cite{vanderVeen2013} for specific formulas.)  The continuous surface mass balance function $a(x)$, like the source term in the classical obstacle problem solution shown in Figure \ref{fig:icelike}, has negative values towards either end of the interval.  This generates a free boundary, i.e.~an ablation-caused \emph{glacier margin}, where the gradient is singular.  The continuous surface elevation $s(x)$ exactly solves \eqref{eq:sia} on $s>0$, and at the margin the ice flux goes to zero, but $s(x)$ is \emph{not} in $\mathcal{W}$ because its margin shape goes like $s(x) \sim |x-x_m|^{1/2}$ if $x_m$ is the position of the margin \cite{Bueleretal2005}.  (In the $L=1800$ km case shown, exact margin positions are $x_m=900\pm 750$ km.)  This shows VI \eqref{eq:siaVIunreg} cannot be the correct weak form.
+Whether written in strong form \eqref{eq:siacp} or weak form \eqref{eq:siaVIunreg}, the underlying SIA equation \eqref{eq:sia} has a well-known ``double nonlinearity'' \cite{Calvoetal2002}.  As a nonlinear elliptic equation, it has both porous medium \cite{Evans2010} and $\pp$-Laplacian types. Compared to \eqref{eq:plaplacianpoisson}, the SIA operator does not uniformly act like the $\pp$-Laplacian because the coefficient $(s-b)^{\pp+1}$ may also degenerate to zero.  In fact, let $H=s-b$ be the \emph{ice thickness}.  The inequality constraint $s\ge b$ could be stated as the nonnegativity of thickness, $H\ge 0$, with the zero function as the obstacle, and indeed the model is stated this way in \cite{Bueler2016,JouvetBueler2012, Jouvetetal2013,JouvetGraeser2013}; see also \cite{Bueler2020}.  The nonlinear form $N(s)$ is doubly-degenerate in that when either $H$ goes to zero or the surface slope $|s'|$ goes to zero there is a loss of ellipticity.
+
+It follows from the double nonlinearity that we do not expect the solution $s$ to \eqref{eq:siaVIunreg} to be in the Sobolev space $\mathcal{W}$.  For example, consider the flat-bed exact solution shown in Figure \ref{fig:siadatafigure}, which we will use for numerical testing.  (See section 5.6.3 of \cite{GreveBlatter2009} or section 5.3 of \cite{vanderVeen2013} for specific formulas.)  The continuous surface mass balance function $a(x)$, like the source term in the classical obstacle problem solution shown in Figure \ref{fig:icelike}, has negative values towards either end of the interval.  This generates a free boundary, i.e.~an ablation-caused \emph{glacier margin}, where the gradient is singular.  The continuous surface elevation $s(x)$ exactly solves \eqref{eq:sia} on $s>0$, and at the margin the ice flux goes to zero, but $s(x)$ is \emph{not} in $\mathcal{W}$ because its margin shape goes like $s(x) \sim |x-x_m|^{1/2}$ if $x_m$ is the position of the margin \cite{Bueleretal2005}.  (In the $L=1800$ km case shown, exact margin positions are $x_m=900\pm 750$ km.)  This shows VI \eqref{eq:siaVIunreg} cannot be the correct weak form.
 
 \begin{figure}
 \includegraphics[width=0.65\textwidth]{fixfigs/siadatafigure.pdf}
@@ -1034,9 +1036,19 @@ It follows from the double nonlinearity that we do not actually expect the solut
 \label{fig:siadatafigure}
 \end{figure}
 
-On the other hand, a weak solution of \eqref{eq:siaVIunreg} is known to exist in the sense that a power of the thickness, $u=(s-b)^{(2n+2)/n}$, and not $s$ itself, is in $\mathcal{W}$ \cite{JouvetBueler2012}.  When $b=0$ the solution is unique, but in general uniqueness has not been established.  Unfortunately this transformed-thickness theory requires an awkward expression for the VI in the general-bed case.
+On the other hand, a weak solution of \eqref{eq:siaVIunreg} is known to exist in the sense that a power of the thickness, $u=H^{(2n+2)/n}$ is in $\mathcal{W}$ \cite{JouvetBueler2012}.  When $b=0$ the solution is unique, but in general uniqueness has not been established.  Unfortunately this transformed-thickness theory requires an awkward expression for the VI in the general-bed case.
 
-In fact we are motivated to rescue \eqref{eq:siaVIunreg}, which states the problem in a form close to the standard equation \eqref{eq:sia} in the ice sheet literature, for the following two reasons.  First, the surface elevation $s$ of a real glacier or ice sheet is relatively smooth compared to the bed elevation $b$.  This is especially true if crevassing, and other surficial effects like sastrugi, are ignored, as they are whenever the ice is assumed to be a viscous fluid.  In this sense we prefer to apply smoothers and transfer operators to $s$ rather than to the ice thickness $s-b$.  Second, the key geometry-evolution equation in the Stokes model of section \ref{sec:stokes} is the surface kinematical equation, which is already stated in terms of $s$.  That model permits no practical thickness transformation; substituting a power of the thickness would needlessly distort the equations.
+In fact we are motivated to rescue weak form \eqref{eq:siaVIunreg}, which states the problem in terms of the surface elevation, as is standard in the ice sheet literature, for the following two reasons:
+\begin{enumerate}
+\item The surface elevation $s$ of a real glacier or ice sheet is relatively smooth compared to the bed elevation $b$.  (This ignores crevassing and other surface effects like sastrugi are ignored; the ice is modeled as a viscous fluid.)  Figure \ref{fig:giscross} shows a typical cross-section of the Greenland ice sheet.  While the bed elevation is full of high frequencies, reflecting ice-buried fjord topography, which generates noisy thickness $H=s-b$, the surface is smoothed by the flow of the ice.  We prefer to apply smoothers and transfer operators to $s$ rather than $H$.
+\item The key geometry-evolution equation in the Stokes model of section \ref{sec:stokes} is the surface kinematical equation, which is stated in terms of $s$.  The momentum balance equation in that model permits no practical thickness-based formulation.
+\end{enumerate}
+
+\begin{figure}
+\includegraphics[width=0.9\textwidth]{genfigs/giscross.pdf}
+\caption{\emph{Top.}  Cross-section of the Greenland ice sheet at $X^\circ$ latitude, showing surface elevation $s$ and bed elevation $b$.  \emph{Bottom.} The corresponding thickness $H=s-b$.  (Both figures have $10\times$ vertical exaggeration.)}
+\label{fig:giscross}
+\end{figure}
 
 With these considerations in mind we propose the following regularization of \eqref{eq:siaNunreg} and \eqref{eq:siaVIunreg}.  Let $\eps>0$ be a small reference thickness, say $\eps \approx 100$ m.  Define $N_\eps:\mathcal{K}_b \to \mathcal{W}'$ by
 \begin{equation}
