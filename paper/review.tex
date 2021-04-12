@@ -840,26 +840,25 @@ The following in-place solver adds an outer loop which sets-up the fine-level da
 
 \subsection{Convergence of the numerical error} \label{subsec:obstacleconvergence}  All of the pseudocodes in the current section have been implemented in Python.\footnote{At\, \href{https://github.com/bueler/mg-glaciers/}{\texttt{github.com/bueler/mg-glaciers/}} see the \texttt{py/1D/} directory and its \texttt{README.md}.}  To verify these implementations, and to demonstrate the differences in numerical error convergence rates between the obstacle problem and the corresponding unconstrained PDE, we use three exact solutions.  The first two are already shown in Figure \ref{fig:icelike}; note that the ``ice-like'' case has a discontinuous source $f$, while ``traditional'' has $f=0$, but both have smooth, parabolic obstacles.  The third ``unconstrained'' exact solution is for a variable-coefficient equation $-\left((2+\sin(2\pi x)) u'\right)'=f$ on the interval $[0,10]$.  (Here the obstacle is low enough so that all points are inactive and all smoothing steps avoid projection.)
 
-Figure \ref{fig:convergence} shows the numerical error norm $\|u^h-u\|_2$ as a function of mesh spacing $h$ for runs with \id{rtol} $=10^{-7}$.  We focus on the convergence rate; the absolute error size is unimportant.  For ``traditional'' it is the best possible, as $O(h^2)$ rate is expected for PDEs \cite{Elmanetal2014}, as seen here.  The ``ice-like'' rate is poor because of the lower regularity of $f$.  Note that the low regularity of obstacle problem solutions will have a greater effect on 2D or 3D convergence rates.
-
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/convergence.pdf}
 \caption{MCDL method convergence for three cases with known exact solutions.}
 \label{fig:convergence}
 \end{figure}
 
-\subsection{Performance: results and theory} \label{subsec:obstacleperformance}  In this section we evaluate the performance of V-cycles computed by our implementation of MCDL.  We will count iterations, measure work units (defined below), and measure run time.  In summary, MCDL for the classical obstacle problem is not quite as efficient as GMG for the Poisson equation.  Performance depends weakly on mesh resolution, a result supported by theory, but it is far superior to single-level approaches.
+Figure \ref{fig:convergence} shows the numerical error norm $\|u^h-u\|_2$ as a function of mesh spacing $h$ for runs with \id{rtol} $=10^{-7}$.  We focus on the convergence rate; the absolute error size is unimportant.  For ``traditional'' it is the best possible, as $O(h^2)$ rate is expected for PDEs \cite{Elmanetal2014}, as seen here.  The ``ice-like'' rate is poor because of the lower regularity of $f$.  Note that the low regularity of obstacle problem solutions will have a greater effect on 2D or 3D convergence rates.
 
-We compare the performance of four MCDL solvers:
+\subsection{Performance: results and theory} \label{subsec:obstacleperformance}  In this section we evaluate the performance of V-cycles computed by our implementation of MCDL.  We will count iterations, measure work units (defined below), and measure run time.  We will conclude that MCDL for the classical obstacle problem is not quite as efficient as GMG for the Poisson equation.  Performance depends weakly on mesh resolution, a result supported by theory, but the performance of MCDL remains far better than single-level approaches.
+
+We compare the performance of five MCDL solvers:
 \begin{itemize}
-\item \textsf{V(1,0)}: default settings, including \id{down} $=1$ and \id{up} $=0$ in \pr{mcdl-vcycle}
-\item \textsf{V(0,1)}: same but with \id{down} $=0$, \id{up} $=1$
-\item \textsf{V(1,1)}: same but with \id{down} $=1$, \id{up} $=1$
-\item \textsf{V(1,1)-J}: same but with \pr{pjacobi} smoothing using \id{omega} $=0.67$
+\item \textsf{V(1,0)}: \id{down} $=1$ and \id{up} $=0$ in \pr{mcdl-vcycle}
+\item \textsf{V(0,1)}: \id{down}, \id{up} $=0,1$
+\item \textsf{V(1,1)}: \id{down}, \id{up} $=1,1$
+\item \textsf{V(0,2)}: \id{down}, \id{up} $=0,2$
+\item \textsf{V(0,2)-Jacobi}: \id{down}, \id{up} $=0,2$, with \pr{pjacobi} smoothing using \id{omega} $=0.67$
 \end{itemize}
-The first two solvers are the down-slash and up-slash cycles, respectively, and note that the first three use the default PGS smoother.
-
-We test these solvers on the ``icelike'' problem shown in Figure \ref{fig:icelike}, iterating until convergence by the default criterion, i.e.~\eqref{eq:cpconvergencecriterion} with \id{rtol} $=10^{-3}$.  Figure \ref{fig:mcdl-cycles} shows the number of iterations (cycles) for mesh hierarchies with $J=6,\dots,15$ refinements, thus $m_J=2^{J+1}-1$ degrees of freedom (nodes) values up to $m_{15}=6.5 \times 10^4$.  The number of iterations grows slowly in each case, with V(1,1) yielding the fewest.  As explained when we constructed MCD cycles, the constraints on the up-smoother are less severe than on the down-smoother, and indeed we see that the up-slash V(0,1) cycles are a bit faster than down-slash V(1,0).
+The first two solvers are down- and up-slash cycles, respectively.  The first four solvers use the default \pr{pgs} smoother.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/mcdl-cycles.pdf}
@@ -867,22 +866,24 @@ We test these solvers on the ``icelike'' problem shown in Figure \ref{fig:icelik
 \label{fig:mcdl-cycles}
 \end{figure}
 
-By doing logarithmic regression to the data, the Figure shows our result that iterations grow as $O(m^q)$ for $0.10 \le q \le 0.12$.  Recalling Theorem \ref{thm:mscconvergence}, for the Poisson equation this would be $O(1) = O(m^0)$ in theory, and indeed when we run our code in an unconstrained case we see that only 5 or 6 V(1,1) cycles are needed for all resolutions, for example.  Thus more MCDL iterations are needed, than for elliptic PDEs with smooth solutions, and they grow slowly with mesh refinement.  This reflects both lower solution regularity and the need to locate the discrete free boundary; we will consider the relevant theory momentarily.
+We test these solvers on the ``icelike'' problem shown in Figure \ref{fig:icelike}, iterating until convergence by the default criterion, \eqref{eq:cpconvergencecriterion} with \id{rtol} $=10^{-3}$.  Figure \ref{fig:mcdl-cycles} shows the number of iterations (cycles) for mesh hierarchies with $J=6,\dots,15$ refinements, thus $m_J=2^{J+1}-1$ degrees of freedom (nodes) values up to $m_{15}=6.5 \times 10^4$.  The number of iterations grows slowly in each case, with V(1,1) and V(0,2) tied for the fewest.  As explained when we constructed MCD cycles, the constraints on the up-smoother are less severe than on the down-smoother, and indeed we see that the up-slash V(0,1) cycles are better than down-slash V(1,0).
 
-In terms of relative performance among the solvers, counting iterations is unfair.  For example, because the smoother is applied twice on each level, one V(1,1) cycle does more work than one V(1,0) or V(0,1).  Thus we compare \emph{work units} (WU).  By definition, one WU is the amount of computation done by one smoother application on the fine level \cite{Briggsetal2000}.  Since a $J$th-level smoother sweep is 1 WU, a $J-1$ level sweep is $\frac{1}{2}$ WU in 1D, and so on geometrically down the hierarchy.  In the limit $J\to\infty$, one slash cycle in 1D costs 2 WU,\footnote{This does not count the work of transfer operators.} by summing the obvious geometric series, and generally a V-cycle costs $O(1)$ WU as a function of $m$.
+By doing logarithmic regression to the data, the Figure shows our result that iterations grow as $O(m^q)$ for $0.10 \le q \le 0.12$.  Recalling Theorem \ref{thm:mscconvergence}, for the Poisson equation this rate would be $O(1) = O(m^0)$ in theory.  When we run our code in an unconstrained case we see that only 5 or 6 V(1,1) cycles are needed for all resolutions, for example (not shown).  Thus more MCDL V-cycles are needed for the obstacle problem than for elliptic PDEs with smooth solutions, and the iterate counts grow slowly with mesh refinement.  This reflects both lower solution regularity and the need to locate the discrete free boundary; we will consider the relevant theory momentarily.
 
-We have added WU counting to our codes,\footnote{Our Python implementation has a class for each mesh level, and the hierarchy is a list of such mesh-level objects.  The WU for a level is a class attribute which gets incremented by each smoother sweep.  Computing the total WU at the end of a run is an easy weighted sum.} and Figure \ref{fig:mcdl-wu} shows the total WU for the same runs.  Just like for iterations, total WU grows as $O(m^q)$ for $0.10 \le q \le 0.12$, but we now see that the V(0,1) up-slash cycles require the least computation.  Each cycle is less efficient, so more of them are required, but they are inexpensive.  The Jacobi-smoother V(1,1) cycles have a poor (high) multigrid convergence rate, and the cost of two smoothers per level.  However, Jacobi smoothing will remain significant in our applications to glacier problems (section \ref{sec:stokes}).
+In terms of relative performance among the solvers, counting iterations is unfair because, for example, one V(1,1) cycle does more work than one V(1,0) or V(0,1).  Thus we compare \emph{work units} (WU).  By definition, one WU is the amount of computation done by one smoother application on the fine level \cite{Briggsetal2000}.  Since a $J$th-level smoother sweep is 1 WU, a $J-1$ level sweep is $\frac{1}{2}$ WU in 1D, and so on geometrically down the hierarchy.  In the limit $J\to\infty$, one slash cycle in 1D costs 2 WU,\footnote{Not counting the work of transfer operators.} by summing the obvious geometric series, and generally a V-cycle costs $O(1)$ WU as a function of $m$.
+
+Our programs count their WU,\footnote{Our Python implementation has a class for each mesh level.  The mesh hierarchy is a list of such mesh-level objects.  The WU for a level is a class attribute which gets incremented by each smoother sweep.  Computing the total WU at the end of a run is an easy weighted sum.} and Figure \ref{fig:mcdl-wu} shows the total WU for the same runs.  Just like for iterations, total WU grows as $O(m^q)$ for $0.10 \le q \le 0.12$, but we now see that the \pr{pgs}-based cycles are all comparable, and much stronger than the \pr{pjacobi} cycles.  However, Jacobi smoothing will remain significant in our applications to glacier problems (section \ref{sec:stokes}).
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/mcdl-wu.pdf}
-\caption{Number of work units (WU) as a function of $m$.}
+\caption{Number of work units (WU) as a function of $m$.  The \pr{pgs} smoother is clearly more efficient.}
 \label{fig:mcdl-wu}
 \end{figure}
 
-On the other hand, these MCDL growth rates for work are excellent compared to application of the smoother by itself as a single-level method.  Though most runs in the Figure are unattainable by this method, we find that 6802, 26986, and 108562 iterations, equivalently WU, are required on the three coarsest resolutions ($J=6,7,8$), respectively, a catastrophic growth rate of $O(m^{1.99})$.  This growth rate is well-supported by theory; see below.
+On the other hand, these MCDL growth rates for work are excellent compared to application of the smoother by itself as a single-level method.  Though most runs in the Figure are unattainable by such a single-level method, we find that 6802, 26986, and 108562 iterations, equivalently WU, are required on the three coarsest resolutions ($J=6,7,8$), respectively, a catastrophic growth rate of $O(m^{1.99})$.  This growth rate is also well-supported by theory; see below.
 % for JJ in 6 7 8; do ./obstacle.py -cyclemax 200000 -sweepsonly -jfine $JJ; done
 
-Finally we look at the time per degree of freedom (time-per-$m$).  This quantity should be constant, $O(1)=O(m^0)$, for an optimal method.  Figure \ref{fig:mcdl-timeper} shows the results for the finer $J=9,\dots,15$ meshes.  Fitting only to the five finest results, because timing for smaller runs is dominated by Python executable start-up costs, the time-per-$m$ is $O(m^r)$ for $0.05 \le r \le 0.06$, so mesh dependence is very modest.  Our solvers all require about 1 millisecond per degree of freedom.  Though this value depends completely on the details of our Python implementation, and on the physical computer, it will be compared to the more expensive computations for glacier problems (sections \ref{sec:sia} and \ref{sec:stokes}).
+Finally we look at the time per degree of freedom.  This quantity should be constant, $O(1)=O(m^0)$ for an optimal method.  Figure \ref{fig:mcdl-timeper} shows the results for the finer $J=9,\dots,15$ meshes.  Fitting only to the five finest results, because timing for smaller runs is dominated by Python executable start-up costs, the time-per-$m$ is $O(m^r)$ for $0.01 \le r \le 0.05$, so mesh dependence is very modest.  Our \pr{pgs} solvers all require less than 1 millisecond per degree of freedom.  Though this value depends completely on the details of our Python implementation, and on the physical computer, it can be compared to the more expensive computations for the glacier problems in sections \ref{sec:sia} and \ref{sec:stokes}.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/mcdl-timeper.pdf}
@@ -890,7 +891,7 @@ Finally we look at the time per degree of freedom (time-per-$m$).  This quantity
 \label{fig:mcdl-timeper}
 \end{figure}
 
-Mathematical theory allows us to understand the above performance results, at least in part.   Denote the spacing of the fine ($J$th) mesh by $h$.  Let $u^h$ be the exact solution of the finite-dimensional VI which is the direct FE approximation of \eqref{eq:obstacleviresidual}:
+Mathematical theory allows us to understand most of the above performance results.   Denote the spacing of the fine ($J$th) mesh by $h$.  Let $u^h$ be the exact solution of the finite-dimensional VI which is the direct FE approximation of \eqref{eq:obstacleviresidual}:
 \begin{equation}
   F(u^h)[v-u^h] \ge 0 \quad \text{ for all } v \text{ in $\mathcal{V}^h=\mathcal{V}^J$ such that } v \ge \varphi^J. \label{eq:feobstaclevioriginal}
 \end{equation}
