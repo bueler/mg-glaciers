@@ -13,23 +13,21 @@ class PNsmootherPLap(PNsmootherSIA):
     with u(0)=u(1)=0.  Two exact solutions are implemented, both symmetric
     around x=0.5:
 
-    1. "pile":
-    Data
-        c = ((4/3) (0.2)^(-1/3) - 1)^3 = 2.096994368090019
-        f(x) = 1 on [0.3,0.7] and -c on [0,0.3) or (0.7,1]
+    1. "pile":  Data
+        f(x) = 1 on [0.3,0.7] and -1 on [0,0.3) or (0.7,1]
         phi(x) = 0
-    We force u(0.5)=0.2, symmetry around x=0.5, and free boundaries at x=0.1
-    and x=0.9.  Integrating and using u'(0.5)=0 and u(0.5)=0.2 get
-        u(x) = 0.2 - (3/4) |x-0.5|^(4/3)  on [0.3,0.7]
-    On [0.1,0.3] or [0.7,0.9] we have u'(x)^3 = -c(0.4 - |x-0.5|) from the
+    We force symmetry around x=0.5 and free boundaries at x=0.1 and x=0.9.
+    Integrating and using u'(0.5)=0 and u(0.5)=A get
+        u(x) = A - (3/4) |x-0.5|^(4/3)  on [0.3,0.7]
+    On [0.1,0.3] or [0.7,0.9] we have u'(x)^3 = - (0.4 - |x-0.5|) from the
     free boundary, thus
-        u(x) = 0.2 - (3/4) (0.2)^(4/3)
-               - (3/4) c^(1/3) ( (0.2)^(4/3) - (0.4 - |x-0.5|)^(4/3) )
+        u(x) = A - (3/2) (0.2)^(4/3) + (3/4) (0.4 - |x-0.5|)^(4/3)
+    Use u(0.4) to find A = (3/2) (0.2)^(4/3) thus
+        u(x) = (3/4) (0.4 - |x-0.5|)^(4/3)  on [0.1,0.3] or [0.7,0.9].
     Finally
         u(x)=0 on [0,0.1] or [0.9,1].
 
-    2. "bridge":
-    Data
+    2. "bridge":  Data
         f(x) = 3 (x-0.5)^2
         phi(x) = 0.25 sin(3 pi x)
     Integrating once using u'(0.5)=0 from symmetry, get
@@ -50,8 +48,6 @@ class PNsmootherPLap(PNsmootherSIA):
         super().__init__(args, admissibleeps=admissibleeps)
         # parameter used in pointupdate()
         self.cupmax = 1.0  # never move surface up by more than this
-        # constant in "pile" exact solution:
-        self.cpile = ( (4.0/3.0) * 5.0**(1.0/3.0) - 1.0 )**3.0
 
     def _pointN(self, mesh, w, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for
@@ -80,8 +76,8 @@ class PNsmootherPLap(PNsmootherSIA):
         '''Source f(x) in -(|u'|^2 u')' = f.'''
         if self.args.plapcase == 'pile':
             f = np.ones(np.shape(x))
-            f[x < 0.3] = - self.cpile
-            f[x > 0.7] = - self.cpile
+            f[x < 0.3] = - 1.0
+            f[x > 0.7] = - 1.0
             return f
         elif self.args.plapcase == 'bridge':
             f = 3.0 * (x - 0.5)**2
@@ -127,9 +123,8 @@ class PNsmootherPLap(PNsmootherSIA):
             mid = (xam <= 0.2)
             next = (xam > 0.2) * (xam < 0.4)
             r = 4.0 / 3.0
-            u[mid] = 0.2 - 0.75 * xam[mid]**r
-            u[next] = 0.2 - 0.75 * 0.2**r - 0.75 * self.cpile**(1.0/3.0) \
-                        * ( 0.2**r - (0.4 - xam[next])**r )
+            u[mid] = 1.5 * 0.2**r - 0.75 * xam[mid]**r
+            u[next] = 0.75 * (0.4 - xam[next])**r
             return u
         elif self.args.plapcase == 'bridge':
             a = 0.1508874586825051
