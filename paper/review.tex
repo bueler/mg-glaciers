@@ -1288,7 +1288,7 @@ The above formulas and pseudocodes also apply to the $\pp$-Laplacian obstacle pr
 
 FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not too big)
 
-\subsection{Convergence and performance results} \label{subsec:siaperformance}  FIXME convergence in Figure \ref{fig:siaconv}
+\subsection{Convergence and performance results} \label{subsec:siaperformance}  FIXME convergence in Figure \ref{fig:siaconv}; compare to $\pp$-Laplacian convergence
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/siaconv.pdf}
@@ -1296,14 +1296,11 @@ FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not t
 \label{fig:siaconv}
 \end{figure}
 
-FIXME how do results depend on newton its, GS vs Jacobi with a couple of omega values
+FIXME asymptotic rates for GS vs Jacobi with a couple of omega values; compare to $\pp$-Laplacian rates
 
-FIXME V-cycles and F-cycles on Bueler profile
+FIXME V-cycles and F-cycles counts/WU on Bueler profile; compare to $\pp$-Laplacian performance
 
 FIXME performance measurements on a random bed
-
-FIXME regarding SIA singularities compare to $\pp$-Laplacian performance
-% $ for JJ in 1 2 3 4 5 6 7 8 9 10 11 12 13; do timer ./obstacle.py -problem plap -showsingular -J $JJ -cyclemax 10000 -irtol 1.0e-7 -down 1 -symmetric; done
 
 \subsection{Performance of implicit evolving-geometry solvers} \label{subsec:siaimplicit}  FIXME use Halfar solution
 
