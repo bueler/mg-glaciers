@@ -16,10 +16,10 @@ v = np.array(np.loadtxt(INFILE))
 N = 13  # number of different resolutions
 assert len(v[:,0]) == N
 
-# columns:  J m errp
+# columns:  J m err2 errp
 m = v[:,1]
 h = 1.0 / (m+1)
-errp = v[:,2]
+errp = v[:,3]
 
 q = np.polyfit(np.log(h),np.log(errp),1)
 print('|u-uexact|_p = O(h^%.2f)' % q[0])

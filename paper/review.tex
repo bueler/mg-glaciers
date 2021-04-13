@@ -74,6 +74,7 @@ urlcolor=black    % ...
 
 \newcommand{\pp}{{\text{p}}}
 \newcommand{\qq}{{\text{q}}}
+\newcommand{\rr}{{\text{r}}}
 
 % numbering
 \setcounter{tocdepth}{3}
@@ -1288,13 +1289,15 @@ The above formulas and pseudocodes also apply to the $\pp$-Laplacian obstacle pr
 
 FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not too big)
 
-\subsection{Convergence and performance results} \label{subsec:siaperformance}  FIXME convergence in Figure \ref{fig:siaconv}; compare to $\pp$-Laplacian convergence
+\subsection{Convergence and performance results} \label{subsec:siaperformance}  FIXME convergence in Figure \ref{fig:siaconv}
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/siaconv.pdf}
-\caption{Convergence of the MCDN method on the exact solution shown in Figure \ref{fig:siadatafigure}.  See text for an explanation of the $\|H^r-H_{\text{exact}}^r\|_p$ norm.}
+\caption{Convergence of the MCDN method on the exact solution shown in Figure \ref{fig:siadatafigure}.  See text for an explanation of the $\|H^\rr-H_{\text{exact}}^\rr\|_\pp$ norm.}
 \label{fig:siaconv}
 \end{figure}
+
+We can compare the above results to $\pp$-Laplacian convergence for the $\pp$-Laplacian obstacle problem, with $\pp=4$, on an exact solution constructed in a similar way to the classical obstacle problem shown in Figure \ref{fig:icelike}.  In that case we measure $\|u-u_{\text{exact}}\|_\pp=O(h^{0.99})$, and as for the SIA case the numerical error norms are not monotonic.  The fact that $\|H^\rr-H_{\text{exact}}^\rr\|_\pp$ goes to zero at a slightly-better rate for the SIA solution reflects the fact that the source term for the SIA is continuous while for the $\pp$-Laplacian solution it is not.
 
 FIXME asymptotic rates for GS vs Jacobi with a couple of omega values; compare to $\pp$-Laplacian rates
 
