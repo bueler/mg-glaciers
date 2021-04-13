@@ -4,20 +4,13 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from writeout import writeout
 
 INFILE = 'convergence.txt'
 MARKER = ['o','s','p']
 MARKERSIZE = [11.0,10.0,10.0]
 MARKERFACE = ['k','k','w']
 PROBLEMNAME = ['ice-like','traditional','unconstrained']  # last is pde2
-
-SHOW = False
-def writeout(outname):
-    if SHOW:
-        plt.show()
-    else:
-        print('writing file ' + outname)
-        plt.savefig(outname,bbox_inches='tight')
 
 print('reading %s ...' % INFILE)
 v = np.array(np.loadtxt(INFILE))

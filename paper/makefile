@@ -21,5 +21,5 @@ cropfigures: $(figures)
 
 clean:
 	@rm -f *~ *.out *.aux *.log *.blg *.snm *.toc *.nav *.vrb *.bbl *.synctex.gz
-	@rm -f genfigs/*.pdf
+	@rm -rf genfigs/*.pdf genfigs/__pycache__/
 	@rm -rf .pytest_cache/

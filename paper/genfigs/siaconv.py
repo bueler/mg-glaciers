@@ -4,20 +4,13 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from writeout import writeout
 
 INFILE = 'siaconv.txt'
 MARKER = ['o','o']
 MARKERSIZE = [10.0,10.0]
 MARKERFACE = ['w','k']
 NAME = ['$|s-s_{exact}|_2$','$|H^r-H_{exact}^r|_p$']
-
-SHOW = False
-def writeout(outname):
-    if SHOW:
-        plt.show()
-    else:
-        print('writing file ' + outname)
-        plt.savefig(outname,bbox_inches='tight')
 
 print('reading %s ...' % INFILE)
 v = np.array(np.loadtxt(INFILE))

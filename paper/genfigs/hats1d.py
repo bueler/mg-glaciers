@@ -2,20 +2,13 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from writeout import writeout
 
 plt.rcParams["font.family"] = "serif"
 plt.rcParams["mathtext.fontset"] = "cm"
 
 fsize=16.0
 bigfsize=20.0
-
-debug = False
-def figsave(name):
-    if debug:
-        plt.show()  # debug
-    else:
-        print('saving %s ...' % name)
-        plt.savefig(name,bbox_inches='tight',transparent=True)
 
 def finemeshaxes(m):
     x = np.linspace(0.0,1.0,2)
@@ -57,7 +50,7 @@ plt.text(-0.05,0.0,'0',fontsize=fsize)
 plt.text(-0.05,0.95,'1',fontsize=fsize)
 plt.axis([-0.2,1.2,-0.4,1.2])
 plt.axis('off')
-figsave('finehats.pdf')
+writeout('finehats.pdf')
 
 # coarse hats figure
 plt.figure(figsize=(10,4))
@@ -66,7 +59,7 @@ hats(xdots,style='k:',width=1.0,dotsize=14.0)
 hats(xdots[0::2],width=3.0,dotstyle='ks',dotsize=12.0)
 plt.axis([-0.2,1.2,-0.4,1.2])
 plt.axis('off')
-figsave('coarsehats.pdf')
+writeout('coarsehats.pdf')
 
 # coarsest hats figure
 plt.figure(figsize=(10,4))
@@ -75,5 +68,4 @@ hats(xdots,style='k:',width=1.0,dotsize=14.0)
 hats(xdots[0::4],width=3.0,dotstyle='kd',dotsize=16.0)
 plt.axis([-0.2,1.2,-0.4,1.2])
 plt.axis('off')
-figsave('coarsesthats.pdf')
-
+writeout('coarsesthats.pdf')

@@ -3,14 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
-
-SHOW = False
-def writeout(outname):
-    if SHOW:
-        plt.show()
-    else:
-        print('writing file ' + outname)
-        plt.savefig(outname,bbox_inches='tight')
+from writeout import writeout
 
 INFILES = ['gis/topg_j1100_69Nlat.txt', 'gis/thk_j1100_69Nlat.txt']
 f = INFILES[0]

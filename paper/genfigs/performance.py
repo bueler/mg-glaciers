@@ -10,20 +10,13 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from writeout import writeout
 
 INFILE = 'performance.txt'
 SOLVERNAME = ['V(1,0)', 'V(0,1)', 'V(1,1)', 'V(0,2)', 'V(0,2)-Jacobi']
 MARKER = ['v','^','d','o','o']
 MARKERSIZE = [10.0,10.0,10.0,10.0,10.0]
 MARKERFACE = ['w','w','w','w','k']
-
-SHOW = False
-def writeout(outname):
-    if SHOW:
-        plt.show()
-    else:
-        print('writing file ' + outname)
-        plt.savefig(outname,bbox_inches='tight')
 
 print('reading %s ...' % INFILE)
 v = np.array(np.loadtxt(INFILE))

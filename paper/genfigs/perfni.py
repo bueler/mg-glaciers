@@ -4,20 +4,13 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from writeout import writeout
 
 INFILE = 'perfni.txt'
 SOLVERNAME = ['discretization error', 'F-cycle', 'F-cycle (2xV)']
 MARKER = ['*','o','s']
 MARKERSIZE = [8.0,10.0,10.0]
 MARKERFACE = ['k','w','w']
-
-SHOW = False
-def writeout(outname):
-    if SHOW:
-        plt.show()
-    else:
-        print('writing file ' + outname)
-        plt.savefig(outname,bbox_inches='tight')
 
 print('reading %s ...' % INFILE)
 v = np.array(np.loadtxt(INFILE))

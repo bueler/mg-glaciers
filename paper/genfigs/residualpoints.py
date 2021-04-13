@@ -2,19 +2,12 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from writeout import writeout
 
 plt.rcParams["font.family"] = "sans-serif"
 plt.rcParams["mathtext.fontset"] = "cm"
 fsize=16.0
 bigfsize=20.0
-
-debug = False
-def figsave(name):
-    if debug:
-        plt.show()  # debug
-    else:
-        print('saving %s ...' % name)
-        plt.savefig(name,bbox_inches='tight',transparent=True)
 
 m = 6  # number of internal nodes
 h = 1.0 / (m+1)
@@ -71,5 +64,4 @@ for p in range(m+1):
 plt.text(0.5,-8.0,'residuals',rotation=-62.0,fontsize=fsize)
 plt.text(3.6,-4.0,'errors',rotation=-62.0,fontsize=fsize)
 plt.axis('off')
-figsave('residualpoints.pdf')
-
+writeout('residualpoints.pdf')

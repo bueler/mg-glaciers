@@ -2,20 +2,13 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from writeout import writeout
 
 plt.rcParams["font.family"] = "serif"
 plt.rcParams["mathtext.fontset"] = "cm"
 
 fsize=16.0
 bigfsize=18.0
-
-debug = False
-def figsave(name):
-    if debug:
-        plt.show()  # debug
-    else:
-        print('saving %s ...' % name)
-        plt.savefig(name,bbox_inches='tight',transparent=True)
 
 # fine mesh
 m = 9   # 10 elements
@@ -47,5 +40,4 @@ plt.plot(x,  y,  'k',   lw=1.5, label='fine obstacle')
 plt.legend(fontsize=bigfsize,loc='upper right',frameon=False)
 plt.axis([-0.01,1.2,-0.01,1.3*max(y)])
 plt.axis('off')
-figsave('prolongobstacle.pdf')
-
+writeout('prolongobstacle.pdf')

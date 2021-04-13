@@ -3,19 +3,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Arc
+from writeout import writeout
 
 plt.rcParams["font.family"] = "serif"
 plt.rcParams["mathtext.fontset"] = "cm"
 
 fsize=15.0
-
-debug = False
-def figsave(name):
-    if debug:
-        plt.show()  # debug
-    else:
-        print('saving %s ...' % name)
-        plt.savefig(name,bbox_inches='tight',transparent=True)
 
 def makeaxes(xmin,xmax,ymin,ymax):
     x = np.linspace(xmin,xmax,2)
@@ -60,7 +53,7 @@ plt.text(0.9,0.6,r'$\mathcal{K}_\varphi$',fontsize=fsize)
 plt.axis('tight')
 plt.axis('off')
 plt.axis('equal')
-figsave('cartoonplane.pdf')
+writeout('cartoonplane.pdf')
 
 # inner cone approx figure
 plt.figure(figsize=(8,6))
@@ -90,4 +83,4 @@ plt.text(0.19,cornery[0]+0.01,
 plt.axis('tight')
 plt.axis('off')
 plt.axis('equal')
-figsave('innerconeapprox.pdf')
+writeout('innerconeapprox.pdf')
