@@ -28,11 +28,13 @@ print(' %d values read' % len(x2))
 assert max(abs(x1-x2)) == 0
 #sys.exit(0)
 
-x = -200.0 + (x1 - min(x1)) / 1000.0
+# show on interval [0,1200km] starting 200km in from left
+x = -250.0 + (x1 - min(x1)) / 1000.0
+L = 1000.0
 s = b + H
 
 # s(x) and b(x) versus x, with 100x exaggeration
-plt.figure(figsize=(12,10))
+plt.figure(figsize=(10,7))
 plt.subplot(2,1,1)
 plt.plot(x,s,'k--',label='$s$')
 plt.plot(x,b,'k',label='$b$')
@@ -42,7 +44,7 @@ plt.ylabel('elevation  (m)',fontsize=18.0)
 plt.xticks(fontsize=14.0)
 plt.yticks(fontsize=14.0)
 plt.minorticks_off()
-plt.axis([0.0,1200.0,-1000.0,3200.0])
+plt.axis([0.0,L,-1000.0,3200.0])
 plt.legend(loc='upper left',fontsize=14.0)
 plt.subplot(2,1,2)
 plt.plot(x,H,'k')
@@ -52,5 +54,5 @@ plt.ylabel('$H$  (m)',fontsize=18.0)
 plt.xticks(fontsize=14.0)
 plt.yticks(fontsize=14.0)
 plt.minorticks_off()
-plt.axis([0.0,1200.0,-100.0,3200.0])
+plt.axis([0.0,L,-100.0,3200.0])
 writeout('giscross.pdf')
