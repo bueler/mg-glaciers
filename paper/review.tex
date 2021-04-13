@@ -1042,14 +1042,14 @@ On the other hand, a weak solution of \eqref{eq:siaVIunreg} is known to exist in
 In fact we are motivated to rescue weak form \eqref{eq:siaVIunreg} for the following three reasons:
 \begin{enumerate}
 \item The SIA model is usually stated in terms of the surface elevation because the \emph{surface kinematical equation} (SKE) is used in its derivation \cite{GreveBlatter2009}.
-\item Because the ice acts as a viscous fluid at scales of $O(10)$ meters and larger, the surface elevation $s$ of a real glacier or ice sheet is relatively smooth compared to the bed elevation $b$.  (Crevassing and other non-fluid surface effects like sastrugi are small in amplitude compared to bed elevation variations.)  Figure \ref{fig:giscross} shows a typical cross-section of the Greenland ice sheet.  While the bed elevation is full of high frequencies, reflecting ice-buried fjord topography, which also generates noisy thickness $H=s-b$, the surface is smoothed by the flow of the ice.
+\item Because the ice acts as a viscous fluid at scales of $O(10)$ meters and larger, the surface elevation $s$ of a real glacier or ice sheet is relatively smooth compared to the bed elevation $b$.  (Crevassing and other non-fluid surface effects like sastrugi are small in amplitude compared to bed elevation variations.)  Figure \ref{fig:giscross} shows a typical cross-section of the Greenland ice sheet.\footnote{Figure help from A.~Aschwanden.  Note approximately $100\times$ vertical exaggeration.  Data downloaded 4/2021 from BedMachine (\href{https://nsidc.org/data/IDBMG4/versions/3}{\texttt{nsidc.org/data/IDBMG4/versions/3}}) \cite{Morlighemetal2017}.  }  While the bed elevation is full of high frequencies, reflecting ice-buried fjord topography, which also generates noisy thickness $H=s-b$, the surface is smoothed by the flow of the ice.
 \item The key geometry-evolution equation in the Stokes model of section \ref{sec:stokes} is the SKE itself, stated in terms of $s$.  The momentum balance equation in the Stokes model requires the actual boundary geometry of the ice mass, as described using $s$ and $b$, and it permits no practical thickness-based formulation.
 \end{enumerate}
 Regarding item \emph{ii)}, we much prefer to apply smoothers and transfer operators to $s$, not $H$.
 
 \begin{figure}
 \includegraphics[width=0.8\textwidth]{genfigs/giscross.pdf}
-\caption{\emph{Top.}  Cross-section of the Greenland ice sheet at $69^\circ$N latitude, showing surface $s$ and bed $b$.  \emph{Bottom.} The corresponding thickness $H=s-b$.  (Approximately $100\times$ vertical exaggeration in both parts.)}
+\caption{\emph{Top.}  Cross-section of the Greenland ice sheet at $69^\circ$N latitude, showing surface $s$ and bed $b$.  \emph{Bottom.} The corresponding thickness $H=s-b$.  \emph{Inset.} Location of transect.}
 \label{fig:giscross}
 \end{figure}
 
