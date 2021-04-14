@@ -6,7 +6,7 @@ import pandas as pd
 import sys
 from writeout import writeout
 
-df = pd.read_csv('gis/gris_cross_profile.csv')
+df = pd.read_csv('gis/gris_cross_profile_lat_70.csv')
 x = np.array(df["Profile [m]"]) / 1000.0
 b = np.array(df["Bed [m]"])
 s0 = np.array(df["Surface [m]"])
