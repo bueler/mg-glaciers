@@ -38,5 +38,5 @@ plt.yticks(fontsize=14.0)
 plt.minorticks_off()
 plt.axis([0.0,L,-100.0,3500.0])
 im = plt.imread('gis/gris-profile-gray.png')  # image is 200 pixels tall
-plt.figimage(im, 125.0, 85.0)  # offset in pixels
+plt.figimage(im, 135.0, 100.0)  # offset in pixels
 writeout('giscross.pdf')
