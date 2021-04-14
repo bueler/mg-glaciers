@@ -1079,23 +1079,23 @@ In our numerical results we set $\eps=0$.  Thus the regularization is helpful in
 
 Suppose our fine-level FE space is $\mathcal{V}^J \subset \mathcal{W}$, the space of continuous piecewise-linear functions with zero boundary values, based on $J$ levels of refinement as before.  Suppose $b^J$ in $\mathcal{V}^J$ is the fine-level interpolant of the continuum bed $b$.  Assume $s$ in $\mathcal{W}$ solves \eqref{eq:siaVI}, for some $\eps>0$, and assume that our given iterate $w^J\approx s$, with $w^J$ in $\mathcal{V}^J$, is admissible in the sense that $w^J \ge b^J$.  As in section \ref{sec:obstacle}, we define the fine-level defect constraint function and set:
     $$\chi^J = b^J - w^J, \qquad \mathcal{D}^J = \{v\ge \chi^J\} \subset \mathcal{V}^J.$$
-Recall that a perturbed iterate is admissible, $w^J + z^J \ge b^J$, if and only if the perturbation $z^J$ is in $\mathcal{D}^J$.  Let $N^J$ be an FE approximation of the nonlinear operator $N_\eps$ in \eqref{eq:siaN}.  (The construction of $N^J$ occurs in the next subsection \ref{subsec:Ndiscretization}.)  Let $\ell^J[v] = \ip{a}{v}$.  Our goal is to solve the fine-level FE version of VI \eqref{eq:siaVI} for an admissible perturbation $z^J$ in $\mathcal{D}^J$.  That is, we want to solve
+Recall that a perturbed iterate is admissible, $w^J + z^J \ge b^J$, if and only if the perturbation $z^J$ is in $\mathcal{D}^J$.  Let $N^J$ be an FE approximation of the nonlinear operator $N_\eps$ in \eqref{eq:siaN}.  (The construction of $N^J$ occurs in the next subsection \ref{subsec:Ndiscretization}.)  Let $\ell^J[v] = \ip{a}{v}$.  Our goal is to solve the fine-level FE version of VI \eqref{eq:siaVI} for an admissible perturbation $z^J$ in $\mathcal{D}^J$,
 \begin{equation}
 N^J(w^J+z^J)[v-z^J] \ge \ell^J[v-z^J] \quad \text{for all $v$ in $\mathcal{D}^J$.} \label{eq:siaVIFEfinelevel}
 \end{equation}
-Note that $s^J=w^J+z^J$ is the desired surface elevation result, and that $v - z^J = (w^J+v)-s^J$.
+Note that $s^J=w^J+z^J$ is the desired surface elevation result, and that $v - z^J = (w^J+v)-s^J$ is a difference of admissible surface elevations.
 
-Finite-dimensional nonlinear VI \eqref{eq:siaVIFEfinelevel} suffices when applying a single-level method.  However, for a multi-level method, using the fundamental MCD idea from section \ref{sec:obstacle} we split the coarse-level correction $z^J$ into admissible parts by splitting-up the defect constraint set.  Recalling $\mR$ denotes the monotone restriction operator \eqref{eq:monotonerestriction} (Table \ref{tab:transfers}), for $j=1,\dots,J$ let
+Finite-dimensional nonlinear VI \eqref{eq:siaVIFEfinelevel} suffices when applying a single-level method.  However, for a multi-level method we use the fundamental MCD idea from section \ref{sec:obstacle} to split the coarse-level correction $z^J$ into admissible parts by splitting-up the defect constraint set.  Recalling $\mR$ denotes the monotone restriction operator \eqref{eq:monotonerestriction} (Table \ref{tab:transfers}), for $j=1,\dots,J$ let
     $$\chi^{j-1} = \mR \chi^j, \qquad \phi^j = \chi^j - \chi^{j-1},$$
-and define $\chi^{-1}=0$ so that $\phi^0=\chi^0$.  Note that the telescoping-sum decomposition \eqref{eq:telescopingdecomposition} holds.  For $j=0,\dots,J$ let
+and define $\chi^{-1}=0$ so that $\phi^0=\chi^0$.  (This is the same as for MCDL; the telescoping-sum decomposition \eqref{eq:telescopingdecomposition} holds.)  For $j=0,\dots,J$ let
     $$\mathcal{D}^j = \{v \ge \chi^j\}, \qquad \mathcal{K}^j = \{v \ge \phi^j\}$$
 be the up- and down-admissible subsets of $\mathcal{V}^j$, respectively.  Note that $\mathcal{D}^j = \sum_{k=0}^j \mathcal{K}^k$ for any $j$, and that Figure \ref{fig:gooddecomposition} serves as a visualization if $\varphi^J$ is replaced by $b^J$.
 
-Suppose we have admissible perturbations of $w^J$ down to the $j+1$ level which \emph{approximately} satisfy \eqref{eq:siaVIFEfinelevel}.  Specifically, suppose $y^{j+1},\dots,y^J$ in $\mathcal{K}^{j+1},\dots,\mathcal{K}^J$ have been computed, using smoothers as described in the subsection \ref{subsec:pngs}, so that $z^{j+1}=y^{j+1}+\dots+y^J$ approximately solves \eqref{eq:siaVIFEfinelevel}.  We now seek a coarser-level correction $y$ in $\mathcal{K}^j$ so that
+Suppose we have admissible perturbations of $w^J$ down to the $j+1$ level which \emph{approximately} satisfy \eqref{eq:siaVIFEfinelevel}.  That is, suppose $y^{j+1},\dots,y^J$ in $\mathcal{K}^{j+1},\dots,\mathcal{K}^J$ have been computed, using smoothers (as described next in subsection \ref{subsec:pngs}), so that $z^{j+1}=y^{j+1}+\dots+y^J$ approximately solves \eqref{eq:siaVIFEfinelevel}.  We now seek a coarser-level correction $y$ in $\mathcal{K}^j$ so that
 \begin{equation}
 N^{j+1}(w^J+z^{j+1}+y)[v-y] \ge \ell^{j+1}[v-y] \label{eq:siaVIFEprecoarseone}
 \end{equation}
-for all $v$ in $\mathcal{K}^j$.  (The source $\ell^{j+1}$ is defined later, but note $\ell^J[v] = \ip{a}{v}$.)  Subtracting $N^{j+1}(w^J+z^{j+1})$ from both sides of \eqref{eq:siaVIFEprecoarseone},
+for all $v$ in $\mathcal{K}^j$.  (The source $\ell^{j+1}$ is defined later, but note $\ell^J[v] = \ip{a}{v}$ on the finest level.)  Subtracting $N^{j+1}(w^J+z^{j+1})$ from both sides of \eqref{eq:siaVIFEprecoarseone},
 \begin{equation}
 N^{j+1}(w^J+z^{j+1}+y)[v-y] - N^{j+1}(w^J+z^{j+1})[v-y] \ge - \tilde F^{j+1}[v-y], \label{eq:siaVIFEprecoarsetwo}
 \end{equation}
@@ -1104,17 +1104,17 @@ reveals a residual
 \tilde F^{j+1}[v] = N^{j+1}(w^J+z^{j+1})[v] - \ell^{j+1}[v].
 \end{equation}
 
-The effect of the smoothers on the $J$ down to $j+1$ levels should be to make $\tilde F^{j+1}$ smooth in a CP residual \eqref{eq:cpresidual} sense, and thus VI \eqref{eq:siaVIFEprecoarsetwo} should be accurately-representable on the $j$th level.  Thus we want to approximate it using only using the $j$th-level basis.  To do this we define \emph{injection restriction} $\iR:\mathcal{V}^{j+1} \to \mathcal{V}^j$ (Table \ref{tab:transfers}), which simply keeps the values of the solution at the coarse-level nodes and discards the fine-level nodes in between:
+The effect of the smoothers on the $J$ down to $j+1$ levels should be to make $\tilde F^{j+1}$ smooth in a CP residual \eqref{eq:cpresidual} sense, and thus VI \eqref{eq:siaVIFEprecoarsetwo} should be accurately-representable on the $j$th level, and thus we will approximate it using the $j$th-level basis $\{\psi_p^j\}$.  To do this we define \emph{injection restriction} $\iR:\mathcal{V}^{j+1} \to \mathcal{V}^j$ (Table \ref{tab:transfers}), which simply keeps the values of the solution at the coarse-level nodes and discards the fine-level nodes in between:
 \begin{equation}
   (\iR v)_p = v_{2p}, \label{eq:injectionrestriction}
 \end{equation}
-for $p=1,\dots,m_j$.  Note that $\iR$ preserves admissibility relative to the interpolated bed elevation data on each level: $v\ge b^{j+1} \implies \iR v \ge b^j$.  Next we define $g^j$ as the current $j$th-level approximation to the solution $s$:
+for $p=1,\dots,m_j$.  Note that $\iR$ preserves admissibility relative to the interpolated bed elevation data on each level: $v\ge b^{j+1} \implies \iR v \ge b^j$.  Next we define $g^j$ as the latest $j$th-level approximation to the solution $s$:
 \begin{equation}
 g^j = \begin{cases} w^J, & j=J \\
                     \iR(g^{j+1} + y^{j+1}), & j < J.
       \end{cases}  \label{eq:siag}
 \end{equation}
-That is, $g^j$ is our estimate of the solution on the $j$th level, before we add a correction which solves a VI on the $j$th level.
+That is, $g^j$ is our estimate of the solution on the $j$th level, before we add a correction which solves the $j$th-level VI.
 
 We can now be completely precise about the $j$th-level VI.  Given the next-finer correction $y^{j+1}$, and using \eqref{eq:siag} to define $g^j$ from $g^{j+1}$, let
 \begin{equation}
@@ -1122,16 +1122,16 @@ We can now be completely precise about the $j$th-level VI.  Given the next-finer
                           N^j(g^j)[v] - R \left(N^{j+1}(g^{j+1}+y^{j+1}) - \ell^{j+1}\right)[v], & j < J.
             \end{cases}  \label{eq:siaell}
 \end{equation}
-(Such a source term appears in a standard FAS scheme for PDEs \cite{Trottenbergetal2001}.)  Note this definition uses canonical restriction $R$ (Table \ref{tab:transfers}).  From \eqref{eq:siaVIFEprecoarsetwo}, our $j$th-level correction VI is
+(Such a source term appears in standard FAS schemes for PDEs \cite{Trottenbergetal2001}.)  Note this definition uses canonical restriction $R$ (Table \ref{tab:transfers}).  From \eqref{eq:siaVIFEprecoarsetwo}, our $j$th-level correction VI is
 \begin{equation}
 N^j(g^j+y)[v-y^j] - N^j(g^j)[v-y^j] \ge - R \left(N^{j+1}(g^{j+1}+y^{j+1}) - \ell^{j+1}\right)[v-y^j]. \label{eq:siaVIFEFASearly}
 \end{equation}
-We can clean-up the appearance by collecting known terms on the right and using definition \eqref{eq:siaell}.  Thus we seek a correction $y^j$ in $\mathcal{K}^j$ so that
+We can clean-up the appearance by collecting known terms on the right and using definition \eqref{eq:siaell}; we seek a correction $y^j$ in $\mathcal{K}^j$ so that
 \begin{equation}
 N^j(g^j+y^j)[v-y^j] \ge \ell^j[v-y^j] \quad \text{for all $v$ in $\mathcal{K}^j$.} \label{eq:siaVIFEFAS}
 \end{equation}
 
-From \eqref{eq:siag}, \eqref{eq:siaell}, and \eqref{eq:siaVIFEFAS} we can construct a V-cycle comparable to \pr{mcdl-vcycle} in section \ref{sec:obstacle}.  On descent we look for corrections $y^j$ from the down-admissible sets $\mathcal{K}^j$, but going upward we allow corrections $z^j$ from the larger up-admissible sets $\mathcal{D}^j$; see Figure \ref{fig:mcdvcycle}.
+From \eqref{eq:siag}, \eqref{eq:siaell}, and \eqref{eq:siaVIFEFAS} we can construct a V-cycle comparable to \pr{mcdl-vcycle} in section \ref{sec:obstacle}.  On descent we look for corrections $y^j$ from the down-admissible sets $\mathcal{K}^j$, but going upward we allow corrections $z^j$ from the larger sets $\mathcal{D}^j$; see Figure \ref{fig:mcdvcycle}.
 \begin{pseudo*} \label{ps:mcdn-vcycle}
 \pr{mcdn-vcycle}(J,w^J,N,\ell^J,\chi^J,\id{down}=1,\id{coarse}=1,\id{up}=0)\text{:} \\+
     $g^J = w^J$ \\
@@ -1139,19 +1139,21 @@ From \eqref{eq:siag}, \eqref{eq:siaell}, and \eqref{eq:siaVIFEFAS} we can constr
       $\chi^{j-1} = \mR \chi^j$ \\
       $\phi^j = \chi^j - P\chi^{j-1}$ \\
       $y^j = 0$ \\
-      $\text{\pr{pngs}}^{\text{\id{down}}}(j,g^j,y^j,N^j,\ell^j,\phi^j)$ \qquad \ct{smoothing in $\mathcal{K}^j$} \\
+      $\text{\pr{smoother}}^{\text{\id{down}}}(j,g^j,y^j,N^j,\ell^j,\phi^j)$ \qquad \ct{smoothing in $\mathcal{K}^j$} \\
       $F = N^j(g^j+y^j) - \ell^j$ \\
       $g^{j-1} = \iR(g^j + y^j)$ \\
       $\ell^{j-1} = N^{j-1}(g^{j-1}) - R F$ \\-
     $y^0 = 0$ \\
-    $\text{\pr{pngs}}^{\text{\id{coarse}}}(0,g^0,y^0,N^0,\ell^0,\chi^0)$ \\
+    $\text{\pr{smoother}}^{\text{\id{coarse}}}(0,g^0,y^0,N^0,\ell^0,\chi^0)$ \\
     $z^0 = y^0$ \\
     for $j=1$ to $j=J$ \\+
       $z^j = P z^{j-1} + y^{j}$ \\
-      $\text{\pr{pngs}}^{\text{\id{up}}}(j,g^j,z^j,N^j,\ell^j,\chi^j)$ \qquad \ct{smoothing in $\mathcal{D}^j$} \\-
+      $\text{\pr{smoother}}^{\text{\id{up}}}(j,g^j,z^j,N^j,\ell^j,\chi^j)$ \qquad \ct{smoothing in $\mathcal{D}^j$} \\-
     return $z^J$
 \end{pseudo*}
-The nonlinear operator $N^j$  is defined in the next subsection \ref{subsec:Ndiscretization}, and the \pr{pngs} smoother in subsection \ref{subsec:pngs}.  We may also apply nested iteration to generate the initial iterate on the finest level, for which the following is a small modification of \pr{mcdl-fcycle} in section \ref{sec:obstacle}.
+The nonlinear operator $N^j$  is defined in the next subsection \ref{subsec:Ndiscretization}.  \pr{pngs} and \pr{pnjacobi} smoothers are defined in subsection \ref{subsec:pngs}.
+
+We may also apply nested iteration to generate the initial iterate on the finest level, for which the following is a small modification of \pr{mcdl-fcycle} in section \ref{sec:obstacle}.
 \begin{pseudo*} \label{ps:mcdn-fcycle}
 \pr{mcdn-fcycle}(J,w^0,N,a,b,\id{nicycles}=1)\text{:} \\+
     for $j=0,\dots,J$ \\+
@@ -1163,7 +1165,7 @@ The nonlinear operator $N^j$  is defined in the next subsection \ref{subsec:Ndis
             $w^{j+1} = \hat P w^j$ \\--
     return $w^J$
 \end{pseudo*}
-(As before, $b^j$ denotes the $j$th-level interpolant of $b(x)$.)  In general we will iterate \pr{mcdn-vcycle} until the norm of the CP residual has been reduced by a tolerance factor; compare the following to \pr{mcdl-solver}.
+(As before, $b^j$ denotes the $j$th-level interpolant of $b(x)$.)  In general we will iterate \pr{mcdn-vcycle} until the norm of the CP residual has been reduced by a tolerance factor by the following in-place solver.  (Compare \pr{mcdl-solver} in section \ref{sec:obstacle}.)
 \begin{pseudo*} \label{ps:mcdn-solver}
 \pr{mcdn-solver}(J,w^J,N,a,b,\id{rtol}=10^{-3},\id{cyclemax}=100)\text{:} \\+
     $\ell^J = \ip{a}{\cdot}$ \\
@@ -1176,15 +1178,13 @@ The nonlinear operator $N^j$  is defined in the next subsection \ref{subsec:Ndis
             break \\--
 \end{pseudo*}
 
-% FIXME possible: $\mR$ generates a coarse-level thickness coefficient that is better than in \eqref{eq:siaVIFEFAS}; on the coarse level the nonlinear operator is slightly different; it is more ``$\pp$-Laplacian elliptic''
-
-\subsection{Nonlinear operator discretization} \label{subsec:Ndiscretization}  The discretization of SIA VI \eqref{eq:siaVI}, to generate either the single-level form \eqref{eq:siaVIFEfinelevel} or the coarse-level correction form \eqref{eq:siaVIFEFAS}, proceeds essentially as for the classical obstacle problem VI \eqref{eq:obstacleviresidual}.  Compared to the discretization of the Laplacian operator and bilinear form, there are two significant differences when we discretize $N_\eps$ in \eqref{eq:siaN}:
+\subsection{Nonlinear operator discretization} \label{subsec:Ndiscretization}  The discretization of SIA VI \eqref{eq:siaVI}, to generate either the single-level form \eqref{eq:siaVIFEfinelevel} or the coarse-level correction form \eqref{eq:siaVIFEFAS}, proceeds essentially as for the classical obstacle problem VI \eqref{eq:obstacleviresidual}.  Compared to the discretization of the Laplacian operator there are two significant differences when we discretize $N_\eps$ in \eqref{eq:siaN}:
 \begin{itemize}
-\item the bed elevation $b$ appears in the formula, not just in defining the admissible sets, and
+\item the bed elevation $b$ is used in the operator, not only in defining admissible sets, and
 \item we approximate the integral using quadrature.
 \end{itemize}
 
-Suppose $w^j$ in $\mathcal{V}^j \subset \mathcal{W}$ is an iterate on the $j$th level, an approximation of the surface elevation $s_\eps$ which solves \eqref{eq:siaVI}, expanded in hat functions $w^j = \sum w_q \psi_q^j$.  Because the support of $\psi_p^j$ is the interval $[x_p^j-h,x_p^j+h]$, the exact value of the nonlinear operator acting on $w^j$ is
+Suppose $w^j$ in $\mathcal{V}^j \subset \mathcal{W}$ is an iterate on the $j$th level, i.e.~an approximation of the surface elevation $s_\eps$ solving \eqref{eq:siaVI}, and expand it in hat functions: $w^j = \sum w_q \psi_q^j$.  Because the support of $\psi_p^j$ is the interval $[x_p^j-h,x_p^j+h]$, the exact value of the nonlinear operator acting on $w^j$ is
 \begin{equation}
 N_\eps(w^j)[\psi_p^j] = \int_{x_p^j-h}^{x_p^j+h} \Gamma (w^j-b+\eps)^{\pp+1} \left|(w^j)'\right|^{\pp-2} (w^j)'\, (\psi_p^j)'\,dx.  \label{eq:siaNFEgoal}
 \end{equation}
@@ -1193,7 +1193,7 @@ Let us define functions for the powers appearing above:
 \begin{equation}
 \tau_q(\xi)  = (\xi - b_q + \eps)^{\pp+1}, \qquad \mu(\xi) = |\xi|^{\pp-2} \xi, \label{eq:siahelperfcns}
 \end{equation}
-for domains $\xi \ge b_q$ and $\xi$ in $\RR$, respectively.  These functions are continuously-differentiable with nonnegative derivatives $\mu'(\xi) = (\pp-1) |\xi|^{\pp-2}$ and $\tau_q'(\xi) = (\pp+1) (\xi-b_q + \eps)^{\pp}$, respectively.  Note that $\tau_q$ uses a nodal bed elevation $b_q$, and indeed we will approximate $N_\eps$ using the interpolated bed $b^j$.  Observe that exact integration of \eqref{eq:siaNFEgoal} is impossible for non-integer $\pp$, and tedious for integer values, so our approximation the piecewise-linearity of the functions and the trapezoid rule on each element:
+for domains $\xi \ge b_q$ and $\xi$ in $\RR$, respectively.  These functions are continuously-differentiable with nonnegative derivatives $\mu'(\xi) = (\pp-1) |\xi|^{\pp-2}$ and $\tau_q'(\xi) = (\pp+1) (\xi-b_q + \eps)^{\pp}$, respectively.  Note that $\tau_q$ uses a nodal bed elevation $b_q$.  (We approximate $N_\eps$ using the interpolated bed $b^j$.)  Observe that exact integration of \eqref{eq:siaNFEgoal} is impossible for non-integer $\pp$, and tedious for integer values, so our approximation exploits the piecewise-linearity of the functions and the trapezoid rule on each element:
 \begin{align}
 N^j(w^j)[\psi_p^j] &= \Gamma \left(\frac{\tau_{p-1}(w_{p-1}) + \tau_p(w_p)}{2}\right) \mu\left(\frac{w_p-w_{p-1}}{h}\right)\, \frac{+1}{h}\, h \notag \\
     &\qquad\quad  + \Gamma \left(\frac{\tau_p(w_p) + \tau_{p+1}(w_{p+1})}{2}\right) \mu\left(\frac{w_{p+1}-w_p}{h}\right)\, \frac{-1}{h}\, h, \notag \\
@@ -1202,11 +1202,14 @@ N^j(w^j)[\psi_p^j] &= \Gamma \left(\frac{\tau_{p-1}(w_{p-1}) + \tau_p(w_p)}{2}\r
 \end{align}
 This defines a map from $w^j$ in $\{v \ge b^j\} \subset \mathcal{V}^j$ to $N^j(w^j) \approx N_\eps(w^j)$ in $(\mathcal{V}^j)'$.
 
-For convergence and performance comparisons versus the more-degenerate SIA problem, will also solve the $\pp$-Laplacian obstacle problem.  Its operator formula, implicit the weak form \eqref{eq:plaplacianpoisson}, is computed exactly using \eqref{eq:siaNlevel}, but with $\Gamma = 1$ and $\tau_q(\xi)=1$: $N^j(w^j)[\psi_p^j] = h^{1-\pp} \left[\mu(w_p-w_{p-1}) - \mu(w_{p+1}-w_p)\right]$.
+For convergence and performance comparisons, versus the more-degenerate SIA problem, will also solve the $\pp$-Laplacian obstacle problem.  Its operator formula, in the weak form \eqref{eq:plaplacianpoisson}, is computed using \eqref{eq:siaNlevel} but with $\Gamma = 1$ and $\tau_q(\xi)=1$:
+\begin{equation}
+N^j(w^j)[\psi_p^j] = h^{1-\pp} \left[\mu(w_p-w_{p-1}) - \mu(w_{p+1}-w_p)\right] \qquad \text{($\pp$-\emph{Laplacian}).}  \label{eq:plapNlevel}
+\end{equation}
 
-\subsection{Projected nonlinear smoothers} \label{subsec:pngs}  To construct smoothers for VI \eqref{eq:siaVIFEfinelevel} or \eqref{eq:siaVIFEFAS} we follow the derivation of the PGS smoother in section \ref{sec:obstacle}.  Although a minimization-based derivation was possible for that classical obstacle problem, we also showed that one-dimensional VI \eqref{eq:pgspointwisevi} produced the PGS formula \eqref{eq:pgsformula}, and the smoothers here will again use a one-dimensional VI.  However, because the problem is nonlinear it will take a fixed number of Newton steps at each point, and where the SIA form degenerates we need special logic.  We describe how to apply a smoother for \eqref{eq:siaVIFEFAS}, and later note the simple replacements for \eqref{eq:siaVIFEfinelevel}.
+\subsection{Projected nonlinear smoothers} \label{subsec:pngs}  To construct smoothers for VI \eqref{eq:siaVIFEfinelevel} or \eqref{eq:siaVIFEFAS} we follow the derivation of the PGS smoother in section \ref{sec:obstacle}.  Although a minimization-based derivation was possible for that classical obstacle problem, we also showed that one-dimensional VI \eqref{eq:pgspointwisevi} produced the PGS formula \eqref{eq:pgsformula}.  The smoothers here are derived using a one-dimensional VI.  However, because the problem is nonlinear we will take a fixed number of Newton steps at each point, and where the SIA form degenerates we will need special logic.  We first describe how to apply a smoother for \eqref{eq:siaVIFEFAS}, and later note the replacements for \eqref{eq:siaVIFEfinelevel}.
 
-In \eqref{eq:siaVIFEFAS}, assuming we are going down in a V-cycle, $\phi^j$ is the obstacle on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$, and $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j \subset \mathcal{W}$.  Note that $g^j+y^j \ge b^j$ follows if $y^j$ is in $\mathcal{K}^j$.  At the node $x_p^j$, our smoother will seek a scalar $c$ so that $c \ge \phi_p - y_p$ and it solves the following one-dimensional VI:
+In \eqref{eq:siaVIFEFAS}, assuming we are going down in a V-cycle, $\phi^j$ is the obstacle on the $j$th level, with expansion $\phi^j = \sum \phi_q \psi_q^j$, and $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j \subset \mathcal{W}$.  Note that $g^j+y^j \ge b^j$ follows if $y^j$ is in $\mathcal{K}^j$.  At the node $x_p^j$, our smoother seeks a scalar $c$ so that $c \ge \phi_p - y_p$ and solving the following one-dimensional VI:
 \begin{equation}
 N^j(g^j+y^j+c\psi_p^j)[(\tilde c - c) \psi_p^j] \ge \ell^j[(\tilde c - c) \psi_p^j] \label{eq:pngspointwiseviEARLY}
 \end{equation}
@@ -1221,71 +1224,68 @@ where, using \eqref{eq:siaNlevel} to identify the power functions $\tau_q$ and $
        &= \frac{\Gamma}{2h^{\pp-1}} \Big[(\tau_{p-1}(w_{p-1}) + \tau_p(w_p +c)) \mu(w_p+c-w_{p-1}) \notag  \\
        &\hspace{20mm} - (\tau_p(w_p+c) + \tau_{p+1}(w_{p+1})) \mu(w_{p+1}-w_p-c)\Big] - \ell_p. \notag
 \end{align}
-In using this formula keep in mind that $w^j = g^j+y^j$ is the current estimate of the ice surface, but $g^j$ is fixed while $y^j$ is the actual solution variable.
+When using this formula keep in mind that $w^j = g^j+y^j$ is the current estimate of the ice surface, but $g^j$ is fixed while $y^j$ is the solution variable in \eqref{eq:siaVIFEFAS}.
 
-Now, the pointwise residual $\rho(c)$ is differentiable on $[\phi_p - y_p,+\infty)$, an interval which always includes $c=0$.  When we derived \eqref{eq:pgspointwisevi} we used the fact that the corresponding pointwise residual was both linear and strictly-increasing, from which it followed that the solution of one-dimensional VI \eqref{eq:pgspointwisevi} was either the unique value $c$ in the admissible interval which made the scalar function zero, or it was the left endpoint of the interval.  Here we would ``want'' $\rho'(c)$ in \eqref{eq:pngspointwiseresidual} to always be positive, indeed it would be nice if it were bounded away from zero by uniform ellipticity.  However, this is not true in either the SIA or $\pp$-Laplacian problem (if $\pp>2$).  As noted above (subsection \ref{subsec:siaproblem}), our SIA nonlinear operator $N(w)$ degenerates in two different ways, so we must proceed carefully to construct a robust smoother.
-
-Lower bounds on the derivative $\rho'(c)$ are possible.  By the product rule, the mean value theorem, the fact that $\tau_q(x) = (x+b_q+\eps)^{\pp+1} \ge \eps^{\pp+1}$ when $x\ge b_q$, and that fact that $\mu'\ge 0$,
+The pointwise residual $\rho(c)$ is differentiable on $[\phi_p - y_p,+\infty)$, an interval including $c=0$.  When we derived \eqref{eq:pgspointwisevi} we used the fact that the corresponding pointwise residual was both linear and strictly-increasing, from which it followed that the solution of one-dimensional VI \eqref{eq:pgspointwisevi} was either the unique value $c$ in the admissible interval which made the residual zero, or it was the left endpoint of the interval.  Here we would ``want'' $\rho'(c)$ in \eqref{eq:pngspointwiseresidual} to always be positive, but this is not true in either the SIA or $\pp$-Laplacian problem when $\pp>2$, although lower bounds on the derivative $\rho'(c)$ are possible, as follows.  By the product rule, the mean value theorem, that $\tau_q(x) = (x+b_q+\eps)^{\pp+1} \ge \eps^{\pp+1}\ge 0$ when $x\ge b_q$, and that $\mu'\ge 0$,
 \begin{align}
   \rho'(c) &= \frac{\Gamma}{2h^{\pp-1}} \Big[\tau_p'(w_p+c) \left(\mu(w_p+c-w_{p-1}) -  \mu(w_{p+1}-w_p-c)\right) \label{eq:pngsderivativebound} \\
         &\qquad\qquad\quad + (\tau_{p-1}(w_{p-1}) + \tau_p(w_p+c)) \mu'(w_p+c-w_{p-1}) \notag \\
         &\qquad\qquad\quad + (\tau_p(w_p+c) + \tau_{p+1}(w_{p+1})) \mu'(w_{p+1}-w_p-c)\Big] \notag \\
-        &\ge \frac{\Gamma}{2h^{\pp-1}} \Big[\tau_p'(w_p+c) \mu'(\xi_p) (2(w_p+c) - w_{p-1} - w_{p+1}) \notag \\
-        &\qquad\qquad\quad + 2 \eps^{\pp+1} \left(\mu'(w_p+c-w_{p-1}) + \mu'(w_{p+1}-w_p-c)\right)\Big] \notag \\
         &\ge \frac{\Gamma}{2h^{\pp-1}} \tau_p'(w_p+c) \mu'(\xi_p) (2(w_p+c) - w_{p-1} - w_{p+1}) \notag
 \end{align}
 (Note that taking $\eps=0$ does not change the final bound.)  Recalling that $\tau_q'$ is also nonnegative, $\rho'(c)$ can be negative only when
     $$0 > 2(w_p+c) - w_{p-1} - w_{p+1} \approx - h^2\left(w^j(x) + c \psi_p^j(x)\right)''\Big|_{x_p^j},$$
-that is, when the updated surface $w^j(x) + c \psi_p^j(x)$ is convex (concave up) at $x_p^j$.  This situation is most likely to occur when $x_p^j$ is the estimated margin location.
+that is, when the updated surface $w^j(x) + c \psi_p^j(x)$ is convex (concave up) at $x_p^j$.  This situation is most likely to occur when $x_p^j$ is the estimated margin location.  Lower bound \eqref{eq:pngsderivativebound} also applies in the easier $\pp$-Laplacian case, and then $\Gamma=1$ and $\tau_q(\xi)=1$ so we have $\rho'(c)\ge 0$, but $\rho'(c)$ is not bounded away from zero.
 
-Lower bound \eqref{eq:pngsderivativebound} also applies in the easier $\pp$-Laplacian case.  Then $\Gamma=1$ and $\tau_q(\xi)=1$ (constant) so we have $\rho'(c)\ge 0$, but $\rho'(c)$ is again not bounded away from zero.
-
-Unlike the corresponding problem for the classical obstacle problem, the solution of \eqref{eq:pngspointwisevi} cannot be found exactly.  Instead we set up a Newton iteration to compute $y^j$ pointwise, which in simple form would say
+Unlike the corresponding problem for the classical obstacle problem, the solution of one-dimensional VI \eqref{eq:pngspointwisevi} cannot be found exactly.  Instead we set up a Newton iteration to compute $y^j$ pointwise.  In simple form a Newton step would be
 \begin{equation}
     c = -\rho(0) / \rho'(0), \qquad y_p \gets y_p + c. \label{eq:pngspointNewton}
 \end{equation}
-However, because $\rho'(0)$ may be arbitrarily small or even zero, each such Newton step must be protected.  In the case where $\rho'(0)=0$ exactly, the flow is not telling us anything about how the current surface should move, and indeed this usually happens at ice-free locations.  If $\ell_p > 0$ and we are at an ice-free location then accumulation is occurring, and we simply increase the surface by a fixed, small distance \id{caccum}, with default value 10 m.  Otherwise we leave $c=0$.  On the other hand, if $\rho'(0)$ is small then we compute $c$.  In the case that $c$ is large and positive we limit it by \id{cupmax}, with large default value 5000 m, while if $c$ is negative we limit it (as usual) by enforcing admissiblity.  Note that the downward limitation is intrinsic to one-sided obstacle problems, but the upward limitation relates to the failure of uniform ellipticity.
+However, because $\rho'(0)$ may be arbitrarily small or even zero, such a Newton step must be ``protected''.  In the case where $\rho'(0)=0$ exactly, the flow is not telling us anything about how the current surface should move.  When this happens at an ice-free location, if $\ell_p > 0$, so that accumulation is occurring, we simply increase the surface by a fixed, small distance \id{caccum}, with default value 10 m.  Otherwise we leave $c=0$.  On the other hand, if $\rho'(0)$ is small then we go ahead and compute $c$.  If $c$ is large and positive we limit it by \id{cupmax}, with large default value 5000 m, while if $c$ is negative we limit it (as usual) by enforcing admissiblity.  (Note that the downward limitation is intrinsic to one-sided obstacle problems, but the upward limitation is a new protection against the failure of uniform ellipticity.)
 
-For clarity we isolate this logic into a pseudocode.  Consider a point $x_p^j$ and note we seek $c$ in the interval $[\phi_p-y_p,+\infty)$.  We assume $r=\rho(0)$ and $\delta=\rho'(0)$ have already been computed at the point.
+For clarity we isolate this logic into the following pseudocode.  Consider a point $x_p^j$ and note we seek $c$ in the interval $[\phi_p-y_p,+\infty)$.  We assume $r=\rho(0)$ and $\delta=\rho'(0)$ have already been computed at the point.
 \begin{pseudo*} \label{ps:pointupdate}
 \pr{pointupdate}(r,\delta,\phi_p,y_p,\ell_p,\id{cupmax}=5000\, m,\id{caccum}=10\, m)\text{:} \\+
     if $\delta = 0$ \\+
         if $\ell_p > 0$ and $y_p = 0$ \\+
             return \id{caccum}  \qquad\qquad\quad \ct{move upward if accumulation at ice-free} \\-
-        else \\+
-            return $0$ \qquad\qquad\qquad\qquad \ct{no information on how to move} \\--
+        return $0$ \qquad\qquad\qquad\qquad\qquad \ct{no information on how to move} \\-
     else \\+
-        $c = - r / \delta$ \qquad\qquad\qquad\qquad\qquad \ct{pure Newton step} \\
-        $c = \max(c, \phi_p-y_p)$ \qquad\qquad\qquad\, \ct{ensure admissibility} \\
-        return $\min(c, \id{cupmax})$ \qquad\qquad\quad \ct{limit large upward steps}
+        $c = \max(- r / \delta, \phi_p-y_p)$ \qquad\qquad \ct{admissible Newton step} \\
+        return $\min(c, \id{cupmax})$ \qquad\qquad \ct{limit large upward steps}
 \end{pseudo*}
 
-If the pointwise problems are done with all the current values of the iterate then our smoother is \emph{projected nonlinear Gauss-Seidel} (PNGS).  For either the SIA or $\pp$-Laplacian problems we have the following pseudocode.
+If the pointwise problems use the current values of the iterate then our smoother is \emph{projected nonlinear Gauss-Seidel} (PNGS):
 \begin{pseudo*} \label{ps:pngs}
 \pr{pngs}(j,g^j,y^j,N^j,\ell^j,\phi^j,\id{newtonits}=2,\id{omega}=1)\text{:} \\+
     \ct{check admissibility: $y^j \ge \phi^j$} \\
     for $p=1,\dots,m_j$ \\+
         for $k=1,\dots,\id{newtonits}$ \\+
-            $\rho(c) := N^j(g^j+y^j+c\psi_p^j)[\psi_p^j] - \ell^j[\psi_p^j]$ \\
-            $c = \pr{pointupdate}(\rho(0), \rho'(0),\phi_p,y_p,\ell_p)$ \\
+            $\rho_p(c) := N^j(g^j+y^j+c\psi_p^j)[\psi_p^j] - \ell^j[\psi_p^j]$ \\
+            $c = \pr{pointupdate}(\rho_p(0), \rho_p'(0),\phi_p,y_p,\ell_p)$ \\
             $y_p \gets y_p + \id{omega}\,c$
 \end{pseudo*}
-As before there is a \emph{projected nonlinear Jacobi} version.  In this case the loops are reversed because the residual and Jacobian must be updated before each sweep.
+This pseudocode applies to either the SIA or $\pp$-Laplacian problems.
+
+As before there is also a \emph{projected nonlinear Jacobi} version.  The loops are reversed because the residual and Jacobian must be updated before each sweep.
 \begin{pseudo*} \label{ps:pnjacobi}
 \pr{pnjacobi}(j,g^j,y^j,N^j,\ell^j,\phi^j,\id{newtonits}=2,\id{omega}=0.67)\text{:} \\+
     \ct{check admissibility: $y^j \ge \phi^j$} \\
     for $k=1,\dots,\id{newtonits}$ \\+
         $\rho_p(c) := N^j(g^j+y^j+c\psi_p^j)[\psi_p^j] - \ell^j[\psi_p^j]$ \\
-        $r_p, \delta_p = \rho_p(0), \rho_p'(0)$ \qquad\qquad\qquad\qquad \ct{compute for all $p$}\\
+        $r_p, \delta_p = \rho_p(0), \rho_p'(0)$ \qquad\qquad\qquad\qquad \ct{compute and save for all $p$}\\
         for $p=1,\dots,m_j$ \\+
             $c = \pr{pointupdate}(r_p, \delta_p,\phi_p,y_p,\ell_p)$ \\
             $y_p \gets y_p + \id{omega}\,c$
 \end{pseudo*}
-Here the default value of \id{omega} is just a place-holder, because stable values must be determined by experimentation.
+Here the default value of \id{omega} is just a place-holder; stable values must be determined by experimentation.
 
-For single-level VI \eqref{eq:siaVIFEfinelevel}, or for \eqref{eq:siaVIFEFAS} when up-smoothing after the coarse-level correction, make the following replacements in formulas and pseudocodes: $\phi^j \to \chi^j$, $\mathcal{K}^j \to \mathcal{D}^j$, $y^j \to z^j$.
+The above formulas and pseudocodes apply to the $\pp$-Laplacian obstacle problem---see \eqref{eq:plaplacianpoisson}---with only minimal modifications, namely $\Gamma=1$ and $\tau_q(\xi)=1$ in formulas for $N(w)[v]$ and $\rho(c)$.  We use \id{cupmax} $=1$ and \id{caccum} $=0$ in the $\pp$-Laplacian version of \pr{pointupdate}.
 
-The above formulas and pseudocodes also apply to the $\pp$-Laplacian obstacle problem---see \eqref{eq:plaplacianpoisson}---with only minimal modifications as follows: $\Gamma=1$ and $\tau_q(\xi)=1$ in formulas for $N(w)[v]$ and $\rho(c)$; \id{cupmax} $=1$ and \id{caccum} $=0$ in the $\pp$-Laplacian implementation of \pr{pointupdate}.
+For single-level VI \eqref{eq:siaVIFEfinelevel}, or for \eqref{eq:siaVIFEFAS} when up-smoothing after the coarse-level correction, make the following replacements in all of the formulas and pseudocodes in this subsection:
+\begin{equation}
+   \phi^j \to \chi^j, \qquad \mathcal{K}^j \to \mathcal{D}^j, \qquad y^j \to z^j.  \label{eq:pngssinglelevelreplacements}
+\end{equation}
 
 FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not too big)
 
