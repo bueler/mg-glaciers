@@ -112,7 +112,7 @@ class MeshLevel1D():
         '''Prolong a linear functional ell by injection, from the next-coarser
         mesh.  If ell is in (V^{j-1})' then y = injectP(ell) is in (V^j)'.
         (Dual prolongation is an underdetermined problem, but injection is a
-        solution.  Compare fwP().)'''
+        solution.)'''
         assert self.j > 0, \
                'cannot prolong from a mesh coarser than the coarsest mesh'
         self.checklen(ell, coarser=True)

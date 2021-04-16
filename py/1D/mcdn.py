@@ -3,7 +3,6 @@ of the multilevel constraint decomposition (MCD) method for the shallow ice
 approximation (SIA) obstacle problem.'''
 
 # TODO:
-#   * compare write-up to functions below
 #   * convergence and performance studies
 #   * implement random-bed case (for performance only)
 #   * implement multiple ice sheets case (for performance only; requires e.g. -jcoarse 4)
