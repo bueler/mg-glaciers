@@ -20,7 +20,8 @@ writeout:
 	(cd genfigs/sia/ && ln -sf ../writeout.py)
 	(cd genfigs/plap/ && ln -sf ../writeout.py)
 
-genfigs/finehats.pdf genfigs/coarsehats.pdf genfigs/coarsesthats.pdf: writeout genfigs/hats1d.py
+# ampersand & is for a "grouped" target; requires make 4.3
+genfigs/finehats.pdf genfigs/coarsehats.pdf genfigs/coarsesthats.pdf &: writeout genfigs/hats1d.py
 	(cd genfigs/ && python3 hats1d.py)
 
 genfigs/residualpoints.pdf: writeout genfigs/residualpoints.py
@@ -38,7 +39,7 @@ genfigs/giscross.pdf: writeout genfigs/giscross.py
 genfigs/poisson/convergence.pdf: writeout genfigs/poisson/convergence.py
 	(cd genfigs/poisson/ && python3 convergence.py)
 
-genfigs/poisson/mcdl-cycles.pdf genfigs/poisson/mcdl-wu.pdf genfigs/poisson/mcdl-timeper.pdf: writeout genfigs/poisson/performance.py
+genfigs/poisson/mcdl-cycles.pdf genfigs/poisson/mcdl-wu.pdf genfigs/poisson/mcdl-timeper.pdf &: writeout genfigs/poisson/performance.py
 	(cd genfigs/poisson/ && python3 performance.py)
 
 genfigs/poisson/perfni.pdf: writeout genfigs/poisson/perfni.py
