@@ -7,7 +7,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-INFILE = 'plapconv.txt'
+INFILE = 'convergence.txt'
 
 print('reading %s ...' % INFILE)
 v = np.array(np.loadtxt(INFILE))
@@ -45,4 +45,4 @@ plt.xticks(fontsize=14.0)
 plt.yticks(fontsize=14.0)
 plt.minorticks_off()
 plt.legend(loc='upper left',fontsize=14.0)
-writeout('plapconv.pdf')
+writeout('convergence.pdf')

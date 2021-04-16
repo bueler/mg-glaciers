@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from writeout import writeout
 
-INFILE = 'siaconv.txt'
+INFILE = 'convergence.txt'
 MARKER = ['o','o']
 MARKERSIZE = [10.0,10.0]
 MARKERFACE = ['w','k']
@@ -48,4 +48,4 @@ plt.xticks(fontsize=14.0)
 plt.yticks(fontsize=14.0)
 plt.minorticks_off()
 plt.legend(loc='upper left',fontsize=14.0)
-writeout('siaconv.pdf')
+writeout('convergence.pdf')

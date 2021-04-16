@@ -842,7 +842,7 @@ The following in-place solver adds an outer loop which sets-up the fine-level da
 \subsection{Convergence of the numerical error} \label{subsec:obstacleconvergence}  All of the pseudocodes in the current section have been implemented in Python.\footnote{At\, \href{https://github.com/bueler/mg-glaciers/}{\texttt{github.com/bueler/mg-glaciers/}} see the \texttt{py/1D/} directory and its \texttt{README.md}.}  To verify these implementations, and to demonstrate the differences in numerical error convergence rates between the obstacle problem and the corresponding unconstrained PDE, we use three exact solutions.  The first two are already shown in Figure \ref{fig:icelike}; note that the ``ice-like'' case has a discontinuous source $f$, while ``traditional'' has $f=0$, but both have smooth, parabolic obstacles.  The third ``unconstrained'' exact solution is for a variable-coefficient equation $-\left((2+\sin(2\pi x)) u'\right)'=f$ on the interval $[0,10]$.  (Here the obstacle is low enough so that all points are inactive and all smoothing steps avoid projection.)
 
 \begin{figure}
-\includegraphics[width=0.6\textwidth]{genfigs/convergence.pdf}
+\includegraphics[width=0.6\textwidth]{genfigs/poisson/convergence.pdf}
 \caption{MCDL method convergence for three cases with known exact solutions.}
 \label{fig:convergence}
 \end{figure}
@@ -862,7 +862,7 @@ We compare the performance of five MCDL solvers:
 The first two solvers are down- and up-slash cycles, respectively.  The first four solvers use the default \pr{pgs} smoother.
 
 \begin{figure}
-\includegraphics[width=0.6\textwidth]{genfigs/mcdl-cycles.pdf}
+\includegraphics[width=0.6\textwidth]{genfigs/poisson/mcdl-cycles.pdf}
 \caption{Number of iterations (V-cycles) as a function of $m$.}
 \label{fig:mcdl-cycles}
 \end{figure}
@@ -876,7 +876,7 @@ In terms of relative performance among the solvers, counting iterations is unfai
 Our programs count their WU,\footnote{Our Python implementation has a class for each mesh level.  The mesh hierarchy is a list of such mesh-level objects.  The WU for a level is a class attribute which gets incremented by each smoother sweep.  Computing the total WU at the end of a run is an easy weighted sum.} and Figure \ref{fig:mcdl-wu} shows the total WU for the same runs.  Just like for iterations, total WU grows as $O(m^q)$ for $0.10 \le q \le 0.12$, but we now see that the \pr{pgs}-based cycles are all comparable, and much stronger than the \pr{pjacobi} cycles.  However, Jacobi smoothing will remain significant in our applications to glacier problems (section \ref{sec:stokes}).
 
 \begin{figure}
-\includegraphics[width=0.6\textwidth]{genfigs/mcdl-wu.pdf}
+\includegraphics[width=0.6\textwidth]{genfigs/poisson/mcdl-wu.pdf}
 \caption{Number of work units (WU) as a function of $m$.  The \pr{pgs} smoother is clearly more efficient.}
 \label{fig:mcdl-wu}
 \end{figure}
@@ -887,7 +887,7 @@ On the other hand, these MCDL growth rates for work are excellent compared to ap
 Finally we look at the time per degree of freedom.  This quantity should be constant, $O(1)=O(m^0)$ for an optimal method.  Figure \ref{fig:mcdl-timeper} shows the results for the finer $J=9,\dots,15$ meshes.  Fitting only to the five finest results, because timing for smaller runs is dominated by Python executable start-up costs, the time-per-$m$ is $O(m^r)$ for $0.01 \le r \le 0.05$, so mesh dependence is very modest.  Our \pr{pgs} solvers all require less than 1 millisecond per degree of freedom.  Though this value depends completely on the details of our Python implementation, and on the physical computer, it can be compared to the more expensive computations for the glacier problems in sections \ref{sec:sia} and \ref{sec:stokes}.
 
 \begin{figure}
-\includegraphics[width=0.6\textwidth]{genfigs/mcdl-timeper.pdf}
+\includegraphics[width=0.6\textwidth]{genfigs/poisson/mcdl-timeper.pdf}
 \caption{Run time per degrees of freedom $m$ as a function of $m$.}
 \label{fig:mcdl-timeper}
 \end{figure}
@@ -973,7 +973,7 @@ For PDEs one F-cycle often suffices to reach discretization error \cite{Trottenb
 To show MCDL F-cycles in the best light, consider the ``traditional'' exact solution shown in Figure \ref{fig:icelike}.  By using a tight tolerance (\id{rtol} $=10^{-7}$) and as many V(1,1) cycles as necessary, we first compute the discretization error for this problem on meshes with $J=2,\dots,12$ (stars in Figure \ref{fig:perfni}).  Now we run \pr{mcdl-fcycle} with its defaults, with one V(1,1) cycle per level, and then with two (\id{nicycles} $=2$).  Note these F-cycles are very fast, with $J\to\infty$ asymptotic WU values of 8 and 16, respectively.
 
 \begin{figure}
-\includegraphics[width=0.6\textwidth]{genfigs/perfni.pdf}
+\includegraphics[width=0.6\textwidth]{genfigs/poisson/perfni.pdf}
 \caption{For the classical obstacle problem, F-cycles with one or two V(1,1) cycles per level do not attain discretization error.}
 \label{fig:perfni}
 \end{figure}
@@ -1292,7 +1292,7 @@ FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not t
 \subsection{Convergence and performance results} \label{subsec:siaperformance}  FIXME convergence in Figure \ref{fig:siaconv}
 
 \begin{figure}
-\includegraphics[width=0.6\textwidth]{genfigs/siaconv.pdf}
+\includegraphics[width=0.6\textwidth]{genfigs/sia/convergence.pdf}
 \caption{Convergence of the MCDN method on the exact solution shown in Figure \ref{fig:siadatafigure}.  See text for an explanation of the $\|H^\rr-H_{\text{exact}}^\rr\|_\pp$ norm.}
 \label{fig:siaconv}
 \end{figure}
