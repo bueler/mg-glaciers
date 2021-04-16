@@ -1,6 +1,6 @@
   0:  |ir(u)|_2 = 1.7741e+02
-  1:  |ir(u)|_2 = 1.2050e+01  (rate 0.0679)
-  2:  |ir(u)|_2 = 2.4470e+00  (rate 0.2031)
-  3:  |ir(u)|_2 = 2.1044e+00  (rate 0.8600)
-  4:  |ir(u)|_2 = 1.6773e+00  (rate 0.7970)
-J=2 (m=7): 4 applications of PNGS smoother -> 8.000 WU;  |u-uexact|_2 = 1.210e+06, |u^r-uexact^r|_p = 3.263e+10
+  1:  |ir(u)|_2 = 4.7158e+00  (rate 0.0266)
+  2:  |ir(u)|_2 = 2.4071e+00  (rate 0.5104)
+  3:  |ir(u)|_2 = 2.1332e+00  (rate 0.8862)
+  4:  |ir(u)|_2 = 1.7672e+00  (rate 0.8284)
+J=2 (m=7): 4 applications of PNGS smoother -> 8.000 WU;  |u-uexact|_2 = 1.233e+06, |u^r-uexact^r|_p = 3.354e+10

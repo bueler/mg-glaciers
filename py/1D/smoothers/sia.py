@@ -42,7 +42,9 @@ class PNsmootherSIA(SmootherObstacleProblem):
         self.rr = (2.0 * self.nglen + 2.0) / self.nglen # = 8/3; error reporting
         # parameters used in pointupdate()
         self.caccum = 10.0          # m
-        self.cupmax = 5000.0        # m; never move surface up by more than this
+        self.cupmax = 500.0         # m; never move surface up by more than this
+                                    #    perhaps should be comparable to 0.2 or
+                                    #    0.1 of max ice thickness
         # initialize with a pile of ice equal this duration of accumulation
         self.magicinitage = 3000.0 * self.secpera
         # parameters for Bueler profile (exact solution) matching Bueler (2016);
