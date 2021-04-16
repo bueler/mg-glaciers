@@ -23,6 +23,7 @@ assert len(v[:,0]) == N
 L = 1800.0e3  # m
 m = v[:,1]
 h = L / (m+1)
+h /= 1000.0   # show in km
 err2 = v[:,2]
 errrp = v[:,3]
 
@@ -41,8 +42,8 @@ plt.loglog(h,errrp,
            label=NAME[1] + '$=O(h^{%.2f})$' % qrp[0])
 plt.loglog(h,np.exp(qrp[0]*np.log(h)+qrp[1]),'k--')
 plt.grid(True)
-plt.axis([10.0,1.0e6,1.0e2,1.0e11])
-plt.xlabel('$h$  (m)',fontsize=18.0)
+plt.axis([1.0e-2,1.0e3,1.0e2,1.0e11])
+plt.xlabel('$h$  (km)',fontsize=18.0)
 plt.ylabel('numerical error',fontsize=18.0)
 plt.xticks(fontsize=14.0)
 plt.yticks(fontsize=14.0)

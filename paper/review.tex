@@ -1299,7 +1299,13 @@ FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not t
 
 We can compare the above results to $\pp$-Laplacian convergence for the $\pp$-Laplacian obstacle problem, with $\pp=4$, on an exact solution constructed in a similar way to the classical obstacle problem shown in Figure \ref{fig:icelike}.  In that case we measure $\|u-u_{\text{exact}}\|_\pp=O(h^{0.99})$, and as for the SIA case the numerical error norms are not monotonic.  The fact that $\|H^\rr-H_{\text{exact}}^\rr\|_\pp$ goes to zero at a slightly-better rate for the SIA solution reflects the fact that the source term for the SIA is continuous while for the $\pp$-Laplacian solution it is not.
 
-FIXME asymptotic rates for GS vs Jacobi with a couple of omega values; compare to $\pp$-Laplacian rates
+FIXME asymptotic rates in Figure \ref{fig:siaconv} for GS vs Jacobi with a couple of omega values; for comparison, in the $\pp$-Laplacian with $\pp=4$ the V(0,2) rates are $0.7772$--$0.9143$ compared to $0.7357$--$0.9224$ here for SIA
+
+\begin{figure}
+\includegraphics[width=0.6\textwidth]{genfigs/sia/asymprates.pdf}
+\caption{Asymptotic multigrid convergence rates of the MCDN method on the exact solution shown in Figure \ref{fig:siadatafigure}.}
+\label{fig:siaasymp}
+\end{figure}
 
 FIXME V-cycles and F-cycles counts/WU on Bueler profile; compare to $\pp$-Laplacian performance
 
