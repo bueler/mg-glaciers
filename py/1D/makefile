@@ -39,28 +39,31 @@ run_10:
 	-@./../testit.sh obstacle.py "-problem plap -plapcase bridge -down 1 -monitor -ni -nicycles 2 -jacobi -omega 0.5" 1 10 "plap bridge PNJacobi F-cycle using 2 V(1,2) cycles"
 
 run_11:
-	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -showsingular -J 4 -cyclemax 6 -monitor" 1 11 "sia PNGS sweeps show singular points"
+	-@./../testit.sh obstacle.py "-problem sia -siacase profile -sweepsonly -showsingular -J 4 -cyclemax 6 -monitor" 1 11 "sia profile PNGS sweeps show singular points"
 
 run_12:
-	-@./../testit.sh obstacle.py "-problem sia -up 1 -J 4 -irtol 1.0e-2 -monitor" 1 12 "sia V(0,1) cycles"
+	-@./../testit.sh obstacle.py "-problem sia -siacase profile -up 1 -J 4 -irtol 1.0e-2 -monitor" 1 12 "sia profile V(0,1) cycles"
 
 run_13:
-	-@./../testit.sh obstacle.py "-problem sia -J 3 -down 1 -up 1 -monitor -ni -nicycles 2 -cyclemax 2" 1 13 "sia F-cycle using two V(1,1) cycles"
+	-@./../testit.sh obstacle.py "-problem sia -siacase profile -J 3 -down 1 -up 1 -monitor -ni -nicycles 2 -cyclemax 2" 1 13 "sia profile F-cycle using two V(1,1) cycles"
 
 run_14:
-	-@./../testit.sh obstacle.py "-problem sia -sweepsonly -J 2 -monitor -irtol 1.0e-2" 1 14 "sia PNGS sweeps"
+	-@./../testit.sh obstacle.py "-problem sia -siacase profile -sweepsonly -J 2 -monitor -irtol 1.0e-2" 1 14 "sia profile PNGS sweeps"
 
 run_15:
-	-@./../testit.sh obstacle.py "-problem sia -exactinitial -sweepsonly -jacobi -omega 0.5 -J 3 -monitor -cyclemax 2" 1 15 "sia PJacobi sweeps omega=0.5 exact initial"
+	-@./../testit.sh obstacle.py "-problem sia -siacase profile -exactinitial -sweepsonly -jacobi -omega 0.5 -J 3 -monitor -cyclemax 2" 1 15 "sia profile PJacobi sweeps omega=0.5 exact initial"
 
-test_obstacle: run_1 run_2 run_3 run_4 run_5 run_6 run_7 run_8 run_9 run_10 run_11 run_12 run_13 run_14 run_15
+run_16:
+	-@./../testit.sh obstacle.py "-problem sia -siacase bumpy -J 4 -down 1 -siaeps 500.0 -monitor" 1 16 "sia bumpy V(1,2) cycles eps=500.0"
+
+test_obstacle: run_1 run_2 run_3 run_4 run_5 run_6 run_7 run_8 run_9 run_10 run_11 run_12 run_13 run_14 run_15 run_16
 
 testbanner:
 	@echo "**** test: RUNS OF obstacle.py ****"
 
 test: testbanner test_obstacle
 
-.PHONY: clean test_obstacle testmodules test testbanner run_1 run_2 run_3 run_4 run_5 run_6 run_7 run_8 run_9 run_10 run_11 run_12 run_13 run_14 run_15
+.PHONY: clean test_obstacle testmodules test testbanner run_1 run_2 run_3 run_4 run_5 run_6 run_7 run_8 run_9 run_10 run_11 run_12 run_13 run_14 run_15 run_16
 
 clean:
 	@rm -f maketmp tmp difftmp *.png *.pdf

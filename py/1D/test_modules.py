@@ -91,6 +91,7 @@ testargs = Namespace(jacobi=False,
                      printwarnings=False,
                      randomseed=1,
                      showsingular=False,
+                     siacase='profile',
                      siaeps=0.0)
 
 def test_poisson_residual():
@@ -127,7 +128,7 @@ def test_sia_exact():
     s = prob.exact(x)
     assert all(b == 0.0)                                   # check flat bed
     assert max(s) == prob.buelerH0                         # check height
-    assert max(x[s > 0.0]) - prob.buelerxc < prob.buelerL  # check margin pos
+    assert max(x[s > 0.0]) - prob.xc < prob.buelerL        # check margin pos
     assert min(m) < 0.0                                    # check mass balance
     assert max(m) > 0.0                                    #   changes sign
     # generate siadatafigure.pdf using j=7 levels above:
