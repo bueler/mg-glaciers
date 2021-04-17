@@ -29,6 +29,9 @@ class PNsmootherSIA(SmootherObstacleProblem):
 
     def __init__(self, args, admissibleeps=1.0e-10):
         super().__init__(args, admissibleeps=admissibleeps)
+        # smoother name
+        self.name = 'PNJac' if self.args.jacobi else 'PNGS'
+        # physical parameters
         self.secpera = 31556926.0        # seconds per year
         self.g = 9.81                    # m s-2
         self.rhoi = 910.0                # kg m-3
@@ -47,12 +50,13 @@ class PNsmootherSIA(SmootherObstacleProblem):
                                     #    0.1 of max ice thickness
         # initialize with a pile of ice equal this duration of accumulation
         self.magicinitage = 3000.0 * self.secpera
+        # interval [0,xmax]=[0,1800] km
+        self.L = 1800.0e3
+        self.xc = 900.0e3           # x coord of center
         # parameters for Bueler profile (exact solution) matching Bueler (2016);
         #   see also van der Veen (2013) section 5.3
         self.buelerL = 750.0e3      # half-width of sheet
         self.buelerH0 = 3600.0      # center thickness
-        self.buelerxc = 900.0e3     # x coord of center in [0,xmax]=[0,1800] km
-        self.name = 'PNJac' if self.args.jacobi else 'PNGS'
 
     def _pointN(self, mesh, w, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for
@@ -164,11 +168,15 @@ class PNsmootherSIA(SmootherObstacleProblem):
 
     def phi(self, x):
         '''For now we have a flat bed.'''
-        return np.zeros(np.shape(x))
+        if self.args.siacase == 'profile':
+            return np.zeros(np.shape(x))
+        elif self.args.siacase == 'bumpy':
+            return (1200.0 - 1000.0 * x / self.L) \
+                   * np.sin(8.0 * np.pi * x / self.L)
 
     def exact_available(self):
         '''For now we use the Bueler profile, an exact solution.'''
-        return True
+        return (self.args.siacase == 'profile')
 
     def exact(self, x):
         '''Exact solution (Bueler profile).  See van der Veen (2013) equation
@@ -178,7 +186,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
         p1 = n / (2.0 * n + 2.0)                  # e.g. 3/8
         q1 = 1.0 + 1.0 / n                        #      4/3
         Z = self.buelerH0 / (n - 1.0)**p1         # outer constant
-        X = (x - self.buelerxc) / self.buelerL    # rescaled coord
+        X = (x - self.xc) / self.buelerL          # rescaled coord
         Xin = abs(X[abs(X) < 1.0])                # rescaled distance from
                                                   #   center, in ice
         Yin = 1.0 - Xin
@@ -197,7 +205,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
         s1 = (1.0 - n) / n                        #     -2/3
         C = self.buelerH0**r1 * self.Gamma        # A_0 in van der Veen is Gamma here
         C /= ( 2.0 * self.buelerL * (1.0 - 1.0 / n) )**n
-        X = (x - self.buelerxc) / self.buelerL    # rescaled coord
+        X = (x - self.xc) / self.buelerL          # rescaled coord
         m = np.zeros(np.shape(x))
         # usual formula for 0 < |X| < 1
         zzz = (abs(X) > 0.0) * (abs(X) < 1.0)
@@ -222,7 +230,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
     def initial(self, x):
         '''Default initial shape is a stack of ice where surface mass
         balance is positive.'''
-        return self.magicinitage * np.maximum(0.0,self.source(x))
+        return self.phi(x) + self.magicinitage * np.maximum(0.0,self.source(x))
 
     def datafigure(self, mesh):
         '''Show data phi, source, exact in a basic figure.'''

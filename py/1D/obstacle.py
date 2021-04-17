@@ -152,6 +152,9 @@ parser.add_argument('-show', action='store_true', default=False,
                     help='show plot at end')
 parser.add_argument('-showsingular', action='store_true', default=False,
                     help='on each sweep on each level, show where the point Jacobian was singular')
+parser.add_argument('-siacase', choices=['profile', 'bumpy'],
+                    metavar='X', default='profile',
+                    help='determines bed elevation (default: %(default)s)')
 parser.add_argument('-siaeps', type=float, default=0.0, metavar='X',
                     help='regularizing thickness in SIA smoother (default 0 m)')
 parser.add_argument('-siaintervallength', type=float, default=1800.0e3,
