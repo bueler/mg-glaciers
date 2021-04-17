@@ -1241,11 +1241,11 @@ Unlike the corresponding problem for the classical obstacle problem, the solutio
 \begin{equation}
     c = -\rho(0) / \rho'(0), \qquad y_p \gets y_p + c. \label{eq:pngspointNewton}
 \end{equation}
-However, because $\rho'(0)$ may be arbitrarily small or even zero, such a Newton step must be ``protected''.  In the case where $\rho'(0)=0$ exactly, the flow is not telling us anything about how the current surface should move.  When this happens at an ice-free location, if $\ell_p > 0$, so that accumulation is occurring, we simply increase the surface by a fixed, small distance \id{caccum}, with default value 10 m.  Otherwise we leave $c=0$.  On the other hand, if $\rho'(0)$ is small then we go ahead and compute $c$.  If $c$ is large and positive we limit it by \id{cupmax}, with large default value 5000 m, while if $c$ is negative we limit it (as usual) by enforcing admissiblity.  (Note that the downward limitation is intrinsic to one-sided obstacle problems, but the upward limitation is a new protection against the failure of uniform ellipticity.)
+However, because $\rho'(0)$ may be arbitrarily small or even zero, such a Newton step must be ``protected''.  In the case where $\rho'(0)=0$ exactly, the flow is not telling us anything about how the current surface should move.  When this happens at an ice-free location, if $\ell_p > 0$, so that accumulation is occurring, we simply increase the surface by a fixed, small distance \id{caccum}, with default value 10 m.  Otherwise we leave $c=0$.  On the other hand, if $\rho'(0)$ is small then we go ahead and compute $c$.  If $c$ is large and positive we limit it by \id{cupmax}, with a relatively large default value 500 m, while if $c$ is negative we limit it (as usual) by enforcing admissiblity.  (Note that the downward limitation is intrinsic to one-sided obstacle problems, but the upward limitation is a new protection against the failure of uniform ellipticity.)
 
 For clarity we isolate this logic into the following pseudocode.  Consider a point $x_p^j$ and note we seek $c$ in the interval $[\phi_p-y_p,+\infty)$.  We assume $r=\rho(0)$ and $\delta=\rho'(0)$ have already been computed at the point.
 \begin{pseudo*} \label{ps:pointupdate}
-\pr{pointupdate}(r,\delta,\phi_p,y_p,\ell_p,\id{cupmax}=5000\, m,\id{caccum}=10\, m)\text{:} \\+
+\pr{pointupdate}(r,\delta,\phi_p,y_p,\ell_p,\id{cupmax}=500\, m,\id{caccum}=10\, m)\text{:} \\+
     if $\delta = 0$ \\+
         if $\ell_p > 0$ and $y_p = 0$ \\+
             return \id{caccum}  \qquad\qquad\quad \ct{move upward if accumulation at ice-free} \\-
