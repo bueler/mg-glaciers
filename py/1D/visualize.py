@@ -181,10 +181,13 @@ class VisObstacle():
             if len(self.args.o) > 0:
                 rname = 'resid_' + self.args.o
             self.residuals(filename=rname)
-            if not self.args.sweepsonly:
-                dname, iname = '', ''
+        if self.args.diagnostics and not self.args.sweepsonly:
+                dname = ''
                 if len(self.args.o) > 0:
                     dname = 'decomp_' + self.args.o
-                    iname = 'icedec_' + self.args.o
                 self.decomposition(filename=dname)
+        if self.args.diagnosticsheuristic and not self.args.sweepsonly:
+                iname = ''
+                if len(self.args.o) > 0:
+                    iname = 'icedec_' + self.args.o
                 self.icedecomposition(filename=iname)

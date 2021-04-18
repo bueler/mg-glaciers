@@ -92,7 +92,9 @@ parser.add_argument('-coarsestomega', type=float, default=1.0, metavar='X',
 parser.add_argument('-cyclemax', type=int, default=100, metavar='N',
                     help='maximum number of (multilevel) cycles (default=100)')
 parser.add_argument('-diagnostics', action='store_true', default=False,
-                    help='generate additional diagnostics figures (use with -show or -o)')
+                    help='generate residual and multilevel decomposition figures (use with -show or -o)')
+parser.add_argument('-diagnosticsheuristic', action='store_true', default=False,
+                    help='generate heuristic decomposition figure (use with -show or -o)')
 parser.add_argument('-down', type=int, default=0, metavar='N',
                     help='smoother sweeps before coarse-mesh correction (default=0)')
 parser.add_argument('-exactinitial', action='store_true', default=False,
