@@ -85,6 +85,8 @@ References:
 ''',
     formatter_class=argparse.RawTextHelpFormatter,
     allow_abbrev=False)  # bug in python 3.8 causes this to be ignored
+parser.add_argument('-armijomonitor', action='store_true', default=False,
+                    help='monitor added armijo point residuals for MCDN smoothers')
 parser.add_argument('-coarse', type=int, default=1, metavar='N',
                     help='smoother sweeps on coarsest grid (default=1)')
 parser.add_argument('-coarsestomega', type=float, default=1.0, metavar='X',

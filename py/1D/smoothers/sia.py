@@ -7,6 +7,12 @@ __all__ = ['PNsmootherSIA']
 import numpy as np
 from smoothers.base import SmootherObstacleProblem
 
+def indentprint(n, s, end='\n'):
+    '''Print 2n spaces and then string s.'''
+    for _ in range(n):
+        print('  ', end='')
+    print(s, end=end)
+
 class PNsmootherSIA(SmootherObstacleProblem):
     '''Class for the projected nonlinear Gauss-Seidel (PNGS) and Jacobi
     (PNJacobi) algorithms as smoothers for the nonlinear SIA obstacle problem
@@ -43,6 +49,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
         # important powers
         self.pp = self.nglen + 1.0                      # = 4; p-Laplacian
         self.rr = (2.0 * self.nglen + 2.0) / self.nglen # = 8/3; error reporting
+        self.dtol = 1.0e-3          # 1 mm
         # parameters used in pointupdate()
         self.caccum = 10.0          # m
         self.cupmax = 500.0         # m; never move surface up by more than this
@@ -101,8 +108,8 @@ class PNsmootherSIA(SmootherObstacleProblem):
         return F
 
     def pointupdate(self, r, delta, yp, phip, ellp):
-        '''Compute update value c, for y[p] += c, from pointwise residual
-        r = rho(0) and pointwise Jacobian delta = rho'(0).'''
+        '''Compute candidate update value c, for y[p] += c, from pointwise
+        residual r = rho(0) and pointwise Jacobian delta = rho'(0).'''
         if delta == 0.0:
             if ellp > 0.0 and yp == 0.0:
                 return self.caccum    # move upward if accumulation at ice-free
@@ -111,7 +118,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
         else:
             c = - r / delta           # pure Newton step
             c = max(c, phip - yp)     # ensure admissibility: y >= phi
-            c = min(c, self.cupmax)   # limit large upward steps
+            c = min(c, self.cupmax)   # pre-limit large upward steps
             return c
 
     def smoothersweep(self, mesh, y, ell, phi, forward=True):
@@ -130,8 +137,12 @@ class PNsmootherSIA(SmootherObstacleProblem):
             self.showsingular(jaczeros)
         mesh.WU += self.args.newtonits
 
-    # ILLUMINATING TEST CASE:
-    #   ./obstacle.py -problem sia -siacase bumpy -down 2 -monitor -irtol 1.0e-8 -J 10 -show -cyclemax 7
+    # OBSERVATIONS:
+    #   * first V cycle is great (reduces residual by large factor)
+    #   * because SIA margin is vertical, some laters smoother steps will
+    #     move pointwise values by large amount, so while pointwise residual
+    #     always decreases because of armijo, the global residual can go up
+
     def gssweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place projected nonlinear Gauss-Seidel (PNGS) sweep over the
         interior points p=1,...,m, for the SIA problem on the iterate w = g + y.
@@ -140,33 +151,37 @@ class PNsmootherSIA(SmootherObstacleProblem):
         must be set before calling this procedure.  Does a fixed number of
         steps of the Newton method (newtonits).'''
         jaczeros = mesh.zeros()
+        arm_alpha = 1.0e-4
+        arm_rho = 2.0
+        armijo = 0                 # count of added armijo steps
         # update each y[p] value
         for p in self._sweepindices(mesh, forward=forward):
             for _ in range(self.args.newtonits):
-                r, delta = self._pointN(mesh, mesh.g[p-1:p+2] + y[p-1:p+2], p)
+                wpatch = mesh.g[p-1:p+2] + y[p-1:p+2]
+                r, delta = self._pointN(mesh, wpatch, p)
                 if delta == 0.0:
                     jaczeros[p] = 1.0
-                    if ell[p] > 0.0 and y[p] == 0.0:
-                        c = self.caccum    # move upward if accumulation at ice-free
-                    else:
-                        c = 0.0            # no information on how to move
-                else:
-                    r -= ell[p]               # actual residual
-                    c = - r / delta           # pure Newton step
-                    c = max(c, phi[p] - y[p]) # ensure admissibility: y >= phi
-                    c = min(c, self.cupmax)   # limit large upward steps
-                    # apply Armijo; see Kelley section 1.6
-                    alpha = 1.0e-4
-                    for m in range(20):
-                        z = y.copy()
-                        z[p] += 2.0**(-m) * self.args.omega * c
-                        rnew, _ = self._pointN(mesh, mesh.g + z, p)
+                r -= ell[p]               # actual residual
+                c = self.pointupdate(r, delta, y[p], phi[p], ell[p])
+                if delta != 0.0 and abs(c) > self.dtol:
+                    # apply Armijo to reduce c to get sufficient decrease
+                    # (Kelley section 1.6)
+                    reduce = 1.0
+                    for _ in range(20):
+                        zpatch = wpatch.copy()
+                        zpatch[1] += self.args.omega * c / reduce
+                        rnew, _ = self._pointN(mesh, zpatch, p)
                         rnew -= ell[p]
-                        if abs(rnew) < (1.0 - alpha * 2.0**(-m)) * abs(r):
-                            c = 2.0**(-m) * c
+                        if abs(rnew) < (1.0 - arm_alpha / reduce) * abs(r):
+                            c /= reduce
                             break
-                #c = self.pointupdate(r, delta, y[p], phi[p], ell[p])
+                        reduce *= arm_rho
+                        armijo += 1
                 y[p] += self.args.omega * c
+        if self.args.armijomonitor:
+            indentprint(self.args.J - mesh.j,
+                        '  gssweep() on level %d: added armijo steps = %d (fraction %.2f)' \
+                        % (mesh.j, armijo, armijo / (self.args.newtonits * mesh.m)))
         return jaczeros
 
     def jacobisweep(self, mesh, y, ell, phi, forward=True):
