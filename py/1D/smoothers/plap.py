@@ -49,14 +49,16 @@ class PNsmootherPLap(PNsmootherSIA):
         # parameter used in pointupdate()
         self.cupmax = 1.0  # never move surface up by more than this
 
-    def _pointN(self, mesh, w, p):
+    def _pointN(self, mesh, wpatch, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for
         given iterate w(x) in V^j, at one hat function psi_p^j:
            N(w)[psi_p^j] = int_I |w'(x)|^2 w'(x) (psi_p^j)'(x) dx
         where I = [x_p - h, x_p + h].  Also return dNdw, the derivative
-        of N(w)[psi_p^j] with respect to w[p].'''
+        of N(w)[psi_p^j] with respect to w[p].  Note that
+        wpatch = [w[p-1], w[p], w[p+1]].'''
         assert hasattr(mesh, 'h')
-        dw = w[p:p+2] - w[p-1:p+1]
+        assert len(wpatch) == 3
+        dw = wpatch[1:] - wpatch[:2]
         N = (1.0 / mesh.h**3) * (dw[0]**3.0 - dw[1]**3.0)
         dNdw = (3.0 / mesh.h**3) * (dw[0]**2.0 + dw[1]**2.0)
         return N, dNdw

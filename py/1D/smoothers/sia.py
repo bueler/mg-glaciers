@@ -58,19 +58,21 @@ class PNsmootherSIA(SmootherObstacleProblem):
         self.buelerL = 750.0e3      # half-width of sheet
         self.buelerH0 = 3600.0      # center thickness
 
-    def _pointN(self, mesh, w, p):
+    def _pointN(self, mesh, wpatch, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for
         given iterate w(x) in V^j, at one hat function psi_p^j:
            N(w)[psi_p^j] = int_I Gamma (w(x) - b(x) + eps)^{p+1}
                                        * |w'(x)|^{p-2} w'(x) (psi_p^j)'(x) dx
         where I = [x_p - h, x_p + h].  Approximates using the trapezoid rule.
-        Also return dNdw, the derivative of N(w)[psi_p^j] with respect to w[p].'''
+        Also return dNdw, the derivative of N(w)[psi_p^j] with respect to w[p].
+        Note that wpatch = [w[p-1], w[p], w[p+1]].'''
         assert hasattr(mesh, 'h')
         assert hasattr(mesh, 'b')
+        assert len(wpatch) == 3
         eps = self.args.siaeps
-        tau = (w[p-1:p+2] - mesh.b[p-1:p+2] + eps)**(self.pp + 1.0)
-        dtau = (self.pp + 1.0) * (w[p] - mesh.b[p] + eps)**self.pp
-        ds = w[p:p+2] - w[p-1:p+1]
+        tau = (wpatch - mesh.b[p-1:p+2] + eps)**(self.pp + 1.0)
+        dtau = (self.pp + 1.0) * (wpatch[1] - mesh.b[p] + eps)**self.pp
+        ds = wpatch[1:] - wpatch[:2]
         mu = abs(ds)**(self.pp - 2.0) * ds
         dmu = (self.pp - 1.0) * abs(ds)**(self.pp - 2.0)
         C = self.Gamma / (2.0 * mesh.h**(self.pp-1.0))
@@ -84,7 +86,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
         mesh.checklen(w)
         Nw = mesh.zeros()
         for p in self._sweepindices(mesh, forward=True):
-            Nw[p], _ = self._pointN(mesh, w, p)
+            Nw[p], _ = self._pointN(mesh, w[p-1:p+2], p)
         return Nw
 
     def residual(self, mesh, w, ell):
@@ -94,7 +96,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
         mesh.checklen(ell)
         F = mesh.zeros()
         for p in self._sweepindices(mesh, forward=True):
-            F[p], _ = self._pointN(mesh, w, p)
+            F[p], _ = self._pointN(mesh, w[p-1:p+2], p)
             F[p] -= ell[p]
         return F
 
@@ -139,7 +141,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
         # update each y[p] value
         for p in self._sweepindices(mesh, forward=forward):
             for _ in range(self.args.newtonits):
-                r, delta = self._pointN(mesh, mesh.g + y, p)
+                r, delta = self._pointN(mesh, mesh.g[p-1:p+2] + y[p-1:p+2], p)
                 if delta == 0.0:
                     jaczeros[p] = 1.0
                 r -= ell[p]
@@ -156,7 +158,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
         r, delta = mesh.zeros(), mesh.zeros()
         for _ in range(self.args.newtonits):
             for p in self._sweepindices(mesh, forward=True):
-                r[p], delta[p] = self._pointN(mesh, mesh.g + y, p)
+                r[p], delta[p] = self._pointN(mesh, mesh.g[p-1:p+2] + y[p-1:p+2], p)
                 r[p] -= ell[p]
                 if delta[p] == 0.0:
                     jaczeros[p] = 1.0
