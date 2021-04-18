@@ -186,7 +186,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
 
     def jacobisweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place projected nonlinear Jacobi sweep over the interior
-        points p=1,...,m, for the SIA problem.  Compare PNGSSIA.smoothersweep().
+        points p=1,...,m, for the SIA problem.  Compare gssweep().
         Underrelaxation is expected; try omega = 0.5.'''
         # compute residual and Jacobian at each point
         jaczeros = mesh.zeros()
