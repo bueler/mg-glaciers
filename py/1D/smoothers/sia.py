@@ -128,6 +128,8 @@ class PNsmootherSIA(SmootherObstacleProblem):
             self.showsingular(jaczeros)
         mesh.WU += self.args.newtonits
 
+    # ILLUMINATING TEST CASE:
+    #   ./obstacle.py -problem sia -siacase bumpy -down 2 -monitor -irtol 1.0e-8 -J 10 -show -cyclemax 7
     def gssweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place projected nonlinear Gauss-Seidel (PNGS) sweep over the
         interior points p=1,...,m, for the SIA problem on the iterate w = g + y.
@@ -142,8 +144,26 @@ class PNsmootherSIA(SmootherObstacleProblem):
                 r, delta = self._pointN(mesh, mesh.g + y, p)
                 if delta == 0.0:
                     jaczeros[p] = 1.0
-                r -= ell[p]
-                c = self.pointupdate(r, delta, y[p], phi[p], ell[p])
+                    if ell[p] > 0.0 and y[p] == 0.0:
+                        c = self.caccum    # move upward if accumulation at ice-free
+                    else:
+                        c = 0.0            # no information on how to move
+                else:
+                    r -= ell[p]               # actual residual
+                    c = - r / delta           # pure Newton step
+                    c = max(c, phi[p] - y[p]) # ensure admissibility: y >= phi
+                    c = min(c, self.cupmax)   # limit large upward steps
+                    # apply Armijo; see Kelley section 1.6
+                    alpha = 1.0e-4
+                    for m in range(20):
+                        z = y.copy()
+                        z[p] += 2.0**(-m) * self.args.omega * c
+                        rnew, _ = self._pointN(mesh, mesh.g + z, p)
+                        rnew -= ell[p]
+                        if abs(rnew) < (1.0 - alpha * 2.0**(-m)) * abs(r):
+                            c = 2.0**(-m) * c
+                            break
+                #c = self.pointupdate(r, delta, y[p], phi[p], ell[p])
                 y[p] += self.args.omega * c
         return jaczeros
 
