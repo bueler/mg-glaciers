@@ -28,8 +28,8 @@ class PNsmootherSIA(SmootherObstacleProblem):
     in the p-Laplacian interpretation.
 
     The smoother uses a fixed number of Newton iterations (-newtonits) at
-    each point.  The Newton iteration uses two other parameters; see
-    pointupdate().
+    each point.  The Newton iteration uses other "protection" parameters.
+    The GS smoother applies an Armijo criterion for its 1D line search.
 
     This class can also compute the "Bueler profile" exact solution.'''
 
@@ -49,8 +49,8 @@ class PNsmootherSIA(SmootherObstacleProblem):
         # important powers
         self.pp = self.nglen + 1.0                      # = 4; p-Laplacian
         self.rr = (2.0 * self.nglen + 2.0) / self.nglen # = 8/3; error reporting
-        self.dtol = 1.0e-3          # 1 mm
-        # parameters used in pointupdate()
+        # parameters used in Newton solver and pointupdate()
+        self.ctol = 1.0e-3          # 1 mm; no Armijo if c is this small
         self.caccum = 10.0          # m
         self.cupmax = 500.0         # m; never move surface up by more than this
                                     #    perhaps should be comparable to 0.2 or
@@ -107,7 +107,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
             F[p] -= ell[p]
         return F
 
-    def pointupdate(self, r, delta, yp, phip, ellp):
+    def _pointupdate(self, r, delta, yp, phip, ellp):
         '''Compute candidate update value c, for y[p] += c, from pointwise
         residual r = rho(0) and pointwise Jacobian delta = rho'(0).'''
         if delta == 0.0:
@@ -137,12 +137,6 @@ class PNsmootherSIA(SmootherObstacleProblem):
             self.showsingular(jaczeros)
         mesh.WU += self.args.newtonits
 
-    # OBSERVATIONS:
-    #   * first V cycle is great (reduces residual by large factor)
-    #   * because SIA margin is vertical, some laters smoother steps will
-    #     move pointwise values by large amount, so while pointwise residual
-    #     always decreases because of armijo, the global residual can go up
-
     def gssweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place projected nonlinear Gauss-Seidel (PNGS) sweep over the
         interior points p=1,...,m, for the SIA problem on the iterate w = g + y.
@@ -153,19 +147,19 @@ class PNsmootherSIA(SmootherObstacleProblem):
         jaczeros = mesh.zeros()
         arm_alpha = 1.0e-4
         arm_rho = 2.0
-        armijo = 0                 # count of added armijo steps
+        armijo = 0  # count of added Armijo point residual evaluations
         # update each y[p] value
         for p in self._sweepindices(mesh, forward=forward):
             for _ in range(self.args.newtonits):
                 wpatch = mesh.g[p-1:p+2] + y[p-1:p+2]
                 r, delta = self._pointN(mesh, wpatch, p)
+                r -= ell[p]               # actual residual
+                c = self._pointupdate(r, delta, y[p], phi[p], ell[p])
                 if delta == 0.0:
                     jaczeros[p] = 1.0
-                r -= ell[p]               # actual residual
-                c = self.pointupdate(r, delta, y[p], phi[p], ell[p])
-                if delta != 0.0 and abs(c) > self.dtol:
-                    # apply Armijo to reduce c to get sufficient decrease
-                    # (Kelley section 1.6)
+                # if c is reasonable, apply Armijo criterion to reduce c until
+                #     sufficient decrease (Kelley section 1.6)
+                if delta != 0.0 and abs(c) > self.ctol:
                     reduce = 1.0
                     for _ in range(20):
                         zpatch = wpatch.copy()
@@ -179,27 +173,31 @@ class PNsmootherSIA(SmootherObstacleProblem):
                         armijo += 1
                 y[p] += self.args.omega * c
         if self.args.armijomonitor:
+            arm_av = armijo / (self.args.newtonits * mesh.m)
             indentprint(self.args.J - mesh.j,
-                        '  gssweep() on level %d: added armijo steps = %d (fraction %.2f)' \
-                        % (mesh.j, armijo, armijo / (self.args.newtonits * mesh.m)))
+                        '  gssweep() on level %d: added armijo evals = %d (fraction %.2f)' % (mesh.j, armijo, arm_av))
         return jaczeros
 
     def jacobisweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place projected nonlinear Jacobi sweep over the interior
-        points p=1,...,m, for the SIA problem.  Compare gssweep().
-        Underrelaxation is expected; try omega = 0.5.'''
-        # compute residual and Jacobian at each point
+        points p=1,...,m, for the SIA problem.  On each Newton iteration,
+        computes all residuals before updating any iterate values.
+        Compare gssweep(); note we cannot do Armijo line search because we
+        want to only evaluate residuals twice.  Underrelaxation is expected;
+        try omega = 0.5.'''
         jaczeros = mesh.zeros()
         r, delta = mesh.zeros(), mesh.zeros()
         for _ in range(self.args.newtonits):
+            # compute residuals and Jacobians at each point
             for p in self._sweepindices(mesh, forward=True):
-                r[p], delta[p] = self._pointN(mesh, mesh.g[p-1:p+2] + y[p-1:p+2], p)
+                wpatch = mesh.g[p-1:p+2] + y[p-1:p+2]
+                r[p], delta[p] = self._pointN(mesh, wpatch, p)
                 r[p] -= ell[p]
-                if delta[p] == 0.0:
-                    jaczeros[p] = 1.0
             # update each y[p] value
             for p in self._sweepindices(mesh, forward=forward):
-                c = self.pointupdate(r[p], delta[p], y[p], phi[p], ell[p])
+                if delta[p] == 0.0:
+                    jaczeros[p] = 1.0
+                c = self._pointupdate(r[p], delta[p], y[p], phi[p], ell[p])
                 y[p] += self.args.omega * c
         return jaczeros
 
