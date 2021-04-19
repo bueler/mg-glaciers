@@ -75,12 +75,12 @@ class SmootherObstacleProblem(ABC):
         '''Evaluate obstacle phi at location(s) x.'''
 
     @abstractmethod
-    def exact_available(self):
-        '''Returns True if there is a valid uexact(x) method.'''
-
-    @abstractmethod
     def source(self, x):
         '''Evaluate source function f at location(s) x.'''
+
+    def exact_available(self):
+        '''Returns True if there is a valid uexact(x) method.'''
+        return False
 
     @abstractmethod
     def exact(self, x):
