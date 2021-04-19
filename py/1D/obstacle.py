@@ -9,7 +9,7 @@ from meshlevel import MeshLevel1D
 from monitor import ObstacleMonitor
 from visualize import VisObstacle
 
-from smoothers.poisson import PGSPoisson, PJacobiPoisson
+from smoothers.poisson import PsmootherPoisson
 from smoothers.plap import PNsmootherPLap
 from smoothers.sia import PNsmootherSIA
 
@@ -206,7 +206,7 @@ for j in range(levels):
 
 # set up obstacle problem with smoother (class SmootherObstacleProblem)
 if args.problem == 'poisson':
-    obsprob = PJacobiPoisson(args) if args.jacobi else PGSPoisson(args)  # FIXME make PsmootherPoisson, and factor smoothersweep() into two
+    obsprob = PsmootherPoisson(args)
 elif args.problem == 'plap':
     obsprob = PNsmootherPLap(args)
 elif args.problem == 'sia':

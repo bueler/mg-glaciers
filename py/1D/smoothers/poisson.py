@@ -1,6 +1,6 @@
-'''Module for smoothers PGSPoisson and PJacobiPoisson.'''
+'''Module for GS and Jacobi smoothers for the Poisson (classical) obstacle problem.'''
 
-__all__ = ['PGSPoisson', 'PJacobiPoisson']
+__all__ = ['PsmootherPoisson']
 
 import numpy as np
 from smoothers.base import SmootherObstacleProblem
@@ -8,7 +8,7 @@ from smoothers.base import SmootherObstacleProblem
 def _pde2alpha(x):
     return 2.0 + np.sin(2.0 * np.pi * x)
 
-class PGSPoisson(SmootherObstacleProblem):
+class PsmootherPoisson(SmootherObstacleProblem):
     '''Class for the projected Gauss-Seidel (PGS) algorithm as a smoother
     for the linear Poisson equation - (alpha u')' = f with u(0)=u(L)=0.'''
 
@@ -18,7 +18,8 @@ class PGSPoisson(SmootherObstacleProblem):
             self.alpha = _pde2alpha
         else:
             self.alpha = None
-        self.name = 'PGS'
+        # smoother name
+        self.name = 'PJac' if self.args.jacobi else 'PGS'
 
     def _diagonalentry(self, h, p):
         '''Compute the diagonal value of a(.,.) at hat function psi_p^j:
@@ -59,6 +60,18 @@ class PGSPoisson(SmootherObstacleProblem):
         return F
 
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
+        '''Do either in-place GS or Jacobi smoothing.'''
+        mesh.checklen(w)
+        mesh.checklen(ell)
+        mesh.checklen(phi)
+        self._checkrepairadmissible(mesh, w, phi)
+        if self.args.jacobi:
+            self.jacobisweep(mesh, w, ell, phi, forward=forward)
+        else:
+            self.gssweep(mesh, w, ell, phi, forward=forward)
+        mesh.WU += 1
+
+    def gssweep(self, mesh, w, ell, phi, forward=True):
         '''Do in-place projected Gauss-Seidel sweep, with relaxation factor
         omega, over the interior points p=1,...,m, for the classical obstacle
         problem
@@ -69,16 +82,22 @@ class PGSPoisson(SmootherObstacleProblem):
         for c.  Thus c = - F(w)[psi_p] / a(psi_p,psi_p).  Update of w guarantees
         admissibility:
             w[p] <- max(w[p] + omega c, phi[p]).
-        Input mesh is of class MeshLevel1D.  Returns the number of pointwise
-        feasibility violations.'''
-        mesh.checklen(w)
-        mesh.checklen(ell)
-        mesh.checklen(phi)
-        self._checkrepairadmissible(mesh, w, phi)
+        Input mesh is of class MeshLevel1D.'''
         for p in self._sweepindices(mesh, forward=forward):
             c = - self._pointresidual(mesh.h, w, ell, p) / self._diagonalentry(mesh.h, p)
             w[p] = max(w[p] + self.args.omega * c, phi[p])
-        mesh.WU += 1
+
+    def jacobisweep(self, mesh, w, ell, phi, forward=True):
+        '''Do in-place projected Jacobi sweep, with relaxation factor
+        omega, over the interior points p=1,...,m, for the classical obstacle
+        problem.  Same as Gauss-Seidel but the new iterate values are NOT
+        used when updating the next point; the residual is evaluated
+        at the start and those values are used for the sweep.  Tai (2003)
+        says underrelaxation is expected; omega = 0.8 seems to work.'''
+        r = self.residual(mesh, w, ell)
+        for p in self._sweepindices(mesh, forward=forward):
+            c = - r[p] / self._diagonalentry(mesh.h, p)
+            w[p] = max(w[p] + self.args.omega * c, phi[p])
 
     def phi(self, x):
         '''The obstacle:  u >= phi.'''
@@ -151,22 +170,3 @@ class PGSPoisson(SmootherObstacleProblem):
         elif self.args.poissoncase == 'pde2':
             u = x * (10.0 - x)
         return u
-
-class PJacobiPoisson(PGSPoisson):
-    '''Derived class of PGSPoisson that replaces the Gauss-Seidel
-    (multiplicative) smoother with a Jacobi (additive) version.'''
-
-    def smoothersweep(self, mesh, w, ell, phi, forward=True):
-        '''Do in-place projected Jacobi sweep, with relaxation factor
-        omega, over the interior points p=1,...,m, for the classical obstacle
-        problem.  Same as Gauss-Seidel but the new iterate values are NOT
-        used when updating the next point; the residual is evaluated
-        at the start and those values are used for the sweep.  Tai (2003)
-        says underrelaxation is expected; omega = 0.8 seems to work.'''
-        self._checkrepairadmissible(mesh, w, phi)
-        r = self.residual(mesh, w, ell)
-        for p in self._sweepindices(mesh, forward=forward):
-            c = - r[p] / self._diagonalentry(mesh.h, p)
-            w[p] = max(w[p] + self.args.omega * c, phi[p])
-        mesh.WU += 1
-        self.name = 'PJac'
