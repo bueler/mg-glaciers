@@ -1,6 +1,6 @@
 all: review.pdf
 
-_figures := finehats coarsehats coarsesthats residualpoints cartoonplane innerconeapprox prolongobstacle giscross poisson/convergence poisson/mcdl-cycles poisson/mcdl-wu poisson/mcdl-timeper poisson/perfni sia/convergence sia/asymprates plap/convergence
+_figures := finehats coarsehats coarsesthats residualpoints cartoonplane innerconeapprox prolongobstacle giscross poisson/convergence poisson/mcdl-cycles poisson/mcdl-wu poisson/mcdl-timeper poisson/perfni sia/convergence sia/asymprates sia/reshistory plap/convergence
 
 figures := $(addprefix genfigs/, $(addsuffix .pdf, $(_figures)))
 
@@ -50,6 +50,9 @@ genfigs/sia/convergence.pdf: writeout genfigs/sia/convergence.py
 
 genfigs/sia/asymprates.pdf: writeout genfigs/sia/asymprates.py
 	(cd genfigs/sia/ && python3 asymprates.py)
+
+genfigs/sia/reshistory.pdf: writeout genfigs/sia/reshistory.py
+	(cd genfigs/sia/ && python3 reshistory.py)
 
 genfigs/plap/convergence.pdf: writeout genfigs/plap/convergence.py
 	(cd genfigs/plap/ && python3 convergence.py)
