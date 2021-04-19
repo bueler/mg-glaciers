@@ -181,6 +181,9 @@ class VisObstacle():
             if len(self.args.o) > 0:
                 rname = 'resid_' + self.args.o
             self.residuals(filename=rname)
+        if not hasattr(self.hierarchy[-1], 'chi'):
+            print('WARNING: chi (defect obstacle) missing ... generating no decomposition figures ...')
+            return
         if self.args.diagnostics and not self.args.sweepsonly:
                 dname = ''
                 if len(self.args.o) > 0:
