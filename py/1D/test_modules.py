@@ -3,7 +3,7 @@ directory, or via "make mtest".'''
 
 import numpy as np
 from meshlevel import MeshLevel1D
-from smoothers.poisson import PGSPoisson
+from smoothers.poisson import PsmootherPoisson
 from smoothers.sia import PNsmootherSIA
 
 def test_ml_basics():
@@ -98,7 +98,7 @@ testargs = Namespace(jacobi=False,
 def test_poisson_residual():
     '''Residual for Poisson.'''
     ml = MeshLevel1D(j=1)
-    prob = PGSPoisson(testargs)
+    prob = PsmootherPoisson(testargs)
     f = np.array([1.0, 0.5, 0.0, 0.5, 1.0])
     w = f.copy()
     Fcorrect = - np.array([0.0, 0.5*ml.h, 4.0, 0.5*ml.h, 0.0])
@@ -107,7 +107,7 @@ def test_poisson_residual():
 def test_poisson_pgssweep():
     '''Projected Gauss-Seidel sweep for Poisson.'''
     ml = MeshLevel1D(j=0)
-    prob = PGSPoisson(testargs)
+    prob = PsmootherPoisson(testargs)
     f = np.array([0.0, 1.0, 0.0])
     ell = ml.ellf(f)
     assert all(ell == ml.h * f)
