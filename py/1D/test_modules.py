@@ -94,7 +94,8 @@ testargs = Namespace(jacobi=False,
                      siacase='profile',
                      siaeps=0.0,
                      lsmonitor=False,
-                     nols=False)
+                     nols=False,
+                     siacupmax=100.0)
 
 def test_poisson_residual():
     '''Residual for Poisson.'''

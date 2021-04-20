@@ -46,8 +46,10 @@ class PNsmootherPLap(PNsmootherSIA):
 
     def __init__(self, args, admissibleeps=1.0e-10):
         super().__init__(args, admissibleeps=admissibleeps)
-        # parameter used in pointupdate()
+        # parameter used in _pointupdate()
         self.cupmax = 1.0  # never move surface up by more than this
+        # parameter used in gssweep()
+        self.ctol = 0.001
 
     def _pointN(self, mesh, wpatch, p):
         '''Compute nonlinear operator value N(w)[psi_p^j], for

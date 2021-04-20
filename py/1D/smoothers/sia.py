@@ -50,11 +50,8 @@ class PNsmootherSIA(SmootherObstacleProblem):
         self.pp = self.nglen + 1.0                      # = 4; p-Laplacian
         self.rr = (2.0 * self.nglen + 2.0) / self.nglen # = 8/3; error reporting
         # parameters used in Newton solver and pointupdate()
-        self.ctol = 1.0e-3          # 1 mm; no Armijo if c is this small
+        self.ctol = 1.0             # 1 m; no Armijo if c is this small
         self.caccum = 10.0          # m
-        self.cupmax = 500.0         # m; never move surface up by more than this
-                                    #    perhaps should be comparable to 0.2 or
-                                    #    0.1 of max ice thickness
         # initialize with a pile of ice equal this duration of accumulation
         self.magicinitage = 3000.0 * self.secpera
         # interval [0,xmax]=[0,1800] km
@@ -112,13 +109,13 @@ class PNsmootherSIA(SmootherObstacleProblem):
         residual r = rho(0) and pointwise Jacobian delta = rho'(0).'''
         if delta == 0.0:
             if ellp > 0.0 and yp == 0.0:
-                return self.caccum    # move upward if accumulation at ice-free
+                return self.caccum        # upward if accumulation at ice-free
             else:
-                return 0.0            # no information on how to move
+                return 0.0                # no information on how to move
         else:
-            c = - r / delta           # pure Newton step
-            c = max(c, phip - yp)     # ensure admissibility: y >= phi
-            c = min(c, self.cupmax)   # pre-limit large upward steps
+            c = - r / delta               # pure Newton step
+            c = max(c, phip - yp)         # ensure admissibility: y >= phi
+            c = min(c, self.args.siacupmax)  # pre-limit large upward steps
             return c
 
     def smoothersweep(self, mesh, y, ell, phi, forward=True):

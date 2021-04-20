@@ -161,6 +161,8 @@ parser.add_argument('-showsingular', action='store_true', default=False,
 parser.add_argument('-siacase', choices=['profile', 'bumpy'],
                     metavar='X', default='profile',
                     help='determines bed elevation (default: %(default)s)')
+parser.add_argument('-siacupmax', type=float, default=100.0, metavar='X',
+                    help='in SIA, do not move surface up by more than this (default X=100.0 m)')
 parser.add_argument('-siaeps', type=float, default=0.0, metavar='X',
                     help='regularizing thickness in SIA smoother (default 0 m)')
 parser.add_argument('-siaintervallength', type=float, default=1800.0e3,
