@@ -157,9 +157,9 @@ class PNsmootherSIA(SmootherObstacleProblem):
                 c = self._pointupdate(r, delta, y[p], phi[p], ell[p])
                 if delta == 0.0:
                     jaczeros[p] = 1.0
-                # if c is reasonable, apply Armijo criterion to reduce c until
-                #     sufficient decrease (Kelley section 1.6)
-                if delta != 0.0 and abs(c) > self.ctol:
+                # if c is reasonable, apply Armijo-criterion line search
+                #      to reduce c until sufficient decrease (Kelley sec. 1.6)
+                if not self.args.nols and delta != 0.0 and abs(c) > self.ctol:
                     reduce = 1.0
                     for _ in range(20):
                         zpatch = wpatch.copy()
@@ -172,7 +172,7 @@ class PNsmootherSIA(SmootherObstacleProblem):
                         reduce *= arm_rho
                         armijo += 1
                 y[p] += self.args.omega * c
-        if self.args.armijomonitor:
+        if self.args.lsmonitor:
             arm_av = armijo / (self.args.newtonits * mesh.m)
             indentprint(self.args.J - mesh.j,
                         '  gssweep() on level %d: added armijo evals = %d (fraction %.2f)' % (mesh.j, armijo, arm_av))

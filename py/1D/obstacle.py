@@ -85,8 +85,6 @@ References:
 ''',
     formatter_class=argparse.RawTextHelpFormatter,
     allow_abbrev=False)  # bug in python 3.8 causes this to be ignored
-parser.add_argument('-armijomonitor', action='store_true', default=False,
-                    help='monitor added armijo point residuals for MCDN smoothers')
 parser.add_argument('-coarse', type=int, default=1, metavar='N',
                     help='smoother sweeps on coarsest grid (default=1)')
 parser.add_argument('-coarsestomega', type=float, default=1.0, metavar='X',
@@ -109,6 +107,8 @@ parser.add_argument('-jcoarse', type=int, default=0, metavar='J',
                     help='coarse mesh is jth level (default jcoarse=0 gives 1 node)')
 parser.add_argument('-J', type=int, default=3, metavar='J',
                     help='fine mesh is Jth level (default J=3)')
+parser.add_argument('-lsmonitor', action='store_true', default=False,
+                    help='for PNGS, monitor added line-search point residual evaluations')
 parser.add_argument('-mgview', action='store_true', default=False,
                     help='view multigrid cycles by indented print statements')
 parser.add_argument('-monitor', action='store_true', default=False,
@@ -123,6 +123,8 @@ parser.add_argument('-nicascadic', action='store_true', default=False,
                     help='scheduled nested iteration (implies -ni)')
 parser.add_argument('-nicycles', type=int, default=1, metavar='N',
                     help='cycles in nested iteration before finest (default N=1)')
+parser.add_argument('-nols', action='store_true', default=False,
+                    help='for PNGS, do not use Armijo-based line search')
 parser.add_argument('-o', metavar='FILE', type=str, default='',
                     help='save plot at end in image file, e.g. .pdf or .png')
 parser.add_argument('-omega', type=float, default=1.0, metavar='X',
