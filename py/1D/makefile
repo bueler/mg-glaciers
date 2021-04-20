@@ -42,7 +42,7 @@ run_11:
 	-@./../testit.sh obstacle.py "-problem sia -siacase profile -sweepsonly -showsingular -J 4 -cyclemax 6 -monitor" 1 11 "sia profile PNGS sweeps show singular points"
 
 run_12:
-	-@./../testit.sh obstacle.py "-problem sia -siacase profile -J 4 -monitor" 1 12 "sia profile V(0,2) cycles"
+	-@./../testit.sh obstacle.py "-problem sia -siacase profile -J 4 -monitor -monitorerr -l1err" 1 12 "sia profile V(0,2) cycles"
 
 run_13:
 	-@./../testit.sh obstacle.py "-problem sia -siacase profile -J 3 -down 1 -up 1 -monitor -ni -nicycles 2 -cyclemax 2" 1 13 "sia profile F-cycle using two V(1,1) cycles"

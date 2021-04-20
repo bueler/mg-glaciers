@@ -15,12 +15,13 @@ class ObstacleMonitor():
     '''The monitor has an internal state so it is a class.'''
 
     def __init__(self, obsprob, mesh, uex=None,
-                 printresiduals=False, printerrors=False,
+                 printresiduals=False, printerrors=False, l1err=False,
                  extraerrorpower=None, extraerrornorm=None):
         self.obsprob = obsprob  # Class SmootherObstacleProblem
         self.mesh = mesh        # Class MeshLevel1D
         self.residuals = printresiduals
         self.errors = printerrors
+        self.l1err = l1err
         self.extraerrorpower = extraerrorpower
         self.extraerrornorm = extraerrornorm
         self.uex = uex
@@ -49,8 +50,14 @@ class ObstacleMonitor():
         errnorm = None
         if self.errors:
             if self.uex is not None:
-                errnorm = self.mesh.l2norm(w - self.uex)
-                indentprint(indent, '  %d:  |u-uexact|_2 = %.4e' % (self.s, errnorm), end='')
+                e2norm = self.mesh.l2norm(w - self.uex)
+                if self.l1err:
+                    e1norm = self.mesh.l1norm(w - self.uex)
+                    indentprint(indent, '  %d:  |u-uexact|_1 = %.4e, |u-uexact|_2 = %.4e' \
+                                % (self.s, e1norm, e2norm), end='')
+                else:
+                    indentprint(indent, '  %d:  |u-uexact|_2 = %.4e' \
+                                % (self.s, e2norm), end='')
                 if self.extraerrorpower is not None and self.extraerrornorm is not None:
                     r = self.extraerrorpower
                     p = self.extraerrornorm

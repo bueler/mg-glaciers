@@ -107,6 +107,8 @@ parser.add_argument('-jcoarse', type=int, default=0, metavar='J',
                     help='coarse mesh is jth level (default jcoarse=0 gives 1 node)')
 parser.add_argument('-J', type=int, default=3, metavar='J',
                     help='fine mesh is Jth level (default J=3)')
+parser.add_argument('-l1err', action='store_true', default=False,
+                    help='report L^1 errors in addition to other norms')
 parser.add_argument('-lsmonitor', action='store_true', default=False,
                     help='for PNGS, monitor added line-search point residual evaluations')
 parser.add_argument('-mgview', action='store_true', default=False,
@@ -242,6 +244,7 @@ if obsprob.exact_available():
     uex = obsprob.exact(mesh.xx())
 mon = ObstacleMonitor(obsprob, mesh, uex=uex,
                       printresiduals=args.monitor, printerrors=args.monitorerr,
+                      l1err=args.l1err,
                       extraerrorpower=obsprob.rr if args.problem == 'sia' else None,
                       extraerrornorm=obsprob.pp if args.problem == 'sia' else None)
 
@@ -309,7 +312,11 @@ else:
     method += '%d %s V(%d,%d) cycles' % (mon.s - 1, obsprob.name, args.down, args.up)
 if obsprob.exact_available():
     uex = obsprob.exact(hierarchy[-1].xx())
-    error = ';  |u-uexact|_2 = %.3e' % mesh.l2norm(uu - uex)
+    if args.l1err:
+        error = ';  |u-uexact|_1 = %.3e, |u-uexact|_2 = %.3e' \
+                % (mesh.l1norm(uu - uex), mesh.l2norm(uu - uex))
+    else:
+        error = ';  |u-uexact|_2 = %.3e' % mesh.l2norm(uu - uex)
     if args.problem == 'sia':
         error += ', |u^r-uexact^r|_p = %.3e' % \
                  mesh.lqnorm(obsprob.pp, uu**obsprob.rr - uex**obsprob.rr)

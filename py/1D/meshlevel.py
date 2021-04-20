@@ -45,6 +45,11 @@ class MeshLevel1D():
         '''Generate a vector of mesh node coordinates.'''
         return np.linspace(0.0, self.xmax, self.m+2)
 
+    def l1norm(self, u):
+        '''L^1[0,L] norm of a function, computed with trapezoid rule.'''
+        self.checklen(u)
+        return self.h * (0.5*abs(u[0]) + np.sum(abs(u[1:-1])) + 0.5*abs(u[-1]))
+
     def l2norm(self, u):
         '''L^2[0,L] norm of a function, computed with trapezoid rule.'''
         self.checklen(u)
