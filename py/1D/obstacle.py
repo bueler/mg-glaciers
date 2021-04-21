@@ -93,7 +93,7 @@ parser.add_argument('-cyclemax', type=int, default=100, metavar='N',
                     help='maximum number of (multilevel) cycles (default=100)')
 parser.add_argument('-diagnostics', action='store_true', default=False,
                     help='generate residual and multilevel decomposition figures (use with -show or -o)')
-parser.add_argument('-diagnosticsheuristic', action='store_true', default=False,
+parser.add_argument('-heuristic', action='store_true', default=False,
                     help='generate heuristic decomposition figure (use with -show or -o)')
 parser.add_argument('-down', type=int, default=0, metavar='N',
                     help='smoother sweeps before coarse-mesh correction (default=0)')

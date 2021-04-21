@@ -27,7 +27,7 @@ run_6:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -jacobi -omega 0.85 -monitor" 1 6 "poisson icelike V(0,2) cycles Jacobi smoother"
 
 run_7:
-	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 3 -down 1 -up 1 -monitorerr -diagnostics -diagnosticsheuristic -o test7.png" 1 7 "poisson icelike V(1,1) cycles diagnostics"
+	-@./../testit.sh obstacle.py "-problem poisson -poissoncase icelike -J 3 -down 1 -up 1 -monitorerr -diagnostics -heuristic -o test7.png" 1 7 "poisson icelike V(1,1) cycles diagnostics"
 
 run_8:
 	-@./../testit.sh obstacle.py "-problem poisson -poissoncase pde2 -J 3" 1 8 "poisson pde2 [unconstrained] V(0,2) cycles"
