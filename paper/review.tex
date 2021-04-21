@@ -1284,29 +1284,25 @@ For single-level VI \eqref{eq:siaVIFEfinelevel}, or for \eqref{eq:siaVIFEFAS} wh
    \phi^j \to \chi^j, \qquad \mathcal{K}^j \to \mathcal{D}^j, \qquad y^j \to z^j.  \label{eq:pngssinglelevelreplacements}
 \end{equation}
 
-FIXME better patch-type smoother is a $k$-dimensional VI for $k\ge 1$ (but not too big)
+In the next section we will show results from the MCDN method, using our \pr{pngs} and \pr{pnjacobi} smoothers, on the SIA and $\pp$-Laplacian obstacle problems.  We will see that the margin degeneracy of the SIA problem is problematic for these pointwise smoothers.  Patch-type smoothers, which would in our case solve a $k$-dimensional VI for $k > 1$, have been applied to other multigrid problems \cite{Farrelletal2019}, and they may be appropriate here as well.  For example, a $k=3$ patch smoother might update the three degrees of freedom $y_{p-1},y_p,y_{p+1}$ simultaneously by solving a $3$-dimensional VI which generalizes \eqref{eq:pngspointwisevi}.  Testing this strategy is planned for further research.
 
-\subsection{Convergence and performance results} \label{subsec:siaperformance}  FIXME convergence in Figure \ref{fig:siaconv}
+\subsection{Convergence and performance results} \label{subsec:siaperformance}  The convergence of our SIA solver, on the exact SIA solution in Figure \ref{fig:siadatafigure}, is shown in Figure \ref{fig:siaconv}.  The smallest errros occur on a mesh of $m=32767$ nodes and spacing $h=55$ m.  The rates of convergence are close to $O(h^1)$ for both $L^1$ and $L^2$ norms, but the latter converges faster because the largest errors are localized along the margin.  It is known that the low margin regularity of the solution reduces the rate of convergence under grid refinement \cite{Bueleretal2005}, though a more-accurate scheme is capable of an $O(h^{1.47})$ convergence rate in the $L^1$ norm on a related 2D problem.  As we observed earlier, the flat-bed problem is equivalent to a $\pp$-Laplacian problem for the $\rr=(2n+2)/n = 8/3$ power of the thickness, so we also measure the $\pp=4$ norm of the $H^\rr$ error, which decays slightly faster.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/sia/convergence.pdf}
-\caption{Convergence of the MCDN method on the exact solution shown in Figure \ref{fig:siadatafigure}.  See text for an explanation of the $\|H^\rr-H_{\text{exact}}^\rr\|_\pp$ norm.}
+\caption{Convergence of the MCDN method.  See text for an explanation of the $\|H^\rr-H_{\text{exact}}^\rr\|_\pp$ norm.}
 \label{fig:siaconv}
 \end{figure}
 
-We can compare the above results to $\pp$-Laplacian convergence for the $\pp$-Laplacian obstacle problem, with $\pp=4$, on an exact solution constructed in a similar way to the classical obstacle problem shown in Figure \ref{fig:icelike}.  In that case we measure $\|u-u_{\text{exact}}\|_\pp=O(h^{0.99})$, and as for the SIA case the numerical error norms are not monotonic.  The fact that $\|H^\rr-H_{\text{exact}}^\rr\|_\pp$ goes to zero at a slightly-better rate for the SIA solution reflects the fact that the source term for the SIA is continuous while for the $\pp$-Laplacian solution it is not.
+We may compare these results to $\pp$-Laplacian convergence for the $\pp$-Laplacian obstacle problem, with $\pp=4$, on an exact solution constructed in a similar way to the classical obstacle problem shown in Figure \ref{fig:icelike}.  In that case we measure $\|u-u_{\text{exact}}\|_\pp=O(h^{0.99})$, and as for the SIA case the numerical error norms are not monotonic.  The fact that $\|H^\rr-H_{\text{exact}}^\rr\|_\pp$ goes to zero at a slightly-better rate for the SIA solution reflects the fact that the source term for the SIA is continuous while for the $\pp$-Laplacian solution it is not.
 
-FIXME Figure \ref{fig:siareshistory} shows a residual norm history for a $m=10^3$ run on the exact solution shown in Figure \ref{fig:siadatafigure}
+Next, Figure \ref{fig:siareshistory} shows a residual norm history for the first 30 iterations of $m=10^3$ runs on the exact solution shown in Figure \ref{fig:siadatafigure}.  The two runs use a single-level PNGS method and V(0,2) cycles with PNGS smoothing, respectively.  The first few MCDN V-cycles are effective as expected, and the multilevel method reduces the error much more than the single-level method, but it also stagnates and the residuals do not decrease monotonically.  The smoother steps in the multilevel method involve large pointwise changes near the margin, so while the pointwise residuals always decreases because of the line search, the global residual can increase as a result of a smoother sweep.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/sia/reshistory.pdf}
-\caption{CP residual norms $\|\hat F(w)\|_2$ for a V(0,2) cycle, PNGS solution on a $1024$ element mesh with $h=1.76$ km on the exact solution shown in Figure \ref{fig:siadatafigure}.}
+\caption{CP residual norms $\|\hat F(w)\|_2$ for two PNGS-based solutions on a $1024$ element mesh with $h=1.76$ km.}
 \label{fig:siareshistory}
 \end{figure}
-
-FIXME first few V cycles are great (reduce residual by large factor), but CP residual norm stagnates and may not be even be monotonic decreasing
-
-FIXME because SIA margin is vertical, some laters smoother steps will move pointwise values by large amount, so while pointwise residual always decreases because of armijo, the global residual can go up
 
 FIXME what are the asymptotic rates anyway? suppose we initialize with the continuum exact solution; asymptotic rates in Figure \ref{fig:siaconv} for GS vs Jacobi with a couple of omega values; for comparison, in the $\pp$-Laplacian with $\pp=4$ the V(0,2) rates are $0.7772$--$0.9143$ compared to $0.7357$--$0.9224$ here for SIA; so we actually are getting multigrid rates but not good ones
 
