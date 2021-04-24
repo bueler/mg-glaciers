@@ -9,6 +9,7 @@
 import sys
 import numpy as np
 from domain import bdryids
+from profile import profile, profiledefaults
 from firedrake import *
 
 # Regarding element choice:  The first three are Taylor-Hood, while the last
@@ -26,36 +27,80 @@ Consider adding options -s_snes_converged_reason, -s_snes_monitor,
     formatter_class=argparse.RawTextHelpFormatter,
     add_help=False)
     adda = parser.add_argument
-    adda('-solvehelp', action='store_true', default=False,
-         help='print help for solve.py options and stop')
     adda('-elements', metavar='X', default='P2P1', choices=mixFEchoices,
          help='mixed finite element: %s (default=P2P1)' \
               % (','.join(mixFEchoices)))
+    adda('-extrude', action='store_true', default=False,
+         help='benerate the profile mesh by extrusion (vs reading from file)')
     adda('-mesh', metavar='FILE.msh', default='',
          help='input file name')
+    adda('-mx', type=int, metavar='MX', default=10,
+         help='number of subintervals (applies with -extrude)')
+    adda('-mz', type=int, metavar='MZ', default=3,
+         help='number of levels (applies with -extrude)')
     adda('-o', metavar='FILE.pvd', default='',
          help='output file name')
-    adda('-refine', type=float, default=1.0, metavar='X',
-         help='refine resolution by this factor (default=1)')
+    adda('-profile_H', type=float, metavar='X',
+         default=profiledefaults['H'],
+         help='dome height (applies with -extrude)')
+    adda('-profile_R', type=float, metavar='X',
+         default=profiledefaults['R'],
+         help='dome radius (applies with -extrude)')
+    #adda('-refine', type=float, default=1.0, metavar='X',
+    #     help='refine resolution by this factor (default=1)')
+    adda('-solvehelp', action='store_true', default=False,
+         help='print help for solve.py options and stop')
     args, unknown = parser.parse_known_args()
+    if len(args.mesh) > 0 and args.extrude:
+        print('usage ERROR: use either -extrude or -mesh FILE but not both',
+              end='\n\n')
+        sys.exit(1)
     if args.solvehelp:
         parser.print_help()
         sys.exit(0)
     return args
 
-def printpar(thestr, comm=COMM_WORLD, indent=0):
+def printpar(thestr, comm=COMM_WORLD, indent=0, end='\n'):
     spaces = indent * '  '
-    PETSc.Sys.Print('%s%s' % (spaces, thestr), comm=comm)
+    PETSc.Sys.Print('%s%s' % (spaces, thestr), comm=comm, end=end)
 
-def describe(thismesh, indent=0):
+def extend(mesh, f):
+    '''On an extruded mesh extend a function f(x,z), already defined on the
+    base mesh, to the mesh using the 'R' constant-in-the-vertical space.'''
+    Q1R = FunctionSpace(mesh, 'P', 1, vfamily='R', vdegree=0)
+    fextend = Function(Q1R)
+    fextend.dat.data[:] = f.dat.data_ro[:]
+    return fextend
+
+def extrudeprofile(mx, mz, L=None, xc=None, H=None, R=None):
+    '''Set up base mesh of intervals on [0,L] and extrude to a profile of
+    a dome as a 2D mesh in (x,z).'''
+    # create extruded mesh with temporary height
+    base_mesh = IntervalMesh(mx, length_or_left=0.0, right=L)
+    mesh = ExtrudedMesh(base_mesh, layers=mz, layer_height=1.0/mz)
+    x, z = SpatialCoordinate(mesh)
+    # correct the height to equal the profile
+    xbase = base_mesh.coordinates.dat.data_ro
+    P1base = FunctionSpace(base_mesh,'P',1)
+    zz = Function(P1base)
+    zz.dat.data[:] = profile(xbase, xc=xc, R=R, H=H)
+    Vcoord = mesh.coordinates.function_space()
+    XZ = Function(Vcoord).interpolate(as_vector([x, extend(mesh, zz) * z]))
+    mesh.coordinates.assign(XZ)
+    return mesh
+
+def describe(thismesh, extruded=False, mz=None, indent=0):
+    if extruded:
+        printpar('extruded mesh of %d levels over base ' % mz, end='')
     if thismesh.comm.size == 1:
-        printpar('mesh has %d elements and %d vertices' \
+        printpar('mesh with %d elements and %d vertices' \
                  % (thismesh.num_cells(),thismesh.num_vertices()),
                  indent=indent)
     else:
-        PETSc.Sys.syncPrint('rank %d owns %d elements and can access %d vertices' \
-                            % (thismesh.comm.rank,thismesh.num_cells(),thismesh.num_vertices()),
-                            comm=thismesh.comm)
+        str = 'mesh: rank %d owns %d elements and can access %d vertices' \
+              % (thismesh.comm.rank, thismesh.num_cells(),
+                 thismesh.num_vertices())
+        PETSc.Sys.syncPrint(str, comm=thismesh.comm)
         PETSc.Sys.syncFlush(comm=thismesh.comm)
 
 def create_mixed_space(mesh,mixedtype):
@@ -132,7 +177,14 @@ def weakform(mesh):
           - p * div(v) - div(u) * q - inner(f_body, v) ) * dx
 
     noslip = Constant((0.0, 0.0))
-    bcs = [ DirichletBC(Z.sub(0), noslip, bdryids['base']) ]
+    if bdryids is not None:
+        # Gmsh case: u=0 on base
+        bcs = [ DirichletBC(Z.sub(0), noslip, bdryids['base']) ]
+    else:
+        # extruded case: u=0 on base and degenerate ends
+        bcs = [ DirichletBC(Z.sub(0), noslip, 'bottom'),
+                DirichletBC(Z.sub(0), noslip, 1),
+                DirichletBC(Z.sub(0), noslip, 2)]
     return up, F, bcs
 
 SchurDirect = {"ksp_type": "fgmres",  # or "gmres" or "minres"
@@ -148,9 +200,14 @@ SchurDirect = {"ksp_type": "fgmres",  # or "gmres" or "minres"
 
 if __name__ == "__main__":
     args = processopts()
-    printpar('reading mesh from %s ...' % args.mesh)
-    mesh = Mesh(args.mesh)
-    describe(mesh)
+    if args.extrude:
+        R = args.profile_R
+        mesh = extrudeprofile(args.mx, args.mz, L=2.0*R, xc=R, R=R, H=args.profile_H)
+        bdryids = None
+    else:
+        printpar('reading mesh from %s ...' % args.mesh)
+        mesh = Mesh(args.mesh)
+    describe(mesh, extruded=args.extrude, mz=args.mz)
     up, F, bcs = weakform(mesh)
     printpar('solving ...')
     params = SchurDirect

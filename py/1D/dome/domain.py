@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # (C) 2021 Ed Bueler
 
-import numpy as np
+from profile import profile, profiledefaults
 
 # numbering of parts of boundary; also used in solve.py
 bdryids = {'top'     : 41,
@@ -17,33 +17,19 @@ for the profile of a dome:
 Then run solve.py to solve the Stokes problem.''',
       formatter_class=argparse.RawTextHelpFormatter)
     adda = parser.add_argument
-    adda('-H0', type=float, default=1000.0, metavar='X',
-         help='dome height (default=1000 m)')
+    adda('-H', type=float, metavar='X',
+         default=profiledefaults['H'],
+         help='dome height')
     adda('-hratio', type=float, default=0.6, metavar='X',
-         help='mesh spacing from formula: lc=hratio*(2R0)/N  (default=0.6)')
-    adda('-N', type=int, default=10, metavar='N',
-         help='number of subintervals for dome top (default=10)')
+         help='mesh spacing from formula: lc=hratio*(2R)/mx  (default=0.6)')
+    adda('-mx', type=int, default=10, metavar='MX',
+         help='number of subintervals (default=10)')
     adda('-o', metavar='FILE.geo', default='dome.geo',
          help='output file name (default=dome.geo)')
-    adda('-R0', type=float, default=10000.0, metavar='X',
-         help='dome radius (default=10 km)')
+    adda('-R', type=float, metavar='X',
+         default=profiledefaults['R'],
+         help='dome radius')
     return parser.parse_args()
-
-def profile(x, xc=None, R=None, H=None):
-    '''Exact solution (Bueler profile) with half-length (radius) R and
-    maximum height H, on the interval [0,L] = [0,2R], centered at xc.
-    See van der Veen (2013) equation (5.50).  Assumes x is a numpy array.'''
-    n = 3.0                       # glen exponent
-    p1 = n / (2.0 * n + 2.0)      # e.g. 3/8
-    q1 = 1.0 + 1.0 / n            #      4/3
-    Z = H / (n - 1.0)**p1         # outer constant
-    X = (x - xc) / R              # rescaled coord
-    Xin = abs(X[abs(X) < 1.0])    # rescaled distance from center
-    Yin = 1.0 - Xin
-    s = np.zeros(np.shape(x))     # correct outside ice
-    s[abs(X) < 1.0] = Z * ( (n + 1.0) * Xin - 1.0 \
-                            + n * Yin**q1 - n * Xin**q1 )**p1
-    return s
 
 def writegeometry(geo,xtop,ytop):
     '''Write a .geo file which saves the profile geometry.  Boundary
@@ -89,6 +75,7 @@ def writegeometry(geo,xtop,ytop):
 if __name__ == "__main__":
     from datetime import datetime
     import sys, platform, subprocess
+    import numpy as np
     # record command-line and date for creation info
     args = processopts()
     commandline = " ".join(sys.argv[:])  # for save in comment in generated .geo
@@ -99,12 +86,13 @@ if __name__ == "__main__":
     geo.write('// geometry-description file created %s by %s\n' \
               % (now,platform.node()) )
     geo.write('// using command: %s\n\n' % commandline)
-    xtop = np.linspace(0.0, 2.0 * args.R0, args.N + 1)
-    ytop = profile(xtop, xc=args.R0, R=args.R0, H=args.H0)
+    L = 2.0 * args.R
+    xtop = np.linspace(0.0, L, args.mx + 1)
+    ytop = profile(xtop, xc=args.R, R=args.R, H=args.H)
     # set "characteristic lengths" which are used by gmsh to generate triangles
-    lc = args.hratio * (2.0 * args.R0) / args.N
-    print('setting target mesh size of h=%g m for N=%d subintervals' \
-          % (lc,args.N))
+    lc = args.hratio * (2.0 * args.R) / args.mx
+    print('setting target mesh size of h=%g m for mx=%d subintervals' \
+          % (lc, args.mx))
     geo.write('lc = %f;\n' % lc)
     # create the rest of the file
     writegeometry(geo,xtop,ytop)
