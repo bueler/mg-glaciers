@@ -1,10 +1,33 @@
 #!/usr/bin/env python3
 # (C) 2021 Ed Bueler
 
-# Create a .geo for use with mccarthy/stokes/flow.py
-
 import numpy as np
-import matplotlib.pyplot as plt
+
+# numbering of parts of boundary; also used in domesolve.py
+bdryids = {'top'     : 41,
+           'base'    : 42}
+
+def processopts():
+    import argparse
+    parser = argparse.ArgumentParser(description=
+    '''Generate .geo geometry-description file, suitable for meshing by Gmsh,
+for the profile of a dome:
+  $ ./domedomain.py -o dome.geo
+  $ gmsh -2 dome.geo
+Then run domesolve.py to solve the Stokes problem.''',
+      formatter_class=argparse.RawTextHelpFormatter)
+    adda = parser.add_argument
+    adda('-H0', type=float, default=1000.0, metavar='X',
+         help='dome height (default=1000 m)')
+    adda('-hratio', type=float, default=0.6, metavar='X',
+         help='mesh spacing from formula: lc=hratio*(2R0)/N  (default=0.6)')
+    adda('-N', type=int, default=10, metavar='N',
+         help='number of subintervals for dome top (default=10)')
+    adda('-o', metavar='FILE.geo', default='dome.geo',
+         help='output file name (default=dome.geo)')
+    adda('-R0', type=float, default=10000.0, metavar='X',
+         help='dome radius (default=10 km)')
+    return parser.parse_args()
 
 def profile(x, xc=None, R=None, H=None):
     '''Exact solution (Bueler profile) with half-length (radius) R and
@@ -21,10 +44,6 @@ def profile(x, xc=None, R=None, H=None):
     s[abs(X) < 1.0] = Z * ( (n + 1.0) * Xin - 1.0 \
                             + n * Yin**q1 - n * Xin**q1 )**p1
     return s
-
-# numbering of parts of boundary (same as in domain.py; used in flow.py)
-bdryids = {'top'     : 42,
-           'base'    : 44}
 
 def writegeometry(geo,xtop,ytop):
     '''Write a .geo file which saves the profile geometry.  Boundary
@@ -66,26 +85,6 @@ def writegeometry(geo,xtop,ytop):
     # ensure all interior elements are written ... NEEDED!
     geo.write('Physical Surface(%d) = {%d};\n' % \
               (surfacestart + 1, surfacestart))
-
-def processopts():
-    import argparse
-    parser = argparse.ArgumentParser(description=
-    '''Generate .geo geometry-description file, suitable for meshing by Gmsh,
-    for the profile of a dome.''')
-    adda = parser.add_argument
-    adda('-H0', type=float, default=1500.0, metavar='X',
-         help='dome height (default=1500 m)')
-    adda('-hratio', type=float, default=0.6, metavar='X',
-         help='mesh spacing from formula: lc=hratio*(2R0)/N  (default=0.6)')
-    adda('-N', type=int, default=10, metavar='N',
-         help='number of subintervals (default=10)')
-    adda('-o', metavar='FILE.geo', default='dome.geo',
-         help='output file name (default=dome.geo)')
-    adda('-R0', type=float, default=5000.0, metavar='X',
-         help='dome radius (default=5000 m)')
-    adda('-refine', type=float, default=1.0, metavar='X',
-         help='refine resolution by this factor (default=1)')
-    return parser.parse_args()
 
 if __name__ == "__main__":
     from datetime import datetime
