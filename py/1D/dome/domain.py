@@ -86,14 +86,13 @@ if __name__ == "__main__":
     geo.write('// geometry-description file created %s by %s\n' \
               % (now,platform.node()) )
     geo.write('// using command: %s\n\n' % commandline)
-    L = 2.0 * args.R
-    xtop = np.linspace(0.0, L, args.mx + 1)
-    ytop = profile(xtop, xc=args.R, R=args.R, H=args.H)
+    # 1D arrays for profile
+    x, ytop = profile(args.mx, R=args.R, H=args.H)
     # set "characteristic lengths" which are used by gmsh to generate triangles
     lc = args.hratio * (2.0 * args.R) / args.mx
     print('setting target mesh size of h=%g m for mx=%d subintervals' \
           % (lc, args.mx))
     geo.write('lc = %f;\n' % lc)
     # create the rest of the file
-    writegeometry(geo,xtop,ytop)
+    writegeometry(geo, x, ytop)
     geo.close()

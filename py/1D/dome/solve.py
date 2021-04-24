@@ -83,7 +83,7 @@ def extrudeprofile(mx, mz, L=None, xc=None, H=None, R=None):
     xbase = base_mesh.coordinates.dat.data_ro
     P1base = FunctionSpace(base_mesh,'P',1)
     zz = Function(P1base)
-    zz.dat.data[:] = profile(xbase, xc=xc, R=R, H=H)
+    _, zz.dat.data[:] = profile(mx, R=R, H=H)
     Vcoord = mesh.coordinates.function_space()
     XZ = Function(Vcoord).interpolate(as_vector([x, extend(mesh, zz) * z]))
     mesh.coordinates.assign(XZ)
