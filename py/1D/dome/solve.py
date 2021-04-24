@@ -1,28 +1,33 @@
 #!/usr/bin/env python3
 # (C) 2021 Ed Bueler
 
+# TODO:
+#   * use extruded mesh
+#   * add other solver packages from mccarthy/stokes/momentummodel.py
+#   * use extruded mesh and padding at either side, but with InteriorBC
+
 import sys
 import numpy as np
-import matplotlib.pyplot as plt
-from domedomain import bdryids
+from domain import bdryids
 from firedrake import *
 
-mixFEchoices = ['P2P1','P3P2','P2P0','CRP0','P1P0']
-secpera = 31556926.0    # seconds per year
+# Regarding element choice:  The first three are Taylor-Hood, while the last
+# three are not recommended!  Of the TH, P2P1 is fastest and P4P3 slowest.
+mixFEchoices = ['P2P1','P3P2','P4P3','P2dP0','CRdP0','P1dP0']
 
 def processopts():
     import argparse
     parser = argparse.ArgumentParser(description=
     '''Solve the Glen-Stokes momentum equations for a 2D ice sheet.  First
-generate a .msh file, e.g. dome.msh, by using domedomain.py.  Then do:
-  $ ./domesolve.py -mesh dome.msh
+generate a .msh file, e.g. dome.msh, by using domain.py.  Then do:
+  $ ./solve.py -mesh dome.msh
 Consider adding options -s_snes_converged_reason, -s_snes_monitor,
 -s_ksp_converged_reason, -s_snes_rtol, etc. to monitor and control the run.''',
     formatter_class=argparse.RawTextHelpFormatter,
     add_help=False)
     adda = parser.add_argument
-    adda('-domesolvehelp', action='store_true', default=False,
-         help='print help for domesolve.py options and stop')
+    adda('-solvehelp', action='store_true', default=False,
+         help='print help for solve.py options and stop')
     adda('-elements', metavar='X', default='P2P1', choices=mixFEchoices,
          help='mixed finite element: %s (default=P2P1)' \
               % (','.join(mixFEchoices)))
@@ -33,7 +38,7 @@ Consider adding options -s_snes_converged_reason, -s_snes_monitor,
     adda('-refine', type=float, default=1.0, metavar='X',
          help='refine resolution by this factor (default=1)')
     args, unknown = parser.parse_known_args()
-    if args.domesolvehelp:
+    if args.solvehelp:
         parser.print_help()
         sys.exit(0)
     return args
@@ -60,13 +65,16 @@ def create_mixed_space(mesh,mixedtype):
     elif mixedtype == 'P3P2': # Taylor-Hood
         V = VectorFunctionSpace(mesh, 'CG', 3)
         W = FunctionSpace(mesh, 'CG', 2)
-    elif mixedtype == 'P2P0':
+    elif mixedtype == 'P4P3': # Taylor-Hood
+        V = VectorFunctionSpace(mesh, 'CG', 4)
+        W = FunctionSpace(mesh, 'CG', 3)
+    elif mixedtype == 'P2dP0':
         V = VectorFunctionSpace(mesh, 'CG', 2)
         W = FunctionSpace(mesh, 'DG', 0)
-    elif mixedtype == 'CRP0':
+    elif mixedtype == 'CRdP0':
         V = VectorFunctionSpace(mesh, 'CR', 1)
         W = FunctionSpace(mesh, 'DG', 0)
-    elif mixedtype == 'P1P0': # interesting but not recommended
+    elif mixedtype == 'P1dP0':
         V = VectorFunctionSpace(mesh, 'CG', 1)
         W = FunctionSpace(mesh, 'DG', 0)
     else:
@@ -95,6 +103,8 @@ def solutionstats(mesh, u, p):
 
 def D(U):    # strain-rate tensor from velocity U
     return 0.5 * (grad(U) + grad(U).T)
+
+secpera = 31556926.0    # seconds per year
 
 def weakform(mesh):
     # physical constants

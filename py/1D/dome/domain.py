@@ -3,7 +3,7 @@
 
 import numpy as np
 
-# numbering of parts of boundary; also used in domesolve.py
+# numbering of parts of boundary; also used in solve.py
 bdryids = {'top'     : 41,
            'base'    : 42}
 
@@ -12,9 +12,9 @@ def processopts():
     parser = argparse.ArgumentParser(description=
     '''Generate .geo geometry-description file, suitable for meshing by Gmsh,
 for the profile of a dome:
-  $ ./domedomain.py -o dome.geo
+  $ ./domain.py -o dome.geo
   $ gmsh -2 dome.geo
-Then run domesolve.py to solve the Stokes problem.''',
+Then run solve.py to solve the Stokes problem.''',
       formatter_class=argparse.RawTextHelpFormatter)
     adda = parser.add_argument
     adda('-H0', type=float, default=1000.0, metavar='X',
@@ -49,7 +49,7 @@ def writegeometry(geo,xtop,ytop):
     '''Write a .geo file which saves the profile geometry.  Boundary
     order starts with (0.0,0.0), then does the base, then does the top,
     so boundary is traversed clockwise.'''
-    # points
+    # points on top
     offset = 51
     ntop = len(xtop)
     geo.write('Point(%d) = {%f,%f,0,lc};\n' % (offset, 0.0, 0.0))
