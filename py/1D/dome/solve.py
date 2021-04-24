@@ -2,9 +2,7 @@
 # (C) 2021 Ed Bueler
 
 # TODO:
-#   * use extruded mesh
 #   * add other solver packages from mccarthy/stokes/momentummodel.py
-#   * use extruded mesh and padding at either side, but with InteriorBC
 
 import sys
 import numpy as np
@@ -12,9 +10,10 @@ from domain import bdryids
 from profile import profile, profiledefaults
 from firedrake import *
 
-# Regarding element choice:  The first three are Taylor-Hood, while the last
-# three are not recommended!  Of the TH, P2P1 is fastest and P4P3 slowest.
-mixFEchoices = ['P2P1','P3P2','P4P3','P2dP0','CRdP0','P1dP0']
+# Regarding element choice:  The first four are recommended.  The first three
+# are Taylor-Hood.  Of the TH, P2P1 is fastest and P4P3 slowest.  The last
+# three exhibit visible instability on coarser meshes.  CRdP0
+mixFEchoices = ['P2P1','P3P2','P4P3','P2dP1','P2dP0','CRdP0','P1dP0']
 
 def processopts():
     import argparse
@@ -52,9 +51,11 @@ Consider adding options -s_snes_converged_reason, -s_snes_monitor,
          help='print help for solve.py options and stop')
     args, unknown = parser.parse_known_args()
     if len(args.mesh) > 0 and args.extrude:
-        print('usage ERROR: use either -extrude or -mesh FILE but not both',
-              end='\n\n')
+        print('usage ERROR: use either -extrude or -mesh FILE but not both')
         sys.exit(1)
+    if args.elements == 'CRdP0' and args.extrude:
+        print('usage ERROR: unsupported element type with -extrude')
+        sys.exit(2)
     if args.solvehelp:
         parser.print_help()
         sys.exit(0)
@@ -103,7 +104,7 @@ def describe(thismesh, extruded=False, mz=None, indent=0):
         PETSc.Sys.syncPrint(str, comm=thismesh.comm)
         PETSc.Sys.syncFlush(comm=thismesh.comm)
 
-def create_mixed_space(mesh,mixedtype):
+def create_mixed_space(mesh, mixedtype):
     if   mixedtype == 'P2P1': # Taylor-Hood
         V = VectorFunctionSpace(mesh, 'CG', 2)
         W = FunctionSpace(mesh, 'CG', 1)
@@ -113,6 +114,12 @@ def create_mixed_space(mesh,mixedtype):
     elif mixedtype == 'P4P3': # Taylor-Hood
         V = VectorFunctionSpace(mesh, 'CG', 4)
         W = FunctionSpace(mesh, 'CG', 3)
+    elif mixedtype == 'P2dP1':
+        V = VectorFunctionSpace(mesh, 'CG', 2)
+        if args.extrude:
+            W = FunctionSpace(mesh, 'DQ', 1)
+        else:
+            W = FunctionSpace(mesh, 'DG', 1)
     elif mixedtype == 'P2dP0':
         V = VectorFunctionSpace(mesh, 'CG', 2)
         W = FunctionSpace(mesh, 'DG', 0)
