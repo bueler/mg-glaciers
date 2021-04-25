@@ -168,15 +168,15 @@ def weakform(mesh):
     eps = 0.01
     Dtyp = 2.0 / secpera    # s-1
 
-    # define body force and ice hardness
+    # body force
     f_body = Constant((0.0, - rho * g))
 
-    # create function spaces and 
+    # function spaces
     _, _, Z = create_mixed_space(mesh, args.elements)
     up = Function(Z)
     u,p = split(up)  # get component ufl expressions to define form
 
-    # define the nonlinear weak form F(u,p;v,q)
+    # nonlinear weak form F(u,p;v,q)
     v,q = TestFunctions(Z)
     Du2 = 0.5 * inner(D(u), D(u)) + (eps * Dtyp)**2.0
     rr = 1.0 / n_glen - 1.0
