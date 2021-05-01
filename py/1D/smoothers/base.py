@@ -13,8 +13,6 @@ class SmootherObstacleProblem(ABC):
         self.args = args
         self.admissibleeps = admissibleeps
         self.inadmissible = 0  # count of repaired admissibility violations
-        # fix the random seed for repeatability
-        np.random.seed(self.args.randomseed)
         self.name = 'base'
 
     def _checkrepairadmissible(self, mesh, w, phi):

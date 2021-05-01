@@ -14,6 +14,8 @@ class PsmootherPoisson(SmootherObstacleProblem):
 
     def __init__(self, args, admissibleeps=1.0e-10):
         super().__init__(args, admissibleeps=admissibleeps)
+        # fix the random seed for repeatability
+        np.random.seed(self.args.randomseed)
         if self.args.poissoncase == 'pde2':
             self.alpha = _pde2alpha
         else:
