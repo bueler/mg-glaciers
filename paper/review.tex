@@ -116,7 +116,7 @@ FIXME cite for multigrid on classical obstacle \cite{BrandtCryer1983,Bueler2021,
 A brief historical summary of the SIA problem may be helpful.  The model was first solved by a finite difference scheme in \cite{Mahaffy1976}, and FE solutions are given in \cite{Calvoetal2002,JouvetBueler2012} among other places.  In fact, large-scale numerical applications of this model are common, and for examples see the high-resolution Greenland ice sheet model in section 4.2 of \cite{Bueler2016}, or the SIA applications as hybrid ice sheet model components \cite[for example]{Winkelmannetal2011}.  The idea that the glacier geometry solves an obstacle problem was introduced by \cite{Calvoetal2002} in the time-dependent, flat-bed case.  Existence was extended to non-flat beds by \cite{JouvetBueler2012}.  However, none of these references use multilevel methods.  Such methods were first applied by Jouvet and others \cite{Jouvetetal2013}, with further results in \cite{JouvetGraeser2013}, using a truncated non-smooth Newton multigrid method which tracks the inactive set \cite{GraeserKornhuber2009}.
 
 
-\section{Geometric multigrid for a Poisson problem} \label{sec:subspace}
+\section{Geometric multigrid for the Poisson problem} \label{sec:subspace}
 
 \subsection{Finite elements for a simple differential equation} \label{subsec:poissonfe}  In this section we will consider how to solve a simple differential equation, namely a linear Poisson-like problem
 \begin{equation}
@@ -357,13 +357,13 @@ Note that the user needs to provide an initial iterate $w^J$ on the fine level.
 
 Such simply-stated MSC schemes appeared late in the history of multigrid \cite{Xu1992}, but they contain the core multigrid ideas and consequent performance.  The following theorem applies to linear elliptic PDEs in any dimension, if defined by a symmetric and positive bilinear form.
 
-\begin{theorem} \label{thm:mscconvergence}  Let $u^h$ be the exact solution of FE weak form \eqref{eq:feweakpoisson}.  Suppose $w^{(s)}$ is computed by from $s$ applications of \pr{msc-downslash}, \pr{msc-upslash}, or \pr{msc-vcycle} on the fine ($J$th) level, starting with any $w^{(0)}$.  There is $\rho<1$, independent of $h$, so that
+\begin{theorem} \label{thm:mscconvergence} \cite{Neuss1998}\,  Let $u^h$ be the exact solution of FE weak form \eqref{eq:feweakpoisson}.  Suppose $w^{(s)}$ is computed by from $s$ applications of \pr{msc-downslash}, \pr{msc-upslash}, or \pr{msc-vcycle} on the fine ($J$th) level, starting with any $w^{(0)}$.  There is $\rho<1$, independent of $h$, so that
 \begin{equation}
   \|w^{(s+1)} - u^h\|_{\mathcal{H}} \le \rho \|w^{(s)} - u^h\|_{\mathcal{H}}.  \label{eq:mscconvergence}
 \end{equation}
 \end{theorem}
 
-Each cycle therefore reduces the error by a mesh-independent factor $\rho<1$, called the \emph{multigrid convergence rate} \cite{Braess2007}.  The proof, by \cite{Neuss1998}, extends an earlier Jacobi smoothing result \cite{BraessHackbusch1983} to include GS smoothing; see also \cite[Thm.~3.10]{GraeserKornhuber2009}.  The convergence rate $\rho$ does not depend on the fine-mesh spacing $h$, nor on the number of fine-mesh degrees of freedom $m_J$, nor even the number of levels $J$.  It does depend on the element aspect ratios (\emph{shape regularity} \cite{Elmanetal2014}) in the mesh, though this is not relevant in 1D, and on the \emph{ellipticity bound} $\alpha_0=\inf_x \alpha(x)$ of the PDE.  It is common for a V-cycle to have a smaller $\rho$ than a slash cycle, but the latter do less work per cycle, so in section \ref{sec:obstacle}, when we present computational results, we will count computational work and run time, and not just cycles.
+Each cycle therefore reduces the error by a mesh-independent factor $\rho<1$, called the \emph{multigrid convergence rate} \cite{Braess2007}.  The proof extends an earlier Jacobi smoothing result \cite{BraessHackbusch1983} to include GS smoothing; see also \cite[Thm.~3.10]{GraeserKornhuber2009}.  The convergence rate $\rho$ does not depend on the fine-mesh spacing $h$, nor on the number of fine-mesh degrees of freedom $m_J$, nor even the number of levels $J$.  It does depend on the element aspect ratios (\emph{shape regularity} \cite{Elmanetal2014}) in the mesh, though this is not relevant in 1D, and on the \emph{ellipticity bound} $\alpha_0=\inf_x \alpha(x)$ of the PDE.  It is common for a V-cycle to have a smaller $\rho$ than a slash cycle, but the latter do less work per cycle, so in section \ref{sec:obstacle}, when we present computational results, we will compare computational work and run time and not just cycles.
 
 It follows from \eqref{eq:mscconvergence} that if we want the error norm $e^{(s)} = \|w^{(s)}-u^h\|_{\mathcal{H}}$ to be reduced to below some small level $\eps>0$ then we should do $s>(\log\eps - \log e^{(0)})/\log \rho$ iterations.  That is, we need $s=O(|\log\eps|)$ iterations.  (Note that $h$ and $J$ are related by logarithms; in our case $h=(m_J+1)^{-1}=2^{-(J+1)}$ so $J = O(\log m_J) = O(|\log h|)$.)  On the other hand, the error norms in \eqref{eq:mscconvergence} are not generally computable.  An error norm is, however, bounded by the computable residual norm up to a (mesh-dependent) matrix condition number \cite[Chapter 2]{Bueler2016}.
 
@@ -493,9 +493,9 @@ We have now presented a basic GMG algorithm for linear PDEs via a particular FE 
 
 \section{Multilevel constraint decomposition (MCD) for the classical obstacle problem} \label{sec:obstacle}
 
-\subsection{An ice-like model problem} \label{subsec:obstacleproblem}  We now have a clear view of the GMG method, for a linear equation and from the MSC point of view.  However, as addressed in section \ref{sec:intro}, the main problem of how glacier geometry and ice velocity co-evolve in response to climatic inputs requires an inequality constraint for well-posedness.  The fact that the ice surface elevation is above the bed generates the land-terminating mass-conservation boundary condition.  This constraint, by itself, makes the problem nonlinear and reduces solution regularity, making it challenging to numerical methods.
+\subsection{An ice-like model problem} \label{subsec:obstacleproblem}  We now have a clear view of a multigrid method for a linear equation and from the MSC point of view.  However, as addressed in the Introduction, the main problem of how glacier geometry and ice velocity co-evolve in response to climatic inputs requires an inequality constraint for well-posedness.  This constraint, the fact that the ice surface elevation is above the bed, which generates the land-terminating mass-conservation boundary condition, both makes the problem nonlinear and reduces solution regularity.
 
-To address such constraints in a multilevel framework, and before actually modeling glaciers in section \ref{sec:sia}, we introduce the \emph{classical obstacle problem}.  It simply adds an inequality constraint to linear Poisson equation \eqref{eq:poisson}.  After stating the weak form, which is now solved over a convex \emph{subset} of the function space, we will modify the MSC approach into the \emph{multilevel constraint decomposition} (MCD) method.  Each mesh level will host an inequality-constrained problem, and together all the levels will capture the constraint subset.  The nonlinear SIA model (section \ref{sec:sia}) and the Stokes model (section \ref{sec:stokes}) will use a nonlinear extension of the MCD method.
+To incorporate such inequality constraints into a multilevel framework, and before actually modeling glaciers in section \ref{sec:sia}, we introduce the \emph{classical obstacle problem}, which simply adds an inequality constraint to linear Poisson equation \eqref{eq:poisson}.  After stating the weak form, which is now solved over a convex \emph{subset} of the function space, we will modify the MSC approach into the \emph{multilevel constraint decomposition} (MCD) method.  Each mesh level will host an inequality-constrained problem, and together all the levels will capture the fine-level constraint subset.  The nonlinear SIA model (section \ref{sec:sia}) and the Stokes model (section \ref{sec:stokes}) will use a nonlinear extension of the MCD method.
 
 Consider the same 1D domain and solution space $\mathcal{H}=H_0^1[0,1]$ as before.  Let $\varphi(x)$ be a fixed function, the obstacle, from $\mathcal{H}$.  The strong form of the classical obstacle problem is the following \emph{complementarity problem} (CP) \cite{Bueler2021,KinderlehrerStampacchia1980} which says that the solution $u(x)$ is above $\varphi(x)$ \emph{and} that a differential equation applies whereever $u$ is strictly above $\varphi$:
 \begin{align}
@@ -503,16 +503,14 @@ Consider the same 1D domain and solution space $\mathcal{H}=H_0^1[0,1]$ as befor
   -(\alpha u')'-f &\ge 0 \notag \\
   (u-\varphi)(-(\alpha u')'-f) &= 0 \notag
 \end{align}
-The third condition, \emph{complementarity} itself, implies that for each $x$ in $[0,1]$ the solution either coincides with the obstacle ($u(x)=\varphi(x)$) or PDE \eqref{eq:poisson} holds.  (Both facts can hold at $x$, but in the generic \emph{nondegenerate} \cite{KinderlehrerStampacchia1980} case the obstacle does not itself solve the PDE.)
+The third condition, \emph{complementarity} itself, says that for each $x$ in $[0,1]$ the solution either coincides with the obstacle ($u(x)=\varphi(x)$) or PDE \eqref{eq:poisson} holds.  (Both facts can hold at $x$, but in the generic \emph{nondegenerate} case the obstacle does not itself solve the PDE.)  In the $u=\varphi$ region the constraint is said to be \emph{active}, while \eqref{eq:poisson} holds in the \emph{inactive} portion where $u>\varphi$.  One refers to PDE \eqref{eq:poisson} as the \emph{interior condition} of the CP.  Note that in the active region the source term is bounded above, $u=\varphi \implies f \le -(\alpha\varphi')'$, but the corresponding statement does \emph{not} hold for the glacier problems in sections \ref{sec:sia} and \ref{sec:stokes}.
 
-In the $u=\varphi$ region the constraint is said to be \emph{active}, while \eqref{eq:poisson} holds in the \emph{inactive} portion where $u>\varphi$.  One refers to PDE \eqref{eq:poisson} as the \emph{interior condition} of the CP \cite{KinderlehrerStampacchia1980}.  Note that in the active region the source term is bounded above, $u=\varphi \implies f \le -(\alpha\varphi')'$, but the corresponding statement does \emph{not} hold for the glacier problems in sections \ref{sec:sia} and \ref{sec:stokes}.
-
-Simply by choosing a source term $f(x)$ which is positive in the middle of the domain and negative near the boundaries, we create an ``ice-like'' solution to \eqref{eq:obstaclecp}.  For example, Figure \ref{fig:icelike} (top) shows the exact, piecewise-quadratic solution $u(x)$ for the following data:
+By choosing a source term $f(x)$ which is positive in the middle of the domain and negative near the boundaries we create an ``ice-like'' solution to \eqref{eq:obstaclecp}.  Figure \ref{fig:icelike} (top) shows such an exact solution $u(x)$, for the following data:
 \begin{equation}
 \varphi(x) = x(1-x), \quad \alpha(x)=1, \quad f(x) = \begin{cases} 8, & 0.2 < x < 0.8, \\
                                                                  -16, & x<0.2 \text{ or } x>0.8. \end{cases}  \label{eq:icelikedetails}
 \end{equation}
-(Note that $f$ is in $L^2[0,1]$ and is defined almost everywhere.)  Finding the exact formula for $u(x)$, which smoothly-connects five quadratic pieces, is an exercise for the reader.\footnote{Solution in\, \href{https://github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}{\texttt{github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}}.}  The bottom Figure shows a more typical solution for illustrating obstacle problems \cite[for example]{Bueler2021,Tai2003}.
+Finding the exact formula for $u(x)$, which smoothly-connects five quadratic pieces, is an exercise for the reader.\footnote{Solved in\, \href{https://github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}{\texttt{github.com/bueler/mg-glaciers/blob/master/py/obstacle.py}}.}  The bottom part of Figure \ref{fig:icelike} shows a more typical textbook solution of an obstacle problem.
 
 % regenerate:
 %   $ cd py/1D/
@@ -531,7 +529,7 @@ Simply by choosing a source term $f(x)$ which is positive in the middle of the d
 \label{fig:icelike}
 \end{figure}
 
-Unlike problem \eqref{eq:poisson}, the solution to \eqref{eq:obstaclecp} does \emph{not} depend linearly on the source function $f$.  For example, if $f \le 0$ and the obstacle is concave-down ($\varphi'' \le 0$) then the solution is $u=\varphi$.  (By the maximum principle \cite{Evans2010} there are no inactive points in this case.)  In such a case, if $\tilde u$ solves the problem for $\tilde f$ then $2\tilde u$ does not solve the problem for source term $2\tilde f$.  In this sense the classical obstacle problem is nonlinear even though its interior condition PDE is linear.
+The solution to \eqref{eq:obstaclecp} does \emph{not} depend linearly on the source function $f$.  For example, if $f \le 0$ and the obstacle is concave-down ($\varphi'' \le 0$) then the solution is $u=\varphi$.  (By the maximum principle \cite{Evans2010} there are no inactive points in this case.)  In such a case, if $\tilde u$ solves the problem for $\tilde f$ then $2\tilde u$ does not solve the problem for source term $2\tilde f$.  In this sense the classical obstacle problem is nonlinear even though its interior condition PDE \eqref{eq:poisson} is linear.
 
 The glacier problem also has a CP formulation (section \ref{sec:sia}; see also \cite{Calvoetal2002}) in which the obstacle is the bed elevation, the solution is the glacier surface elevation, and the source term is the surface mass balance.  In the inactive region, i.e.~on the glacier, the mass conservation equation applies, and the surface mass balance must be negative in the active region off the glacier.
 
@@ -539,42 +537,40 @@ The glacier problem also has a CP formulation (section \ref{sec:sia}; see also \
 \begin{equation}
 \mathcal{K}_\varphi = \left\{v \ge \varphi\right\} \subseteq \mathcal{H}.  \label{eq:Kdefine}
 \end{equation}
-If $v$ is in $\mathcal{K}_\varphi$ then we say $v$ is \emph{admissible}.  Note $\mathcal{K}_\varphi$ is not a vector space, but it is \emph{convex}, that is, if $v,w$ are in $\mathcal{K}_\varphi$ then any point on the line segment connecting them, $\theta v + (1-\theta) w$ for $0 \le \theta \le 1$, is also in $\mathcal{K}_\varphi$.  One should also observe that $\mathcal{K}_\varphi$ is a \emph{cone} with vertex at $\varphi$.  That is, if $v$ is in $\mathcal{K}_\varphi$ then $\lambda(v-\varphi) + \varphi$ is also in $\mathcal{K}_\varphi$ for any $\lambda \ge 0$; the ray from $\varphi$ through $v$ is in $\mathcal{K}_\varphi$.
+If $v$ is in $\mathcal{K}_\varphi$ then we say $v$ is \emph{admissible}.  Note $\mathcal{K}_\varphi$ is not a vector space, but it is \emph{convex}, that is, if $v,w$ are in $\mathcal{K}_\varphi$ then any point on the line segment connecting them, $\theta v + (1-\theta) w$ for $0 \le \theta \le 1$, is also in $\mathcal{K}_\varphi$.  Furthermore, because the inequality is one-sided, $\mathcal{K}_\varphi$ is a \emph{cone} with vertex at $\varphi$, that is, if $v$ is in $\mathcal{K}_\varphi$ then $\lambda(v-\varphi) + \varphi$ is also in $\mathcal{K}_\varphi$ for any $\lambda \ge 0$; the ray from $\varphi$ through $v$ is in $\mathcal{K}_\varphi$.
 
-Derivation of the weak form involves multiplying the strong form \eqref{eq:obstaclecp} by a test function and integrating by parts.  The inequalities enter into the derivation; see \cite[Chapter 12]{Bueler2021}, \cite{JouvetBueler2012}, or \cite{KinderlehrerStampacchia1980} for details.  The result is a single \emph{variational inequality} (VI),
+Derivation of the weak form involves multiplying the strong form \eqref{eq:obstaclecp} by a test function and integrating by parts.  The inequalities then enter into the derivation (see \cite[Chapter 12]{Bueler2021}, \cite{JouvetBueler2012}, or \cite{KinderlehrerStampacchia1980} for details), and the result is a single \emph{variational inequality} (VI),
 \begin{equation}
   a(u,v-u) \ge \ip{f}{v-u} \quad \text{ for all } v \text{ in } \mathcal{K}_\varphi, \label{eq:obstaclevi}
 \end{equation}
-using the same bilinear form $a$ defined in \eqref{eq:weakpoissonearly}.  Recalling \eqref{eq:residual}, the VI can be restated using the residual functional:
+using the same bilinear form \eqref{eq:weakpoissonearly} for the Poisson equation.  Recalling definition \eqref{eq:residual}, the VI can be restated using a residual functional:
 \begin{equation}
   F(u)[v-u] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}_\varphi. \label{eq:obstacleviresidual}
 \end{equation}
 
-Formulations \eqref{eq:obstaclecp} and \eqref{eq:obstacleviresidual} are equivalent up to the same regularity concerns which relate the strong and weak forms of a PDE.  (See reference \cite{Evans2010} regarding the solution regularity of PDEs, and \cite{KinderlehrerStampacchia1980} for the corresponding VI theory.)  However, some intuition for VIs is needed for understanding the current paper, and so, in an attempt to help, we provide a second weak form.
-
-Inequality \eqref{eq:obstacleviresidual} is equivalent to \emph{constrained minimization} of an \emph{objective} functional $I$:
+Formulations \eqref{eq:obstaclecp} and \eqref{eq:obstacleviresidual} are equivalent up to the same regularity concerns which relate the strong and weak forms of a PDE.  (See reference \cite{Evans2010} regarding the solution regularity of PDEs, and \cite{KinderlehrerStampacchia1980} for the corresponding VI theory.)  However, some intuition for VIs is needed for understanding the current paper, and so, in an attempt to help, we provide a second weak form.  Namely, inequality \eqref{eq:obstacleviresidual} is equivalent to \emph{constrained minimization} of an objective functional $I$:
 \newcommand{\argmin}{\mathop{\mathrm{arg\text{-}min}}}
 \begin{equation}
   u = \argmin_{w \text{ in } \mathcal{K}_\varphi} I(w) \quad \text{where} \quad I(w) = \frac{1}{2} a(w,w) - \ip{f}{w}. \label{eq:obstaclemin}
 \end{equation}
-That is, $u$ is the minimizer, over the constraint set $\mathcal{K}_\varphi$, of the scalar, quadratic, and \emph{coercive} functional $I$.  (Coercive means that $I(w) \to +\infty$ as $\|w\|_{\mathcal{H}} \to \infty$ \cite{Evans2010}.)  Note that the unconstrained minimum of $I(w)$ over $\mathcal{H}$ may lie outside $\mathcal{K}_\varphi$.  See Figure \ref{fig:cartoonplane}.
+That is, $u$ is the minimizer, over the constraint set $\mathcal{K}_\varphi$, of the scalar, quadratic, and \emph{coercive} functional $I$.  (Coercive means that $I(w) \to +\infty$ as $\|w\|_{\mathcal{H}} \to \infty$ \cite{Evans2010}.)  Note that the unconstrained minimum of $I(w)$ over $\mathcal{H}$ may lie outside $\mathcal{K}_\varphi$; see Figure \ref{fig:cartoonplane}.
 
 \begin{figure}
 \includegraphics[width=0.6\textwidth]{genfigs/cartoonplane.pdf}
-\caption{Variational inequality \eqref{eq:obstacleviresidual}, equivalently \eqref{eq:obstaclevigradient}, characterizes the minimum $u$ of $I(w)$ over the shaded convex cone $\mathcal{K}_\varphi=\{v\ge \varphi\} \subset \mathcal{H}$.  Any vector $v-u$, for $v$ in $\mathcal{K}_\varphi$, is within $90^\circ$ of $F(u) = \grad I(u)$.}
+\caption{Variational inequality \eqref{eq:obstacleviresidual}, equivalently \eqref{eq:obstaclevigradient}, characterizes the minimum $u$ of $I(w)$ over the shaded convex cone $\mathcal{K}_\varphi=\{v\ge \varphi\} \subset \mathcal{H}$.  Conceptually speaking, any vector $v-u$, for $v$ in $\mathcal{K}_\varphi$, is within $90^\circ$ of $F(u) = \grad I(u)$.}
 \label{fig:cartoonplane}
 \end{figure}
 
-The (Gateaux) derivative of $I$ is a linear functional in $\mathcal{H}'$:
+The (Gateaux) derivative of $I$ is a linear functional in $\mathcal{H}'$,
 \begin{equation}
-  \grad I(w)[v] = \lim_{\eps\to 0} \frac{I(w+\eps v) - I(w)}{\eps} = a(u,v) - \ip{f}{v}.  \label{eq:gradobjective}
+  \grad I(w)[v] = \lim_{\eps\to 0} \frac{I(w+\eps v) - I(w)}{\eps} = a(u,v) - \ip{f}{v},  \label{eq:gradobjective}
 \end{equation}
-In fact $\nabla I = F$, the residual, so the VI \eqref{eq:obstacleviresidual} can re-stated yet again:
+so in fact $\nabla I = F$.  Thus the VI \eqref{eq:obstacleviresidual} can re-stated as
 \begin{equation}
   \nabla I(u)[v-u] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}_\varphi. \label{eq:obstaclevigradient}
 \end{equation}
 
-Formulation \eqref{eq:obstaclevigradient} permits a clear, geometrical meaning to the VI, as in the Figure.  The solution $u$ sits at a location in $\mathcal{K}_\varphi$, often on the boundary, where any vector pointing into the admissible set, namely $v-u$ for $v$ in $\mathcal{K}_\varphi$, points ``uphill'' on the graph of $I$.  That is, one cannot make minimization progress by moving $u$ to a distinct point $v$ in $\mathcal{K}_\varphi$.  Identifying $\mathcal{H}$ and its dual space $\mathcal{H}'$, one might write \eqref{eq:obstaclevigradient} as ``$\ip{\nabla I(u)}{v-u} \ge 0$'': the angle between $\nabla I(u)$ and $v-u$ is at most 90 degrees.
+Formulation \eqref{eq:obstaclevigradient} permits us to give a clear, geometrical meaning to the VI, as in the Figure.  The solution $u$ sits at a location in $\mathcal{K}_\varphi$, often on the boundary, where any vector pointing into the admissible set, namely $v-u$ for $v$ in $\mathcal{K}_\varphi$, points ``uphill'' on the graph of $I$.  Identifying $\mathcal{H}$ and its dual space $\mathcal{H}'$, one might write \eqref{eq:obstaclevigradient} as $\ip{\nabla I(u)}{v-u} \ge 0$: the angle between $\nabla I(u)$ and $v-u$ is at most 90 degrees in the nontrivial cases where $\nabla I(u)$ is nonzero and thus $u$ is on the boundary of $\mathcal{K}_\varphi$.
 
 The solutions shown in the earlier Figure \ref{fig:icelike} recall what points in $\mathcal{K}_\varphi$ actually are, namely functions on $[0,1]$.  When a solution $u$ coincides with the obstacle $\varphi$ on a part of the domain then $u$ is on the boundary of $\mathcal{K}_\varphi$.  In that case arbitrarily-small perturbations $\delta u$, from $\mathcal{H}$, will put $u+\delta u$ outside of $\mathcal{K}_\varphi$.
 

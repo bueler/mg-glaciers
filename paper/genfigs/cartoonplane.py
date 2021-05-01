@@ -37,7 +37,7 @@ plt.gca().annotate('', xy=(xhat+0.2, yhat+0.2), xytext=(xhat, yhat),
 plt.text(xhat+0.1,yhat+0.05,r'$v-u$',fontsize=fsize)
 plt.gca().annotate('', xy=(xhat, yhat+0.38), xytext=(xhat, yhat),
                    arrowprops=dict(arrowstyle='->, head_length=0.8, head_width=0.5'))
-plt.text(xhat-0.2,yhat+0.21,r'$\nabla I(u)$',fontsize=fsize)
+plt.text(xhat-0.17,yhat+0.21,r'$F(u)$',fontsize=fsize)
 plt.plot(xhat,yc+0.06,'ko',ms=8.0,mfc='w')
 plt.text(xhat+0.05,yc+0.05,'$\it{unconstrained}\,\, \it{minimizer}$',fontsize=12.0)
 ax = plt.gca()
