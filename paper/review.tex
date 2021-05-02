@@ -572,22 +572,22 @@ so in fact $\nabla I = F$.  Thus the VI \eqref{eq:obstacleviresidual} can re-sta
 
 Formulation \eqref{eq:obstaclevigradient} permits us to give a clear, geometrical meaning to the VI, as in the Figure.  The solution $u$ sits at a location in $\mathcal{K}_\varphi$, often on the boundary, where any vector pointing into the admissible set, namely $v-u$ for $v$ in $\mathcal{K}_\varphi$, points ``uphill'' on the graph of $I$.  Identifying $\mathcal{H}$ and its dual space $\mathcal{H}'$, one might write \eqref{eq:obstaclevigradient} as $\ip{\nabla I(u)}{v-u} \ge 0$: the angle between $\nabla I(u)$ and $v-u$ is at most 90 degrees in the nontrivial cases where $\nabla I(u)$ is nonzero and thus $u$ is on the boundary of $\mathcal{K}_\varphi$.
 
-The solutions shown in the earlier Figure \ref{fig:icelike} recall what points in $\mathcal{K}_\varphi$ actually are, namely functions on $[0,1]$.  When a solution $u$ coincides with the obstacle $\varphi$ on a part of the domain then $u$ is on the boundary of $\mathcal{K}_\varphi$.  In that case arbitrarily-small perturbations $\delta u$, from $\mathcal{H}$, will put $u+\delta u$ outside of $\mathcal{K}_\varphi$.
+Recall that elements of $\mathcal{K}_\varphi$ are functions on $[0,1]$ (e.g.~Figure \ref{fig:icelike}).  When the solution $u$ coincides with the obstacle $\varphi$ on a part of the domain then this shows $u$ is on the boundary of $\mathcal{K}_\varphi$, and that arbitrarily-small perturbations $\delta u$, from $\mathcal{H}$, put $u+\delta u$ outside of $\mathcal{K}_\varphi$.
 
-The glacier problems in sections \ref{sec:sia} and \ref{sec:stokes} will be formulated both as CPs like \eqref{eq:obstaclecp} and VIs like \eqref{eq:obstacleviresidual}.  However, for general bed elevation functions (obstacles) the glacier problem has no constrained minimization formulation like \eqref{eq:obstaclemin}, so the VI formulations have no interpretation like \eqref{eq:obstaclevigradient}.  The essential reason is the lack of a symmetry of the weak form; see \cite{JouvetBueler2012} for the argument in the SIA case.  However, for glacier problems we at least possess a map $F$, from $\mathcal{K}_\varphi$ to $\mathcal{H}'$, and if $u$ solves the VI then, heuristically, $F(u)$ points perpendicularly into $\mathcal{K}_\varphi$.  We may visualize the general VI form \eqref{eq:obstacleviresidual} essentially as in Figure \ref{fig:cartoonplane}, but without the contours of $I$ or the identification of $F$ as a gradient.
+The glacier problems in sections \ref{sec:sia} and \ref{sec:stokes} may be formulated both as CPs like \eqref{eq:obstaclecp} and VIs like \eqref{eq:obstacleviresidual}.  However, for general bed elevation functions (obstacles) these glacier problems have no constrained minimization formulation like \eqref{eq:obstaclemin}, so the VI formulations have no interpretation like \eqref{eq:obstaclevigradient}.  The essential reason is the lack of a symmetry of the weak form; see \cite{JouvetBueler2012} for the argument in the SIA case.  However, for glacier problems we will possess a map $F$, from $\mathcal{K}_\varphi$ to $\mathcal{H}'$, and if $u$ solves the VI then, heuristically, $F(u)$ points perpendicularly into $\mathcal{K}_\varphi$.  We may visualize the general VI form \eqref{eq:obstacleviresidual} essentially as in Figure \ref{fig:cartoonplane}, but without the identification of $F$ as a gradient of any objective functional.
 
-Regardless of how the classical obstacle problem is formulated, a \emph{free boundary} generally arises in the interior of the domain.  For example, on either side of the midpoint in Figure \ref{fig:icelike} there are locations where the solution first comes fully in contact with the obstacle.  At these locations both $u=\varphi$ and $u'=\varphi'$ hold, that is, the solution is tangent to the obstacle at the free boundary.  These simultaneous Dirichlet and Neumann conditions occur at a location which must be found as part of the solution; they characterize the free boundary \cite[Chapter V]{KinderlehrerStampacchia1980}.  The analogous conditions in the glacier problem are that both the ice thickness and the horizontal ice flux go to zero at a grounded glacier margin \cite{Bueler2016,JouvetBueler2012}.
-
-The solution of the classical obstacle problem will generally be non-smooth at a free boundary even when the data are arbitrarily smooth.  For example, smoothing the source term $f$ in \eqref{eq:icelikedetails} by ``mollification'' \cite{Evans2010}, so that the transition between positive and negative values would be $C^\infty$, would give a solution nearly the same as shown in Figure \ref{fig:icelike} (top).  However, the free boundary would remain, and at that free boundary the second derivative $u''$ would jump discontinuously from value $+16=-f$ to value $-2=\varphi''$.  A similar jump in $u''$ applies at the free boundary in Figure \ref{fig:icelike} (bottom), from $0=f$ to $-16=\varphi''$.  In general it is known that for smooth $C^\infty$ data ($f,\varphi$) the obstacle problem solution $u$ is in the Sobolev space $W^{2,\infty}$, but it is not in $C^2$ \cite[section IV.6]{KinderlehrerStampacchia1980}.
+Regardless of how the classical obstacle problem is formulated, a \emph{free boundary} generally arises in the interior of the domain.  For example, on either side of the midpoint in Figure \ref{fig:icelike} there are locations where the solution first comes fully in contact with the obstacle.  At these locations both $u=\varphi$ and $u'=\varphi'$ hold.  That is, the solution is tangent to the obstacle at the free boundary, and such simultaneous Dirichlet and Neumann conditions occur at a location which must be found as part of the solution \cite[Chapter V]{KinderlehrerStampacchia1980}.  (The analogous conditions in the glacier problem are that both the ice thickness and the horizontal ice flux go to zero at a grounded glacier margin \cite{Bueler2016,JouvetBueler2012}.)  The solution of the classical obstacle problem will generally be non-smooth at a free boundary even when the data are arbitrarily smooth.  For example, smoothing the source term $f$ in \eqref{eq:icelikedetails} by ``mollification'' \cite{Evans2010}, so that the transition between positive and negative values would be $C^\infty$, would give a solution nearly the same as shown in Figure \ref{fig:icelike} (top).  However, the free boundary would remain, and at that free boundary the second derivative $u''$ would jump discontinuously from value $+16=-f$ to value $-2=\varphi''$.  A similar jump in $u''$ applies at the free boundary in Figure \ref{fig:icelike} (bottom), from $0=f$ to $-16=\varphi''$.  In general it is known that for smooth $C^\infty$ data $f,\varphi$ the solution $u$ is in the Sobolev space $W^{2,\infty}$, but it is not in $C^2$ \cite[section IV.6]{KinderlehrerStampacchia1980}.
 
 \subsection{Smoothers: projected Gauss-Seidel and Jacobi} \label{subsec:obstaclesmoothers}  Now consider the FE method for a VI.  On each mesh level we will define an obstacle $\phi^j$ in $\mathcal{V}^j$, an admissible set $\mathcal{K}^j = \{v \ge \phi^j\} \subset \mathcal{V}^j$, and a residual function $F^j$.  (Recall $\mathcal{V}^j$ is the vector space spanned by the $j$th-level hats $\psi_p^j$; see section \ref{sec:subspace}.)  The FE method seeks $y^j$ in $\mathcal{K}^j$ so that a finite-dimensional VI holds:
 \begin{equation}
   F^j(y^j)[v-y^j] \ge 0 \quad \text{ for all } v \text{ in } \mathcal{K}^j. \label{eq:feobstacleviresidual}
 \end{equation}
 
-If we were to solve on the fine-level only, i.e.~in a single-level method, then we would choose the obstacle $\phi^J$ to be the piecewise-linear interpolant of the continuum obstacle $\varphi$, i.e.~$\phi^J=\varphi^J$, and $F^J$ as the original residual $F(w)[\cdot] = a(w,\cdot) - \ip{f}{\cdot} = a(w,\cdot) - \ell[\cdot]$.  However, in our multilevel method the constructions of $\phi^j$ and $F^j$ will be nontrivial, even on the finest level.  We will have much more to say regarding the obstacles $\phi^j$, but we will write the residual in the form $F^j(w)[\cdot] = a(w,\cdot) - \ell^j[\cdot]$ for some $\ell^j$ in $(\mathcal{V}^j)'$.
+If we were to solve on the fine-level $\mathcal{V}^J$ only, i.e.~in a single-level method, then we would choose the obstacle $\phi^J$ to be the piecewise-linear interpolant of the continuum obstacle $\varphi$, i.e.~$\phi^J=\varphi^J$, and $F^J$ as the original residual $F(w)[\cdot] = a(w,\cdot) - \ip{f}{\cdot}$.  However, in our multilevel method the constructions of $\phi^j$ and $F^j$ will be nontrivial, even on the finest level.  We will have much more to say regarding the obstacles $\phi^j$, but in each case the residual will have the simple form $F^j(w)[\cdot] = a(w,\cdot) - \ell^j[\cdot]$ for some $\ell^j$ in $(\mathcal{V}^j)'$.
 
-Before addressing the multilevel method we propose an iterative method for solving \eqref{eq:feobstacleviresidual}, namely \emph{projected Gauss-Seidel} (PGS) as a smoother.  Supposing $w$ in $\mathcal{K}^j$ is any iterate, the smoother modifies $w$ at the $p$th node so that \eqref{eq:feobstacleviresidual} holds ``at'' that node, but note that if $w$ is admissible then $w+c\psi_p^j$ is admissible if and only if $w_p + c \ge \phi_p$ where $\phi_p = \phi^j(x_p^j)$.  (\emph{Warning.}  This equivalence holds for piecewise-linear elements, but not generally for higher-order polynomial elements.)  For clarity we describe PGS using the constrained minimization form \eqref{eq:obstaclemin}, using a convex scalar function based on the objective functional.  Let
+Before addressing the multilevel method we propose an iterative method for solving \eqref{eq:feobstacleviresidual}.  Supposing $w$ in $\mathcal{K}^j$ is any iterate, such a method modifies $w$ at the $p$th node so that \eqref{eq:feobstacleviresidual} holds at that node.  Note that if $w$ is admissible then $w+c\psi_p^j$ is admissible if and only if $w_p + c \ge \phi_p$ where $\phi_p = \phi^j(x_p^j)$.  (This equivalence holds for piecewise-linear elements, but not generally for higher-order polynomial elements.)
+
+For clarity we describe the \emph{projected Gauss-Seidel} (PGS) iterative method using the constrained minimization form \eqref{eq:obstaclemin}, using a convex scalar function based on the objective functional.  Let
 \begin{equation}
 i(b) = I^j(w+b\psi_p^j),
 \end{equation}
@@ -595,21 +595,21 @@ where $I^j(w) = \frac{1}{2} a(w,w) - \ell^j[w]$ and $b$ is a real number.  At ea
 \begin{equation}
   c = \argmin_{b \ge \phi_p - w_p} \, i(b).  \label{eq:pgsminimization}
 \end{equation}
-The minimum of $i(b)$ on the admissible interval $\phi_p - w_p \le b < \infty$ occurs either at the critical point $i'(b)=0$ or at the left end of the interval.  Since $i'(b) = F^j(w)[\psi_p^j] + b a(\psi_p^j,\psi_p^j)$,
+The minimum of $i(b)$ on the admissible interval $\phi_p - w_p \le b < \infty$ occurs either at the critical point $i'(b)=0$ or at the left end of the interval.  Since $i'(b) = F^j(w)[\psi_p^j] + b a(\psi_p^j,\psi_p^j)$ and $i''(b) = a(\psi_p^j,\psi_p^j) > 0$,
 \begin{equation}
   c = \max\left\{-\frac{F^j(w)[\psi_p^j]}{a(\psi_p^j,\psi_p^j)}, \, \phi_p - w_p\right\}  \label{eq:pgsformula}
 \end{equation}
-solves \eqref{eq:pgsminimization}.  In other words, we compute the critical point and project it into the admissible interval.  Then we update $w \gets w + c\psi_p^j$ and proceed to the next point.
+is the solution of \eqref{eq:pgsminimization}.  In other words, we compute the unconstrained critical point where $i'(b)=0$ and then project it into the admissible interval.  Then we update $w \gets w + c\psi_p^j$ and proceed to the next point.
 
 This minimization view of PGS is not essential, however.  We can derive formula \eqref{eq:pgsformula} using only VI \eqref{eq:feobstacleviresidual}, and this will be a useful reference when we consider the glacier model in section \ref{sec:sia}.  We seek $c$ such that $w+c\psi_p^j$ is admissible and so that \eqref{eq:feobstacleviresidual} holds for all admissible $v=w+\tilde c\psi_p^j$.  That is, we find $c\ge \phi_p-w_p$ so that
 \begin{equation}
   F^j(w+c\psi_p^j)[(w+\tilde c\psi_p^j) - (w+c\psi_p^j)] = (\tilde c - c) F^j(w+c\psi_p^j)[\psi_p^j] \ge 0,  \label{eq:pgspointwisevi}
 \end{equation}
-for all $\tilde c\ge \phi_p-w_p$.  Inequality \eqref{eq:pgspointwisevi} is a one-dimensional VI, of form $(\tilde c - c)g(c) \ge 0$ for
+for all $\tilde c\ge \phi_p-w_p$.  Inequality \eqref{eq:pgspointwisevi} is a one-dimensional VI, of form $(\tilde c - c) \rho(c) \ge 0$ for
 \begin{equation}
-  g(c) = F^j(w+c\psi_p^j)[\psi_p^j] = F^j(w)[\psi_p^j] + c\,a(\psi_p^j,\psi_p^j),  \label{eq:pgspointwisegfunction}
+  \rho(c) = F^j(w+c\psi_p^j)[\psi_p^j] = F^j(w)[\psi_p^j] + c\,a(\psi_p^j,\psi_p^j),  \label{eq:pgspointwisegfunction}
 \end{equation}
-on the interval $[\phi_p-w_p,+\infty)$.  Note that the ellipticity of the Poisson equation implies $a(\psi_p^j,\psi_p^j)>0$, thus that $g(c)$ is strictly increasing, and thus that \eqref{eq:pgspointwisevi} is a well-posed VI.  (While $g(c)$ is a linear function with a trivial root-finding problem, the corresponding problem in section \ref{sec:sia} is more interesting.)  Thus $g(c)=0$ or $c$ is at the end of the interval, and thus \eqref{eq:pgsformula}.
+on the interval $[\phi_p-w_p,+\infty)$.  Note that the ellipticity of the Poisson equation implies $a(\psi_p^j,\psi_p^j)>0$, thus the pointwise residual $\rho(c)$ is strictly increasing, and so \eqref{eq:pgspointwisevi} is a well-posed VI with solution \eqref{eq:pgsformula}.
 
 The following pseudocode, a small modification of \pr{gs-sweep} on page \pageref{ps:gs-sweep}, implements PGS:
 \begin{pseudo*} \label{ps:pgs}
@@ -621,7 +621,7 @@ The following pseudocode, a small modification of \pr{gs-sweep} on page \pageref
         $w_p \gets \max\{w_p + \id{omega}\,c, \phi_p\}$
 \end{pseudo*}
 
-As noted in section \ref{sec:subspace}, GS-type (i.e.~multiplicative) smoothers re-evaluate the residual after each point update.  This is an acceptable $O(1)$ cost when the residual of an iterate at a point $x_p^j$ is computable from a few neighboring values, as applies here and in section \ref{sec:sia}.  However, when the residual is nonlocal, and especially when it is both nonlocal and expensive to evaluate, as for the Stokes-based model in section \ref{sec:stokes}, a GS-type smoother becomes less practical.  An alternative is an additive smoother in which the vector residual is evaluated once at the beginning.  The following modifies \pr{jacobi-sweep} on page \pageref{ps:jacobi-sweep}.
+As noted in section \ref{sec:subspace}, GS-type multiplicative smoothers re-evaluate the residual after each point update.  This is an acceptable $O(1)$ cost when the residual of an iterate at a point $x_p^j$ is computable from a few neighboring values, as applies here and in section \ref{sec:sia}.  However, when the residual is nonlocal, and especially when it is both nonlocal and expensive to evaluate, as for the Stokes-based model in section \ref{sec:stokes}, a GS-type smoother becomes less practical.  An alternative is a Jacobi-type additive smoother in which the residual is evaluated once at all points.  The following modifies \pr{jacobi-sweep} on page \pageref{ps:jacobi-sweep}.
 \begin{pseudo*} \label{ps:pjacobi}
 \pr{pjacobi}(j,w,a,\ell,\phi,\id{omega}=0.67)\text{:} \\+
     \ct{check admissibility: $w\ge \phi$} \\
@@ -630,16 +630,18 @@ As noted in section \ref{sec:subspace}, GS-type (i.e.~multiplicative) smoothers 
         $c = -F_p \,\big/\, a(\psi_p^j,\psi_p^j)$ \\
         $w_p \gets \max\{w_p + \id{omega}\,c, \phi_p\}$
 \end{pseudo*}
-(We could also describe this smoother as a projected forward Euler step (section \ref{sec:subspace}), i.e.~as a step of the common time-evolution method in glacier and ice sheet models \cite[for example]{Winkelmannetal2011}.)  Assuming each pointwise residual $F(w)[\psi_p^j]$ is an $O(1)$ operation in the $j$th-level representation, \pr{pgs} and \pr{pjacobi} are $O(m_j)$ operations.  The latter remains $O(m_j)$ as long as the vector residual and the diagonal entries can be computed in $O(m_j)$ operations given $w$, even if individual pointwise residuals are not $O(1)$.
+We could also describe this smoother as a projected forward Euler step (section \ref{sec:subspace}), i.e.~as a step of the common time-evolution method in glacier and ice sheet models \cite[for example]{Winkelmannetal2011}.
 
 For appropriate ranges of \id{omega} both algorithms above are known to converge to the solution $y^j$ of VI problem \eqref{eq:feobstacleviresidual} \cite[Proposition 4.5]{GraeserKornhuber2009}, but, of course, slowly on fine meshes.  Regarding the relaxation parameter \id{omega}, recall that the optimal value for the Poisson equation is \id{omega} $=2/3$ \cite{Briggsetal2000}, but finding the most-effective smoother values for obstacle problems is a topic for numerical experimentation.
 
-However, for VI problems the residual norm $\|F(w)\|_2$ does not generally go to zero at the convergence of the iterations.  Recalling the CP formulation \eqref{eq:obstaclecp}, at convergence we have $F(w)[\psi_p^j] = 0$ where $w(x_p^j) > \phi(x_p^j)$ (inactive points), but if $w(x_p^j) = \phi(x_p^j)$ (active points) then $F(w)[\psi_p^j]$ is only required to be nonnegative.  Thus the convergence criterion for iterated PGS sweeps is that the norm of the \emph{CP residual}, the vector
+Assuming each pointwise residual $F(w)[\psi_p^j]$ is an $O(1)$ operation in the $j$th-level representation, \pr{pgs} and \pr{pjacobi} are $O(m_j)$ operations.  The latter remains $O(m_j)$ as long as the vector residual and the diagonal entries can be computed in $O(m_j)$ operations given $w$, even if individual pointwise residuals are not $O(1)$.
+
+However, for VI problems the residual norm $\|F(w)\|_2$ does not generally go to zero at the convergence of the iterations.  Recalling the CP formulation \eqref{eq:obstaclecp}, at convergence we have $F(w)[\psi_p^j] = 0$ where $w(x_p^j) > \phi(x_p^j)$ (inactive points), but if $w(x_p^j) = \phi(x_p^j)$ (active points) then $F(w)[\psi_p^j]$ need only be nonnegative.  Thus the convergence criterion for iterated PGS sweeps is that the norm of the \emph{CP residual}, the vector
 \begin{equation}
   (\hat \bF(w))_p = \begin{cases} F(w)[\psi_p^j], & w_p > \phi_p, \\
-                                  \min\{F(w)[\psi_p^j],0\}, & \text{otherwise}, \end{cases} \label{eq:cpresidual}
+                                  \min\{F(w)[\psi_p^j],0\}, & w_p = \phi_p, \end{cases} \label{eq:cpresidual}
 \end{equation}
-in $\RR^{m_j}$, should be small.  Then our relative-norm convergence criterion will be
+in $\RR^{m_j}$, should be small.  Thus our convergence criterion will be
 \begin{equation}
 \|\hat\bF(w)\|_2 < \text{\texttt{rtol}}\,\|\hat\bF(w^0)\|_2 \label{eq:cpconvergencecriterion}
 \end{equation}
@@ -647,17 +649,17 @@ for some tolerance \id{rtol}.
 
 The above projected iterations will serve as our smoothers, applied one or two times on each level, and as the coarse-level solver as well.  However, we are not yet prepared to build a multilevel method for problem \eqref{eq:feobstacleviresidual} because the nontrivial construction of the obstacles $\phi^j$ and residuals $F^j$ remains.  We need to decompose the continuum constraint $\varphi$ across the mesh-level hierarchy, and we need to construct admissible multilevel corrections.
 
-\subsection{Multilevel constraint decomposition} \label{subsec:mcd}  How do we maintain admissibility throughout a multilevel cycle while not introducing high-frequencies?
+\subsection{Multilevel constraint decomposition} \label{subsec:mcd}  The technique in this section answers the following question:  How do we maintain admissibility throughout a multilevel cycle while not introducing high-frequencies?
 
-Consider the coarse-level correction $e^{j-1}$ in a linear V-cycle (section \ref{sec:subspace}, equation \eqref{eq:coarsecorrection}), which is prolonged onto the $j$th level.  For an obstacle problem the resulting iterate would need to be admissible, i.e.~$w + P e^{j-1}$ would need to be above the obstacle, say $\varphi^j$.  However, as illustrated in Figure \ref{fig:prolongobstacle}, if the obstacles are interpolants of a (common) continuum obstacle $\varphi$ then an iterate which is admissible on the $j-1$ level is \emph{not} necessarily admissible on the $j$ level.  (In the glacier context, a coarse-mesh ice surface may be breached by the fine-mesh bed topography.)  We might try enforcing admissibility by \emph{truncation}, namely overwriting $\tilde w = w + Pe^{j-1}$ with $\max\{\tilde w, \varphi^j\}$.  However, this reintroduces high frequencies, requiring additional smoother effort to remove, and generally damaging multigrid convergence rates.
+Consider the coarse-level correction $e^{j-1}$ in a linear V-cycle (section \ref{sec:subspace}, equation \eqref{eq:coarsecorrection}), which is prolonged onto the $j$th level.  For a problem with obstacle $\varphi^j$ the resulting iterate would need to be admissible, i.e.~$w + P e^{j-1} \ge \varphi^j$.  However, as illustrated in Figure \ref{fig:prolongobstacle}, if the obstacles are interpolants of a (common) continuum obstacle $\varphi$ then an iterate which is admissible on the $j-1$ level is \emph{not} necessarily admissible on the $j$ level.  (In the glacier context, a coarse-mesh ice surface may be breached by the fine-mesh bed topography.)  We might try enforcing admissibility by \emph{truncation}, namely overwriting $\tilde w = w + Pe^{j-1}$ with $\max\{\tilde w, \varphi^j\}$.  However, this reintroduces high frequencies, requiring additional smoother effort to remove, and generally damaging multigrid convergence rates.
 
 \begin{figure}
 \qquad \includegraphics[width=0.75\textwidth]{genfigs/prolongobstacle.pdf}
-\caption{If the obstacles interpolate a common continuum obstacle then an admissible iterate on a coarse level, when prolonged, may not be admissible on a finer level.}
+\caption{If mesh-level obstacles interpolate a common continuum obstacle then an admissible iterate on a coarse level, when prolonged, may not be admissible on a finer level.}
 \label{fig:prolongobstacle}
 \end{figure}
 
-One way forward is the \emph{multilevel constraint decomposition} (MCD) method of Tai \cite{Tai2003}, described here using the specific decomposition proposed in \cite{GraeserKornhuber2009}.  Suppose $w^J$ in $\mathcal{V}^J$, on the finest level, is admissible in the original sense that
+One way forward is the \emph{multilevel constraint decomposition} (MCD) method of Tai \cite{Tai2003}, here in the specific form proposed in \cite{GraeserKornhuber2009}.  Suppose $w^J$ in $\mathcal{V}^J$, on the finest level, is admissible in the original sense that
 \begin{equation}
   w^J \ge \varphi^J, \label{eq:fineadmissibleiterate}
 \end{equation}
@@ -665,18 +667,16 @@ where $\varphi^J$ interpolates the continuum obstacle.  Define the \emph{defect 
 \begin{equation}
   \chi^J = \varphi^J - w^J.  \label{eq:defectconstraint}
 \end{equation}
-Note $\chi^J \le 0$.  The meaning of $\chi^J$ is that if we modify $w^J$ by adding $y$ then the result is admissible if and only if $y$ is above $\chi^J$:
+Note $\chi^J \le 0$.  The meaning of ``defect constraint'' is that if we modify $w^J$ by adding $y$ then the result is admissible if and only if $y$ is above $\chi^J$:
 \begin{equation}
   w^J + y \ge \varphi^J  \qquad \iff \qquad y \ge \chi^J.  \label{eq:defectmeaning}
 \end{equation}
 
-Our MCD method will \emph{put as much of $\chi^J$ into the coarsest levels as possible}.  That is, our decomposition of $\chi^J$ determines how constrained the coarse-level corrections are, and we want to allow the largest corrections on the inexpensive coarse levels.  For this purpose, following \cite[equation (4.22)]{GraeserKornhuber2009}, we define a nonlinear \emph{monotone restriction} operator $\mR$ from $\mathcal{V}^j$ to $\mathcal{V}^{j-1}$.  For $z$ in $\mathcal{V}^j$, $\mR z$ is computed by maximizing nodal values of $z$ over the interior of the support of coarser-level hat functions.  That is, if $z = \sum_q z_q \psi_q^j$ on the fine level then
+Our MCD method will \emph{put as much of $\chi^J$ into the coarsest levels as possible}.  That is, our decomposition of $\chi^J$ will allow the largest corrections on the inexpensive coarse levels.  For this purpose, following \cite[equation (4.22)]{GraeserKornhuber2009}, we define a nonlinear \emph{monotone restriction} operator $\mR$ from $\mathcal{V}^j$ to $\mathcal{V}^{j-1}$.  For $z$ in $\mathcal{V}^j$, $\mR z$ is computed by maximizing nodal values of $z$ over the interior of the support of coarser-level hat functions.  That is, if $z = \sum_q z_q \psi_q^j$ on the fine level then
 \begin{equation}
   \mR z = \sum_{p=1}^{m_{j-1}} \zeta_p \psi_p^{j-1} \qquad \text{where} \qquad \zeta_p = \max \{z_q \,:\, \psi_p^{j-1}(x_q^j) > 0\}.  \label{eq:monotonerestriction}
 \end{equation}
-Observe that $\mR z \ge z$.  Also note that $\mR$ acts on functions $\mathcal{V}^j$ while canonical restriction $R$ acts on linear functionals $(\mathcal{V}^j)'$; see Table \ref{tab:transfers}.
-
-We then define the \emph{$j$th-level defect constraint} inductively by
+Observe that $\mR z \ge z$.  Also note that $\mR$ acts on functions $\mathcal{V}^j$ while canonical restriction $R$ acts on linear functionals $(\mathcal{V}^j)'$; see Table \ref{tab:transfers}.  We then define the \emph{$j$th-level defect constraint} inductively by
 \begin{equation}
   \chi^j = \mR \chi^{j+1}  \label{eq:chik}
 \end{equation}
@@ -697,7 +697,7 @@ where we also define $\chi^{-1}=0$ so that $\phi^0 = \chi^0$.  Note $\phi^j$ is 
 \label{fig:gooddecomposition}
 \end{figure}
 
-We have now decomposed the fine-level defect constraint $\chi^J$ via a telescoping sum:
+We have now decomposed the fine-level defect constraint $\chi^J$ via a ``telescoping'' sum:
 \begin{equation}
   \sum_{j=0}^J \phi^j = \chi^0 + (\chi^1 - \chi^0) + (\chi^2 - \chi^1) + \dots + (\chi^J - \chi^{J-1}) = \chi^J.  \label{eq:telescopingdecomposition}
 \end{equation}
@@ -723,7 +723,7 @@ Subset equation \eqref{eq:constraintdecomposition} is close to the core meaning 
 \begin{equation}
   \mathcal{D}^0 \subset \mathcal{D}^1 \subset \dots \subset \mathcal{D}^J.  \label{eq:nestedcones}
 \end{equation}
-In particular, the fine-level defect constraint set $\mathcal{D}^J = \{v \ge \chi^J\}$ is approximated ``from within'' by coarser-level cones, the partial sums $\mathcal{D}^j = \sum_{k=0}^j \mathcal{K}^k$.  The smaller sets $\mathcal{K}^j$ are also cones, but they are not nested.  However, though $\mathcal{K}^j$ and $\mathcal{D}^j$ are cone relatives to $\phi^j$ and $\chi^j$, respectively, they are not closed under addition, and therefore corrections must be carefully applied, with attention to admissibility of the new iterate \eqref{eq:defectmeaning}, especially in a V-cycle (see below).
+In particular, the fine-level defect constraint set $\mathcal{D}^J = \{v \ge \chi^J\}$ is approximated ``from within'' by coarser-level cones, the partial sums $\mathcal{D}^j = \sum_{k=0}^j \mathcal{K}^k$.  The smaller sets $\mathcal{K}^j$ are also cones, but they are not nested.  However, though $\mathcal{K}^j$ and $\mathcal{D}^j$ are cones relative to $\phi^j$ and $\chi^j$, respectively, they are not closed under addition, and therefore corrections must be carefully applied, with attention to admissibility of the new iterate \eqref{eq:defectmeaning}, especially in a V-cycle (see below).
 
 \begin{figure}
 \includegraphics[width=0.65\textwidth]{genfigs/innerconeapprox.pdf}
@@ -740,24 +740,24 @@ Looking forward to the glacier problem in section \ref{sec:sia}, the fine-mesh o
 \label{fig:icelikedecomposition}
 \end{figure}
 
-\subsection{MCD coarse-level corrections} \label{subsec:mcdcorrections}  On each mesh level there is now an obstacle problem, and we will write it in three forms.  The forms are equivalent for the classical obstacle problem, but only one will generalize to the glacier problems in sections \ref{sec:sia} and \ref{sec:stokes}.  For now, recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the continuum residual \eqref{eq:residual}, and then $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function.
+\subsection{MCD coarse-level corrections} \label{subsec:mcdcorrections}  On each mesh level there is now an obstacle problem, and we will write it in three forms.  The forms are equivalent for the classical obstacle problem, but only one form is suited to the glacier problems in sections \ref{sec:sia} and \ref{sec:stokes}.
 
-Again suppose $w^J$ is an admissible iterate on the fine level: $w^J\ge \varphi^J$.  Assume that we have already descended from the fine level $J$ to some level $j+1$, computing admissible corrections $y^k$ from each set $\mathcal{K}^k=\{v\ge \phi^k\}$, for $k\ge j+1$.  From the definitions of $\chi^J$ and $\mathcal{D}^J$, the function $z = w^J+y^J+\dots+y^{j+1}$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.  The MCD \emph{coarse-level correction} is a function $y$ in $\mathcal{K}^j=\{v\ge \phi^j\}$ such that one of the following holds:
+Suppose $w^J$ is an admissible iterate on the fine level: $w^J\ge \varphi^J$.  Assume that we have already descended from the fine level $J$ to some level $j+1$, computing admissible corrections $y^k$ from each set $\mathcal{K}^k=\{v\ge \phi^k\}$, for $k\ge j+1$.  From the definitions of $\chi^J$ and $\mathcal{D}^J$, the function $z = w^J+y^J+\dots+y^{j+1}$ is admissible in the original sense, i.e.~$z\ge \varphi^J$.  Recall that $F(w)[v] = a(w,v) - \ip{f}{v}$ denotes the continuum residual \eqref{eq:residual}, and then $I(v) = \frac{1}{2} a(v,v) - \ip{f}{v}$ is the corresponding objective function.  The MCD \emph{coarse-level correction} \cite{GraeserKornhuber2009,Tai2003} is a function $y$ in $\mathcal{K}^j=\{v\ge \phi^j\}$ such that one of the following holds:
 \begin{itemize}
-\item general variational inequality \cite{Tai2003}:
+\item general variational inequality:
 \begin{equation}
   F(w^J+y^J+\dots+y^{j+1}+y)[v - y] \ge 0 \qquad \text{for all } v \text{ in } \mathcal{K}^j.  \label{eq:mcdvi}
 \end{equation}
-\item constrained minimization \cite{Tai2003}:
+\item constrained minimization:
 \begin{equation}
   y = \argmin_{v \text{ in } \mathcal{K}^j} I(w^J+y^J+\dots+y^{j+1}+v).  \label{eq:mcdminimization}
 \end{equation}
-\item linear variational inequality \cite{GraeserKornhuber2009}:
+\item linear variational inequality:
 \begin{equation}
   F^j(y)[v - y] \ge 0 \qquad \text{for all } v \text{ in } \mathcal{K}^j.   \label{eq:mcdvilinear}
 \end{equation}
 \end{itemize}
-In the first form $F$ does not need to be linear, and similarly $I$ in the second form does not need to be quadratic.  Note that this initial description of the problem defines a down-slash cycle (see Figure \ref{fig:msccycles}), but we will show how to generalize to a V-cycle.  In any case a coarse-level correction $y$ in $\mathcal{K}^j$ is defined for every level in the hierarchy, $j=0,\dots,J$.
+In the first form $F$ does not need to be linear, and similarly $I$ in the second form does not need to be quadratic.  While these descriptions of the problem define a down-slash cycle (see Figure \ref{fig:msccycles}), we will show later how to generalize to a V-cycle.  In any case, the goal is to define a a coarse-level correction $y$ in $\mathcal{K}^j$ for every level in the hierarchy, $j=0,\dots,J$.
 
 The third form \eqref{eq:mcdvilinear} exploits linearity of $F$ to inductively define residual functionals which do not directly refer to the fine-level admissible states $z^j = w^J+y^J+\dots+y^{j+1}+y$:
 \begin{align}
@@ -770,7 +770,7 @@ That is, we construct each new source term,
   \tilde\ell^j[\cdot] = \begin{cases} - F^{j+1}(y^{j+1})[\cdot], & j < J, \\
                                       - F(w^J)[\cdot],   & j = J, \end{cases} \label{eq:rhslinearlevel}
 \end{equation}
-thereby define a residual functional on each level,
+and thereby define a residual functional on each level,
 \begin{equation}
   F^j(y)[\cdot] = a(y,\cdot) - \tilde\ell^j[\cdot].  \label{eq:residuallinearlevel}
 \end{equation}
