@@ -1,32 +1,3 @@
-@Article{Alnaesetal2014,
- author = {Aln{\ae}s, Martin S. and Logg, Anders and Olgaard, Kristian B. and Rognes, Marie E. and Wells, Garth N.},
- title = {Unified Form Language: A Domain-specific Language for Weak Formulations of Partial Differential Equations},
- journal = {ACM Trans. Math. Softw.},
- volume = {40},
- number = {2},
- year = {2014},
- pages = {9:1--9:37},
-}
-
-@Article{Aschwandenetal2012,
-  author	= {A. Aschwanden and E. Bueler and C. Khroulev and H.
-		  Blatter},
-  title		= {An enthalpy formulation for glaciers and ice sheets},
-  journal	= {J. Glaciol.},
-  volume	= {58},
-  number	= {209},
-  year		= {2012},
-  pages		= {441--457},
-}
-
-@TechReport{Balayetal2020,
-  Author = {S. Balay and S. Abhyankar and M. Adams and J. Brown and P. Brune and K. Buschelman and L. Dalcin and A. Dener and V. Eijkhout and W. Gropp and D. Karpeyev and D. Kaushik and M. Knepley and D. May and L. Curfman McInnes and R. Mills and T. Munson and K. Rupp and P. Sanan and B. Smith and S. Zampini and H. Zhang and H. Zhang},
-  Title = {{PETS}c {U}sers {M}anual},
-  Number = {ANL-95/11 - Revision 3.13},
-  Institution = {Argonne National Laboratory},
-  Year = {2020}
-}
-
 @Article{BarrettLiu1993,
   AUTHOR    = {J. Barrett and W. Liu},
   TITLE     = {Finite element approximation of the $p$-{L}aplacian},
@@ -86,17 +57,6 @@
   YEAR      = {2000}
 }
 
-@Article{BrownSmithAhmadia2013,
-  AUTHOR    = {J. Brown and B. Smith and A. Ahmadia},
-  TITLE     = {Achieving textbook multigrid efficiency for hydrostatic
-               ice sheet flow},
-  JOURNAL   = {SIAM J. Sci. Comp.},
-  VOLUME    = {35},
-  NUMBER    = {2},
-  PAGES     = {359--375},
-  YEAR      = {2013},
-}
-
 @Article{Bueler2016,
   author   = {E. Bueler},
   title    = {Stable finite volume element schemes for the shallow ice approximation},
@@ -107,12 +67,12 @@
   year     = {2016},
 }
 
-@Unpublished{Bueler2020,
+@Unpublished{Bueler2021conservation,
   author   = {E. Bueler},
   title    = {Conservation laws for free-boundary fluid layers},
   url      = {https://arxiv.org/abs/2007.05625},
-  note     = {\href{https://arxiv.org/abs/2007.05625}{\texttt{arxiv.org/abs/2007.05625}}},
-  year     = {2020},
+  note     = {to appear in SIAM J.~Appl.~Math.},
+  year     = {2021},
 }
 
 @Book{Bueler2021,
@@ -121,6 +81,13 @@
   PUBLISHER = {SIAM Press},
   ADDRESS   = {Philadelphia},
   YEAR      = {2021}
+}
+
+@Unpublished{Bueler2022partII,
+  author   = {E. Bueler},
+  title    = {Geometric multigrid for glacier modeling {II}: {S}tokes dynamics for glacier geometry},
+  note     = {in preparation},
+  year     = {2022},
 }
 
 @Article{Bueleretal2005,
@@ -133,15 +100,6 @@
   number	= {173},
   pages		= {291--306},
   year		= {2005},
-}
-
-@Article{Brinkerhoffetal2017,
-  author    = {D. Brinkerhoff and M. Truffer and A. Aschwanden},
-  title	    = {Sediment transport drives tidewater glacier periodicity},
-  journal	= {Nature Commun.},
-  volume    = {8},
-  number    = {90},
-  year		= {2017},
 }
 
 @Article{Calvoetal2002,
@@ -209,33 +167,6 @@
   year   = {2019}
 }
 
-@Book{Fowler1997,
-  AUTHOR    = {A. C. Fowler},
-  TITLE     = {Mathematical {M}odels in the {A}pplied {S}ciences},
-  PUBLISHER = {Cambridge Univ. Press},
-  ADDRESS   = {Cambridge, UK},
-  YEAR      = {1997},
-}
-
-@Article{GeuzaineRemacle2009,
-  title={{G}msh: {A} 3-{D} finite element mesh generator with built-in pre-and post-processing facilities},
-  author={Geuzaine, Christophe and Remacle, Jean-Fran{\c{c}}ois},
-  journal={Int. J. Numer. Meth. Eng.},
-  fjournal={International Journal for Numerical Methods in Engineering},
-  volume={79},
-  number={11},
-  pages={1309--1331},
-  year={2009},
-}
-
-@Book{Gibsonetal2019,
-  AUTHOR    = {T. H. Gibson and A. T. T. McRae and C. J. Cotter and L. Mitchell and D. A. Ham},
-  TITLE     = {{Compatible Finite Element Methods for Geophysical Flows}},
-  PUBLISHER = {Springer Nature},
-  ADDRESS   = {Switzerland},
-  YEAR      = {2019},
-}
-
 @Article{GraeserKornhuber2009,
   AUTHOR    = {C. Gr{\"a}ser and R. Kornhuber},
   TITLE     = {Multigrid methods for obstacle problems},
@@ -262,34 +193,6 @@
   YEAR      = {2009},
 }
 
-@Article{Halfar1981,
-  title={On the dynamics of the ice sheets},
-  author={Halfar, P.},
-  journal={J. Geophys. Res.: Oceans},
-  volume={86},
-  number={C11},
-  pages={11065--11072},
-  year={1981},
-}
-
-@Article{Hoffmanetal2018,
-AUTHOR = {Hoffman, M. J. and Perego, M. and Price, S. F. and Lipscomb, W. H. and Zhang, T. and Jacobsen, D. and Tezaur, I. and Salinger, A. G. and Tuminaro, R. and Bertagna, L.},
-TITLE = {{MPAS-Albany Land Ice (MALI)}: a variable-resolution ice sheet model for {E}arth system modeling using {V}oronoi grids},
-JOURNAL = {Geosci. Model Dev.},
-VOLUME = {11},
-YEAR = {2018},
-NUMBER = {9},
-PAGES = {3747--3780},
-DOI = {10.5194/gmd-11-3747-2018}
-}
-
-@Book{Hutter1983,
-    AUTHOR = {K. Hutter},
-     TITLE = {Theoretical {G}laciology},
- PUBLISHER = {D. Reidel},
-      YEAR = {1983},
-}
-
 @Article{Huybrechtsetal1996,
   title={The {EISMINT} benchmarks for testing ice-sheet models},
   author={P. Huybrechts and T. Payne and others},
@@ -297,16 +200,6 @@ DOI = {10.5194/gmd-11-3747-2018}
   volume={23},
   pages={1--12},
   year={1996},
-}
-
-@Article{IsaacStadlerGhattas2015,
-  title={Solution of nonlinear {S}tokes equations discretized by high-order finite elements on nonconforming and anisotropic meshes, with application to ice sheet dynamics},
-  author={Isaac, T. and Stadler, G. and Ghattas, O.},
-  journal={SIAM J. Sci. Comput.},
-  volume={37},
-  number={6},
-  pages={B804--B833},
-  year={2015},
 }
 
 @Book{Johnson2009,
@@ -325,16 +218,6 @@ DOI = {10.5194/gmd-11-3747-2018}
   number	= {4},
   pages		= {1292--1314},
   year		= {2012},
-}
-
-@Article{Jouvetetal2008,
-  title={A new algorithm to simulate the dynamics of a glacier: theory and applications},
-  author={Jouvet, Guillaume and Picasso, Marco and Rappaz, Jacques and Blatter, Heinz},
-  journal={Journal of Glaciology},
-  volume={54},
-  number={188},
-  pages={801--811},
-  year={2008},
 }
 
 @Article{Jouvetetal2013,
@@ -374,26 +257,6 @@ DOI = {10.5194/gmd-11-3747-2018}
   YEAR      = {1980},
 }
 
-@Article {Lengetal2012,
-    AUTHOR = {Leng, W. and L. Ju and M. Gunzburger and S. Price and T. Ringler},
-     TITLE = {A parallel high-order accurate finite element nonlinear {S}tokes
-              ice sheet model and benchmark experiments},
-   JOURNAL = {J. Geophys. Res.},
-    VOLUME = {117},
-      YEAR = {2012},
-    NUMBER = {F01001},
-       DOI = {10.1029/2011JF00196},
-}
-
-@Book{LeVeque2007,
-  AUTHOR    = {R. J. LeVeque},
-  TITLE     = {{Finite Difference Methods for Ordinary and Partial Differential
-                Equations: Steady-State and Time-Dependent Problems}},
-  PUBLISHER = {SIAM Press},
-  ADDRESS   = {Philadelphia},
-  YEAR      = {2007},
-}
-
 @Article{Mahaffy1976,
     AUTHOR = {M. W. Mahaffy},
      TITLE = {A three--dimensional numerical model of ice sheets: tests on the
@@ -403,17 +266,6 @@ DOI = {10.5194/gmd-11-3747-2018}
     NUMBER = {6},
      PAGES = {1059--1066},
       YEAR = {1976},
-}
-
-@Article{McRaeetal2016,
-author = {McRae, A. T. T. and Bercea, G.-T. and Mitchell, L. and Ham, D. A. and Cotter, C. J.},
-title = {Automated generation and symbolic manipulation of tensor product finite elements},
-journal = {SIAM J. Sci. Computing},
-volume = {38},
-number = {5},
-pages = {S25-S47},
-year = {2016},
-doi = {10.1137/15M1021167},
 }
 
 @Article{Morlighemetal2017,
@@ -427,16 +279,6 @@ doi = {https://doi.org/10.1002/2017GL074954},
 year = {2017},
 }
 
-@Book{MortonMayers2005,
-  AUTHOR    = {K. W. Morton and D. F. Mayers},
-  TITLE     = {Numerical {S}olutions of {P}artial {D}ifferential
-               {E}quations: {A}n {I}ntroduction},
-  PUBLISHER = {Cambridge University Press},
-  ADDRESS   = {Cambridge, UK},
-  EDITION   = {2nd},
-  YEAR      = {2005},
-}
-
 @Article{Neuss1998,
   author={N. Neuss},
   title={V-cycle convergence with unsymmetric smoothers and application to an anisotropic model problem},
@@ -445,29 +287,6 @@ year = {2017},
   number={3},
   pages={1201--1212},
   year={1998},
-}
-
-@Book{Ockendonetal2003,
-  AUTHOR    = {J. Ockendon and S. Howison and A. Lacey and S. Movchan},
-  TITLE     = {Applied {P}artial {D}ifferential {E}quations},
-  PUBLISHER = {Oxford University Press},
-  ADDRESS   = {Oxford, UK},
-  EDITION   = {revised},
-  YEAR      = {2003},
-}
-
-@Article{Rathgeberetal2016,
-  author =       {Florian Rathgeber and David A. Ham and Lawrence
-                  Mitchell and Michael Lange and Fabio Luporini and
-                  Andrew T. T. McRae and Gheorghe-Teodor Bercea and
-                  Graham R. Markall and Paul H. J. Kelly},
-  title =        {Firedrake: automating the finite element method by
-                  composing abstractions},
-  journal =      {ACM Trans. Math. Softw.},
-  volume =       {43},
-  number =       {3},
-  year =         {2016},
-  pages =        {24:1--24:27},
 }
 
 @Article {SchoofHewitt2013,
@@ -497,16 +316,6 @@ year = {2017},
   YEAR      = {2001},
 }
 
-@Article{Tuminaroetal2016,
-  title={A matrix dependent/algebraic multigrid approach for extruded meshes with applications to ice sheet modeling},
-  author={Tuminaro, R. and Perego, M. and Tezaur, I. and Salinger, A. and Price, S.},
-  journal={SIAM J. Sci. Computing},
-  volume={38},
-  number={5},
-  pages={C504--C532},
-  year={2016},
-}
-
 @Book{vanderVeen2013,
   AUTHOR    = {C. van der Veen},
   TITLE     = {Fundamentals of {G}lacier {D}ynamics},
@@ -522,17 +331,6 @@ JOURNAL = {The Cryosphere},
 VOLUME = {5},
 YEAR = {2011},
 PAGES = {715--726},
-}
-
-@Article{WirbelJarosch2020,
-AUTHOR = {Wirbel, A. and Jarosch, A. H.},
-TITLE = {Inequality-constrained free-surface evolution in a full {S}tokes ice flow model (\textit{evolve\_glacier v1.1})},
-JOURNAL = {Geoscientific Model Development},
-VOLUME = {13},
-YEAR = {2020},
-NUMBER = {12},
-PAGES = {6425--6445},
-DOI = {10.5194/gmd-13-6425-2020}
 }
 
 @Article{Xu1992,
