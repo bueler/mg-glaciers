@@ -1,4 +1,16 @@
-all: partI.pdf
+all: partI.pdf partII.pdf
+
+partI.pdf: partI.tex partI.bib cropfiguresI
+	pdflatex partI
+	bibtex partI
+	pdflatex partI
+	pdflatex partI
+
+partII.pdf: partII.tex partII.bib
+	pdflatex partII
+	bibtex partII
+	pdflatex partII
+	pdflatex partII
 
 _figuresI := finehats coarsehats coarsesthats residualpoints cartoonplane innerconeapprox prolongobstacle giscross poisson/convergence poisson/mcdl-cycles poisson/mcdl-wu poisson/mcdl-timeper poisson/perfni sia/convergence sia/asymprates sia/reshistory plap/convergence
 
@@ -8,12 +20,6 @@ cropfiguresI: $(figuresI)
 	for X in $(figuresI); do \
 	     (pdfcrop $$X $$X); \
 	done
-
-partI.pdf: partI.tex partI.bib cropfiguresI
-	pdflatex partI
-	bibtex partI
-	pdflatex partI
-	pdflatex partI
 
 writeout:
 	(cd genfigs/poisson/ && ln -sf ../writeout.py)
