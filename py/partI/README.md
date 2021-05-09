@@ -1,4 +1,4 @@
-# mg-glaciers/py/1D
+# mg-glaciers/py/partI/
 
 Program `obstacle.py` solves 1D obstacle problems on an interval.  For detailed information do
 
@@ -12,11 +12,11 @@ The available solver algorithms are:
 
 There are three obstacle problems:
 
-  * `-problem poisson` solves the classical obstacle problem, with default "ice-like" geometry
+  * `-problem poisson` solves the classical obstacle problem, with "ice-like" or "traditional" geometry
 
-  * `-problem plap` solves a p=4 p-Laplacian problem, with "bridge" geometry
+  * `-problem plap` solves a p=4 p-Laplacian problem, with "pile" or "bridge" geometry
 
-  * `-problem sia` solves the shallow ice approximation for a steady-state dome on a flat bed
+  * `-problem sia` solves the steady-state shallow ice approximation for either a dome "profile" on a flat bed or on a bumpy bed
 
 Illustration of the MCD method (V-cycles only) for the classical obstacle problem:
 
@@ -24,7 +24,7 @@ Illustration of the MCD method (V-cycles only) for the classical obstacle proble
 
 Illustration of the MCD method (F-cycle then V-cycles) for the SIA problem:
 
-        $ ./obstacle.py -problem sia -show -diagnostics -J 8 -ni -symmetric
+        $ ./obstacle.py -problem sia -show -diagnostics -J 8 -ni
 
 Solve the classical obstacle problem slowly using single-level PGS:
 

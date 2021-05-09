@@ -2,6 +2,12 @@
 
 Generate and solve Stokes problems from Bueler profile geometry.
 
+## COMMENT
+
+This example is really superceded by the several examples in the following repo:
+
+  * [github.com/bueler/stokes-ice-tutorial](https://github.com/bueler/stokes-ice-tutorial)
+
 ## Before solving
 
 For the solve stages below one needs to activate the venv for firedrake:

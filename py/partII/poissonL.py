@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# FIXME this code relates to a suggestion by Colin Cotter, not followed up,
+# about subclassing DirichletBC to allow interior imposition of trivialized
+# equations, like Dirichlet boundary conditions area handled
+
 from firedrake import *
 
 class InteriorBC(DirichletBC):

@@ -1,11 +1,19 @@
 # mg-glaciers/py/
 
-There are two examples of applying the multilevel constraint decomposition of Tai (2003) on obstacle problems.
+These Python codes, examples of applying the multilevel constraint decomposition of Tai (2003) on obstacle problems in glaciology, support the two-part paper [_Geometric multigrid for glacier modeling_](../paper/).
 
-## 1D/
+## partI/
 
-We solve the simplest possible problem, a classical obstacle problem for the Poisson equation (Laplace operator) on the interval [0,1], using a from-scratch implementation of the piecewise-linear (P1) finite element method.  These Python programs need only standard libraries and Numpy.
+We solve three one-dimensional problems using basic Python, along with standard libraries including [NumPy](https://numpy.org/) and [Matplotlib](https://matplotlib.org/):
 
-## 2D/
+  1. a classical obstacle problem for the Poisson equation (Laplace operator) on the interval [0,1],
+  2. the corresponding obstacle problem for the p-Laplacian operator, and
+  3. the steady and implicit time-stepping obstacle problem for the shallow ice approximation (SIA) on an interval [0,L].
 
-We solve the shallow ice approximation on planar domains.  These Python programs use the Firedrake library and P1 elements.
+All of these are solved with a from-scratch implementation of the piecewise-linear (P1) finite element method.
+
+## partII/
+
+UNDER CONSTRUCTION
+
+These programs solve the steady and implicit time-stepping geometry-evolution for glaciers using Stokes dynamics.  These programs use the [Firedrake](https://www.firedrakeproject.org/) library, but we continue to default to P1 elements.
