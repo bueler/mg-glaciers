@@ -1,7 +1,22 @@
 '''Module for SmootherStokes class derived from SmootherObstacleProblem.'''
 
 import numpy as np
+import firedrake as fd
 from basesmoother import SmootherObstacleProblem
+
+def extend(mesh, f):
+    '''On an extruded mesh extend a function f(x,z), already defined on the
+    base mesh, to the mesh using the 'R' constant-in-the-vertical space.'''
+    Q1R = fd.FunctionSpace(mesh, 'P', 1, vfamily='R', vdegree=0)
+    fextend = fd.Function(Q1R)
+    fextend.dat.data[:] = f.dat.data_ro[:]
+    return fextend
+
+def savefield(mesh, field, fieldname, filename):
+    Q1 = fd.FunctionSpace(mesh,'Lagrange',1)
+    f = fd.Function(Q1).interpolate(field)
+    f.rename(fieldname)
+    fd.File(filename).write(f)
 
 class SmootherStokes(SmootherObstacleProblem):
     '''To evaluate the residual this Jacobi smoother solves the Stokes problem
@@ -27,14 +42,31 @@ class SmootherStokes(SmootherObstacleProblem):
         self.Gamma = 2.0 * self.A3 * (self.rhoi * self.g)**self.nglen
         self.Gamma /= (self.nglen + 2.0)
 
-    def applyoperator(self, mesh, w):
+    def applyoperator(self, mesh1d, w):
         '''Apply nonlinear operator N to w to get N(w) in (V^j)'.'''
         raise NotImplementedError
 
-    def residual(self, mesh, w, ell):
-        '''Compute the residual functional for given iterate w.  Note
-        ell is a source term in V^j'.'''
-        raise NotImplementedError
+    def residual(self, mesh1d, s, ell):
+        '''Compute the residual functional, namely the surface kinematical
+        residual for the entire domain, for given iterate s.  Note mesh1D is
+        a MeshLevel1D instance and ell is a source term in V^j'.  This residual
+        evaluation requires setting up an (x,z) Firedrake mesh from mesh1d
+        using extrusion with empty columns where no ice, and height from s.
+        Note returned residual array is defined on all of mesh1d.'''
+        mx, mz = mesh1d.m + 1, self.args.mz
+        basemesh = fd.IntervalMesh(mx, length_or_left=0.0, right=mesh1d.xmax)
+        layermap = np.zeros((mx, 2), dtype=int)  # [[0,0], [0,0], ..., [0,0]]
+        # FIXME: following only correct for flat bed b=0
+        layermap[:,1] = mz * np.array(s[:-1] + s[1:] > 2.0) # threshold: 1 m
+        mesh = fd.ExtrudedMesh(basemesh, layers=layermap, layer_height=1.0/mz)
+        sbase = fd.Function(fd.FunctionSpace(basemesh,'Lagrange',1))
+        sbase.dat.data[:] = s
+        x, z = fd.SpatialCoordinate(mesh)
+        XZ = fd.as_vector([x, extend(mesh, sbase) * z])
+        coords = fd.Function(mesh.coordinates.function_space())
+        mesh.coordinates.assign(coords.interpolate(XZ))
+        savefield(mesh, z, 'z coord', 'initialmesh.pvd')
+        return
 
     def smoothersweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place Jacobi smoothing.'''

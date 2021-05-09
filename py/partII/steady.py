@@ -85,38 +85,5 @@ ellf = mesh.ellf(obsprob.source(mesh.xx()))  # source functional ell[v] = <f,v>
 s = obsprob.initial(mesh.xx())
 #obsprob.showsingular(s)
 
-# build (x,z) Firedrake mesh from fine-level mesh using extruded mesh with
-# empty columns where no ice, and height from s
-basemeshF = IntervalMesh(mesh.m + 1, length_or_left=0.0, right=L)
-layermap = np.zeros((mesh.m + 1, 2), dtype=int)  # [[0,0], [0,0], ..., [0,0]]
-layermap[:,1] = args.mz * np.array(s[:-1] + s[1:] > 0.0)  # FIXME correct for flat bed
-meshF = ExtrudedMesh(basemeshF, layers=layermap, layer_height=1.0/args.mz)
-P1base = FunctionSpace(basemeshF,'Lagrange',1)
-sbase = Function(P1base)
-sbase.dat.data[:] = np.array(s)
-
-def extend(mesh, f):
-    '''On an extruded mesh extend a function f(x,z), already defined on the
-    base mesh, to the mesh using the 'R' constant-in-the-vertical space.'''
-    Q1R = FunctionSpace(mesh, 'P', 1, vfamily='R', vdegree=0)
-    fextend = Function(Q1R)
-    fextend.dat.data[:] = f.dat.data_ro[:]
-    return fextend
-
-x, z = SpatialCoordinate(meshF)
-Vcoord = meshF.coordinates.function_space()
-XZ = Function(Vcoord).interpolate(as_vector([x, extend(meshF, sbase) * z]))
-meshF.coordinates.assign(XZ)
-
-def savefield(mesh, field, fieldname, filename):
-    Q1 = FunctionSpace(mesh,'Lagrange',1)
-    f = Function(Q1).interpolate(field)
-    f.rename(fieldname)
-    File(filename).write(f)
-
-savefield(meshF, z, 'z coord', 'initialmesh.pvd')
-sys.exit(0)
-
-# TODO:
-#    * solve Stokes on the domain
-#    * compute residual of surface kinematical equation
+# solve Stokes on the domain and compute residual of surface kinematical equation
+obsprob.residual(mesh, s, ellf)
