@@ -34,7 +34,8 @@ class SmootherObstacleProblem(ABC):
         return ind
 
     def showsingular(self, z):
-        '''Print a string indicating singular Jacobian points.'''
+        '''Print a string indicating singular Jacobian points, i.e. locations
+        where the input array z is zero.'''
         Jstr = ''
         for k in range(len(z)):
             Jstr += '-' if z[k] == 0.0 else '*'
@@ -48,20 +49,19 @@ class SmootherObstacleProblem(ABC):
             if not self.args.sweepsnotalternate:
                 forward = not forward
 
+    @abstractmethod
     def initial(self, x):
-        '''Generate default initial shape.'''
-        return np.maximum(self.phi(x), 0.0)
+        '''Generate initial shape.'''
 
     @abstractmethod
     def applyoperator(self, mesh, w):
-        '''Apply only the operator to w to generate a linear functional
-        in (V^j)'.  Linear: a(w,.).  Nonlinear: N(w)[.].  Generally not
-        needed for linear case, so it can raise NotImplementedError.'''
+        '''Apply only the operator N(w)[.] to w to generate a linear functional
+        in (V^j)'.'''
 
     @abstractmethod
     def residual(self, mesh, w, ell):
         '''Compute the residual functional for given iterate w.  Note
-        ell is a source term in V^j'.  Calls _pointresidual() for values.'''
+        ell is a source term in V^j'.'''
 
     @abstractmethod
     def smoothersweep(self, mesh, w, ell, phi, forward=True):
@@ -75,13 +75,3 @@ class SmootherObstacleProblem(ABC):
     @abstractmethod
     def source(self, x):
         '''Evaluate source function f at location(s) x.'''
-
-    def exact_available(self):
-        '''Returns True if there is a valid uexact(x) method.'''
-        return False
-
-    @abstractmethod
-    def exact(self, x):
-        '''Evaluate exact solution u at location(s) x.  Call exact_available()
-        first.  If exact solution is not available this function will raise
-        AssertionError or NotImplementedError.'''
