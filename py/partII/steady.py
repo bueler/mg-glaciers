@@ -41,8 +41,12 @@ adda('-coarse', type=int, default=1, metavar='N',
      help='smoother sweeps on coarsest grid (default=1)')
 adda('-cyclemax', type=int, default=100, metavar='N',
      help='maximum number of (multilevel) cycles (default=100)')
+adda('-domainlength', type=float, default=30.0e3, metavar='L',
+     help='solve on [0,L] (default L=30 km)')
 adda('-down', type=int, default=0, metavar='N',
      help='smoother sweeps before coarse-mesh correction (default=0)')
+adda('-eps', type=float, metavar='X', default=1.0e-2,
+    help='regularization used in viscosity (default=10^{-2})')
 adda('-irtol', type=float, default=1.0e-3, metavar='X',
      help='reduce norm of inactive residual (default X=1.0e-3)')
 adda('-jcoarse', type=int, default=0, metavar='J',
@@ -59,8 +63,6 @@ adda('-omega', type=float, default=1.0, metavar='X',
      help='relaxation factor in smoother (default X=1.0)')
 adda('-printwarnings', action='store_true', default=False,
      help='print pointwise feasibility warnings')
-adda('-domainlength', type=float, default=30.0e3, metavar='L',
-     help='solve on [0,L] (default L=30 km)')
 adda('-sweepsonly', action='store_true', default=False,
      help='do smoother sweeps as cycles, instead of multilevel')
 adda('-up', type=int, default=2, metavar='N',
@@ -86,4 +88,4 @@ s = obsprob.initial(mesh.xx())
 #obsprob.showsingular(s)
 
 # solve Stokes on the domain and compute residual of surface kinematical equation
-obsprob.residual(mesh, s, ellf)
+xbase = obsprob.residual(mesh, s, ellf)

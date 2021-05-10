@@ -33,13 +33,12 @@ class SmootherObstacleProblem(ABC):
             ind = range(mesh.m, 0, -1)  # m,...,1
         return ind
 
-    def showsingular(self, z):
-        '''Print a string indicating singular Jacobian points, i.e. locations
-        where the input array z is zero.'''
+    def shownonzeros(self, z):
+        '''Print a string indicating locations where array z is zero.'''
         Jstr = ''
         for k in range(len(z)):
-            Jstr += '-' if z[k] == 0.0 else '*'
-        print('%3d singulars: ' % sum(z > 0.0) + Jstr)
+            Jstr += '_' if z[k] == 0.0 else '*'
+        print('  %d nonzeros: ' % sum(z > 0.0) + Jstr)
 
     def smoother(self, iters, mesh, w, ell, phi):
         '''Apply iters sweeps of obstacle-problem smoother on mesh to modify w in place.  Alternate directions (unless overridden).'''

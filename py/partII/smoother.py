@@ -12,11 +12,21 @@ def extend(mesh, f):
     fextend.dat.data[:] = f.dat.data_ro[:]
     return fextend
 
-def savefield(mesh, field, fieldname, filename):
+def saveuflfield(mesh, field, fieldname, filename):
     Q1 = fd.FunctionSpace(mesh,'Lagrange',1)
     f = fd.Function(Q1).interpolate(field)
     f.rename(fieldname)
+    print('saving %s to %s' % (fieldname,filename))
     fd.File(filename).write(f)
+
+def saveup(u, p, filename):
+    u.rename('velocity')
+    p.rename('pressure')
+    print('saving u,p to %s' % filename)
+    fd.File(filename).write(u,p)
+
+def D(w):
+    return 0.5 * (fd.grad(w) + fd.grad(w).T)
 
 class SmootherStokes(SmootherObstacleProblem):
     '''To evaluate the residual this Jacobi smoother solves the Stokes problem
@@ -33,18 +43,16 @@ class SmootherStokes(SmootherObstacleProblem):
         self.nglen = 3.0
         self.A3 = 1.0e-16 / self.secpera # Pa-3 s-1;  EISMINT I ice softness
         self.B3 = self.A3**(-1.0/3.0)    # Pa s(1/3);  ice hardness
-        self.eps = 0.01
+        # used in Stokes solver
+        self.Hmin = 20.0                 # 20 m cliffs on ends
         self.Dtyp = 1.0 / self.secpera   # s-1
+        self.sc = 1.0e-7                 # velocity scale for symmetric scaling
         # parameters for initial condition, a Bueler profile; see van der Veen
         #   (2013) section 5.3
         self.buelerL = 10.0e3       # half-width of sheet
         self.buelerH0 = 1000.0      # center thickness
         self.Gamma = 2.0 * self.A3 * (self.rhoi * self.g)**self.nglen
         self.Gamma /= (self.nglen + 2.0)
-
-    def applyoperator(self, mesh1d, w):
-        '''Apply nonlinear operator N to w to get N(w) in (V^j)'.'''
-        raise NotImplementedError
 
     def residual(self, mesh1d, s, ell):
         '''Compute the residual functional, namely the surface kinematical
@@ -57,26 +65,74 @@ class SmootherStokes(SmootherObstacleProblem):
         basemesh = fd.IntervalMesh(mx, length_or_left=0.0, right=mesh1d.xmax)
         layermap = np.zeros((mx, 2), dtype=int)  # [[0,0], [0,0], ..., [0,0]]
         # FIXME: following only correct for flat bed b=0
-        layermap[:,1] = mz * np.array(s[:-1] + s[1:] > 2.0) # threshold: 1 m
+        icyelement = (s[:-1] + s[1:] > 2 * self.Hmin)
+        layermap[:,1] = mz * np.array(icyelement)
+        print('on base mesh with %d elements, creating %d x %d icy elements' \
+              % (mx, sum(icyelement), mz))
+        #self.shownonzeros(icyelement)
         mesh = fd.ExtrudedMesh(basemesh, layers=layermap, layer_height=1.0/mz)
-        sbase = fd.Function(fd.FunctionSpace(basemesh,'Lagrange',1))
-        sbase.dat.data[:] = s
+        P1base = fd.FunctionSpace(basemesh, 'Lagrange', 1)
+        sbase = fd.Function(P1base)
+        sbase.dat.data[:] = np.maximum(s, self.Hmin)
         x, z = fd.SpatialCoordinate(mesh)
-        XZ = fd.as_vector([x, extend(mesh, sbase) * z])
+        xxzz = fd.as_vector([x, extend(mesh, sbase) * z])
         coords = fd.Function(mesh.coordinates.function_space())
-        mesh.coordinates.assign(coords.interpolate(XZ))
-        savefield(mesh, z, 'z coord', 'initialmesh.pvd')
-        return
+        mesh.coordinates.assign(coords.interpolate(xxzz))
+        #saveuflfield(mesh, z, 'z coord', 'initialmesh.pvd')
+        V = fd.VectorFunctionSpace(mesh, 'Lagrange', 2)
+        W = fd.FunctionSpace(mesh, 'Lagrange', 1)
+        Z = V * W
+        up = fd.Function(Z)
+        scu, p = fd.split(up)             # scaled velocity, unscaled pressure
+        v, q = fd.TestFunctions(Z)
+        # symmetrically-rescaled Stokes equations (for better conditioning)
+        fbody = fd.Constant((0.0, - self.rhoi * self.g))
+        n, sc = self.nglen, self.sc
+        reg = self.args.eps * self.Dtyp**2
+        Du2 = 0.5 * fd.inner(D(scu * sc), D(scu * sc)) + reg
+        nu = 0.5 * self.B3 * Du2**((1.0 / n - 1.0)/2.0)
+        F = ( sc*sc * fd.inner(2.0 * nu * D(scu), D(v)) \
+              - sc * p * fd.div(v) - sc * q * fd.div(scu) \
+              - sc * fd.inner(fbody, v) ) * fd.dx
+        # stress-free condition on degenerate ends
+        bcs = [ fd.DirichletBC(Z.sub(0), fd.Constant((0.0, 0.0)), 'bottom')]
+        n_u, n_p = V.dim(), W.dim()
+        print('  sizes: n_u = %d, n_p = %d' % (n_u,n_p))
+        par = {'snes_linesearch_type': 'bt',
+               'snes_max_it': 200,
+               'snes_stol': 0.0,         # expect CONVERGED_FNORM_RELATIVE
+               'ksp_type': 'preonly',
+               'pc_type': 'lu',
+               'pc_factor_shift_type': 'inblocks'}
+        fd.solve(F == 0, up, bcs=bcs, options_prefix='s', solver_parameters=par)
+        u, p = up.split()
+        u *= sc
+        saveup(u, p, 'soln.pvd')
+        # evaluate surface kinematical residual
+        res = - u[0] * z.dx(0) + u[1]   # defined on (x,z) mesh; FIXME: add a(x)
+        saveuflfield(mesh, res, 'a=0 residual', 'res.pvd')
+        # FIXME: to evaluate residual need top-of-column values,
+        #   for which using DirichletBC() and the label 'top' does not work,
+        #   so need to use the following numpy arrays
+        P1 = fd.FunctionSpace(mesh, 'Lagrange', 1)
+        xbaseufl = fd.SpatialCoordinate(basemesh)
+        xbase = fd.Function(P1base).interpolate(xbaseufl[0])
+        print(xbase.dat.data)
+        print(fd.Function(P1).interpolate(x).dat.data)
+        print(fd.Function(P1).interpolate(z).dat.data)
+        print(fd.Function(P1).interpolate(res).dat.data)
+        #topbc = fd.DirichletBC(P1, 1.0, 'top')
+        #print(topbc)
+        #zz = fd.Function(P1).interpolate(z)
+        #stop = zz.dat.data_ro[topbc.nodes]
+        return xbase
+
+    def applyoperator(self, mesh1d, w):
+        '''Apply nonlinear operator N to w to get N(w) in (V^j)'.'''
+        raise NotImplementedError
 
     def smoothersweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place Jacobi smoothing.'''
-        raise NotImplementedError
-
-    def jacobisweep(self, mesh, y, ell, phi, forward=True):
-        '''Do in-place projected nonlinear Jacobi sweep over the interior
-        points p=1,...,m, for the Stokes problem.  On each Newton iteration,
-        computes all residuals before updating any iterate values.
-        Underrelaxation is expected; try omega = 0.5.'''
         raise NotImplementedError
 
     def phi(self, x):
