@@ -88,4 +88,4 @@ s = obsprob.initial(mesh.xx())
 #obsprob.showsingular(s)
 
 # solve Stokes on the domain and compute residual of surface kinematical equation
-xbase = obsprob.residual(mesh, s, ellf)
+obsprob.residual(mesh, s, ellf)

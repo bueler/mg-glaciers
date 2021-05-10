@@ -56,21 +56,32 @@ class SmootherStokes(SmootherObstacleProblem):
 
     def residual(self, mesh1d, s, ell):
         '''Compute the residual functional, namely the surface kinematical
-        residual for the entire domain, for given iterate s.  Note mesh1D is
+        residual for the entire domain, for a given iterate s.  Note mesh1D is
         a MeshLevel1D instance and ell is a source term in V^j'.  This residual
-        evaluation requires setting up an (x,z) Firedrake mesh from mesh1d
-        using extrusion with empty columns where no ice, and height from s.
-        Note returned residual array is defined on all of mesh1d.'''
-        mx, mz = mesh1d.m + 1, self.args.mz
+        evaluation requires setting up an (x,z) Firedrake mesh, starting from
+        mesh1d to make the base mesh and then using extrusion.  The extruded mesh has one short element in each ice free (according to s) column,
+        and the icy columns get their height from s.
+        Note returned residual array is defined on mesh1d.'''
+        # generate base mesh from mesh1d
+        mx = mesh1d.m + 1
+        print('  base mesh: %d elements (intervals)' % mx)
         basemesh = fd.IntervalMesh(mx, length_or_left=0.0, right=mesh1d.xmax)
+        # get bed elevation
+        b = self.phi(mesh1d.xx())
+        # mark ice free columns; put one element column there
+        # FIXME PROBABLY SHOULD JUST GO WITH UNIFORM LAYER COUNTS AND SET TOTAL
+        #       HEIGHT SMALL WHERE ICE FREE
         layermap = np.zeros((mx, 2), dtype=int)  # [[0,0], [0,0], ..., [0,0]]
-        # FIXME: following only correct for flat bed b=0
-        icyelement = (s[:-1] + s[1:] > 2 * self.Hmin)
-        layermap[:,1] = mz * np.array(icyelement)
-        print('on base mesh with %d elements, creating %d x %d icy elements' \
-              % (mx, sum(icyelement), mz))
+        thkelement = ( (s[:-1] - b[:-1]) + (s[1:] - b[1:]) ) / 2.0
+        icyelement = (thkelement > self.Hmin)
         #self.shownonzeros(icyelement)
+        mz = self.args.mz
+        layermap[:,1] = (mz - 1) * np.array(icyelement, dtype=int) + 1
+        # extrude the mesh
+        icycount = sum(icyelement)
+        # FIXME: in parallel we must provide local, haloed layermap
         mesh = fd.ExtrudedMesh(basemesh, layers=layermap, layer_height=1.0/mz)
+        # adjust height to s(x)
         P1base = fd.FunctionSpace(basemesh, 'Lagrange', 1)
         sbase = fd.Function(P1base)
         sbase.dat.data[:] = np.maximum(s, self.Hmin)
@@ -78,26 +89,29 @@ class SmootherStokes(SmootherObstacleProblem):
         xxzz = fd.as_vector([x, extend(mesh, sbase) * z])
         coords = fd.Function(mesh.coordinates.function_space())
         mesh.coordinates.assign(coords.interpolate(xxzz))
-        #saveuflfield(mesh, z, 'z coord', 'initialmesh.pvd')
+        print('  extruded mesh: %d x %d icy and %d (%.2f m) ice-free elements' \
+              % (icycount, mz, mx - icycount, self.Hmin/mz))
+        # set up mixed method
         V = fd.VectorFunctionSpace(mesh, 'Lagrange', 2)
         W = fd.FunctionSpace(mesh, 'Lagrange', 1)
+        n_u, n_p = V.dim(), W.dim()
+        print('  sizes: n_u = %d, n_p = %d' % (n_u,n_p))
         Z = V * W
         up = fd.Function(Z)
         scu, p = fd.split(up)             # scaled velocity, unscaled pressure
         v, q = fd.TestFunctions(Z)
-        # symmetrically-rescaled Stokes equations (for better conditioning)
+        # symmetrically-scaled Glen-Stokes weak form
         fbody = fd.Constant((0.0, - self.rhoi * self.g))
-        n, sc = self.nglen, self.sc
+        sc = self.sc
         reg = self.args.eps * self.Dtyp**2
         Du2 = 0.5 * fd.inner(D(scu * sc), D(scu * sc)) + reg
-        nu = 0.5 * self.B3 * Du2**((1.0 / n - 1.0)/2.0)
+        nu = 0.5 * self.B3 * Du2**((1.0 / self.nglen - 1.0)/2.0)
         F = ( sc*sc * fd.inner(2.0 * nu * D(scu), D(v)) \
               - sc * p * fd.div(v) - sc * q * fd.div(scu) \
               - sc * fd.inner(fbody, v) ) * fd.dx
-        # stress-free condition on degenerate ends
+        # zero Dirichlet on base (and stress-free on top and degenerate ends)
         bcs = [ fd.DirichletBC(Z.sub(0), fd.Constant((0.0, 0.0)), 'bottom')]
-        n_u, n_p = V.dim(), W.dim()
-        print('  sizes: n_u = %d, n_p = %d' % (n_u,n_p))
+        # solve Stokes
         par = {'snes_linesearch_type': 'bt',
                'snes_max_it': 200,
                'snes_stol': 0.0,         # expect CONVERGED_FNORM_RELATIVE
@@ -111,21 +125,24 @@ class SmootherStokes(SmootherObstacleProblem):
         # evaluate surface kinematical residual
         res = - u[0] * z.dx(0) + u[1]   # defined on (x,z) mesh; FIXME: add a(x)
         saveuflfield(mesh, res, 'a=0 residual', 'res.pvd')
-        # FIXME: to evaluate residual need top-of-column values,
-        #   for which using DirichletBC() and the label 'top' does not work,
-        #   so need to use the following numpy arrays
         P1 = fd.FunctionSpace(mesh, 'Lagrange', 1)
-        xbaseufl = fd.SpatialCoordinate(basemesh)
-        xbase = fd.Function(P1base).interpolate(xbaseufl[0])
-        print(xbase.dat.data)
-        print(fd.Function(P1).interpolate(x).dat.data)
-        print(fd.Function(P1).interpolate(z).dat.data)
-        print(fd.Function(P1).interpolate(res).dat.data)
-        #topbc = fd.DirichletBC(P1, 1.0, 'top')
-        #print(topbc)
-        #zz = fd.Function(P1).interpolate(z)
-        #stop = zz.dat.data_ro[topbc.nodes]
-        return xbase
+        topbc = fd.DirichletBC(P1, 1.0, 'top')
+        print(topbc.nodes)
+        bottombc = fd.DirichletBC(P1, 1.0, 'bottom')
+        print(bottombc.nodes)
+        zz = fd.Function(P1).interpolate(z)
+        stop = zz.dat.data_ro[topbc.nodes]
+        print(stop)
+        rr = fd.Function(P1).interpolate(res)
+        rtop = rr.dat.data_ro[topbc.nodes]
+        print(rtop)
+        #xbaseufl = fd.SpatialCoordinate(basemesh)
+        #xbase = fd.Function(P1base).interpolate(xbaseufl[0])
+        #print(xbase.dat.data)
+        #print(fd.Function(P1).interpolate(x).dat.data)
+        #print(fd.Function(P1).interpolate(z).dat.data)
+        #print(fd.Function(P1).interpolate(res).dat.data)
+        return
 
     def applyoperator(self, mesh1d, w):
         '''Apply nonlinear operator N to w to get N(w) in (V^j)'.'''
