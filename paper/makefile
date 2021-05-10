@@ -6,17 +6,24 @@ partI.pdf: partI.tex partI.bib cropfiguresI
 	pdflatex partI
 	pdflatex partI
 
-partII.pdf: partII.tex partII.bib
+partII.pdf: partII.tex partII.bib cropfiguresII
 	pdflatex partII
 	bibtex partII
 	pdflatex partII
 	pdflatex partII
 
 _figuresI := finehats coarsehats coarsesthats residualpoints cartoonplane innerconeapprox prolongobstacle giscross poisson/convergence poisson/mcdl-cycles poisson/mcdl-wu poisson/mcdl-timeper poisson/perfni sia/convergence sia/asymprates sia/reshistory plap/convergence
-
 figuresI := $(addprefix genfigs/, $(addsuffix .pdf, $(_figuresI)))
 
+_figuresII := stokesdomain
+figuresII := $(addprefix genfigs/, $(addsuffix .pdf, $(_figuresII)))
+
 cropfiguresI: $(figuresI)
+	for X in $(figuresI); do \
+	     (pdfcrop $$X $$X); \
+	done
+
+cropfiguresII: $(figuresII)
 	for X in $(figuresI); do \
 	     (pdfcrop $$X $$X); \
 	done
@@ -27,13 +34,13 @@ writeout:
 	(cd genfigs/plap/ && ln -sf ../writeout.py)
 
 # ampersand & is for a "grouped" target; requires make 4.3
-genfigs/finehats.pdf genfigs/coarsehats.pdf genfigs/coarsesthats.pdf &: writeout genfigs/hats1d.py
+genfigs/finehats.pdf genfigs/coarsehats.pdf genfigs/coarsesthats.pdf &: genfigs/hats1d.py
 	(cd genfigs/ && python3 hats1d.py)
 
-genfigs/residualpoints.pdf: writeout genfigs/residualpoints.py
+genfigs/residualpoints.pdf: genfigs/residualpoints.py
 	(cd genfigs/ && python3 residualpoints.py)
 
-genfigs/cartoonplane.pdf: writeout genfigs/cartoonplane.py
+genfigs/cartoonplane.pdf: genfigs/cartoonplane.py
 	(cd genfigs/ && python3 cartoonplane.py)
 
 genfigs/prolongobstacle.pdf: writeout genfigs/prolongobstacle.py
@@ -63,7 +70,10 @@ genfigs/sia/reshistory.pdf: writeout genfigs/sia/reshistory.py
 genfigs/plap/convergence.pdf: writeout genfigs/plap/convergence.py
 	(cd genfigs/plap/ && python3 convergence.py)
 
-.PHONY: clean writeout cropfiguresI
+genfigs/stokesdomain.pdf: genfigs/stokesdomain.py
+	(cd genfigs/ && python3 stokesdomain.py)
+
+.PHONY: clean writeout cropfiguresI cropfiguresII
 
 clean:
 	@rm -f *~ *.out *.aux *.log *.blg *.snm *.toc *.nav *.vrb *.bbl *.synctex.gz

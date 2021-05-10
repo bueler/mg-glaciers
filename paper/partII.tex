@@ -93,7 +93,7 @@ urlcolor=black    % ...
 
 \author{Ed Bueler}
 
-\begin{abstract} FIXME MCD for evolving-geometry with Glen-Stokes dynamics; Schur-complement or Vanka Newton-multigrid for the dynamics problem
+\begin{abstract} FIXME MCD for steady and evolving geometry with Glen-Stokes dynamics; Schur-complement or Vanka Newton-multigrid for the dynamics problem
 \end{abstract}
 
 \maketitle
@@ -108,25 +108,101 @@ urlcolor=black    % ...
 FIXME MCD = multilevel constraint decomposition, a multigrid \cite{Trottenbergetal2001} method basically by \cite{Tai2003} for obstacle problems; see part I \cite{Bueler2022partI};  obstacle problem view first extended to Stokes by \cite{WirbelJarosch2020}
 
 
-\section{MCD for the Glen-Stokes geometry problem} \label{sec:stokesgeometry}
+\section{The Stokes geometry problem} \label{sec:stokesgeometry}
 
-FIXME state steady continuum strong form \cite[Chapter 1]{FowlerNg2021} and \cite{GreveBlatter2009}; numerical solutions by various methods e.g.~\cite{Jouvetetal2008}
+The standard model for determining the geometry of glaciers is based upon a shear-thinning version of the Stokes equations plus the surface kinematical equation (SKE).  In this section we state the strong form for this ``coupled'' glacier geometry model, first of all in the steady-state case, but with an emphasis on the complementarity-problem context of the SKE, which is rarely emphasized \cite{SchoofHewitt2013}.  Then we describe two different understandings of the weak form for this steady coupled model, including the starting point for the multilevel method in the next section.  Lastly in this section we extend the weak form to an implicit time-semi-discretized model for the evolving geometry problem.
+
+We state the steady-state model on a fixed $d=1$ or $d=2$ map-plane region $\Omega \subset \RR^d$ (Figure \ref{fig:stokesdomain}) with map-plane variables $x$ or $(x,y)$, respectively.  On this region we assume that a climatic mass balance (CMB) function $a(x,y)$, in units of ice thickness per time, is defined at every point (whether or not ice is present at that location), and also a bed elevation function $b(x,y)$.  The functions $a$ and $b$, given on all of $\Omega$, are the data of the steady geometry problem.
+
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[width=0.75\textwidth]{genfigs/stokesdomain.pdf}
+\end{center}
+\caption{The CMB $a(x,y)$ (arrows) and bed elevation $b(x,y)$ (solid) are given data on a fixed $d$-dimensional map-plane region $\Omega$.  The (solution) geometry defines an upper surface $s(x,y)$ (dashed) and a $(d+1)$-dimensional icy domain $\Lambda_s$; note $s$ is defined on $\Omega$, but $s=b$ where ice-free.}
+\label{fig:stokesdomain}
+\end{figure}
+
+If ice is present its upper surface elevation is a well-defined (i.e.~no overhangs) function $s(x,y)$ such that $s\ge b$, but note this surface elevation is a solution of our model.  We define $s$ everywhere in $\Omega$ by extending with $s=b$ where ice is absent.  The $(d+1)$ dimensional extent of the ice, a solution of the model, is the (open) domain
+\begin{equation}
+\Lambda_s = \{(x,y,z)\,|\,(x,y) \in \Omega \text{ and } b(x,y) < z < s(x,y)\} \label{eq:lambdas}
+\end{equation}
+where $z$ is vertically-upward (opposed to gravity).  Note that while we generally present the equations assuming $d=2$ for 3D ice, with 2D ice the coordinates are denoted $(x,z)$.
+
+The dynamics of glaciers is based upon an assumption that ice is a very-viscous non-Newtonian fluid subject to Glen's shear-thinning flow law \cite{GreveBlatter2009}.  Allowing any Glen exponent $n\ge 1$, the equations \cite[Chapter 1]{FowlerNg2021} for bulk ice are:
+\begin{align}
+- \nabla \cdot \tau + \nabla p &= \rhoi \bg &&\text{\emph{stress balance}} \label{eq:forcebalance} \\
+\nabla \cdot \bu &= 0 &&\text{\emph{incompressibility}} \label{eq:incompressible} \\
+\tau &= B_n |D\bu|^{(1/n) - 1} D\bu  &&\text{\emph{flow law}} \label{eq:viscflowlaw}
+\end{align}
+Solution fields, defined on $\Lambda_s$, are the velocity $\bu$, pressure $p$, and the deviatoric stress tensor $\tau$.  In later computations we will use $n=3$, ice density $\rhoi=910 \,\text{kg}\,\text{m}^{-3}$, and gravity $\bg=\left<0,0,-g\right>$, with $g=9.81\,\text{m}\,\text{s}^{-2}$.  Also $B_n$ is the ($n$-dependent) ice hardness, a constant because we assume isothermal conditions; $B_n=6.8082\times 10^7\,\text{Pa}\,\text{s}^{1/3}$ is used in computations.
+
+Regarding tensors and their notation, the full (Cauchy) stress tensor $\sigma$ \cite{GreveBlatter2009} decomposes into the deviatoric part $\tau$ minus the pressure, i.e.~$\sigma = \tau - p\,I$, so equation \eqref{eq:forcebalance} simply says $-\Div \sigma = \rhoi \bg$.  The strain rate tensor $D\bu$ is the symmetric part of $\grad \bu$: \,$(D\bu)_{ij} = \frac{1}{2} \left(\grad\bu + \grad\bu^\top\right)$.  Because $D\bu$ is symmetric, and because it has trace zero by equation \eqref{eq:incompressible}, i.e.~$\trace(D\bu)=\nabla \cdot \bu = 0$, from equation \eqref{eq:viscflowlaw} it follows that $\tau$ is also symmetric with trace zero.  The tensor norm in \eqref{eq:viscflowlaw} satisfies $|D\bu|^2 = \frac{1}{2} \trace\left((D\bu)^2\right) = \frac{1}{2} (D\bu)_{ij} (D\bu)_{ij}$.
+
+For the $n=1$ linear Stokes equations \cite{Elmanetal2014} one traditionally writes \eqref{eq:viscflowlaw} as $\tau = 2\nu D\bu$ with viscosity $\nu = (1/2) B_1$.  For powers $n>1$, namely shear-thinning ice we define an ``effective viscosity'' using a negative power of the strain rate norm $|D\bu|$.  This effective viscosity would be singular in the limit of small strain rates, and so, motivated by the actual finite viscosity of glacier ice \cite{GreveBlatter2009}, we define the regularized effective viscosity
+\begin{equation}
+\nu_\eps = \frac{1}{2} B_n \left(|D\bu|^2 + \eps\, D_0^2\right)^{(\pp-2)/2}, \label{eq:regeffvisc}
+\end{equation}
+where $\pp=(1/n)+1=4/3$.  The constant $D_0$ defines a strain-rate scale for glacier flow; $D_0 = 1 \,\text{a}^{-1}$ and $\eps = 10^{-4}$ (pure) are used in computations.  Using \eqref{eq:regeffvisc} we may eliminate $\tau$ and rewrite \eqref{eq:forcebalance} as $- \nabla \cdot \left(2 \nu_\eps\, D\bu\right) + \nabla p = \rhoi \mathbf{g}$.
+
+Dynamic boundary conditions for the isolated, grounded, and non-sliding case are used in this paper.  The ice surfaces are well-defined functions, thus the top and bottom boundaries of $\Lambda_s$ can be identified, and we assume these surfaces have well-defined tangents.  On top we set a condition of zero applied stress,
+\begin{equation}
+\left(2 \nu_\eps D\bu - pI\right) \bn_s = \bzero  \qquad \qquad \text{\emph{on the top} } \overline{\partial} \Lambda_s, \label{eq:topbc}
+\end{equation}
+where $\bn_s$ is the (upward, non-normalized) normal to the ice surface.  (It is straightforward to provide a nonzero atmospheric pressure at the surface.)  On the base we require no slip:
+\begin{equation}
+\bu = \bzero  \qquad\qquad \text{\emph{on the base} } \underline{\partial} \Lambda_s. \label{eq:basebc}
+\end{equation}
+The ice flow extends in the horizontal direction until a free boundary at the glacier margin is reached, and at such locations the surface gradient $\grad s$ becomes singular.  (Real glacier margins may occur as fracture-generated cliffs, but such non-fluid processes are not modeled here.)
+
+On the assumption that the ice geometry $\Lambda_s$ is known, the well-posedness of the above model is proven by \cite{JouvetRappaz2011}, and the solution is a unique pair $(\bu,p)$ defined on $\Lambda_s$.  However, the simultaneous determination of the ice geometry and its flow is our goal.  Observing that the above equations make no reference to the CMB function $a$, it remains to couple the climate to the dynamics so as to determine the glacier geometry from the given data.
+
+Noting that the surface elevation is already defined on all of $\Omega$, with $s=b$ off the ice, we also extend the surface normal $\bn_s$, thus formula
+\begin{equation}
+\bn_s = \left<-s_x,-s_y,1\right> \label{eq:surfacenormal}
+\end{equation}
+is valid on all of $\Omega$.  (Note, however, that dynamical boundary condition \eqref{eq:topbc} applies only where ice is present.)  Furthermore we extend the surface value of the velocity to all of $\Omega$:
+\newcommand{\us}{\bu|_s}
+\begin{equation}
+\bu|_s = \begin{cases} \bu(x,y,s(x,y)), & s(x,y) > b(x,y), \\
+                       \bzero, & \text{elsewhere}. \end{cases} \label{eq:surfacevelocity}
+\end{equation}
+(The movement of the solid earth implies $\us\ne 0$ everywhere, but we ignore this small effect.)
+
+With the above conventions we can state the remaining equation in the model which determines the geometry, namely the steady-state surface kinematical equation (SKE) \cite{GreveBlatter2009}, an aspect of mass conservation:
+\begin{equation}
+\bu|_s \cdot \bn_s + a = 0 \qquad \text{\emph{on the ice}}. \label{eq:ske}
+\end{equation}
+The quantities in this equation are defined everywhere but the kinematical quantity $\bu|_s \cdot \bn_s + a$ is only zero on the ice.  With convention \eqref{eq:surfacevelocity}, extending the surface velocity by zero off the ice, $\bu|_s \cdot \bn_s + a \le 0$ everywhere because $a$ is negative off the ice in steady state.  In fact, as observed in part I of this paper \cite{Bueler2022partI} (see also \cite{Bueler2021conservation}), the SKE is part of a nonlinear complementarity problem (NCP) when combined with the constraint that $s\ge b$ everywhere on $\Omega$.
+
+This leads us to state a strong form of the steady geometry model as follows:
+\begin{align}
+s - b &\ge 0 && \text{on $\Omega$} \label{eq:strongform} \\
+- \bu|_s \cdot \bn_s - a &\ge 0 \notag \\
+(s - b) (- \bu|_s \cdot \bn_s - a) &= 0 \notag \\
+- \nabla \cdot \left(2 \nu_\eps\, D\bu\right) + \nabla p - \rhoi \mathbf{g} &= \bzero && \text{on $\Lambda_s$} \notag \\
+\nabla \cdot \bu &= 0 \notag \\
+\left(2 \nu_\eps D\bu - pI\right) \bn_s &= \bzero && \text{on $\overline{\partial} \Lambda_s$} \notag \\
+\bu &= \bzero && \text{on $\underline{\partial} \Lambda_s$} \notag
+\end{align}
+along with definition \eqref{eq:regeffvisc}.  The first three statements form an NCP, but they are only fully-defined by using the boundary value problem for the dynamics, namely the last four statements.  The solution is a triple of functions $s(x,y)$, $\bu(x,y,z)$, $p(x,y,z)$, but, as the domain $\Lambda_s$ on which $\bu,p$ are defined is only known simultaneously with the solution elevation $s$, system \eqref{eq:strongform} is at least an incomplete description.  (The weak form stated below will address this concern.)
+
+The inequality-constrained system of PDEs \eqref{eq:strongform} has a largely-unknown theory regarding well-posedness and solution regularity.  Nonetheless we will write it next in different weak forms, identifying reasonable function spaces and making solution existence credible.  Note that some well-posedness theory is known for the shallow ice approximation (SIA) version of this problem; existence is established by \cite{JouvetBueler2012}, with uniqueness in the flat bed case.  The direct solution of \eqref{eq:strongform} has (mostly; see \cite{WirbelJarosch2020}) not been attempted by existing ice sheet and glacier models; they use an explicit time-stepping approach to steady state, splitting the dynamics and the SKE into separate steps \cite[for example]{Jouvetetal2008,Lengetal2012}.  In any case, in the next section we will demonstrate a reasonably-robust multilevel scheme for its direct numerical solution.
 
 FIXME weak form
 
+\section{Multilevel constraint decomposition (MCD) for steady Stokes geometry} \label{sec:mcdstokes}
+
 FIXME smoother uses Firedrake \cite{Alnaesetal2014,Rathgeberetal2016} with extruded meshes \cite{Gibsonetal2019,McRaeetal2016} and PETSc \cite{Balayetal2020,Bueler2021} to solve the dynamics problem and thereby evaluate the residual, and Stokeslets for Jacobian
 
-FIXME time-dependent runs
-
-
-\section{Multigrid for the (fixed-geometry) Glen-Stokes dynamics problem} \label{sec:stokesdynamics}
-
-FIXME weak form; well-posed by \cite{JouvetRappaz2011}; various numerical solutions e.g.~\cite{Lengetal2012}
+\section{Multigrid for the (fixed-geometry) Stokes dynamics problem} \label{sec:stokesdynamics}
 
 FIXME multigrid already used for Blatter-Pattyn dynamics \cite{BrownSmithAhmadia2013}; for hybrid dynamics \cite{Jouvetetal2013,JouvetGraeser2013}; and for Stokes dynamics \cite{IsaacStadlerGhattas2015} and \cite{Tuminaroetal2016} using AMG
 
 FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to Vanka monolithic smoother \cite{Farrelletal2019}
 
+\section{Multilevel methods for evolving geometry} \label{sec:stokesevolution}
+
+FIXME time-dependent runs
 
 \small
 
