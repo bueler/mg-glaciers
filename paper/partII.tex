@@ -118,7 +118,7 @@ We state the steady-state model on a fixed $d=1$ or $d=2$ map-plane region $\Ome
 \begin{center}
 \includegraphics[width=0.75\textwidth]{genfigs/stokesdomain.pdf}
 \end{center}
-\caption{The CMB $a(x,y)$ (arrows) and bed elevation $b(x,y)$ (solid) are given data on a fixed $d$-dimensional map-plane region $\Omega$.  The (solution) geometry defines an upper surface $s(x,y)$ (dashed) and a $(d+1)$-dimensional icy domain $\Lambda_s$; note $s$ is defined on $\Omega$, but $s=b$ where ice-free.}
+\caption{The CMB $a(x,y)$ (arrows) and bed elevation $b(x,y)$ (solid) are given data on a fixed $d$-dimensional map-plane region $\Omega$.  The solution geometry defines a surface elevation $s(x,y)$ on $\Omega$ (dashed) and a $(d+1)$-dimensional icy domain $\Lambda_s = \{b(x,y) < z < s(x,y)\}$.  Note $s=b$ where ice-free.}
 \label{fig:stokesdomain}
 \end{figure}
 
@@ -188,7 +188,59 @@ along with definition \eqref{eq:regeffvisc}.  The first three statements form an
 
 The inequality-constrained system of PDEs \eqref{eq:strongform} has a largely-unknown theory regarding well-posedness and solution regularity.  Nonetheless we will write it next in different weak forms, identifying reasonable function spaces and making solution existence credible.  Note that some well-posedness theory is known for the shallow ice approximation (SIA) version of this problem; existence is established by \cite{JouvetBueler2012}, with uniqueness in the flat bed case.  The direct solution of \eqref{eq:strongform} has (mostly; see \cite{WirbelJarosch2020}) not been attempted by existing ice sheet and glacier models; they use an explicit time-stepping approach to steady state, splitting the dynamics and the SKE into separate steps \cite[for example]{Jouvetetal2008,Lengetal2012}.  In any case, in the next section we will demonstrate a reasonably-robust multilevel scheme for its direct numerical solution.
 
-FIXME weak form
+Recall that the weak form of a PDE model states that the solution is the zero of a certain functional which is constructed by multiplying by a test function and integrating by parts.  Both the solution and the test functions come from identified function spaces, namely Sobolev spaces \cite{Evans2010}.  (We denote by $W^{k,r}$ the Sobolev space of functions which have $k$ derivatives which are $r$th-power integrable.)
+
+For example, it is well-known \cite[for example]{Elmanetal2014} that for a fixed domain $\Lambda \subset \RR^3$, on which a constant-viscosity ($\nu_0$) and zero body force, linear Stokes model applies, with a Dirichlet condition on part of the domain and stress-free conditions otherwise, the weak form is the statement that $(\bu,p) \in W_0^{1,2}(\Lambda)^3 \times L^2(\Lambda)$ satisfies
+\begin{equation}
+\int_\Lambda 2 \nu_0 D\bu : D\bv - p \Div\bv - q \Div\bu\,d\bx = 0 \quad \text{for all } (\bv,q) \in W_0^{1,2}(\Lambda)^3 \times L^2(\Lambda).  \label{eq:linearstokesweak}
+\end{equation}
+
+As shown by Poisson and SIA examples in part I \cite{Bueler2022partI}, a similar construction generates the weak form of an inequality-constrained model as a variational inequality (VI) \cite{KinderlehrerStampacchia1980}.  Recall $\pp=(1/n)+1=4/3$ from the SIA model example, and let $\qq=(1-\pp^{-1})^{-1}=n+1=4$ be the conjugate exponent, so that $\pp^{-1}+\qq^{-1}=1$.  Suppose $b$ has bounded derivatives and let
+\begin{equation}
+\mathcal{K} = \{s \in W_0^{1,\qq}(\Omega) \,|\, s \ge b\}.  \label{eq:Kconstraintset}
+\end{equation}
+This is the constraint set for surface elevations, the same as in the discussion of the SIA model.
+
+Next we construct two such weak forms for the coupled, steady Stokes-based glacier geometry model \eqref{eq:strongform}.  Each one combines the VI for the surface elevation with a nonlinear version of the Stokes weak form \eqref{eq:linearstokesweak}.
+
+Let $z^+ \in \RR$ be a value which is larger than any expected value of $s(x,y)$.  Then
+\begin{equation}
+\Xi = \{(x,y,z)\,|\, (x,y) \in \Omega, b(x,y) < z < z^+\} \subset \RR^{d+1}  \label{eq:Xi}
+\end{equation}
+is a fixed and bounded domain which contains the glacier as a subset.  Let
+\begin{equation}
+\mathcal{V} = W_0^{1,\pp}(\Xi)^{d+1}
+\end{equation}
+be a set of velocity fields $\bv$ which satisfy $\bv=0$ on the bottom boundary of $\Xi$.  Now let
+\begin{equation}
+\mathcal{W} = \mathcal{K} \times \mathcal{V} \times L^\qq(\Xi)  \label{eq:Wset}
+\end{equation}
+be the set of admissible solution triples $(s,\bu,p)$, and let $\tilde{\mathcal{W}} = W_0^{1,\qq}(\Omega) \times \mathcal{V} \times L^\qq(\Xi)$ be the corresponding vector space; note $\mathcal{W}$ is a closed and convex subset of $\tilde{\mathcal{W}}$.  Finally define a function on $\RR^3$ which we will use to create the characteristic function of the icy domain $\Lambda_s$:
+\begin{equation}
+\Phi(z,\beta,\zeta) = \begin{cases} 1, & \beta < z < \zeta, \\ 0, & \text{otherwise}.  \end{cases}
+\end{equation}
+Note that if we are given a solution surface elevation $s(x,y)$ then
+    $$\Phi(z,b(x,y),s(x,y)) = 1 \quad \iff \quad (x,y,z) \in \Lambda_s.$$
+
+From the above components we define a functional $\tilde F : \mathcal{W} \times \tilde{\mathcal{W}} \to \RR$ which is (extremely) nonlinear in the first triple $(s,\bu,p) \in \mathcal{W}$ but linear in the second triple:
+\begin{align}
+\tilde F(s,\bu,p;r,\bv,q) &= \int_\Omega (-\bn_s \cdot \bu|_s - a) r \,dx dy \\
+   &\quad + \int_\Xi \Phi(z,b,s) \Big[2 \nu_\eps D\bu : D\bv - p \Div\bv - q \Div\bu - \rhoi \bg \bv\Big]\,d\bx \notag
+\end{align}
+where \eqref{eq:regeffvisc} defines $\nu_\eps = \nu_\eps(|D\bu|)$.  Then our first weak form for model \eqref{eq:strongform} is the VI statement that $(s,\bu,p) \in \mathcal{W}$ satisfies
+\begin{equation}
+\tilde F(s,\bu,p;r-s,\bv-\bu,q-p) \ge 0 \quad \text{for all } (r,\bv,q) \in \mathcal{W}.\label{eq:firstweak}
+\end{equation}
+Three key observations should be made about \eqref{eq:firstweak}:
+\renewcommand{\labelenumi}{\emph{(\roman{enumi})}}
+\begin{enumerate}
+\item the integrals defining $\tilde F$ are over fixed, solution-independent sets $\Omega$, $\Xi$,
+\item the coefficient $\Phi(z,b,s)$ depends on the solution, namely $s$, and
+\item while $\bu,p$ are defined on $\Xi$ if $(s,\bu,p) \in \mathcal{W}$, in fact $\tilde F$ is insensitive to values of $\bu,p$ outside of $\Lambda_s$.
+\end{enumerate}
+Observation \emph{(iii)} says that $\tilde F$ is not coercive \cite{KinderlehrerStampacchia1980} on $\mathcal{W}$.
+
+FIXME SECOND WEAK FORM IS LESS HARD ASS
 
 \section{Multilevel constraint decomposition (MCD) for steady Stokes geometry} \label{sec:mcdstokes}
 
