@@ -24,7 +24,7 @@ cropfiguresI: $(figuresI)
 	done
 
 cropfiguresII: $(figuresII)
-	for X in $(figuresI); do \
+	for X in $(figuresII); do \
 	     (pdfcrop $$X $$X); \
 	done
 
