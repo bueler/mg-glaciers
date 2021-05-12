@@ -85,7 +85,9 @@ mesh = hierarchy[-1]
 phi = obsprob.phi(mesh.xx())
 ellf = mesh.ellf(obsprob.source(mesh.xx()))  # source functional ell[v] = <f,v>
 s = obsprob.initial(mesh.xx())
-#obsprob.showsingular(s)
+#obsprob.shownonzeros(s)
 
-# solve Stokes on the domain and compute residual of surface kinematical equation
-obsprob.residual(mesh, s, ellf)
+# compute and print residual of surface kinematical equation
+print(obsprob.residual(mesh, s, ellf))
+
+# FIXME much more to do
