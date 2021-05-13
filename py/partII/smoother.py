@@ -58,7 +58,7 @@ class SmootherStokes(SmootherObstacleProblem):
         self.mx = None
         self.b = None
 
-    def residual(self, mesh1d, s, ella, icefreecolumns=False, saveupname=None):
+    def residual(self, mesh1d, s, ella, icefreecolumns=True, saveupname=None):
         '''Compute the residual functional, namely the surface kinematical
         residual for the entire domain, for a given iterate s.  Note mesh1D is
         a MeshLevel1D instance and ella = <a(x),.> is a source term in V^j'.
@@ -81,12 +81,13 @@ class SmootherStokes(SmootherObstacleProblem):
         mz = self.args.mz
         thk = s - self.b
         if icefreecolumns:
-            # mark ice free columns and put one-element column in each
+            # FIXME mark ice free columns and put one-element column in each
             layermap = np.zeros((self.mx, 2), dtype=int)  # [[0,0], ..., [0,0]]
             thkelement = ( (thk[:-1]) + (thk[1:]) ) / 2.0
             icyelement = (thkelement > self.Hmin)
-            layermap[:,1] = (mz - 1) * np.array(icyelement, dtype=int) + 1
             icycount = sum(icyelement)
+            #layermap[:,1] = (mz - 1) * np.array(icyelement, dtype=int) + 1
+            layermap[:,1] = mz * np.array(icyelement, dtype=int)
             if firstcall:
                 print('            extruded mesh %d x %d icy and %d ice-free elements' \
                       % (icycount, mz, self.mx - icycount))
@@ -150,8 +151,18 @@ class SmootherStokes(SmootherObstacleProblem):
         #saveuflfield(mesh, res, 'a=0 residual', 'res.pvd')
         P1 = fd.FunctionSpace(mesh, 'Lagrange', 1)
         rr = fd.Function(P1).interpolate(res)  # a=0 residual on (x,z) mesh
+        # when icefreecolumns == True, topbc.nodes has two issues:
+        #    1. it includes the nodes on the facets where there is no adjacent
+        #       ice, and
+        #    2. it does not include 'bottom' nodes which have no ice nodes
+        #       above them
+        # what we want is a "map_plane_top.nodes" list
+        # to build it need to iterate over base mesh marking every Q1 node
+        # that does not have ice above it
         topbc = fd.DirichletBC(P1, 1.0, 'top')
-        #print(topbc.nodes)
+        print(topbc.nodes)
+        bottombc = fd.DirichletBC(P1, 1.0, 'bottom')
+        print(bottombc.nodes)
         return mesh1d.ellf(rr.dat.data_ro[topbc.nodes]) - ella
 
     def applyoperator(self, mesh1d, w):
