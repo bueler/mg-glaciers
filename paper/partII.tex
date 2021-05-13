@@ -114,23 +114,27 @@ FIXME MCD = multilevel constraint decomposition, a multigrid \cite{Trottenberget
 
 \section{The Stokes geometry problem} \label{sec:stokesgeometry}
 
-The standard model for determining the geometry of glaciers is based upon a shear-thinning version of the Stokes equations plus the surface kinematical equation (SKE).  In this section we state the strong form for this ``coupled'' glacier geometry model, first of all in the steady-state case, but with an emphasis on the complementarity-problem context of the SKE, which is rarely emphasized \cite{SchoofHewitt2013}.  Then we describe two different understandings of the weak form for this steady coupled model, including the starting point for the multilevel method in the next section.  Lastly in this section we extend the weak form to an implicit time-semi-discretized model for the evolving geometry problem.
+The standard model for determining the geometry of glaciers is based upon a shear-thinning version of the Stokes equations, namely the Glen-Stokes model which we describe in this section, plus the surface kinematical equation (SKE).  We first state the strong form for this ``coupled'' glacier geometry model in the steady-state case.  The emphasis here is on the complementarity-problem context of the SKE, which is in contrast with the standard literature, a contrast observed by \cite{SchoofHewitt2013}, for example.  We then describe two different understandings of the weak form for this steady coupled model, noting along the way some the theoretical incompleteness of this standard coupled model.  One of the weak forms serves as a starting point for the multilevel method in the next section.  Lastly in this section we extend the steady weak form to an implicit time-discretized  evolving-geometry model, a straightforward extension.
 
-We state the steady-state model on a fixed $d=1$ or $d=2$ map-plane region $\Omega \subset \RR^d$ (Figure \ref{fig:stokesdomain}) with map-plane variables $x$ or $(x,y)$, respectively.  On this region we assume that a climatic mass balance (CMB) function $a(x,y)$, in units of ice thickness per time, is defined at every point (whether or not ice is present at that location), and also a bed elevation function $b(x,y)$.  The functions $a$ and $b$, given on all of $\Omega$, are the data of the steady geometry problem.
+We state the steady-state model on a fixed map-plane region $\Omega \subset \RR^d$ (Figure \ref{fig:stokesdomain}) with map-plane variables $x$ or $(x,y)$, respectively, when $d=1$ or $d=2$.  On $\Omega$ we assume that a climatic mass balance (CMB) function $a(x,y)$ is defined at every point, whether or not ice is present at that location, with units of ice thickness per time.  Similarly we assume there is a bed elevation function $b(x,y)$ defined everywhere on $\Omega$.  The functions $a$ and $b$ are the data of the steady geometry problem.
 
 \begin{figure}[ht]
 \begin{center}
 \includegraphics[width=0.75\textwidth]{genfigs/stokesdomain.pdf}
 \end{center}
-\caption{The CMB $a(x,y)$ (arrows) and bed elevation $b(x,y)$ (solid) are given data on a fixed $d$-dimensional map-plane region $\Omega$.  The solution geometry defines a surface elevation $s(x,y)$ on $\Omega$ (dashed) and a $(d+1)$-dimensional icy domain $\Lambda_s = \{b(x,y) < z < s(x,y)\}$.  Note $s=b$ where ice-free.}
+\caption{The CMB $a(x,y)$ (arrows) and bed elevation $b(x,y)$ (solid) are given data on a fixed $d$-dimensional map-plane region $\Omega$.  The solution geometry defines a surface elevation $s(x,y)$ (dashed) on $\Omega$ and a $(d+1)$-dimensional icy domain $\Lambda_s = \{b(x,y) < z < s(x,y)\}$; note $s=b$ where ice-free.}
 \label{fig:stokesdomain}
 \end{figure}
 
-If ice is present its upper surface elevation is a well-defined (i.e.~no overhangs) function $s(x,y)$ such that $s\ge b$, but note this surface elevation is a solution of our model.  We define $s$ everywhere in $\Omega$ by extending with $s=b$ where ice is absent.  The $(d+1)$ dimensional extent of the ice, a solution of the model, is the (open) domain
+The stress balance for ice clearly only applies in the interior of the icy domain.  We make a strong, but common \cite[for example]{IsaacStadlerGhattas2015,Jouvetetal2008,Lengetal2012,WirbelJarosch2020} assumption about the icy domain, namely that the upper surface elevation of the ice is well-defined as a function $s(x,y)$, that is, we \emph{assume there are no overhangs}.  We then define $s$ everywhere in $\Omega$ by extending with $s=b$ where ice is absent, thus $s\ge b$ applies on $\Omega$.  Note that $s(x,y)$ is part of the \emph{solution} of our model.
+
+The model we describe here is likely not to be well-posed at the ice margin.  That is, there may be no steady state of the fluid geometry in the vicinity of a steep ice margin, especially on a steep bed feature.  The same concern applies to each time step of an evolving model in the sense that overhanging ice may appear at the margin, violating the well-defined-$s(x,y)$ assumption.  However, essentially all modeling literature ignors this possibility and assumes well-defined surface elevation and thickness.  An exception is in \cite{PralongFunk2005}, which also suggests an extended continuum model which may be well-posed, namely in which serac and ice-cliff calving occurs via a damage variable and a stress-fracture failure criterion.  This model, which we do not pursue, is relevant to interpretating our numerical boundary construction, which implies a short cliff, in Section \ref{sec:mcdstokes}.
+
+Based on this assumption of a well-defined upper surface, the $(d+1)$-dimensional extent of the ice, also part of the solution, is the (open) domain
 \begin{equation}
 \Lambda_s = \{(x,y,z)\,|\,(x,y) \in \Omega \text{ and } b(x,y) < z < s(x,y)\} \label{eq:lambdas}
 \end{equation}
-where $z$ is vertically-upward (opposed to gravity).  Note that while we generally present the equations assuming $d=2$ for 3D ice, with 2D ice the coordinates are denoted $(x,z)$.
+where $z$ is vertically-upward.  (If $d=1$ then the coordinates on $\Lambda_s$ are denoted $(x,z)$.)
 
 The dynamics of glaciers is based upon an assumption that ice is a very-viscous non-Newtonian fluid subject to Glen's shear-thinning flow law \cite{GreveBlatter2009}.  Allowing any Glen exponent $n\ge 1$, the equations \cite[Chapter 1]{FowlerNg2021} for bulk ice are:
 \begin{align}

@@ -71,6 +71,6 @@ plt.text(x[650], b[650] - 0.5, r'$b(x,y)$', fontsize=bigfsize, color='k')
 # show \Omega
 yR = min(b) - 0.5
 plt.plot([min(x),max(x)],[yR,yR],color='k',lw=1.0)
-plt.text(2.0,yR-0.4,r'$\Omega$',fontsize=fsize)
+plt.text(4.0,yR-0.4,r'$\Omega$',fontsize=fsize)
 plt.axis([0.0,10.0,yR-0.8,4.5])
 writeout('stokesdomain.pdf')
