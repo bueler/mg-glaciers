@@ -87,7 +87,36 @@ ellf = mesh.ellf(obsprob.source(mesh.xx()))  # source functional ell[v] = <f,v>
 s = obsprob.initial(mesh.xx())
 #obsprob.shownonzeros(s)
 
-# compute and print residual of surface kinematical equation
-print(obsprob.residual(mesh, s, ellf))
+b = mesh.zeros()
+
+def inactiveresidualnorm(s, F, ireps=50.0):
+    '''Compute the norm of the residual values at nodes where the constraint
+    is NOT active.  Note that where the constraint is active the residual F(s)
+    in the complementarity problem is allowed to have any positive value, and
+    only the residual at inactive nodes is relevant to convergence.'''
+    F[s < b + ireps] = np.minimum(F[s < b + ireps], 0.0)
+    return mesh.l2norm(F)
+
+# FIXME be more sophisticated ... but the following sort of works
+
+# simple loop to do projected nonlinear Richardson, = explicit time-stepping,
+# as a candidate smoother
+rtol = 1.0e-4
+alpha = 2000.0  # good for J=4,5 ... maybe
+maxsteps = 500
+s0 = s.copy()
+r = obsprob.residual(mesh, s, ellf, saveupname='step0.pvd')
+normF0 = inactiveresidualnorm(s, r)
+print(normF0)
+for j in range(maxsteps):
+    s = np.maximum(s - alpha * r, 0.0)
+    r = obsprob.residual(mesh, s, ellf)
+    normF = inactiveresidualnorm(s, r)
+    print(normF)
+    if normF < rtol * normF0:
+        break
+obsprob.residual(mesh, s, ellf, saveupname='step%d.pvd' % j)
+print(s0)
+print(s)
 
 # FIXME much more to do
