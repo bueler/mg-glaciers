@@ -58,7 +58,7 @@ class SmootherStokes(SmootherObstacleProblem):
         self.mx = None
         self.b = None
 
-    def residual(self, mesh1d, s, ella, icefreecolumns=False, saveup=True):
+    def residual(self, mesh1d, s, ella, icefreecolumns=False, saveupname=None):
         '''Compute the residual functional, namely the surface kinematical
         residual for the entire domain, for a given iterate s.  Note mesh1D is
         a MeshLevel1D instance and ella = <a(x),.> is a source term in V^j'.
@@ -68,9 +68,10 @@ class SmootherStokes(SmootherObstacleProblem):
         extruded mesh has one short element in each ice free (according to s)
         column.  Note the residual array is defined on mesh1d and in V^j'.'''
         # if needed, generate base mesh from mesh1d
-        if self.basemesh == None:
+        firstcall = (self.basemesh == None)
+        if firstcall:
             self.mx = mesh1d.m + 1
-            print('  creating base mesh of %d elements (intervals) ...' \
+            print('residual(): base mesh of %d elements (intervals)' \
                   % self.mx)
             self.basemesh = fd.IntervalMesh(self.mx, length_or_left=0.0,
                                             right=mesh1d.xmax)
@@ -86,14 +87,16 @@ class SmootherStokes(SmootherObstacleProblem):
             icyelement = (thkelement > self.Hmin)
             layermap[:,1] = (mz - 1) * np.array(icyelement, dtype=int) + 1
             icycount = sum(icyelement)
-            print('  extruded mesh: %d x %d icy and %d ice-free elements' \
-                  % (icycount, mz, self.mx - icycount))
+            if firstcall:
+                print('            extruded mesh %d x %d icy and %d ice-free elements' \
+                      % (icycount, mz, self.mx - icycount))
             # FIXME: in parallel we must provide local, haloed layermap
             mesh = fd.ExtrudedMesh(self.basemesh, layers=layermap,
                                    layer_height=1.0 / mz)
         else:
-            print('  extruded mesh: %d x %d elements' \
-                  % (self.mx, mz))
+            if firstcall:
+                print('            extruded mesh: %d x %d elements' \
+                      % (self.mx, mz))
             mesh = fd.ExtrudedMesh(self.basemesh, mz, layer_height=1.0 / mz)
 
         # adjust height to s(x)
@@ -108,8 +111,9 @@ class SmootherStokes(SmootherObstacleProblem):
         # set up mixed method
         V = fd.VectorFunctionSpace(mesh, 'Lagrange', 2)
         W = fd.FunctionSpace(mesh, 'Lagrange', 1)
-        n_u, n_p = V.dim(), W.dim()
-        print('  sizes: n_u = %d, n_p = %d' % (n_u,n_p))
+        if firstcall:
+            n_u, n_p = V.dim(), W.dim()
+            print('            sizes: n_u = %d, n_p = %d' % (n_u,n_p))
         Z = V * W
         up = fd.Function(Z)
         scu, p = fd.split(up)       # scaled velocity, unscaled pressure
@@ -138,8 +142,8 @@ class SmootherStokes(SmootherObstacleProblem):
         fd.solve(F == 0, up, bcs=bcs, options_prefix='s', solver_parameters=par)
         u, p = up.split()
         u *= sc
-        if saveup:
-            savevelocitypressure(u, p, 'soln.pvd')
+        if saveupname is not None:
+            savevelocitypressure(u, p, saveupname)
 
         # evaluate surface kinematical residual; n_s = <-s_x,1> is normal
         res = + u[0] * z.dx(0) - u[1]   # ufl expression (w/o a(x))
