@@ -61,13 +61,14 @@ class SmootherStokes(SmootherObstacleProblem):
     def residual(self, mesh1d, s, ella, icefreecolumns=True, saveupname=None):
         '''Compute the residual functional, namely the surface kinematical
         residual for the entire domain, for a given iterate s.  Note mesh1D is
-        a MeshLevel1D instance and ella = <a(x),.> is a source term in V^j'.
+        a MeshLevel1D instance and ella(.) = <a(x),.> is a source term in V^j'.
         This residual evaluation requires setting up an (x,z) Firedrake mesh,
         starting from a base mesh and then using extrusion.  The icy columns
-        get their height from s, with minimum height self.Hmin.  Optionally the
-        extruded mesh has one short element in each ice free (according to s)
-        column.  Note the residual array is defined on mesh1d and in V^j'.'''
-        # if needed, generate base mesh from mesh1d
+        get their height from s, with minimum height self.Hmin.  If
+        icefreecolumns=True then the extruded mesh has empty (0-element) columns
+        in each location which is ice free according to s.  Note the residual
+        array is defined on mesh1d and in V^j'.'''
+        # if needed, generate self.basemesh from mesh1d
         firstcall = (self.basemesh == None)
         if firstcall:
             self.mx = mesh1d.m + 1
@@ -77,30 +78,28 @@ class SmootherStokes(SmootherObstacleProblem):
                                             right=mesh1d.xmax)
             self.b = self.phi(mesh1d.xx())
 
-        # extrude the mesh
+        # extrude the mesh, to have total height 1
         mz = self.args.mz
-        thk = s - self.b
         if icefreecolumns:
-            # FIXME mark ice free columns and put one-element column in each
             layermap = np.zeros((self.mx, 2), dtype=int)  # [[0,0], ..., [0,0]]
+            thk = s - self.b
             thkelement = ( (thk[:-1]) + (thk[1:]) ) / 2.0
             icyelement = (thkelement > self.Hmin)
-            icycount = sum(icyelement)
-            #layermap[:,1] = (mz - 1) * np.array(icyelement, dtype=int) + 1
             layermap[:,1] = mz * np.array(icyelement, dtype=int)
             if firstcall:
-                print('            extruded mesh %d x %d icy and %d ice-free elements' \
+                icycount = sum(icyelement)
+                print('            extruded mesh of %d x %d icy and %d ice-free elements' \
                       % (icycount, mz, self.mx - icycount))
             # FIXME: in parallel we must provide local, haloed layermap
             mesh = fd.ExtrudedMesh(self.basemesh, layers=layermap,
                                    layer_height=1.0 / mz)
         else:
             if firstcall:
-                print('            extruded mesh: %d x %d elements' \
+                print('            extruded mesh of %d x %d elements' \
                       % (self.mx, mz))
             mesh = fd.ExtrudedMesh(self.basemesh, mz, layer_height=1.0 / mz)
 
-        # adjust height to s(x)
+        # adjust element height in extruded mesh to proportional to s(x)
         P1base = fd.FunctionSpace(self.basemesh, 'Lagrange', 1)
         sbase = fd.Function(P1base)
         sbase.dat.data[:] = np.maximum(s, self.Hmin)
@@ -109,12 +108,11 @@ class SmootherStokes(SmootherObstacleProblem):
         coords = fd.Function(mesh.coordinates.function_space())
         mesh.coordinates.assign(coords.interpolate(xxzz))
 
-        # set up mixed method
+        # set up mixed method for Stokes dynamics problem
         V = fd.VectorFunctionSpace(mesh, 'Lagrange', 2)
         W = fd.FunctionSpace(mesh, 'Lagrange', 1)
         if firstcall:
-            n_u, n_p = V.dim(), W.dim()
-            print('            sizes: n_u = %d, n_p = %d' % (n_u,n_p))
+            print('            sizes: n_u = %d, n_p = %d' % (V.dim(), W.dim()))
         Z = V * W
         up = fd.Function(Z)
         scu, p = fd.split(up)       # scaled velocity, unscaled pressure
@@ -125,18 +123,19 @@ class SmootherStokes(SmootherObstacleProblem):
         sc = self.sc
         reg = self.args.eps * self.Dtyp**2
         Du2 = 0.5 * fd.inner(D(scu * sc), D(scu * sc)) + reg
+        assert self.nglen == 3.0
         nu = 0.5 * self.B3 * Du2**((1.0 / self.nglen - 1.0)/2.0)
         F = ( sc*sc * fd.inner(2.0 * nu * D(scu), D(v)) \
               - sc * p * fd.div(v) - sc * q * fd.div(scu) \
               - sc * fd.inner(fbody, v) ) * fd.dx
 
-        # zero Dirichlet on base (and stress-free on top and degenerate ends)
+        # zero Dirichlet on base (and stress-free on top and cliffs)
         bcs = [ fd.DirichletBC(Z.sub(0), fd.Constant((0.0, 0.0)), 'bottom')]
 
         # solve Stokes
         par = {'snes_linesearch_type': 'bt',
                'snes_max_it': 200,
-               'snes_stol': 0.0,         # expect CONVERGED_FNORM_RELATIVE
+               'snes_stol': 0.0,       # expect CONVERGED_FNORM_RELATIVE
                'ksp_type': 'preonly',
                'pc_type': 'lu',
                'pc_factor_shift_type': 'inblocks'}
