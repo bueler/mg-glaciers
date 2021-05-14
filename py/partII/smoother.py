@@ -151,18 +151,35 @@ class SmootherStokes(SmootherObstacleProblem):
         P1 = fd.FunctionSpace(mesh, 'Lagrange', 1)
         rr = fd.Function(P1).interpolate(res)  # a=0 residual on (x,z) mesh
         # when icefreecolumns == True, topbc.nodes has two issues:
-        #    1. it includes the nodes on the facets where there is no adjacent
-        #       ice, and
-        #    2. it does not include 'bottom' nodes which have no ice nodes
+        #    1. includes nodes on facets where there is no adjacent ice
+        #    2. does not include 'bottom' nodes which have no icy nodes
         #       above them
-        # what we want is a "map_plane_top.nodes" list
-        # to build it need to iterate over base mesh marking every Q1 node
-        # that does not have ice above it
+        # FIXME FOLLOWING IS NOT DONE
+        # what we want is a "map_plane_top.nodes" list; strategy is to union topbc.nodes and bottombc.nodes and then find duplicate x-coordinates and choose the node with the largest z coordinate from those
+        x, _ = fd.SpatialCoordinate(mesh)
+        xx = fd.Function(P1).interpolate(x)
+        #print(xx.dat.data_ro)
         topbc = fd.DirichletBC(P1, 1.0, 'top')
-        print(topbc.nodes)
+        #print(topbc.nodes)
         bottombc = fd.DirichletBC(P1, 1.0, 'bottom')
-        print(bottombc.nodes)
-        return mesh1d.ellf(rr.dat.data_ro[topbc.nodes]) - ella
+        #print(bottombc.nodes)
+        union = list(set(topbc.nodes) | set(bottombc.nodes))
+        print(union)
+        print(xx.dat.data_ro[union])
+        mapplanenodes = []
+        xj = xx.dat.data_ro[union[0]]
+        for j in range(len(union) - 1):
+            xnext = xx.dat.data_ro[union[j+1]]
+            print('compare xj=%d to xj+1=%d' % (xj, xnext))
+            if xnext == xj:
+                continue
+            else:
+                mapplanenodes.append(union[j])
+                xj = xnext
+        mapplanenodes.append(union[-1])
+        print(mapplanenodes)
+        #return mesh1d.ellf(rr.dat.data_ro[topbc.nodes]) - ella  #FIXME
+        return mesh1d.ellf(rr.dat.data_ro[mapplanenodes]) - ella
 
     def applyoperator(self, mesh1d, w):
         '''Apply nonlinear operator N to w to get N(w) in (V^j)'.'''
