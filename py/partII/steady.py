@@ -105,17 +105,21 @@ rtol = 1.0e-4
 alpha = 2000.0  # good for J=4,5 ... maybe
 maxsteps = 500
 s0 = s.copy()
-r = obsprob.residual(mesh, s, ellf, saveupname='step0.pvd')
+USEICEFREE = True   # FIXME: currently works with False but not True
+r = obsprob.residual(mesh, s, ellf,
+                     icefreecolumns=USEICEFREE, saveupname='step0.pvd')
 normF0 = inactiveresidualnorm(s, r)
 print(normF0)
 for j in range(maxsteps):
     s = np.maximum(s - alpha * r, 0.0)
-    r = obsprob.residual(mesh, s, ellf)
+    r = obsprob.residual(mesh, s, ellf,
+                         icefreecolumns=USEICEFREE)
     normF = inactiveresidualnorm(s, r)
     print(normF)
     if normF < rtol * normF0:
         break
-obsprob.residual(mesh, s, ellf, saveupname='step%d.pvd' % j)
+obsprob.residual(mesh, s, ellf,
+                 icefreecolumns=USEICEFREE, saveupname='step%d.pvd' % j)
 print(s0)
 print(s)
 
