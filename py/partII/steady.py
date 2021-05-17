@@ -4,6 +4,7 @@
 import sys
 import argparse
 import numpy as np
+import matplotlib.pyplot as plt
 from firedrake import *
 
 from meshlevel import MeshLevel1D
@@ -96,6 +97,33 @@ def inactiveresidualnorm(s, r, ireps=50.0):
     F[s < b + ireps] = np.minimum(F[s < b + ireps], 0.0)
     return mesh.l2norm(F)
 
+def output(filename, description):
+    '''Either save result to an image file or use show().  Supply '' as filename
+    to use show().'''
+    if len(filename) == 0:
+        plt.show()
+    else:
+        print('saving %s to %s ...' % (description, filename))
+        plt.savefig(filename, bbox_inches='tight')
+
+def final(mesh, s, cmb, filename=''):
+    '''Generate graphic showing final iterate and CMB function.'''
+    secpera = 31556926.0
+    mesh.checklen(s)
+    xx = mesh.xx()
+    xx /= 1000.0
+    plt.figure(figsize=(15.0, 8.0))
+    plt.subplot(2,1,1)
+    plt.plot(xx, s, 'k', linewidth=4.0)
+    plt.xlabel('x (km)')
+    plt.ylabel('surface elevation (m)')
+    plt.subplot(2,1,2)
+    plt.plot(xx, cmb * secpera, 'r')
+    plt.grid()
+    plt.ylabel('CMB (m/a)')
+    plt.xlabel('x (km)')
+    output(filename, 'final iterate and obstacle')
+
 # FIXME be more sophisticated ... but the following sort of works
 
 # simple loop to do projected nonlinear Richardson, = explicit time-stepping,
@@ -122,4 +150,5 @@ obsprob.residual(mesh, s, ellf,
 print(s0)
 print(s)
 
+final(mesh, s, obsprob.source(mesh.xx()))
 # FIXME much more to do
