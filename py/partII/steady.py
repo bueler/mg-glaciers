@@ -70,13 +70,11 @@ adda('-up', type=int, default=2, metavar='N',
 args, unknown = parser.parse_known_args()
 
 # mesh hierarchy: a list of MeshLevel1D with indices [0,..,levels-1]
-assert args.jcoarse >= 0
-assert args.J >= args.jcoarse
-L = args.domainlength
+assert args.J >= args.jcoarse >= 0
 levels = args.J - args.jcoarse + 1
 hierarchy = [None] * (levels)             # list [None,...,None]
 for j in range(levels):
-    hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=L)
+    hierarchy[j] = MeshLevel1D(j=j+args.jcoarse, xmax=args.domainlength)
 
 obsprob = SmootherStokes(args)
 
