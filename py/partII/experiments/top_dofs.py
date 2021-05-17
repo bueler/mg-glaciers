@@ -47,13 +47,26 @@ for cell in range(bm.cell_set.size):
     start, extent = mesh.cell_set.layers_array[cell]  # NOT mesh.layer_extents
     ncell = extent - start - 1
     if ncell == 0:
-        print('base cell %d has no extrusion' % cell)
+        print('base cell %d: no extrusion' % cell)
         continue
     # get all nodes for top cell
     top_cell_nodes = cell_node_map[cell, ...] + node_offset * ncell - 1
-    print('top extruded cell above base cell %d has top nodes:' % cell)
+    print('base cell %d: top extruded cell has top nodes at layer %d:' \
+          % (cell, ncell))
     xdofs = xf.dat.data_ro[top_cell_nodes]
     zdofs = zf.dat.data_ro[top_cell_nodes]
     for j in indices:
         print('  %d at (x,z) = (%.2f,%.2f)' \
               % (top_cell_nodes[j], xdofs[j], zdofs[j]))
+
+# for completeness, get cells and node coordinates for base mesh itself
+if True:  # comment-out by "False", or modify, if dim > 1
+    W = FunctionSpace(bm, 'Lagrange', 1)  # P1
+    bmcnm = W.cell_node_map().values
+    x = SpatialCoordinate(bm)  # does not unpack, thus x[0] below
+    xf = Function(W).interpolate(x[0])
+    print('base mesh cells (interval case):')
+    for cell in range(bm.cell_set.size):
+        i0, i1 = bmcnm[cell, ...]
+        print('  %d has nodes [%d,%d] with coordinates [%.2f,%.2f]' \
+              % (cell, i0, i1, xf.dat.data_ro[i0], xf.dat.data_ro[i1]))
