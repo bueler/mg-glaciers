@@ -129,15 +129,14 @@ def final(mesh, s, cmb, filename=''):
 # simple loop to do projected nonlinear Richardson, = explicit time-stepping,
 # as a candidate smoother
 rtol = 1.0e-4
-alpha = 2000.0  # good for J=4,5 ... maybe
-maxsteps = 500
+alpha = 1000.0  # good for J=3,4,5 ... maybe
 s0 = s.copy()
-USEICEFREE = True   # FIXME: currently works with False but not True
+USEICEFREE = False   # FIXME: currently works with False but not True
 r = obsprob.residual(mesh, s, ellf,
                      icefreecolumns=USEICEFREE, saveupname='step0.pvd')
 normF0 = inactiveresidualnorm(s, r)
 print(normF0)
-for j in range(maxsteps):
+for j in range(args.cyclemax):
     s = np.maximum(s - alpha * r, 0.0)
     r = obsprob.residual(mesh, s, ellf,
                          icefreecolumns=USEICEFREE)
@@ -147,6 +146,7 @@ for j in range(maxsteps):
         break
 obsprob.residual(mesh, s, ellf,
                  icefreecolumns=USEICEFREE, saveupname='step%d.pvd' % j)
+print(ellf)
 print(s0)
 print(s)
 
