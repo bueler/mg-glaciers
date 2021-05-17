@@ -89,11 +89,12 @@ s = obsprob.initial(mesh.xx())
 
 b = mesh.zeros()
 
-def inactiveresidualnorm(s, F, ireps=50.0):
+def inactiveresidualnorm(s, r, ireps=50.0):
     '''Compute the norm of the residual values at nodes where the constraint
     is NOT active.  Note that where the constraint is active the residual F(s)
     in the complementarity problem is allowed to have any positive value, and
     only the residual at inactive nodes is relevant to convergence.'''
+    F = r.copy()
     F[s < b + ireps] = np.minimum(F[s < b + ireps], 0.0)
     return mesh.l2norm(F)
 
