@@ -56,6 +56,48 @@ class SmootherStokes(SmootherObstacleProblem):
         self.mx = None
         self.b = None
 
+    def solvestokes(self, mesh, printsizes=False):
+        '''Solve the Glen-Stokes problem on the input extruded mesh.
+        Returns the separate velocity and pressure solutions.'''
+
+        # set up mixed method for Stokes dynamics problem
+        V = fd.VectorFunctionSpace(mesh, 'Lagrange', 2)
+        W = fd.FunctionSpace(mesh, 'Lagrange', 1)
+        if printsizes:
+            print('            sizes: n_u = %d, n_p = %d' % (V.dim(), W.dim()))
+        Z = V * W
+        up = fd.Function(Z)
+        scu, p = fd.split(up)       # scaled velocity, unscaled pressure
+        v, q = fd.TestFunctions(Z)
+
+        # symmetrically-scaled Glen-Stokes weak form
+        fbody = fd.Constant((0.0, - self.rhoi * self.g))
+        sc = self.sc
+        reg = self.args.eps * self.Dtyp**2
+        Du2 = 0.5 * fd.inner(D(scu * sc), D(scu * sc)) + reg
+        assert self.nglen == 3.0
+        nu = 0.5 * self.B3 * Du2**((1.0 / self.nglen - 1.0)/2.0)
+        F = ( sc*sc * fd.inner(2.0 * nu * D(scu), D(v)) \
+              - sc * p * fd.div(v) - sc * q * fd.div(scu) \
+              - sc * fd.inner(fbody, v) ) * fd.dx
+
+        # zero Dirichlet on base (and stress-free on top and cliffs)
+        bcs = [ fd.DirichletBC(Z.sub(0), fd.Constant((0.0, 0.0)), 'bottom')]
+
+        # solve Stokes
+        par = {'snes_linesearch_type': 'bt',
+               'snes_max_it': 200,
+               'snes_stol': 0.0,       # expect CONVERGED_FNORM_RELATIVE
+               'ksp_type': 'preonly',
+               'pc_type': 'lu',
+               'pc_factor_shift_type': 'inblocks'}
+        fd.solve(F == 0, up, bcs=bcs, options_prefix='s', solver_parameters=par)
+
+        # split, descale, and return
+        u, p = up.split()
+        u *= sc
+        return u, p
+
     def residual(self, mesh1d, s, ella, icefreecolumns=True, saveupname=None):
         '''Compute the residual functional, namely the surface kinematical
         residual for the entire domain, for a given iterate s.  Note mesh1D is
@@ -108,40 +150,8 @@ class SmootherStokes(SmootherObstacleProblem):
         coords = fd.Function(mesh.coordinates.function_space())
         mesh.coordinates.assign(coords.interpolate(xxzz))
 
-        # set up mixed method for Stokes dynamics problem
-        V = fd.VectorFunctionSpace(mesh, 'Lagrange', 2)
-        W = fd.FunctionSpace(mesh, 'Lagrange', 1)
-        if firstcall:
-            print('            sizes: n_u = %d, n_p = %d' % (V.dim(), W.dim()))
-        Z = V * W
-        up = fd.Function(Z)
-        scu, p = fd.split(up)       # scaled velocity, unscaled pressure
-        v, q = fd.TestFunctions(Z)
-
-        # symmetrically-scaled Glen-Stokes weak form
-        fbody = fd.Constant((0.0, - self.rhoi * self.g))
-        sc = self.sc
-        reg = self.args.eps * self.Dtyp**2
-        Du2 = 0.5 * fd.inner(D(scu * sc), D(scu * sc)) + reg
-        assert self.nglen == 3.0
-        nu = 0.5 * self.B3 * Du2**((1.0 / self.nglen - 1.0)/2.0)
-        F = ( sc*sc * fd.inner(2.0 * nu * D(scu), D(v)) \
-              - sc * p * fd.div(v) - sc * q * fd.div(scu) \
-              - sc * fd.inner(fbody, v) ) * fd.dx
-
-        # zero Dirichlet on base (and stress-free on top and cliffs)
-        bcs = [ fd.DirichletBC(Z.sub(0), fd.Constant((0.0, 0.0)), 'bottom')]
-
-        # solve Stokes
-        par = {'snes_linesearch_type': 'bt',
-               'snes_max_it': 200,
-               'snes_stol': 0.0,       # expect CONVERGED_FNORM_RELATIVE
-               'ksp_type': 'preonly',
-               'pc_type': 'lu',
-               'pc_factor_shift_type': 'inblocks'}
-        fd.solve(F == 0, up, bcs=bcs, options_prefix='s', solver_parameters=par)
-        u, p = up.split()
-        u *= sc
+        # solve the Glen-Stokes problem on the extruded mesh
+        u, p = self.solvestokes(mesh, printsizes=firstcall)
         if saveupname is not None:
             savevelocitypressure(u, p, saveupname)
 
@@ -188,8 +198,9 @@ class SmootherStokes(SmootherObstacleProblem):
         #   z = s(x); note n_s = <-s_x,1> is normal
         res_ufl = + u[0] * z.dx(0) - u[1]   # a=0 residual
         res = fd.Function(Q1).interpolate(res_ufl)  # ... on (x,z) mesh
+        # FIXME temporary output to see (x,z) residual field even if "- ella" causes error
         if saveupname is not None:
-            savefield(res, 'a=0 residual', 'res_' + saveupname)
+            savefield(res, 'a=0 residual', 'a0res_' + saveupname)
         return mesh1d.ellf(res.dat.data_ro[snodes]) - ella
 
     def applyoperator(self, mesh1d, w):
