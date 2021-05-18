@@ -42,7 +42,6 @@ class SmootherStokes(SmootherObstacleProblem):
         self.A3 = 1.0e-16 / self.secpera # Pa-3 s-1;  EISMINT I ice softness
         self.B3 = self.A3**(-1.0/3.0)    # Pa s(1/3);  ice hardness
         # used in Stokes solver
-        self.Hmin = 20.0                 # 20 m cliffs on ends
         self.Dtyp = 1.0 / self.secpera   # s-1
         self.sc = 1.0e-7                 # velocity scale for symmetric scaling
         # parameters for initial condition, a Bueler profile; see van der Veen
@@ -84,31 +83,31 @@ class SmootherStokes(SmootherObstacleProblem):
         # zero Dirichlet on base (and stress-free on top and cliffs)
         bcs = [ fd.DirichletBC(Z.sub(0), fd.Constant((0.0, 0.0)), 'bottom')]
 
-        # solve Stokes
+        # Newton-LU solve Stokes, split, descale, and return
         par = {'snes_linesearch_type': 'bt',
                'snes_max_it': 200,
+               'snes_rtol': 1.0e-4,    # not as tight as default 1.0e-8
                'snes_stol': 0.0,       # expect CONVERGED_FNORM_RELATIVE
                'ksp_type': 'preonly',
                'pc_type': 'lu',
                'pc_factor_shift_type': 'inblocks'}
         fd.solve(F == 0, up, bcs=bcs, options_prefix='s', solver_parameters=par)
-
-        # split, descale, and return
         u, p = up.split()
         u *= sc
         return u, p
 
-    def residual(self, mesh1d, s, ella, icefreecolumns=True, saveupname=None):
+    def residual(self, mesh1d, s, ella, savename=None):
         '''Compute the residual functional, namely the surface kinematical
         residual for the entire domain, for a given iterate s.  Note mesh1D is
         a MeshLevel1D instance and ella(.) = <a(x),.> is a source term in V^j'.
         This residual evaluation requires setting up an (x,z) Firedrake mesh,
         starting from a (stored) base mesh and then using extrusion.  The icy
-        columns get their height from s, with minimum height self.Hmin.  If
-        icefreecolumns=True then the extruded mesh has empty (0-element) columns
-        in each location which is ice free according to s.  If saveupname is
-        a string then the Stokes solution (u,p) is saved to that file.  The
-        returned residual array is defined on mesh1d and in V^j'.'''
+        columns get their height from s, with minimum height args.Hmin.  By
+        default the extruded mesh has empty (0-element) columns if ice-free
+        according to s.  If args.padding==True then the whole extruded mesh has
+        the same layer count.  If saveupname is a string then the Stokes
+        solution (u,p) is saved to that file.  The returned residual array is
+        defined on mesh1d and is in the dual space V^j'.'''
 
         # if needed, generate self.basemesh from mesh1d
         firstcall = (self.basemesh == None)
@@ -120,31 +119,32 @@ class SmootherStokes(SmootherObstacleProblem):
                                             right=mesh1d.xmax)
             self.b = self.phi(mesh1d.xx())
 
-        # extrude the mesh, to total height 1
+        # extrude the mesh, to temporary total height 1.0
         mz = self.args.mz
-        if icefreecolumns:
+        if self.args.padding:
+            assert self.args.Hmin > 0.0, 'padding requires positive thickness'
+            mesh = fd.ExtrudedMesh(self.basemesh, mz, layer_height=1.0 / mz)
+            if firstcall:
+                print('            extruded mesh: padded, %d x %d elements' \
+                      % (self.mx, mz))
+        else:
             layermap = np.zeros((self.mx, 2), dtype=int)  # [[0,0], ..., [0,0]]
             thk = s - self.b
             thkelement = ( (thk[:-1]) + (thk[1:]) ) / 2.0
-            icyelement = (thkelement > self.Hmin)
+            icyelement = (thkelement > self.args.Hmin + 1.0e-3)
             layermap[:,1] = mz * np.array(icyelement, dtype=int)
-            if firstcall:
-                icycount = sum(icyelement)
-                print('            extruded mesh of %d x %d icy and %d ice-free elements' \
-                      % (icycount, mz, self.mx - icycount))
             # FIXME: in parallel we must provide local, haloed layermap
             mesh = fd.ExtrudedMesh(self.basemesh, layers=layermap,
                                    layer_height=1.0 / mz)
-        else:
             if firstcall:
-                print('            extruded mesh of %d x %d elements' \
-                      % (self.mx, mz))
-            mesh = fd.ExtrudedMesh(self.basemesh, mz, layer_height=1.0 / mz)
+                icycount = sum(icyelement)
+                print('            extruded mesh: %d x %d icy and %d ice-free elements' \
+                      % (icycount, mz, self.mx - icycount))
 
-        # adjust element height in extruded mesh to proportional to s(x)
+        # generate extruded mesh of height s(x)
         P1base = fd.FunctionSpace(self.basemesh, 'Lagrange', 1)
         sbase = fd.Function(P1base)
-        sbase.dat.data[:] = np.maximum(s, self.Hmin)
+        sbase.dat.data[:] = np.maximum(s, self.args.Hmin)
         x, z = fd.SpatialCoordinate(mesh)
         xxzz = fd.as_vector([x, extend(mesh, sbase) * z])
         coords = fd.Function(mesh.coordinates.function_space())
@@ -152,56 +152,47 @@ class SmootherStokes(SmootherObstacleProblem):
 
         # solve the Glen-Stokes problem on the extruded mesh
         u, p = self.solvestokes(mesh, printsizes=firstcall)
-        if saveupname is not None:
-            savevelocitypressure(u, p, saveupname)
+        if savename is not None:
+            savevelocitypressure(u, p, savename)
 
-        # FIXME if icefreecolumns=True then x coordinate is invalid (and set to
-        # zero) for bottombc.nodes in columns with no ice
-
-        # identify snodes, the nodes of the Q1 mesh which are on tops of
-        #     columns, i.e. at  z = s(x)
+        # evaluate kinematic part of surface residual, but onto (x,z) mesh
+        # note surface normal direction is n_s = <-s_x,1>
+        kres_ufl = + u[0] * z.dx(0) - u[1]  # = u ds/dx - w
         Q1 = fd.FunctionSpace(mesh, 'Lagrange', 1)
-        topbc = fd.DirichletBC(Q1, 1.0, 'top')
-        if icefreecolumns:
-            # when icefreecolumns == True, topbc.nodes has two issues:
-            #    1. includes nodes on facets where there is no adjacent ice
-            #    2. does not include 'bottom' nodes which have no icy nodes
-            #       above them
-            # the strategy here is to union topbc.nodes and bottombc.nodes
-            # and then take last node from runs of duplicate x-coordinate
-            # nodes; this assumes each column of nodes has contiguous indices
-            # and increasing node order
-            x, _ = fd.SpatialCoordinate(mesh)
-            xx = fd.Function(Q1).interpolate(x)
-            bottombc = fd.DirichletBC(Q1, 1.0, 'bottom')
-            tbnodes = list(set(topbc.nodes) | set(bottombc.nodes))
-            print(topbc.nodes)
-            print(xx.dat.data_ro[topbc.nodes])
-            print(bottombc.nodes)
-            print(xx.dat.data_ro[bottombc.nodes])
-            print(tbnodes)
-            #print(xx.dat.data_ro[tbnodes])
-            snodes = []
-            xj = xx.dat.data_ro[tbnodes[0]]
-            for j in range(len(tbnodes) - 1):
-                xnext = xx.dat.data_ro[tbnodes[j+1]]
-                #print('compare xj=%d to xj+1=%d' % (xj, xnext))
-                if xnext != xj:
-                    snodes.append(tbnodes[j])
-                    xj = xnext
-            snodes.append(tbnodes[-1])
-        else:
-            snodes = topbc.nodes
-        #print(snodes)
+        kres = fd.Function(Q1).interpolate(kres_ufl)
+        if savename is not None:
+            savefield(kres, 'kinetic residual (a=0)', 'kres_' + savename)
 
-        # evaluate top surface kinematical residual at snodes, i.e. on
-        #   z = s(x); note n_s = <-s_x,1> is normal
-        res_ufl = + u[0] * z.dx(0) - u[1]   # a=0 residual
-        res = fd.Function(Q1).interpolate(res_ufl)  # ... on (x,z) mesh
-        # FIXME temporary output to see (x,z) residual field even if "- ella" causes error
-        if saveupname is not None:
-            savefield(res, 'a=0 residual', 'a0res_' + saveupname)
-        return mesh1d.ellf(res.dat.data_ro[snodes]) - ella
+        # return surface residual vector on z = s(x):   r = u ds/dx - w - a
+        if self.args.padding:
+            # in this case the 'top' BC nodes are all we need
+            topbc = fd.DirichletBC(Q1, 1.0, 'top')
+            return mesh1d.ellf(kres.dat.data_ro[topbc.nodes]) - ella
+        else:
+            # loop over base mesh, finding top cells where ice is present,
+            #   then top nodes, to evaluate r
+            bmP1 = fd.FunctionSpace(self.basemesh, 'Lagrange', 1)  # P1
+            bmcnm = bmP1.cell_node_map().values
+            cnm = Q1.cell_node_map().values
+            coff = Q1.cell_node_map().offset  # node offset in column
+            # get the cell-wise indexing scheme
+            section, iset, facets = Q1.cell_boundary_masks
+            # facets ordered with sides first, then bottom, then top
+            off = section.getOffset(facets[-1])
+            dof = section.getDof(facets[-1])
+            topind = iset[off:off+dof]  # nodes on top of a cell
+            assert len(topind) == 2
+            # loop over base mesh cells computing top-node r value
+            r = mesh1d.zeros()
+            for cell in range(self.basemesh.cell_set.size):
+                start, extent = mesh.cell_set.layers_array[cell]
+                ncell = extent - start - 1
+                if ncell == 0:
+                    continue  # leave r unchanged for these base mesh nodes
+                topcellnodes = cnm[cell, ...] + coff * ncell - 1
+                kr = kres.dat.data_ro[topcellnodes] # at ALL nodes in top cell
+                r[bmcnm[cell,...]] = kr[topind]
+            return mesh1d.ellf(r) - ella
 
     def applyoperator(self, mesh1d, w):
         '''Apply nonlinear operator N to w to get N(w) in (V^j)'.'''

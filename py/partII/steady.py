@@ -36,7 +36,8 @@ References:
     Numer. Math. 93 (4), 755--786.
 ''',
     formatter_class=argparse.RawTextHelpFormatter,
-    allow_abbrev=False)  # bug in python 3.8 causes this to be ignored
+    allow_abbrev=False,  # bug in python 3.8 causes this to be ignored
+    add_help=False)
 adda = parser.add_argument
 adda('-coarse', type=int, default=1, metavar='N',
      help='smoother sweeps on coarsest grid (default=1)')
@@ -46,8 +47,10 @@ adda('-domainlength', type=float, default=30.0e3, metavar='L',
      help='solve on [0,L] (default L=30 km)')
 adda('-down', type=int, default=0, metavar='N',
      help='smoother sweeps before coarse-mesh correction (default=0)')
-adda('-eps', type=float, metavar='X', default=1.0e-2,
+adda('-eps', type=float, metavar='X', default=1.0e-2,  # FIXME sensitive
     help='regularization used in viscosity (default=10^{-2})')
+adda('-Hmin', type=float, metavar='X', default=0.0,
+    help='minimum ice thickness; Hmin>0 for cliffs or padding (default=0.0)')
 adda('-irtol', type=float, default=1.0e-3, metavar='X',
      help='reduce norm of inactive residual (default X=1.0e-3)')
 adda('-jcoarse', type=int, default=0, metavar='J',
@@ -62,13 +65,20 @@ adda('-o', metavar='FILE', type=str, default='',
      help='save plot at end in image file, e.g. .pdf or .png')
 adda('-omega', type=float, default=1.0, metavar='X',
      help='relaxation factor in smoother (default X=1.0)')
+adda('-padding', action='store_true', default=False,
+     help='put Hmin thickness of ice in ice-free locations')
 adda('-printwarnings', action='store_true', default=False,
      help='print pointwise feasibility warnings')
+adda('-steadyhelp', action='store_true', default=False,
+     help='print help for steady.py and end (vs -help for PETSc options)')
 adda('-sweepsonly', action='store_true', default=False,
      help='do smoother sweeps as cycles, instead of multilevel')
 adda('-up', type=int, default=2, metavar='N',
      help='smoother sweeps after coarse-mesh correction (default=2)')
 args, unknown = parser.parse_known_args()
+if args.steadyhelp:
+    parser.print_help()
+    sys.exit(0)
 
 # mesh hierarchy: a list of MeshLevel1D with indices [0,..,levels-1]
 assert args.J >= args.jcoarse >= 0
@@ -131,24 +141,17 @@ def final(mesh, s, cmb, filename=''):
 rtol = 1.0e-4
 alpha = 1000.0  # good for J=3,4,5 ... maybe
 s0 = s.copy()
-USEICEFREE = False   # FIXME: currently works with False but not True
-r = obsprob.residual(mesh, s, ellf,
-                     icefreecolumns=USEICEFREE, saveupname='step0.pvd')
+r = obsprob.residual(mesh, s, ellf, savename='step0.pvd')
 normF0 = inactiveresidualnorm(s, r)
-print(normF0)
+print('0: %.4e' % normF0)
 for j in range(args.cyclemax):
     s = np.maximum(s - alpha * r, 0.0)
-    r = obsprob.residual(mesh, s, ellf,
-                         icefreecolumns=USEICEFREE)
+    r = obsprob.residual(mesh, s, ellf)
     normF = inactiveresidualnorm(s, r)
-    print(normF)
+    print('%d: %.4e' % (j+1, normF))
     if normF < rtol * normF0:
         break
-obsprob.residual(mesh, s, ellf,
-                 icefreecolumns=USEICEFREE, saveupname='step%d.pvd' % j)
-print(ellf)
-print(s0)
-print(s)
+r = obsprob.residual(mesh, s, ellf, savename='step%d.pvd' % (j+1))
 
 final(mesh, s, obsprob.source(mesh.xx()))
 # FIXME much more to do
