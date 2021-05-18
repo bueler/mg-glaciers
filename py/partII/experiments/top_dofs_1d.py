@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 
-'''For an extruded mesh with some empty columns, loop over the base mesh cells
-to get the top cells, then the top nodes from those.'''
+'''For an extruded mesh over a 1D interval base mesh, with some empty columns,
+loop over the base mesh cells to get the top cells and their top nodes.
+This code results from major slack help from Lawrence Mitchell.'''
 
 from firedrake import *
+
+# define base mesh and get its coordinates
+bm = UnitIntervalMesh(6)
+W = FunctionSpace(bm, 'Lagrange', 1)  # P1
+bm_cell_node_map = W.cell_node_map().values
+x = SpatialCoordinate(bm)  # does not unpack, thus x[0] below
+bm_xf = Function(W).interpolate(x[0])
 
 # picture of extruded mesh, with its node indexing:
 #              10--14
@@ -14,7 +22,6 @@ from firedrake import *
 #       |   |   |   |   |   |
 #   0---1---4---7--11--15--17   <-- base mesh of 6 intervals
 #     0   1   2   3   4   5     <-- numbering of base mesh cells
-bm = UnitIntervalMesh(6)   # simple mods below allow UnitSquareMesh(), etc.
 mesh = ExtrudedMesh(bm, layers=[[0,0], [0,2], [0,1], [0,3], [0,0], [0,1]],
                     layer_height=0.3)
 
@@ -31,12 +38,12 @@ zf = Function(V).interpolate(z)
 # map from *lowest* extruded-mesh cells into extruded-mesh node indices
 # WARNING: here cell_node_map[j] is invalid nonsense for j=0,4 empty columns!
 cell_node_map = V.cell_node_map().values
-print(cell_node_map)
+#print(cell_node_map)
 node_offset = V.cell_node_map().offset  # node offset as you go up a column
 
-# to get top nodes on top cell we get the cell-wise indexing scheme
+# to get nodes on top cells, get the cell-wise indexing scheme
 section, iset, facets = V.cell_boundary_masks
-# facets is ordered with sides first, then bottom, then top
+# facets ordered with sides first, then bottom, then top
 off = section.getOffset(facets[-1])    # -2 for "bottom"
 dof = section.getDof(facets[-1])
 indices = iset[off:off+dof]
@@ -55,18 +62,9 @@ for cell in range(bm.cell_set.size):
           % (cell, ncell))
     xdofs = xf.dat.data_ro[top_cell_nodes]
     zdofs = zf.dat.data_ro[top_cell_nodes]
-    for j in indices:
+    for j in range(len(indices)):
+        jj = indices[j]
+        # check x-coordinate matches corresponding base-mesh node
+        assert xdofs[jj] == bm_xf.dat.data_ro[bm_cell_node_map[cell,j]]
         print('  %d at (x,z) = (%.2f,%.2f)' \
-              % (top_cell_nodes[j], xdofs[j], zdofs[j]))
-
-# for completeness, get cells and node coordinates for base mesh itself
-if True:  # comment-out by "False", or modify, if dim > 1
-    W = FunctionSpace(bm, 'Lagrange', 1)  # P1
-    bmcnm = W.cell_node_map().values
-    x = SpatialCoordinate(bm)  # does not unpack, thus x[0] below
-    xf = Function(W).interpolate(x[0])
-    print('base mesh cells (interval case):')
-    for cell in range(bm.cell_set.size):
-        i0, i1 = bmcnm[cell, ...]
-        print('  %d has nodes [%d,%d] with coordinates [%.2f,%.2f]' \
-              % (cell, i0, i1, xf.dat.data_ro[i0], xf.dat.data_ro[i1]))
+              % (top_cell_nodes[jj], xdofs[jj], zdofs[jj]))
