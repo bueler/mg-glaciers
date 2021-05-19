@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 '''Solve steady-geometry Stokes obstacle problem by a multilevel constraint decomposition method.'''
 
+# TODO:
+#   1. improve checkpointing into .pvd to include stresses and effective
+#      viscosity (see stokes-ice-tutorial stage 4,5)
+#   2. write some basic run tests with ../testit.sh (see partI/makefile)
+#   3. use SIA time-step criterion to set alpha in NRich
+#   4. implement smoothersweep() based on NRich
+#   5. copy partI/mcdn.py and build it out
+
 import sys
 import argparse
 import numpy as np

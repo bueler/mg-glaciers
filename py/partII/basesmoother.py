@@ -53,11 +53,6 @@ class SmootherObstacleProblem(ABC):
         '''Generate initial shape.'''
 
     @abstractmethod
-    def applyoperator(self, mesh, w):
-        '''Apply only the operator N(w)[.] to w to generate a linear functional
-        in (V^j)'.'''
-
-    @abstractmethod
     def residual(self, mesh, w, ell):
         '''Compute the residual functional for given iterate w.  Note
         ell is a source term in V^j'.'''

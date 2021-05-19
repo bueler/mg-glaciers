@@ -194,10 +194,6 @@ class SmootherStokes(SmootherObstacleProblem):
                 r[bmcnm[cell,...]] = kr[topind]
             return mesh1d.ellf(r) - ella
 
-    def applyoperator(self, mesh1d, w):
-        '''Apply nonlinear operator N to w to get N(w) in (V^j)'.'''
-        raise NotImplementedError
-
     def smoothersweep(self, mesh, y, ell, phi, forward=True):
         '''Do in-place Jacobi smoothing.'''
         raise NotImplementedError
