@@ -2,7 +2,8 @@
 '''Solve steady-geometry Stokes obstacle problem by a multilevel constraint decomposition method.'''
 
 # TODO:
-#   1. use SIA time-step criterion to set alpha in NRich
+#   1. implement Jacobi smoother by SLOW method, getting derivative of SKE
+#      w.r.t. a surface displacement by finite difference
 #   2. copy partI/mcdn.py and build it out
 
 import sys
