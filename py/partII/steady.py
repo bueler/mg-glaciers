@@ -68,14 +68,10 @@ adda('-J', type=int, default=3, metavar='J',
      help='fine mesh is Jth level (default J=3)')
 adda('-mz', type=int, default=4, metavar='MZ',
      help='number of (x,z) extruded mesh levels (default MZ=4)')
-adda('-newtonits', type=int, default=2, metavar='N',
-     help='Newton iterations in nonlinear smoothers (default N=1)')
 adda('-o', metavar='FILEROOT', type=str, default='',
      help='save .pvd and final image in .png to FILEROOT.*')
 adda('-oimage', metavar='FILE', type=str, default='',
      help='save final image, e.g. .pdf or .png')
-adda('-omega', type=float, default=1.0, metavar='X',
-     help='relaxation factor in smoother (default X=1.0)')
 adda('-padding', action='store_true', default=False,
      help='put Hmin thickness of ice in ice-free locations')
 adda('-printwarnings', action='store_true', default=False,
@@ -147,23 +143,28 @@ def final(mesh, s, cmb, filename=''):
 
 # FIXME be more sophisticated ... but the following sort of works
 
-# simple loop to do projected nonlinear Richardson, = explicit time-stepping,
-# as a candidate smoother
-s0 = s.copy()
-name = args.o + '_0.pvd' if args.o else None
-r = obsprob.residual(mesh, s, ellf, savename=name)
-normF0 = inactiveresidualnorm(s, r)
-print('0: %.4e' % normF0)
-for j in range(args.cyclemax):
-    s = np.maximum(s - args.alpha * r, 0.0)
-    r = obsprob.residual(mesh, s, ellf)
-    normF = inactiveresidualnorm(s, r)
-    print('%d: %.4e' % (j+1, normF))
-    if normF < args.irtol * normF0:
-        print('NRichardson iteration CONVERGED by -irtol')
-        break
-name = args.o + '_%d.pvd' % (j+1) if args.o else None
-r = obsprob.residual(mesh, s, ellf, savename=name)
+if args.sweepsonly:
+    # simple loop to do projected nonlinear Richardson, = explicit
+    #   time-stepping, as a candidate smoother
+    name = args.o + '_0.pvd' if args.o else None
+    r = obsprob.residual(mesh, s, ellf, savename=name)
+    normF0 = inactiveresidualnorm(s, r)
+    print('0: %.4e' % normF0)
+    for j in range(args.cyclemax):
+        s = np.maximum(s - args.alpha * r, 0.0)
+        r = obsprob.residual(mesh, s, ellf)
+        normF = inactiveresidualnorm(s, r)
+        print('%d: %.4e' % (j+1, normF))
+        if normF < args.irtol * normF0:
+            print('NRichardson iteration CONVERGED by -irtol')
+            break
+        elif normF > 100.0 * normF0:
+            print('NRichardson iteration DIVERGED detected')
+            break
+    name = args.o + '_%d.pvd' % (j+1) if args.o else None
+    r = obsprob.residual(mesh, s, ellf, savename=name)
+else:
+    raise NotImplementedError('MCDN not implemented')
 
 if args.oimage:
     final(mesh, s, obsprob.source(mesh.xx()), filename=args.oimage)
