@@ -2,11 +2,9 @@
 '''Solve steady-geometry Stokes obstacle problem by a multilevel constraint decomposition method.'''
 
 # TODO:
-#   1. improve checkpointing into .pvd to include stresses and effective
-#      viscosity (see stokes-ice-tutorial stage 4,5)
-#   2. use SIA time-step criterion to set alpha in NRich
-#   3. implement smoothersweep() based on NRich
-#   4. copy partI/mcdn.py and build it out
+#   1. use SIA time-step criterion to set alpha in NRich
+#   2. implement smoothersweep() based on NRich
+#   3. copy partI/mcdn.py and build it out
 
 import sys
 import argparse
@@ -146,8 +144,9 @@ def final(mesh, s, cmb, filename=''):
 if args.sweepsonly:
     # simple loop to do projected nonlinear Richardson, = explicit
     #   time-stepping, as a candidate smoother
-    name = args.o + '_0.pvd' if args.o else None
-    r = obsprob.residual(mesh, s, ellf, savename=name)
+    if args.o:
+        obsprob.savestatenextresidual(args.o + '_0.pvd')
+    r = obsprob.residual(mesh, s, ellf)
     normF0 = inactiveresidualnorm(s, r)
     print('0: %.4e' % normF0)
     for j in range(args.cyclemax):
@@ -161,8 +160,9 @@ if args.sweepsonly:
         elif normF > 100.0 * normF0:
             print('NRichardson iteration DIVERGED detected')
             break
-    name = args.o + '_%d.pvd' % (j+1) if args.o else None
-    r = obsprob.residual(mesh, s, ellf, savename=name)
+    if args.o:
+        obsprob.savestatenextresidual(args.o + '_%d.pvd' % (j+1))
+    obsprob.residual(mesh, s, ellf)  # extra residual call
 else:
     raise NotImplementedError('MCDN not implemented')
 

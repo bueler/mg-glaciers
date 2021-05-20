@@ -4,6 +4,8 @@ import numpy as np
 import firedrake as fd
 from basesmoother import SmootherObstacleProblem
 
+secpera = 31556926.0        # seconds per year
+
 def extend(mesh, f):
     '''On an extruded mesh extend a function f(x,z), already defined on the
     base mesh, to the mesh using the 'R' constant-in-the-vertical space.'''
@@ -11,13 +13,6 @@ def extend(mesh, f):
     fextend = fd.Function(Q1R)
     fextend.dat.data[:] = f.dat.data_ro[:]
     return fextend
-
-def savestate(u, p, kres, name):
-    u.rename('velocity')
-    p.rename('pressure')
-    kres.rename('kinetic residual (a=0)')
-    print('saving u,p,kres to %s' % name)
-    fd.File(name).write(u,p,kres)
 
 def D(w):
     return 0.5 * (fd.grad(w) + fd.grad(w).T)
@@ -31,14 +26,13 @@ class SmootherStokes(SmootherObstacleProblem):
         # smoother name
         self.name = 'SmootherStokes'
         # physical parameters
-        self.secpera = 31556926.0        # seconds per year
         self.g = 9.81                    # m s-2
         self.rhoi = 910.0                # kg m-3
         self.nglen = 3.0
-        self.A3 = 1.0e-16 / self.secpera # Pa-3 s-1;  EISMINT I ice softness
+        self.A3 = 1.0e-16 / secpera      # Pa-3 s-1;  EISMINT I ice softness
         self.B3 = self.A3**(-1.0/3.0)    # Pa s(1/3);  ice hardness
         # used in Stokes solver
-        self.Dtyp = 1.0 / self.secpera   # s-1
+        self.Dtyp = 1.0 / secpera        # s-1
         self.sc = 1.0e-7                 # velocity scale for symmetric scaling
         # parameters for initial condition, a Bueler profile; see van der Veen
         #   (2013) section 5.3
@@ -50,6 +44,45 @@ class SmootherStokes(SmootherObstacleProblem):
         self.basemesh = None
         self.mx = None
         self.b = None
+        self.saveflag = False
+        self.savename = None
+
+    def savestatenextresidual(self, name):
+        '''On next call to residual(), save the state.'''
+        self.saveflag = True
+        self.savename = name
+
+    def regDu2(self, u):
+        reg = self.args.eps * self.Dtyp**2
+        return 0.5 * fd.inner(D(u), D(u)) + reg
+
+    def stresses(self, mesh, u):
+        ''' Generate effective viscosity and tensor-valued deviatoric stress
+        from the velocity solution.'''
+        Q1 = fd.FunctionSpace(mesh,'Q',1)
+        Du2 = self.regDu2(u)
+        r = 1.0 / self.nglen - 1.0
+        assert self.nglen == 3.0
+        nu = fd.Function(Q1).interpolate(0.5 * self.B3 * Du2**(r/2.0))
+        nu.rename('effective viscosity (Pa s)')
+        TQ1 = fd.TensorFunctionSpace(mesh, 'Q', 1)
+        tau = fd.Function(TQ1).interpolate(2.0 * nu * D(u))
+        tau /= 1.0e5
+        tau.rename('tau (bar)')
+        return nu, tau
+
+    def savestate(self, mesh, u, p, kres):
+        ''' Save state and diagnostics into .pvd file.'''
+        nu, tau = self.stresses(mesh, u)
+        u *= secpera
+        u.rename('velocity (m a-1)')
+        p /= 1.0e5
+        p.rename('pressure (bar)')
+        kres.rename('kinetic residual (a=0)')
+        print('saving u,p,nu,tau,kres to %s' % self.savename)
+        fd.File(self.savename).write(u,p,nu,tau,kres)
+        self.saveflag = False
+        self.savename = None
 
     def solvestokes(self, mesh, printsizes=False):
         '''Solve the Glen-Stokes problem on the input extruded mesh.
@@ -68,8 +101,7 @@ class SmootherStokes(SmootherObstacleProblem):
         # symmetrically-scaled Glen-Stokes weak form
         fbody = fd.Constant((0.0, - self.rhoi * self.g))
         sc = self.sc
-        reg = self.args.eps * self.Dtyp**2
-        Du2 = 0.5 * fd.inner(D(scu * sc), D(scu * sc)) + reg
+        Du2 = self.regDu2(scu * sc)
         assert self.nglen == 3.0
         nu = 0.5 * self.B3 * Du2**((1.0 / self.nglen - 1.0)/2.0)
         F = ( sc*sc * fd.inner(2.0 * nu * D(scu), D(v)) \
@@ -92,7 +124,7 @@ class SmootherStokes(SmootherObstacleProblem):
         u *= sc
         return u, p
 
-    def residual(self, mesh1d, s, ella, savename=None):
+    def residual(self, mesh1d, s, ella):
         '''Compute the residual functional, namely the surface kinematical
         residual for the entire domain, for a given iterate s.  Note mesh1D is
         a MeshLevel1D instance and ella(.) = <a(x),.> is a source term in V^j'.
@@ -154,8 +186,8 @@ class SmootherStokes(SmootherObstacleProblem):
         kres_ufl = + u[0] * z.dx(0) - u[1]  # = u ds/dx - w
         Q1 = fd.FunctionSpace(mesh, 'Lagrange', 1)
         kres = fd.Function(Q1).interpolate(kres_ufl)
-        if savename is not None:
-            savestate(u, p, kres, savename)
+        if self.saveflag:
+            self.savestate(mesh, u, p, kres)
 
         # return surface residual vector on z = s(x):   r = u ds/dx - w - a
         if self.args.padding:
@@ -188,9 +220,13 @@ class SmootherStokes(SmootherObstacleProblem):
                 r[bmcnm[cell,...]] = kr[topind]
             return mesh1d.ellf(r) - ella
 
-    def smoothersweep(self, mesh, y, ell, phi, forward=True):
-        '''Do in-place Jacobi smoothing.'''
+    def smoothersweep(self, mesh1d, s, ell, phi, forward=True):
+        '''Do in-place NRich smoothing.'''
+        mesh1d.checklen(s)
+        mesh1d.checklen(ell)
+        mesh1d.checklen(phi)
         raise NotImplementedError
+        mesh.WU += 1
 
     def phi(self, x):
         '''For now we have a flat bed.'''
