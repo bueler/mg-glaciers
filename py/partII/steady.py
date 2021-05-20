@@ -3,8 +3,7 @@
 
 # TODO:
 #   1. use SIA time-step criterion to set alpha in NRich
-#   2. implement smoothersweep() based on NRich
-#   3. copy partI/mcdn.py and build it out
+#   2. copy partI/mcdn.py and build it out
 
 import sys
 import argparse
@@ -141,7 +140,7 @@ if args.sweepsonly:
     normF0 = obsprob.inactiveresidualnorm(mesh, s, r, b)
     print('0: %.4e' % normF0)
     for j in range(args.cyclemax):
-        r = obsprob.smoothersweep(mesh, s, ellf, b, r)
+        r = obsprob.smoothersweep(mesh, s, ellf, b, currentr=r)
         normF = obsprob.inactiveresidualnorm(mesh, s, r, b)
         print('%d: %.4e' % (j+1, normF))
         if normF < args.irtol * normF0:

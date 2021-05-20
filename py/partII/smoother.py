@@ -221,8 +221,8 @@ class SmootherStokes(SmootherObstacleProblem):
             return mesh1d.ellf(r) - ella
 
     def smoothersweep(self, mesh1d, s, ella, phi, currentr=None):
-        '''Do projected nonlinear Richardson smoothing on s(x).
-        Returns the residual and s(x) after the sweep.'''
+        '''Do in-place projected nonlinear Richardson smoothing on s(x).
+        Returns the residual after the sweep.'''
         mesh1d.checklen(s)
         mesh1d.checklen(ella)
         mesh1d.checklen(phi)
