@@ -222,17 +222,15 @@ class SmootherStokes(SmootherObstacleProblem):
 
     def smoothersweep(self, mesh1d, s, ella, phi, currentr=None):
         '''Do projected nonlinear Richardson smoothing on s(x).
-        Returns the residual and s(x) after the sweep.  Python magically does
-        not allow in-place modification here.'''
+        Returns the residual and s(x) after the sweep.'''
         mesh1d.checklen(s)
         mesh1d.checklen(ella)
         mesh1d.checklen(phi)
         if currentr is None:
             currentr = self.residual(mesh1d, s, ella)
-        s = np.maximum(s - self.args.alpha * currentr, phi)
+        np.maximum(s - self.args.alpha * currentr, phi, s)  # s <- max(...,phi)
         mesh1d.WU += 1
-        r = self.residual(mesh1d, s, ella)
-        return r, s
+        return self.residual(mesh1d, s, ella)
 
     def phi(self, x):
         '''For now we have a flat bed.'''
