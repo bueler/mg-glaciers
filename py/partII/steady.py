@@ -47,6 +47,8 @@ References:
     allow_abbrev=False,  # bug in python 3.8 causes this to be ignored
     add_help=False)
 adda = parser.add_argument
+adda('-alpha', type=float, metavar='X', default=1000.0,  # FIXME sensitive
+    help='Richardson iteration parameter (default=1000.0)')
 adda('-coarse', type=int, default=1, metavar='N',
      help='smoother sweeps on coarsest grid (default=1)')
 adda('-cyclemax', type=int, default=100, metavar='N',
@@ -69,8 +71,10 @@ adda('-mz', type=int, default=4, metavar='MZ',
      help='number of (x,z) extruded mesh levels (default MZ=4)')
 adda('-newtonits', type=int, default=2, metavar='N',
      help='Newton iterations in nonlinear smoothers (default N=1)')
-adda('-o', metavar='FILE', type=str, default='',
-     help='save plot at end in image file, e.g. .pdf or .png')
+adda('-o', metavar='FILEROOT', type=str, default='',
+     help='save .pvd and final image in .png to FILEROOT.*')
+adda('-oimage', metavar='FILE', type=str, default='',
+     help='save final image, e.g. .pdf or .png')
 adda('-omega', type=float, default=1.0, metavar='X',
      help='relaxation factor in smoother (default X=1.0)')
 adda('-padding', action='store_true', default=False,
@@ -118,7 +122,7 @@ def inactiveresidualnorm(s, r, ireps=50.0):
 def output(filename, description):
     '''Either save result to an image file or use show().  Supply '' as filename
     to use show().'''
-    if len(filename) == 0:
+    if filename is None:
         plt.show()
     else:
         print('saving %s to %s ...' % (description, filename))
@@ -140,26 +144,29 @@ def final(mesh, s, cmb, filename=''):
     plt.grid()
     plt.ylabel('CMB (m/a)')
     plt.xlabel('x (km)')
-    output(filename, 'final iterate and obstacle')
+    output(filename, 'image of final iterate')
 
 # FIXME be more sophisticated ... but the following sort of works
 
 # simple loop to do projected nonlinear Richardson, = explicit time-stepping,
 # as a candidate smoother
-rtol = 1.0e-4
-alpha = 1000.0  # good for J=3,4,5 ... maybe
 s0 = s.copy()
-r = obsprob.residual(mesh, s, ellf, savename='step0.pvd')
+name = args.o + '_0.pvd' if args.o else None
+r = obsprob.residual(mesh, s, ellf, savename=name)
 normF0 = inactiveresidualnorm(s, r)
 print('0: %.4e' % normF0)
 for j in range(args.cyclemax):
-    s = np.maximum(s - alpha * r, 0.0)
+    s = np.maximum(s - args.alpha * r, 0.0)
     r = obsprob.residual(mesh, s, ellf)
     normF = inactiveresidualnorm(s, r)
     print('%d: %.4e' % (j+1, normF))
-    if normF < rtol * normF0:
+    if normF < args.irtol * normF0:
+        print('NRichardson iteration CONVERGED by -irtol')
         break
-r = obsprob.residual(mesh, s, ellf, savename='step%d.pvd' % (j+1))
+name = args.o + '_%d.pvd' % (j+1) if args.o else None
+r = obsprob.residual(mesh, s, ellf, savename=name)
 
-final(mesh, s, obsprob.source(mesh.xx()))
+if args.oimage:
+    final(mesh, s, obsprob.source(mesh.xx()), filename=args.oimage)
+
 # FIXME much more to do
