@@ -52,7 +52,7 @@ class SmootherStokes(SmootherObstacleProblem):
         self.saveflag = True
         self.savename = name
 
-    def regDu2(self, u):
+    def _regDu2(self, u):
         reg = self.args.eps * self.Dtyp**2
         return 0.5 * fd.inner(D(u), D(u)) + reg
 
@@ -60,7 +60,7 @@ class SmootherStokes(SmootherObstacleProblem):
         ''' Generate effective viscosity and tensor-valued deviatoric stress
         from the velocity solution.'''
         Q1 = fd.FunctionSpace(mesh,'Q',1)
-        Du2 = self.regDu2(u)
+        Du2 = self._regDu2(u)
         r = 1.0 / self.nglen - 1.0
         assert self.nglen == 3.0
         nu = fd.Function(Q1).interpolate(0.5 * self.B3 * Du2**(r/2.0))
@@ -101,7 +101,7 @@ class SmootherStokes(SmootherObstacleProblem):
         # symmetrically-scaled Glen-Stokes weak form
         fbody = fd.Constant((0.0, - self.rhoi * self.g))
         sc = self.sc
-        Du2 = self.regDu2(scu * sc)
+        Du2 = self._regDu2(scu * sc)
         assert self.nglen == 3.0
         nu = 0.5 * self.B3 * Du2**((1.0 / self.nglen - 1.0)/2.0)
         F = ( sc*sc * fd.inner(2.0 * nu * D(scu), D(v)) \
