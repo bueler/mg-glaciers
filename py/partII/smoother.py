@@ -12,16 +12,12 @@ def extend(mesh, f):
     fextend.dat.data[:] = f.dat.data_ro[:]
     return fextend
 
-def savefield(f, fieldname, filename):
-    f.rename(fieldname)
-    print('saving %s to %s' % (fieldname,filename))
-    fd.File(filename).write(f)
-
-def savevelocitypressure(u, p, filename):
+def savestate(u, p, kres, name):
     u.rename('velocity')
     p.rename('pressure')
-    print('saving u,p to %s' % filename)
-    fd.File(filename).write(u,p)
+    kres.rename('kinetic residual (a=0)')
+    print('saving u,p,kres to %s' % name)
+    fd.File(name).write(u,p,kres)
 
 def D(w):
     return 0.5 * (fd.grad(w) + fd.grad(w).T)
@@ -152,8 +148,6 @@ class SmootherStokes(SmootherObstacleProblem):
 
         # solve the Glen-Stokes problem on the extruded mesh
         u, p = self.solvestokes(mesh, printsizes=firstcall)
-        if savename is not None:
-            savevelocitypressure(u, p, savename)
 
         # evaluate kinematic part of surface residual, but onto (x,z) mesh
         # note surface normal direction is n_s = <-s_x,1>
@@ -161,7 +155,7 @@ class SmootherStokes(SmootherObstacleProblem):
         Q1 = fd.FunctionSpace(mesh, 'Lagrange', 1)
         kres = fd.Function(Q1).interpolate(kres_ufl)
         if savename is not None:
-            savefield(kres, 'kinetic residual (a=0)', 'kres_' + savename)
+            savestate(u, p, kres, savename)
 
         # return surface residual vector on z = s(x):   r = u ds/dx - w - a
         if self.args.padding:
