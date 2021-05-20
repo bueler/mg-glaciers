@@ -141,9 +141,7 @@ if args.sweepsonly:
     normF0 = obsprob.inactiveresidualnorm(mesh, s, r, b)
     print('0: %.4e' % normF0)
     for j in range(args.cyclemax):
-        #r = obsprob.smoothersweep(mesh, s, ellf, b, currentr=r)
-        s = np.maximum(s - args.alpha * r, 0.0)
-        r = obsprob.residual(mesh, s, ellf)
+        r, s = obsprob.smoothersweep(mesh, s, ellf, b, r)
         normF = obsprob.inactiveresidualnorm(mesh, s, r, b)
         print('%d: %.4e' % (j+1, normF))
         if normF < args.irtol * normF0:

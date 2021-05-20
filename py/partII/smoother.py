@@ -220,13 +220,19 @@ class SmootherStokes(SmootherObstacleProblem):
                 r[bmcnm[cell,...]] = kr[topind]
             return mesh1d.ellf(r) - ella
 
-    def smoothersweep(self, mesh1d, s, ell, phi, forward=True):
-        '''Do in-place NRich smoothing.'''
+    def smoothersweep(self, mesh1d, s, ella, phi, currentr=None):
+        '''Do projected nonlinear Richardson smoothing on s(x).
+        Returns the residual and s(x) after the sweep.  Python magically does
+        not allow in-place modification here.'''
         mesh1d.checklen(s)
-        mesh1d.checklen(ell)
+        mesh1d.checklen(ella)
         mesh1d.checklen(phi)
-        raise NotImplementedError
-        mesh.WU += 1
+        if currentr is None:
+            currentr = self.residual(mesh1d, s, ella)
+        s = np.maximum(s - self.args.alpha * currentr, phi)
+        mesh1d.WU += 1
+        r = self.residual(mesh1d, s, ella)
+        return r, s
 
     def phi(self, x):
         '''For now we have a flat bed.'''
