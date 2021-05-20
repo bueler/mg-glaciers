@@ -4,10 +4,9 @@
 # TODO:
 #   1. improve checkpointing into .pvd to include stresses and effective
 #      viscosity (see stokes-ice-tutorial stage 4,5)
-#   2. write some basic run tests with ../testit.sh (see partI/makefile)
-#   3. use SIA time-step criterion to set alpha in NRich
-#   4. implement smoothersweep() based on NRich
-#   5. copy partI/mcdn.py and build it out
+#   2. use SIA time-step criterion to set alpha in NRich
+#   3. implement smoothersweep() based on NRich
+#   4. copy partI/mcdn.py and build it out
 
 import sys
 import argparse
