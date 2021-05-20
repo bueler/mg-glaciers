@@ -103,15 +103,6 @@ s = obsprob.initial(mesh.xx())
 
 b = mesh.zeros()
 
-def inactiveresidualnorm(s, r, ireps=50.0):
-    '''Compute the norm of the residual values at nodes where the constraint
-    is NOT active.  Note that where the constraint is active the residual F(s)
-    in the complementarity problem is allowed to have any positive value, and
-    only the residual at inactive nodes is relevant to convergence.'''
-    F = r.copy()
-    F[s < b + ireps] = np.minimum(F[s < b + ireps], 0.0)
-    return mesh.l2norm(F)
-
 def output(filename, description):
     '''Either save result to an image file or use show().  Supply '' as filename
     to use show().'''
@@ -147,12 +138,13 @@ if args.sweepsonly:
     if args.o:
         obsprob.savestatenextresidual(args.o + '_0.pvd')
     r = obsprob.residual(mesh, s, ellf)
-    normF0 = inactiveresidualnorm(s, r)
+    normF0 = obsprob.inactiveresidualnorm(mesh, s, r, b)
     print('0: %.4e' % normF0)
     for j in range(args.cyclemax):
+        #r = obsprob.smoothersweep(mesh, s, ellf, b, currentr=r)
         s = np.maximum(s - args.alpha * r, 0.0)
         r = obsprob.residual(mesh, s, ellf)
-        normF = inactiveresidualnorm(s, r)
+        normF = obsprob.inactiveresidualnorm(mesh, s, r, b)
         print('%d: %.4e' % (j+1, normF))
         if normF < args.irtol * normF0:
             print('NRichardson iteration CONVERGED by -irtol')

@@ -40,6 +40,15 @@ class SmootherObstacleProblem(ABC):
             Jstr += '_' if z[k] == 0.0 else '*'
         print('  %d nonzeros: ' % sum(z > 0.0) + Jstr)
 
+    def inactiveresidualnorm(self, mesh, w, r, phi, ireps=50.0):
+        '''Compute the norm of the residual values at nodes where the constraint
+        is NOT active.  Where the constraint is active the residual F(w) in the
+        complementarity problem is allowed to have any positive value; only the
+        residual at inactive nodes is relevant to convergence.'''
+        F = r.copy()
+        F[w < phi + ireps] = np.minimum(F[w < phi + ireps], 0.0)
+        return mesh.l2norm(F)
+
     def smoother(self, iters, mesh, w, ell, phi):
         '''Apply iters sweeps of obstacle-problem smoother on mesh to modify w in place.  Alternate directions (unless overridden).'''
         forward = True
