@@ -95,7 +95,7 @@ urlcolor=black    % ...
 
 \author{Lawrence Mitchell}
 
-\begin{abstract} FIXME MCD for steady and evolving geometry with Glen-Stokes dynamics; Schur-complement or Vanka Newton-multigrid for the dynamics problem
+\begin{abstract} FIXME MCD for steady and evolving geometry with Glen-Stokes dynamics
 \end{abstract}
 
 \maketitle
@@ -247,20 +247,41 @@ In both the SIA case and the current Glen-Stokes case, to the best of our knowle
 To understand VI \eqref{eq:sigpweakform} one may, however, think by analogy to minimization over a convex set.  That is, conceptually-speaking, one might regard \eqref{eq:sigpfunctional} as a dual pairing of $F(s)$ and $r$, similar to an inner product, so that VI \eqref{eq:sigpweakform} says that $s$ is located in the closed and convex set $\mathcal{K}$, generically on $\partial\mathcal{K}$, where the gradient-like vector $F(s)$ points directly into $\mathcal{K}$; the ``angle'' between $F(s)$ and an arbitrary vector based at $s$ and pointing into $\mathcal{K}$, i.e.~$r-s$, is at most $90^\circ$.
 
 
+\section{Functional derivatives} \label{sec:deriv}
 
-\section{Multilevel constraint decomposition (MCD) for steady Stokes geometry} \label{sec:mcdstokes}
+In order to numerically solve \eqref{eq:sigpweakform}, as done in the remainder of this paper, we need to compute (Gateaux) derivatives of the IDO $\Phi$ in \eqref{eq:ido} and the functional $F$ in \eqref{eq:sigpfunctional}.  First, for $s \in \mathcal{K}$ and certain $t \in W^{1,\qq}(\Omega)$ let
+\begin{equation}
+\Phi'(s,t) = \lim_{\eps\to 0^+} \frac{\Phi(s+\eps t) - \Phi(s)}{\eps} = \lim_{\eps\to 0^+} \frac{\bu|_{s+\eps t} - \bus}{\eps}. \label{eq:idoderiv}
+\end{equation}
+Note that two Glen-Stokes solutions are implied to compute the difference quotient, namely over the ice domains $\Lambda_{s+\eps t}$ and $\Lambda_s$; from the solutions we extract the surface velocity and extend by zero.  In fact \eqref{eq:idoderiv} is only valid if $s+\eps t \in \mathcal{K}$ for sufficiently-small $\eps>0$, i.e.~subject to the one-sided constraint $s+\eps t \ge b$, which is a requirement on the sign of $t$ in ice-free areas.  Clearly it suffices that $t \ge 0$ so let
+\begin{equation}
+\mathcal{D}^+ = \{t \in W^{1,\qq}(\Omega) \,:\, t(x,y) \ge 0\}. \label{eq:infdefectset}
+\end{equation}
+Then $\Phi'$ is a well-defined function from $\mathcal{K} \times \mathcal{D}^+$ to a space of low regularity such that the integrals needed to compute the derivative of $F$, as follows, are valid.
+
+To compute the derivative of $F$ from \eqref{eq:surfacenormal} and \eqref{eq:sigpfunctional}, consider the difference
+\begin{align*}
+F(s+\eps t)[r] - F(s)[r] &= \int_\Omega \Big(\Phi(s+\eps t) \cdot \left<s_x+\eps t_x,s_y+\eps t_y,-1\right> - \Phi(s) \cdot \left<s_x,s_y,-1\right>\Big)\, r \,dx dy \\
+    &= \eps \int_\Omega \big(-\Phi'(s,t) \cdot \bn_s + \Phi(s) \cdot \left<t_x,t_y,0\right>\big)\, r \,dx dy + O(\eps^2).
+\end{align*}
+It follows that for $s\in \mathcal{K}$, $t\in \mathcal{D}_s^+$, and $r \in W^{1,\qq}(\Omega)$ we have
+\begin{align}
+F'(s,t)[r] &= \lim_{\eps\to 0^+} \frac{F(s+\eps t)[r] - F(s)[r]}{\eps}  \label{eq:sigpfunctionalderiv} \\
+    &= \int_\Omega \big(-\Phi'(s,t) \cdot \bn_s + \Phi(s) \cdot \left<t_x,t_y,0\right>\big)\, r \,dx dy. \notag
+\end{align}
+
+
+\section{Multilevel constraint decomposition} \label{sec:mcdstokes}
 
 FIXME smoother uses Firedrake \cite{Alnaesetal2014,Rathgeberetal2016} with extruded meshes \cite{Gibsonetal2019,McRaeetal2016} and PETSc \cite{Balayetal2020,Bueler2021} to solve the dynamics problem and thereby evaluate the residual, and Stokeslets for Jacobian
 
-\section{Multigrid for the (fixed-geometry) Stokes dynamics problem} \label{sec:stokesdynamics}
+FIXME in this paper the Glen-Stokes problem is solved by Newton linearization and (parallel) direct solution of the Newton step equations; however, geometric multigrid is available already for Glen-Stokes dynamics \cite{IsaacStadlerGhattas2015}; see also \cite{BrownSmithAhmadia2013} and \cite{Tuminaroetal2016} which solve a first-order approximation of the Glen-Stokes ice sheet problem by geometric and algebraic multigrid, respectively
 
-FIXME multigrid already used for Blatter-Pattyn dynamics \cite{BrownSmithAhmadia2013}; for hybrid dynamics \cite{Jouvetetal2013,JouvetGraeser2013}; and for Stokes dynamics \cite{IsaacStadlerGhattas2015} and \cite{Tuminaroetal2016} using AMG
-
-FIXME we use Schur complement \cite{Bueler2021,Elmanetal2014} and compare it to Vanka monolithic smoother \cite{Farrelletal2019}
 
 \section{Multilevel methods for evolving geometry} \label{sec:stokesevolution}
 
 FIXME time-dependent runs
+
 
 \section*{Acknowledgments}  Thanks to David Maxwell for suggestions on the formulation and well-posedness of the model.
 
@@ -278,10 +299,8 @@ FIXME time-dependent runs
 \begin{longtable}{l|l}
 \toprule
 \textbf{Acronym} {\Large$\strut$} & \textbf{Definition} \\ \hline
-AMG & algebraic multigrid \\
 CMB & climatic mass balance \\
 FE & finite element \\
-GMG & geometric multigrid \\
 IDO & ice dynamics operator \\
 IIGP & implicit ice geometry problem \\
 MCD & multilevel constraint decomposition \\
