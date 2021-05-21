@@ -107,7 +107,7 @@ urlcolor=black    % ...
 
 \section{Introduction} \label{sec:intro}
 
-FIXME MCD = multilevel constraint decomposition, a multigrid \cite{Trottenbergetal2001} method basically by \cite{Tai2003} for obstacle problems; see part I \cite{Bueler2022partI};  obstacle problem view first extended to Stokes by \cite{WirbelJarosch2020}
+FIXME MCD = multilevel constraint decomposition, a multigrid \cite{Trottenbergetal2001} method basically by \cite{Tai2003} for obstacle problems; see part I \cite{Bueler2022};  obstacle problem view first extended to Stokes by \cite{WirbelJarosch2020}
 
 
 \section{The steady ice geometry problem} \label{sec:stokesgeometry}
@@ -144,7 +144,7 @@ For the $n=1$ linear Stokes equations one would write \eqref{eq:viscflowlaw} as 
 \begin{equation}
 \nu_\eps = \frac{1}{2} B_n \left(|D\bu|^2 + \eps\, D_0^2\right)^{(\pp-2)/2}, \label{eq:regeffvisc}
 \end{equation}
-where $\pp=(1/n)+1=4/3$.  The constant $D_0$ defines a strain-rate scale for glacier flow; $D_0 = 1 \,\text{a}^{-1}$ and $\eps = 10^{-4}$ are used in computations.  Finally, we may also eliminate $\tau$ and rewrite \eqref{eq:forcebalance} as $- \nabla \cdot \left(2 \nu_\eps\, D\bu\right) + \nabla p = \rhoi \mathbf{g}$.
+where $\pp=(1/n)+1(=4/3)$.  The constant $D_0$ defines a strain-rate scale for glacier flow; $D_0 = 1 \,\text{a}^{-1}$ and $\eps = 10^{-4}$ are used in computations.  Finally, we may also eliminate $\tau$ and rewrite \eqref{eq:forcebalance} as $- \nabla \cdot \left(2 \nu_\eps\, D\bu\right) + \nabla p = \rhoi \mathbf{g}$.
 
 We apply dynamic boundary conditions for isolated, grounded, and non-sliding glaciers and ice sheets.  In addition to the already-stated assumption that the top and bottom boundaries of $\Lambda_s$ can be identified, we further assume these surfaces have well-defined tangents.  On top we set a condition of zero applied stress,
 \begin{equation}
@@ -173,7 +173,7 @@ is now valid on all of $\Omega$ where $s(x,y)$ has a well-defined gradient.  (By
 \begin{equation}
 \bus \cdot \bn_s + a = 0 \qquad \text{\emph{on the ice}}. \label{eq:ske}
 \end{equation}
-Note that $a(x,y)$ is the ice thickness added per unit area of the map-plane region $\Omega$ (per time), not per unit area of the ice surface \cite[compare]{GreveBlatter2009}.  (The latter quantity is significantly different if the gradient $\grad s$ is large.)  While the quantities in \eqref{eq:ske} are defined everywhere, the kinematical quantity $\bus \cdot \bn_s + a$ is only zero on the ice.  With convention \eqref{eq:surfacevelocity}, $\bus \cdot \bn_s + a \le 0$ everywhere because $a$ is nonpositive in steady state in ice-free locations.  In fact, as observed in part I of this paper \cite{Bueler2022partI} (see also \cite{Bueler2021conservation}), SKE \eqref{eq:ske} is part of a nonlinear complementarity problem (NCP) when combined with the constraint that $s\ge b$ everywhere on $\Omega$.
+Note that $a(x,y)$ is the ice thickness added per unit area of the map-plane region $\Omega$ (per time), not per unit area of the ice surface \cite[compare]{GreveBlatter2009}.  (The latter quantity is significantly different if the gradient $\grad s$ is large.)  While the quantities in \eqref{eq:ske} are defined everywhere, the kinematical quantity $\bus \cdot \bn_s + a$ is only zero on the ice.  With convention \eqref{eq:surfacevelocity}, $\bus \cdot \bn_s + a \le 0$ everywhere because $a$ is nonpositive in steady state in ice-free locations.  In fact, as observed in part I of this paper \cite{Bueler2022} (see also \cite{Bueler2021conservation}), SKE \eqref{eq:ske} is part of a nonlinear complementarity problem (NCP) when combined with the constraint that $s\ge b$ everywhere on $\Omega$.
 
 This leads us to state a strong form of the SIGP as follows:
 \begin{align}
@@ -189,59 +189,64 @@ s - b &\ge 0 && \text{on $\Omega$} \label{eq:strongform} \\
 
 The first three statements in \eqref{eq:strongform} form an NCP, but they are coupled to a dynamical boundary value problem, namely the last four statements.  The solution of \eqref{eq:strongform} is a triple of functions $s(x,y)$, $\bu(x,y,z)$, $p(x,y,z)$.  However, as the domain $\Lambda_s$ on which $\bu,p$ are defined is only known simultaneously with the solution elevation $s$, the system is at best an incomplete description.  In fact, the inequality-constrained system of PDEs \eqref{eq:strongform} has a largely-unknown theory regarding well-posedness and solution regularity.  Nonetheless we will write it next in different weak forms, identifying reasonable function spaces and making solution existence credible.  Note that some well-posedness theory is known for the shallow ice approximation (SIA) version of this problem; existence is established by \cite{JouvetBueler2012}, with uniqueness in the flat bed case.  As noted in the Introduction, numerical solutions of \eqref{eq:strongform} usually apply an explicit time-stepping approach to steady state, splitting the dynamics and the SKE into separate steps and using truncation to address the NCP \cite[for example]{Jouvetetal2008,Lengetal2012}.  The weak form stated below, using a Stokes solution operator, will address this concern.  Furthermore, in Section \ref{sec:mcdstokes} we will demonstrate a reasonably-robust multilevel scheme for the direct numerical solution of \eqref{eq:strongform}.
 
-Recall that the weak form of a PDE model states that the solution is the zero of a certain functional which is constructed by multiplying by a test function and integrating by parts.  Both the solution and the test functions come from identified function spaces, namely Sobolev spaces \cite{Evans2010}.  (We denote by $W^{k,r}$ the Sobolev space of functions which have $k$ derivatives which are $r$th-power integrable.)
 
-For example, it is well-known \cite[for example]{Elmanetal2014} that for a fixed domain $\Lambda \subset \RR^3$, on which a constant-viscosity ($\nu_0$) and zero body force, linear Stokes model applies, with a Dirichlet condition on part of the domain and stress-free conditions otherwise, the weak form is the statement that $(\bu,p) \in W_0^{1,2}(\Lambda)^3 \times L^2(\Lambda)$ satisfies
-\begin{equation}
-\int_\Lambda 2 \nu_0 D\bu : D\bv - p \Div\bv - q \Div\bu\,d\bx = 0 \quad \text{for all } (\bv,q) \in W_0^{1,2}(\Lambda)^3 \times L^2(\Lambda).  \label{eq:linearstokesweak}
-\end{equation}
+\section{Weak form and the ice dynamics operator} \label{sec:weakido}
 
-As shown by Poisson and SIA examples in part I \cite{Bueler2022partI}, a similar construction generates the weak form of an inequality-constrained model as a variational inequality (VI) \cite{KinderlehrerStampacchia1980}.  Recall $\pp=(1/n)+1=4/3$ from the SIA model example, and let $\qq=(1-\pp^{-1})^{-1}=n+1=4$ be the conjugate exponent, so that $\pp^{-1}+\qq^{-1}=1$.  Suppose $b$ has bounded derivatives and let
-\begin{equation}
-\mathcal{K} = \{s \in W_0^{1,\qq}(\Omega) \,|\, s \ge b\}.  \label{eq:Kconstraintset}
-\end{equation}
-This is the constraint set for surface elevations, the same as in the discussion of the SIA model.
+Recall that the weak form of a PDE states that a certain functional, constructed by multiplying by a test function and integrating by parts, is zero.  Both the solution and the test functions come from identified function spaces, namely Sobolev spaces \cite{Evans2010}, and here we denote by $W^{k,r}$ the Sobolev space of functions on which have $k$ derivatives which are $r$th-power integrable.
 
-Next we construct two such weak forms for the coupled, steady Stokes-based glacier geometry model \eqref{eq:strongform}.  Each one combines the VI for the surface elevation with a nonlinear version of the Stokes weak form \eqref{eq:linearstokesweak}.
+The weak form of the fixed-geometry Glen-Stokes model for ice, which extends the better-known linear Stokes weak form \cite{Elmanetal2014} to regularized power-law rheology, is relatively well-known \cite{IsaacStadlerGhattas2015,JouvetRappaz2011,Lengetal2012}, and we summarize it here.  Suppose that $\Lambda \subset \RR^{d+1}$ is fixed domain on which we prescribe a Dirchlet condition $\bu=0$ on a portion of the boundary, and where the remainder of the boundary (Neumann boundary) is stress-free.  Let $\pp=(1/n)+1$ as before, and let $\qq=(1-\pp^{-1})^{-1}=n+1$ be the conjugate exponent, so that $\pp^{-1}+\qq^{-1}=1$. (Note $\pp=4/3$ and $\qq = 4$ if $n=3$.)  Let $W_0^{1,\pp}(\Lambda)^{d+1}$ be the space of velocity functions which are zero along the Dirichlet boundary.  Let
+\begin{equation}
+\mathcal{M}_{\text{GS}} = W_0^{1,\pp}(\Lambda)^{d+1} \times L^\qq(\Lambda)  \label{eq:mixed}
+\end{equation}
+be the (mixed) space of admissible velocity and pressure pairs.  The Glen-Stokes weak form is the statement that $(\bu,p) \in \mathcal{M}_{\text{GS}}$ should satisfy
+\begin{equation}
+F_{\text{GS}}(\bu,p)[\bv,q] = \int_\Lambda 2 \nu_\eps D\bu : D\bv - p \Div\bv - (\Div\bu) q - \rhoi \bg \cdot \bv\,d\bx = 0 \label{eq:glenstokesweak}
+\end{equation}
+for all $(\bv,q) \in \mathcal{M}_{\text{GS}}$; as before the effective viscosity $\nu_\eps$ is defined by \eqref{eq:regeffvisc}.  Jouvet and Rappaz \cite{JouvetRappaz2011} have proven that this formulation is well-posed if $\Lambda$ is bounded, the Neumann boundary is $C^1$, and the Dirichlet boundary is nonempty.  In particular they show \eqref{eq:glenstokesweak} is equivalent to minimization of a coercive functional over the divergence-free subspace, but also that there is a unique pressure $p\in L^\qq(\Lambda)$ as stated.
 
-Let $z^+ \in \RR$ be a value which is larger than any expected value of $s(x,y)$.  Then
+Going beyond predetermined ice geometry, we are interested in finding a triple $s,\bu,p$ which solves the weak form of \eqref{eq:strongform}, where $s$ is the surface elevation.  Suppose $\Omega \subset \RR^d$ is the map-plane domain, and suppose the bed elevation $b$ is in $C^1(\overline{\Omega}) \subset W^{1,\qq}(\Omega)$.  Let
 \begin{equation}
-\Xi = \{(x,y,z)\,|\, (x,y) \in \Omega, b(x,y) < z < z^+\} \subset \RR^{d+1}  \label{eq:Xi}
+\mathcal{K} = \{s \in W^{1,\qq}(\Omega) \,:\, s \ge b \, \text{ and } \, s\big|_{\partial\Omega} = b\big|_{\partial\Omega}\}  \label{eq:Kconstraintset}
 \end{equation}
-is a fixed and bounded domain which contains the glacier as a subset.  Let
+be the set of admissible surface elevations of our isolated glacier or ice sheet.  This set is closed and convex.  As noted earlier it is not clear that the correct Sobolev space is identified here, but we do need $s$ to have a well-behaved gradient in an integral sense.  In fact we suppose when needed that
 \begin{equation}
-\mathcal{V} = W_0^{1,\pp}(\Xi)^{d+1}
+s\in \mathcal{K} \text{ defines an icy domain } \Lambda_s \text{ which has piecewise-$C^1$ boundary.} \label{eq:quixotic}
 \end{equation}
-be a set of velocity fields $\bv$ which satisfy $\bv=0$ on the bottom boundary of $\Xi$.  Now let
-\begin{equation}
-\mathcal{W} = \mathcal{K} \times \mathcal{V} \times L^\qq(\Xi)  \label{eq:Wset}
-\end{equation}
-be the set of admissible solution triples $(s,\bu,p)$, and let $\tilde{\mathcal{W}} = W_0^{1,\qq}(\Omega) \times \mathcal{V} \times L^\qq(\Xi)$ be the corresponding vector space; note $\mathcal{W}$ is a closed and convex subset of $\tilde{\mathcal{W}}$.  Finally define a function on $\RR^3$ which we will use to create the characteristic function of the icy domain $\Lambda_s$:
-\begin{equation}
-\Phi(z,\beta,\zeta) = \begin{cases} 1, & \beta < z < \zeta, \\ 0, & \text{otherwise}.  \end{cases}
-\end{equation}
-Note that if we are given a solution surface elevation $s(x,y)$ then
-    $$\Phi(z,b(x,y),s(x,y)) = 1 \quad \iff \quad (x,y,z) \in \Lambda_s.$$
+This quixotic assumption connects the known theory of shallow ice sheet well-posedness \cite{JouvetBueler2012}, which motivates definition \eqref{eq:Kconstraintset}, to the widely-used numerical construction of evolving ice sheet geometries from Glen-Stokes dynamics \cite{Jouvetetal2008,Lengetal2012}.  Assumption \eqref{eq:quixotic} would follow from a sufficiently strong regularity result for the theory presented in the current paper, which we certainly cannot offer, and subject to the no-overhangs hypothesis which might follow from the inclusion of non-fluid fracture processes (previous section).
 
-From the above components we define a functional $\tilde F : \mathcal{W} \times \tilde{\mathcal{W}} \to \RR$ which is (extremely) nonlinear in the first triple $(s,\bu,p) \in \mathcal{W}$ but linear in the second triple:
+Now, if $\partial \Lambda$ is piecewise $C^1$ then the Sobolev space $W^{1,\pp}(\Lambda)$ supports a well-defined linear trace operator $T(f) = f|_{\partial \Lambda}$ on spaces $T:W^{1,\pp}(\Lambda) \to L^\pp(\partial \Lambda)$ \cite[Section 5.5]{Evans2010}.  With this trace in mind, and noting that the upper ice surface $\overline{\partial} \Lambda_s$ is the Neumann boundary, we define the ice dynamics operator (IDO), a fundamental concept for our work.  For each surface elevation function $s \in \mathcal{K}$ we define the IDO value $\Phi(s) \in L^\pp(\Omega)$ as the upper-surface trace of the unique velocity solution $\bu$ of \eqref{eq:glenstokesweak} over the icy domain $\Lambda_s$, extended by zero, as in \eqref{eq:surfacevelocity}, to all of $\Omega$:
+\begin{equation}
+\Phi(s) = \begin{cases} \bu\big|_{\overline{\partial} \Lambda_s} & s(x,y) > b(x,y), \\
+                        \bzero & \text{otherwise}. \end{cases} \label{eq:ido}
+\end{equation}
+Note that we are un-concerned that the vector field $\Phi(s)$ may have a jump at the glacier margin; we only expect $\Phi(s) \in L^\pp(\Omega)$.
+
+Using the IDO, and recalling that the CMB $a$ and the surface normal $\bn_s$ are defined on all of $\Omega$, we may re-write the strong form \eqref{eq:strongform} with the Glen-Stokes dynamics problem hidden:
 \begin{align}
-\tilde F(s,\bu,p;r,\bv,q) &= \int_\Omega (-\bn_s \cdot \bu|_s - a) r \,dx dy \\
-   &\quad + \int_\Xi \Phi(z,b,s) \Big[2 \nu_\eps D\bu : D\bv - p \Div\bv - q \Div\bu - \rhoi \bg \bv\Big]\,d\bx \notag
+s - b &\ge 0  \label{eq:idostrongform} \\
+- \Phi(s) \cdot \bn_s - a &\ge 0 \notag \\
+(s - b) (- \Phi(s) \cdot \bn_s - a) &= 0 \notag
 \end{align}
-where \eqref{eq:regeffvisc} defines $\nu_\eps = \nu_\eps(|D\bu|)$.  Then our first weak form for model \eqref{eq:strongform} is the VI statement that $(s,\bu,p) \in \mathcal{W}$ satisfies
-\begin{equation}
-\tilde F(s,\bu,p;r-s,\bv-\bu,q-p) \ge 0 \quad \text{for all } (r,\bv,q) \in \mathcal{W}.\label{eq:firstweak}
-\end{equation}
-Three key observations should be made about \eqref{eq:firstweak}:
-\renewcommand{\labelenumi}{\emph{(\roman{enumi})}}
-\begin{enumerate}
-\item the integrals defining $\tilde F$ are over fixed, solution-independent sets $\Omega$, $\Xi$,
-\item the coefficient $\Phi(z,b,s)$ depends on the solution, namely $s$, and
-\item while $\bu,p$ are defined on $\Xi$ if $(s,\bu,p) \in \mathcal{W}$, in fact $\tilde F$ is insensitive to values of $\bu,p$ outside of $\Lambda_s$.
-\end{enumerate}
-Observation \emph{(iii)} says that $\tilde F$ is not coercive \cite{KinderlehrerStampacchia1980} on $\mathcal{W}$.
+Here the statements hold on all of $\Omega$, the data $a,b$ are clear, and the apparent solution is the steady geometry $z=s(x,y)$ of the glacier, but of course the velocity and pressure $\bu,p$ are hidden in the dynamical computation of $\Phi(s)$.  It remains to write NCP \eqref{eq:idostrongform} in weak form, to achieve our goal in this section.
 
-FIXME SECOND WEAK FORM IS LESS HARD ASS
+For $s \in \mathcal{K}$ and $r \in W^{1,\qq}(\Omega)$ we define a functional which is nonlinear in $s$:
+\begin{equation}
+F(s)[r] = \int_\Omega (- \Phi(s) \cdot \bn_s - a)\, r \,dx dy. \label{eq:sigpfunctional}
+\end{equation}
+That is, we compute $F(s)[r]$ by defining the icy domain $\Lambda_s$ as in \eqref{eq:lambdas}, then solving the (weak form) Glen-Stokes problem \eqref{eq:glenstokesweak}, then evaluating the surface trace of the velocity to compute the IDO \eqref{eq:ido}, and then integrating against the test function $r$.  Implicit in formula \eqref{eq:sigpfunctional} is the assumption that $- \Phi(s) \cdot \bn_s - a$ is sufficiently regular to be in the dual space of $W^{1,\qq}(\Omega)$; that is, a fair amount of singularity is allowed for this kinematical quantity.
+
+The SIGP weak form is a variational inequality (VI) \cite{KinderlehrerStampacchia1980} which should determine $s\in\mathcal{K}$:
+\begin{equation}
+F(s)[r - s] \ge 0 \quad \text{for all $r \in \mathcal{K}$.}  \label{eq:sigpweakform}
+\end{equation}
+
+VI \eqref{eq:sigpweakform} has a shallow (i.e.~SIA) analog for which existence has been proven \cite{JouvetBueler2012}.  However, in the SIA theory the value of the functional can be computed by a local integral over powers of the thickness $s-b$ and the surface slope $\grad s$.  Here the computation of $F$ in \eqref{eq:sigpfunctional} is non-local and highly nontrivial; to evaluate $F(s)[r]$ one must solve the Glen-Stokes problem for the geometry from $s$ before integrating over $\Omega$.  In this sense we solve two coupled variational problems, weak forms \eqref{eq:glenstokesweak} and \eqref{eq:sigpweakform}, subject to the inequality-constraint that the surface elevation solution must be admissible ($s \in \mathcal{K}$).  The problem is copiously nonlinear because of the inequality constraint and the power-law rheology.
+
+In both the SIA case and the current Glen-Stokes case, to the best of our knowledge, the VI does \emph{not} arise as a constrained minimization.  (The known exception is in the flat-bed SIA case \cite{JouvetBueler2012}.)  Of course the fixed-geometry Glen-Stokes problem \eqref{eq:glenstokesweak} does have such a (equality-constrained) minimization formulation \cite{Elmanetal2014,JouvetRappaz2011}.
+
+To understand VI \eqref{eq:sigpweakform} one may, however, think by analogy to minimization over a convex set.  That is, conceptually-speaking, one might regard \eqref{eq:sigpfunctional} as a dual pairing of $F(s)$ and $r$, similar to an inner product, so that VI \eqref{eq:sigpweakform} says that $s$ is located in the closed and convex set $\mathcal{K}$, generically on $\partial\mathcal{K}$, where the gradient-like vector $F(s)$ points directly into $\mathcal{K}$; the ``angle'' between $F(s)$ and an arbitrary vector based at $s$ and pointing into $\mathcal{K}$, i.e.~$r-s$, is at most $90^\circ$.
+
+
 
 \section{Multilevel constraint decomposition (MCD) for steady Stokes geometry} \label{sec:mcdstokes}
 
@@ -278,7 +283,7 @@ CMB & climatic mass balance \\
 FE & finite element \\
 GMG & geometric multigrid \\
 IDO & ice dynamics operator \\
-IIGP & evolving ice geometry problem \\
+IIGP & implicit ice geometry problem \\
 MCD & multilevel constraint decomposition \\
 NCP & nonlinear complementarity problem \\
 PDE & partial differential equation \\
