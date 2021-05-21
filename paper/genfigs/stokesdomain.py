@@ -12,11 +12,11 @@ smallfsize=14.0
 extrasmallfsize=12.0
 bigfsize=20.0
 
-def genbasicfig():
+def genbasicfig(xshift=0.0):
     x = np.linspace(0.0,10.0,1001)
     # bed elevation
     b = 0.07*(x-3.0)**2 + 0.2*np.sin(2.0*x) - 0.1
-    plt.plot(x, b, 'k', lw=2.5)
+    plt.plot(x + xshift, b, 'k', lw=2.5)
     # current thickness for Omega^{n-1}
     h0 = 3.0
     L = 3.0
@@ -25,13 +25,10 @@ def genbasicfig():
     # surface
     s = b + thk
     offset = 0.1
-    plt.plot(x, s + offset, 'k--', lw=3.0)
-    # reset axes
-    plt.axis([0.0-0.02,10.0+0.02,-0.5,4.5])
-    plt.axis('off')
-    return x, s, b
+    plt.plot(x + xshift, s + offset, 'k--', lw=3.0)
+    return x + xshift, s, b
 
-def drawclimate(x,s,mycolor):
+def drawclimate(x,s):
     plt.text(x[10], s[10]+2.7, r'$a(x,y)$', fontsize=bigfsize, color='k')
     for j in range(10):
         xarr = x[50+100*j]
@@ -40,37 +37,53 @@ def drawclimate(x,s,mycolor):
         else:
             magarr = 0.05
         plt.arrow(xarr, s.max()+0.3, 0.0, magarr,
-                  lw=1.5, head_width=0.1, color=mycolor)
+                  lw=1.5, head_width=0.1, color='k')
 
 # domain notation figure
 plt.figure(figsize=(10,5.5))
 x, s, b = genbasicfig()
 plt.text(x[600] - 1.0, b[600] + 0.4 * s[600], r'$\Lambda_s$',
          fontsize=bigfsize, color='k')
-drawclimate(x,s,'k')
+drawclimate(x,s)
 # mark top surface
 plt.text(x[250], s[250] + 1.5, r'$s(x,y)$', fontsize=bigfsize, color='k')
-#plt.annotate(r'$\overline{\partial}\Lambda$',fontsize=fsize,
-#             xy=(x[300],s[300]),
-#             xytext=(x[300]-1.5,s[300]+0.5),
-#             arrowprops=dict(facecolor='black', width=0.5, headwidth=5.0, shrink=0.1))
 # mark bottom surface
 plt.text(x[650], b[650] - 0.5, r'$b(x,y)$', fontsize=bigfsize, color='k')
-# BIZARRE HACK NEEDED BECAUSE \underline{} THROWS ERROR
-#plt.annotate(r"$\underline{\partial}\Lambda$",fontsize=fsize,
-#plt.annotate(r"$\partial\Lambda$",fontsize=fsize,
-#             xy=(x[700],b[700]),
-#             xytext=(x[700]+1.1,b[700]-1.0),
-#             arrowprops=dict(facecolor='black', width=0.5, headwidth=5.0, shrink=0.1))
-#plt.text(x[700]+1.08,b[700]-1.02,r"$\_$",fontsize=24.0)  # HACK UNDERLINE
-# show \pi\Lambda_s
-#ypi = min(b) - 0.5
-#plt.plot([min(x[s>b]), max(x[s>b])], [ypi,ypi],
-#         color='k', lw=1.0)
-#plt.text(3.5, ypi-0.5, r'$\pi\Lambda_s$', fontsize=bigfsize)
 # show \Omega
 yR = min(b) - 0.5
 plt.plot([min(x),max(x)],[yR,yR],color='k',lw=1.0)
 plt.text(4.0,yR-0.4,r'$\Omega$',fontsize=fsize)
 plt.axis([0.0,10.0,yR-0.8,4.5])
+plt.axis('off')
 writeout('stokesdomain.pdf')
+
+# IDO (ice dynamics operator) figure
+plt.figure(figsize=(16,4))
+x, s, _ = genbasicfig(xshift=0.0)
+plt.text(x[300], s[300] + 1.2, r'$s$', fontsize=bigfsize, color='k')
+plt.arrow(10.0, 1.5, 1.0, 0.0,
+          lw=1.5, head_width=0.1, color='k')
+plt.text(10.4, 1.6, r'$\Phi$', fontsize=bigfsize, color='k')
+x, s, _ = genbasicfig(xshift=11.0)
+plt.text(x[300], s[300] + 1.5, r'$\Phi(s)=\mathbf{u}|_s$',
+         fontsize=bigfsize, color='k')
+offset = 0.1
+vects = [[0.0, 0.0],
+         [0.0, 0.0],
+         [-0.8, +0.3],
+         [-0.5, -0.1],
+         [-0.1, -0.3],
+         [+0.3, -0.2],
+         [+0.5, +0.2],
+         [+0.9, +0.1],
+         [0.0, 0.0],
+         [0.0, 0.0]]
+v = np.array(vects)
+for j in range(10):
+    xj, yj = x[100*j+50], s[100*j+50] + offset
+    if any(v[j,:] != 0.0):
+        plt.arrow(xj, yj, v[j,0], v[j,1],
+                  lw=1.5, head_width=0.1, color='k')
+plt.axis([0.0,22.0,-0.5,4.0])
+plt.axis('off')
+writeout('idoaction.pdf')

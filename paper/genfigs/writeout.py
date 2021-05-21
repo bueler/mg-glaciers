@@ -8,4 +8,4 @@ def writeout(outname):
         plt.show()
     else:
         print('writing file ' + outname)
-        plt.savefig(outname,bbox_inches='tight')
+        plt.savefig(outname, bbox_inches='tight')

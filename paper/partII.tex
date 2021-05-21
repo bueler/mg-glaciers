@@ -214,12 +214,21 @@ s\in \mathcal{K} \text{ defines an icy domain } \Lambda_s \text{ which has piece
 \end{equation}
 This quixotic assumption connects the known theory of shallow ice sheet well-posedness \cite{JouvetBueler2012}, which motivates definition \eqref{eq:Kconstraintset}, to the widely-used numerical construction of evolving ice sheet geometries from Glen-Stokes dynamics \cite{Jouvetetal2008,Lengetal2012}.  Assumption \eqref{eq:quixotic} would follow from a sufficiently strong regularity result for the theory presented in the current paper, which we certainly cannot offer, and subject to the no-overhangs hypothesis which might follow from the inclusion of non-fluid fracture processes (previous section).
 
-Now, if $\partial \Lambda$ is piecewise $C^1$ then the Sobolev space $W^{1,\pp}(\Lambda)$ supports a well-defined linear trace operator $T(f) = f|_{\partial \Lambda}$ on spaces $T:W^{1,\pp}(\Lambda) \to L^\pp(\partial \Lambda)$ \cite[Section 5.5]{Evans2010}.  With this trace in mind, and noting that the upper ice surface $\overline{\partial} \Lambda_s$ is the Neumann boundary, we define the ice dynamics operator (IDO), a fundamental concept for our work.  For each surface elevation function $s \in \mathcal{K}$ we define the IDO value $\Phi(s) \in L^\pp(\Omega)$ as the upper-surface trace of the unique velocity solution $\bu$ of \eqref{eq:glenstokesweak} over the icy domain $\Lambda_s$, extended by zero, as in \eqref{eq:surfacevelocity}, to all of $\Omega$:
+Now, if $\partial \Lambda$ is piecewise $C^1$ then the Sobolev space $W^{1,\pp}(\Lambda)$ supports a well-defined linear trace operator $T(f) = f|_{\partial \Lambda}$ on spaces $T:W^{1,\pp}(\Lambda) \to L^\pp(\partial \Lambda)$ \cite[Section 5.5]{Evans2010}.  With this trace in mind, and noting that the upper ice surface $\overline{\partial} \Lambda_s$ is the Neumann boundary, we define the ice dynamics operator (IDO), a fundamental concept for our work (Figure \ref{fig:idoaction}).  For each surface elevation function $s \in \mathcal{K}$ we define the IDO value $\Phi(s) \in L^\pp(\Omega)$ as the upper-surface trace of the unique velocity solution $\bu$ of \eqref{eq:glenstokesweak} over the icy domain $\Lambda_s$, extended by zero, as in \eqref{eq:surfacevelocity}, to all of $\Omega$:
 \begin{equation}
 \Phi(s) = \begin{cases} \bu\big|_{\overline{\partial} \Lambda_s} & s(x,y) > b(x,y), \\
                         \bzero & \text{otherwise}. \end{cases} \label{eq:ido}
 \end{equation}
 Note that we are un-concerned that the vector field $\Phi(s)$ may have a jump at the glacier margin; we only expect $\Phi(s) \in L^\pp(\Omega)$.
+
+
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[width=\textwidth]{genfigs/idoaction.pdf}
+\end{center}
+\caption{The ice dynamics operator $\Phi$ maps the surface elevation $s$ to the ice surface velocity $\Phi(s)=\bu|_s$.  Both input and output are defined on all of $\Omega$.}
+\label{fig:idoaction}
+\end{figure}
 
 Using the IDO, and recalling that the CMB $a$ and the surface normal $\bn_s$ are defined on all of $\Omega$, we may re-write the strong form \eqref{eq:strongform} with the Glen-Stokes dynamics problem hidden:
 \begin{align}
