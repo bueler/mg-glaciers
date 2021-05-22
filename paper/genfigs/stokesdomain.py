@@ -64,26 +64,17 @@ plt.text(x[300], s[300] + 1.2, r'$s$', fontsize=bigfsize, color='k')
 plt.arrow(10.0, 1.5, 1.0, 0.0,
           lw=1.5, head_width=0.1, color='k')
 plt.text(10.4, 1.6, r'$\Phi$', fontsize=bigfsize, color='k')
-x, s, _ = genbasicfig(xshift=11.0)
-plt.text(x[300], s[300] + 1.5, r'$\Phi(s)=\mathbf{u}|_s$',
-         fontsize=bigfsize, color='k')
+x, s, b = genbasicfig(xshift=11.0)
 offset = 0.1
-vects = [[0.0, 0.0],
-         [0.0, 0.0],
-         [-0.8, +0.3],
-         [-0.5, -0.1],
-         [-0.1, -0.3],
-         [+0.3, -0.2],
-         [+0.5, +0.2],
-         [+0.9, +0.1],
-         [0.0, 0.0],
-         [0.0, 0.0]]
-v = np.array(vects)
-for j in range(10):
-    xj, yj = x[100*j+50], s[100*j+50] + offset
-    if any(v[j,:] != 0.0):
-        plt.arrow(xj, yj, v[j,0], v[j,1],
-                  lw=1.5, head_width=0.1, color='k')
+xl, xr = min(x[s>b]), max(x[s>b])
+dx = xr - xl
+xsc = (x[s>b] - xl) / dx
+y = s[s>b] + offset + 0.8 * np.sin(5.0*np.pi*xsc) * np.cos(np.pi*xsc)**4
+plt.plot(x[s>b], y, color='k', lw=1.0)
+plt.plot(x[x < xl], s[x < xl] + offset, color='k', lw=1.0)
+plt.plot(x[x > xr], s[x > xr] + offset, color='k', lw=1.0)
+plt.text(x[760] + 0.2, s[760] + 0.7, r'$\Phi(s)$',
+         fontsize=bigfsize, color='k')
 plt.axis([0.0,22.0,-0.5,4.0])
 plt.axis('off')
 writeout('idoaction.pdf')
