@@ -116,7 +116,7 @@ The standard model for determining the geometry of glaciers is based upon a shea
 
 The problem is defined on a fixed, bounded map-plane region $\Omega \subset \RR^d$ (Figure \ref{fig:stokesdomain}) with map-plane variables $x$ when $d=1$ or $x,y$ when $d=2$.  On $\Omega$ we assume that a climatic mass balance (CMB) function $a(x,y)$ is defined at every point, whether or not ice is present at that location, with units of ice thickness (distance) per time, equivalently ice volume per area in $\Omega$ per time.  Similarly we assume there is a bed elevation function $b(x,y)$ defined everywhere on $\Omega$, with units of distance.  The functions $a$ and $b$ are the data of the SIGP.
 
-\begin{figure}[ht]
+\begin{figure}[t]
 \begin{center}
 \includegraphics[width=0.75\textwidth]{genfigs/stokesdomain.pdf}
 \end{center}
@@ -173,9 +173,9 @@ is now valid on all of $\Omega$ where $s(x,y)$ has a well-defined gradient.  (By
 \begin{equation}
 \bus \cdot \bn_s + a = 0 \qquad \text{\emph{on the ice}}. \label{eq:ske}
 \end{equation}
-Note that $a(x,y)$ is the ice thickness added per unit area of the map-plane region $\Omega$ (per time), not per unit area of the ice surface \cite[compare]{GreveBlatter2009}.  (The latter quantity is significantly different if the gradient $\grad s$ is large.)  While the quantities in \eqref{eq:ske} are defined everywhere, the kinematical quantity $\bus \cdot \bn_s + a$ is only zero on the ice.  With convention \eqref{eq:surfacevelocity}, $\bus \cdot \bn_s + a \le 0$ everywhere because $a$ is nonpositive in steady state in ice-free locations.  In fact, as observed in part I of this paper \cite{Bueler2022} (see also \cite{Bueler2021conservation}), SKE \eqref{eq:ske} is part of a nonlinear complementarity problem (NCP) when combined with the constraint that $s\ge b$ everywhere on $\Omega$.
+Note that $a(x,y)$ is the ice thickness added per unit area of the map-plane region $\Omega$ (per time), not per unit area of the ice surface \cite[compare]{GreveBlatter2009}.  (The latter quantity is significantly different if the gradient $\grad s$ is large.)  While the quantities in \eqref{eq:ske} are defined everywhere, the kinematical quantity $\bus \cdot \bn_s + a$ is only zero on the ice.  With convention \eqref{eq:surfacevelocity}, $\bus \cdot \bn_s + a \le 0$ everywhere because $a$ is nonpositive in steady state in ice-free locations.
 
-This leads us to state a strong form of the SIGP as follows:
+In fact, when combined with the constraint that $s\ge b$ everywhere on $\Omega$, SKE \eqref{eq:ske} is part of a nonlinear complementarity problem (NCP).  An NCP on a finite-dimensional vector space $V=\RR^k$ combines the three statements $x\ge 0$, $F(x)\ge 0$, and $x F(x)=0$, where $F:V\to V$ \cite{FacchineiPang2003}.  This leads us to state a strong form of the SIGP as follows:
 \begin{align}
 s - b &\ge 0 && \text{on $\Omega$} \label{eq:strongform} \\
 - \bu|_s \cdot \bn_s - a &\ge 0 && \text{\emph{same}} \notag \\
@@ -185,9 +185,9 @@ s - b &\ge 0 && \text{on $\Omega$} \label{eq:strongform} \\
 \left(2 \nu_\eps D\bu - pI\right) \bn_s &= \bzero && \text{on $\overline{\partial} \Lambda_s$} \notag \\
 \bu &= \bzero && \text{on $\underline{\partial} \Lambda_s$} \notag
 \end{align}
-(Note that definition \eqref{eq:regeffvisc} is also needed.)
+(Note that definition \eqref{eq:regeffvisc} is also needed.)  The first three statements in \eqref{eq:strongform} form an infinite-dimensional NCP, but they are coupled to a dynamical boundary value problem, namely the last four statements.
 
-The first three statements in \eqref{eq:strongform} form an NCP, but they are coupled to a dynamical boundary value problem, namely the last four statements.  The solution of \eqref{eq:strongform} is a triple of functions $s(x,y)$, $\bu(x,y,z)$, $p(x,y,z)$.  However, as the domain $\Lambda_s$ on which $\bu,p$ are defined is only known simultaneously with the solution elevation $s$, the system is at best an incomplete description.  In fact, the inequality-constrained system of PDEs \eqref{eq:strongform} has a largely-unknown theory regarding well-posedness and solution regularity.  Nonetheless we will write it next in different weak forms, identifying reasonable function spaces and making solution existence credible.  Note that some well-posedness theory is known for the shallow ice approximation (SIA) version of this problem; existence is established by \cite{JouvetBueler2012}, with uniqueness in the flat bed case.  As noted in the Introduction, numerical solutions of \eqref{eq:strongform} usually apply an explicit time-stepping approach to steady state, splitting the dynamics and the SKE into separate steps and using truncation to address the NCP \cite[for example]{Jouvetetal2008,Lengetal2012}.  The weak form stated below, using a Stokes solution operator, will address this concern.  Furthermore, in Section \ref{sec:mcdstokes} we will demonstrate a reasonably-robust multilevel scheme for the direct numerical solution of \eqref{eq:strongform}.
+The solution of \eqref{eq:strongform} is a triple of functions $s(x,y)$, $\bu(x,y,z)$, $p(x,y,z)$.  However, as the domain $\Lambda_s$ on which $\bu,p$ are defined is only known with the solution elevation $s$, \eqref{eq:strongform} is at best an incomplete description.  In fact, this inequality-constrained system of PDEs has a largely-unknown theory regarding well-posedness and solution regularity.  (Certain well-posedness theory is known for the SIA version of this problem, with existence established by \cite{JouvetBueler2012}, and uniqueness in the flat bed case.)  Nonetheless we will write it weak form, identifying reasonable function spaces and making solution existence credible, and solve it numerically.  As noted in the Introduction, numerical solutions usually apply explicit time-stepping to approach steady state, splitting the dynamics and the SKE into sub-steps and using truncation to address the NCP \cite[for example]{Jouvetetal2008,Lengetal2012}.  The weak form stated next, using a Stokes solution operator (Sections \ref{sec:weakido} and \ref{sec:deriv}), will address this concern.  Then in Section \ref{sec:mcdstokes} we will demonstrate a reasonably-robust multilevel scheme for the numerical solution of \eqref{eq:strongform}.
 
 
 \section{Weak form and the ice dynamics operator} \label{sec:weakido}
@@ -221,8 +221,7 @@ Now, if $\partial \Lambda$ is piecewise $C^1$ then the Sobolev space $W^{1,\pp}(
 \end{equation}
 Note that we are un-concerned that the vector field $\Phi(s)$ may have a jump at the glacier margin; we only expect $\Phi(s) \in L^\pp(\Omega)$.
 
-
-\begin{figure}[ht]
+\begin{figure}[t]
 \begin{center}
 \includegraphics[width=\textwidth]{genfigs/idoaction.pdf}
 \end{center}
@@ -258,7 +257,9 @@ To understand VI \eqref{eq:sigpweakform} one may, however, think by analogy to m
 
 \section{Functional derivatives} \label{sec:deriv}
 
-In order to numerically solve \eqref{eq:sigpweakform}, as done in the remainder of this paper, we need to compute (Gateaux) derivatives of the IDO $\Phi$ in \eqref{eq:ido} and the functional $F$ in \eqref{eq:sigpfunctional}.  First, for $s \in \mathcal{K}$ and certain $t \in W^{1,\qq}(\Omega)$ let
+In order to numerically solve \eqref{eq:sigpweakform}, as done in the remainder of this paper, we need to compute (Gateaux) derivatives of the IDO $\Phi$ in \eqref{eq:ido} and the functional $F$ in \eqref{eq:sigpfunctional}.  As we will see in this section, the efficient computation of these derivatives also involves an important approximation.
+
+First, for $s \in \mathcal{K}$ and certain $t \in W^{1,\qq}(\Omega)$ let
 \begin{equation}
 \Phi'(s,t) = \lim_{\eps\to 0^+} \frac{\Phi(s+\eps t) - \Phi(s)}{\eps} = \lim_{\eps\to 0^+} \frac{\bu|_{s+\eps t} - \bus}{\eps}. \label{eq:idoderiv}
 \end{equation}
@@ -273,12 +274,12 @@ To compute the derivative of $F$ from \eqref{eq:surfacenormal} and \eqref{eq:sig
 F(s+\eps t)[r] - F(s)[r] &= \int_\Omega \Big(\Phi(s+\eps t) \cdot \left<s_x+\eps t_x,s_y+\eps t_y,-1\right> - \Phi(s) \cdot \left<s_x,s_y,-1\right>\Big)\, r \,dx dy \\
     &= \eps \int_\Omega \big(-\Phi'(s,t) \cdot \bn_s + \Phi(s) \cdot \left<t_x,t_y,0\right>\big)\, r \,dx dy + O(\eps^2).
 \end{align*}
-It follows that for $s\in \mathcal{K}$, $t\in \mathcal{D}_s^+$, and $r \in W^{1,\qq}(\Omega)$ we have
+It follows that for $s\in \mathcal{K}$, $t\in \mathcal{D}^+$, and $r \in W^{1,\qq}(\Omega)$ we have
 \begin{align}
 F'(s,t)[r] &= \lim_{\eps\to 0^+} \frac{F(s+\eps t)[r] - F(s)[r]}{\eps}  \label{eq:sigpfunctionalderiv} \\
     &= \int_\Omega \big(-\Phi'(s,t) \cdot \bn_s + \Phi(s) \cdot \left<t_x,t_y,0\right>\big)\, r \,dx dy. \notag
 \end{align}
-
+Evidently, $F'$ is straightforward to compute once we have $\Phi'$ in hand.
 
 \section{Multilevel constraint decomposition} \label{sec:mcdstokes}
 
