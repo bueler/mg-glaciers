@@ -306,21 +306,20 @@ FIXME time-dependent runs
 \section{Glossary of acronyms} \label{app:glossary}
 
 \renewcommand{\arraystretch}{1.1}
-\begin{longtable}{l|l}
+\begin{longtable}{l|ll}
 \toprule
-\textbf{Acronym} {\Large$\strut$} & \textbf{Definition} \\ \hline
-CMB & climatic mass balance \\
-FE & finite element \\
-IDO & ice dynamics operator \\
-IIGP & implicit ice geometry problem \\
-MCD & multilevel constraint decomposition \\
-NCP & nonlinear complementarity problem \\
-PDE & partial differential equation \\
-SIA & shallow ice approximation \\
-SIGP & steady ice geometry problem \\
-SKE & surface kinematical equation \\
-VI & variational inequality \\
-WU & work units \\ % final \\ required
+\textbf{Acronym} {\Large$\strut$} & \textbf{Definition} & \textbf{Reference} \\ \hline
+CMB & climatic mass balance & Section \ref{sec:stokesgeometry} \\
+FE & finite element & Section \ref{sec:mcdstokes} \\
+IDO & ice dynamics operator & Section \ref{sec:stokesgeometry}, eqn.~\eqref{eq:ido} \\
+IIGP & implicit ice geometry problem & Section \ref{sec:stokesevolution} \\
+MCD & multilevel constraint decomposition & Section \ref{sec:mcdstokes} \\
+NCP & nonlinear complementarity problem & Section \ref{sec:stokesgeometry} \\
+SIA & shallow ice approximation & Section \ref{sec:intro} \\
+SIGP & steady ice geometry problem & Section \ref{sec:stokesgeometry}, eqn.~\eqref{eq:strongform} \\
+SKE & surface kinematical equation & Section \ref{sec:stokesgeometry}, eqn.~\eqref{eq:ske} \\
+VI & variational inequality & Section \ref{sec:stokesgeometry} \\
+WU & work units & Section \ref{sec:mcdstokes} \\ % final \\ required
 \bottomrule
 \caption{Glossary of acronyms used in this paper.}
 \label{tab:acronyms}
