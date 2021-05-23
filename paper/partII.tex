@@ -276,9 +276,7 @@ The new functionals $F'(s,t)$ and $\Phi'(s,t)$ are one-sided directional derivat
 \end{equation}
 Then $\Phi'$ is well-defined on inputs $(s,t) \in \mathcal{K} \times \mathcal{D}_+$ and $F'$ is well-defined for $(s,t,r) \in \mathcal{K} \times \mathcal{D}_+ \times W^{1,\qq}(\Omega)$.
 
-To compute a difference $\bu|_{s+\eps t} - \bus$ like that in \eqref{eq:idoderiv}, two Glen-Stokes solutions are required, namely over the ice domains $\Lambda_{s+\eps t}$ and $\Lambda_s$, and from these solutions we extract the surface velocity and extend by zero.  FIXME DESCRIBE AND ILLUSTRATE THE APPROXIMATION OF AN ACTUAL BUMP BY A DENSITY BUMP
-
-In the next two sections we construct an iterative, multilevel finite element solver for the SIGP.
+In the next two sections we construct an iterative, multilevel finite element solver for the SIGP.  However, a significant issue arises from formula \eqref{eq:idoderiv}, namely that to compute the difference $\bu|_{s+\eps t} - \bus$, two Glen-Stokes solutions are seemingly required, namely over the ice domains $\Lambda_{s+\eps t}$ and $\Lambda_s$.  The next section includes an approximation scheme which avoids such large numbers of Glen-Stokes solves.
 
 
 \section{Finite element discretization, and smoothers} \label{sec:fesmoothers}
@@ -298,29 +296,32 @@ F^h(s^h)[r - s^h] \ge 0 \quad \text{for all } r \in \mathcal{K}^h  \label{eq:fes
 \end{equation}
 where $F^h(s)[r] = - \int_\Omega (\Phi^h(s) + a)\, r \,dx dy$, essentially as before, but with $\Phi^h$ an FE approximation of the IDO $\Phi$.  (We will compute $\Phi^h$ using a extruded-mesh approximation of the Glen-Stokes problem \eqref{eq:glenstokesweak}, about which we will say more below.)  We suppose that the discrete SIGP is well-posed, subject to the caveats in the last section regarding overhangs at the margin.
 
-As is standard in the FE literature, let $p$ denote an arbitrary node of the mesh $\mathcal{T}$, $(x_p,y_p)$ the coordinates of that node, and $\psi_p \in \mathcal{V}^h$ the corresponding $P_1$ hat function such that $\psi_p(x_q,y_q)=\delta_{pq}$ \cite{Elmanetal2014}.  Because $\psi_p \in \mathcal{D}_+^h$, if $r \in \mathcal{K}^h$ then $r + c \psi_p \in \mathcal{K}^h$ for all $c\ge b(x_p,y_p) - r(x_p,y_p)$.
+Let $p$ denote an arbitrary node of the mesh $\mathcal{T}$, $(x_p,y_p)$ the coordinates of that node, and $\psi_p \in \mathcal{V}^h$ the corresponding $P_1$ hat function such that $\psi_p(x_q,y_q)=\delta_{pq}$ \cite{Elmanetal2014}.  Note that, because $\psi_p \in \mathcal{D}_+^h$, if $r \in \mathcal{K}^h$ then $r + c \psi_p \in \mathcal{K}^h$ for all $c\ge b(x_p,y_p) - r(x_p,y_p)$.
 
-As a first step toward solving \eqref{eq:fesigpweakform} we will propose slow solvers which will become smoothers \cite{Trottenbergetal2001} in our multilevel method of the next section, namely projected nonlinear Gauss-Seidel (PNGS) and projected nonlinear Jacobi (PNJ) methods \cite{KinderlehrerStampacchia1980}.  Given a current surface elevation $s\in \mathcal{K}^h$, these smoothers sweeps through the nodes in some fixed order computing the solution of one-dimensional VI problems, as implied by \eqref{eq:fesigpweakform}, and updating $s$ in some manner.
-
-For node $p$ let $\omega_p = b(x_p,y_p) - s(x_p,y_p)$.  The one-dimensional VI at $p$ finds $c \ge \omega_p$ such that
+As a first step toward solving \eqref{eq:fesigpweakform} we now propose (slow) solvers which will become smoothers in our multilevel method (next section)  The smoothers are the projected nonlinear Gauss-Seidel (PNGS) and projected nonlinear Jacobi (PNJ) methods \cite{KinderlehrerStampacchia1980}.  Given a current surface elevation $s\in \mathcal{K}^h$, these methods sweep through the nodes in a fixed order, solving one-dimensional VI problems, as follows, and updating $s$.  For node $p$ let $\omega_p^s = b(x_p,y_p) - s(x_p,y_p)$.  The one-dimensional VI at $p$ implied by \eqref{eq:fesigpweakform} is to find $c \ge \omega_p^s$ such that
 \begin{equation}
 F^h(s+c\psi_p)[(s+\gamma \psi_p) - (s+c \psi_p)] \ge 0 \label{eq:fepointwiseviEARLY}
 \end{equation}
-for all $\gamma \ge \omega_p$.  If
-\begin{equation}
-F_p^h(c) = F^h(s+c\psi_p)[\psi_p]
-\end{equation}
-then \eqref{eq:fepointwiseviEARLY} is equivalent to the simplified form
+for all $\gamma \ge \omega_p^s$.  Defining $F_p^h(c) = F^h(s+c\psi_p)[\psi_p]$, \eqref{eq:fepointwiseviEARLY} is equivalent to the simplified form
 \begin{equation}
 (\gamma - c) F_p^h(c) \ge 0. \label{eq:fepointwisevi}
 \end{equation}
-In the linear, increasing case the solution of \eqref{eq:fepointwisevi} is given by the formula \cite{GraeserKornhuber2009}
-\begin{equation}
-c = \max\left\{-\frac{\beta}{\alpha}, \omega_p\right\} \quad (\text{\emph{assumes $F_p^h(c) = \alpha c + \beta$ is linear with }} \alpha > 0), \label{eq:fepointwisevisolutionLINEAR}
-\end{equation}
-but this is counterfactual; in fact $F_p^h(c)$ is strongly nonlinear.  However, supposing \eqref{eq:fepointwisevi} is well-posed and solved for $c$, the current surface elevation $s$ is then updated $s \gets s + c \psi_p$.  Observe that the updated surface elevation is also in $\mathcal{K}^h$; admissibility is preserved.  If each pointwise update is done immediately then we have the (serial) PNGS smoother, while if solutions to \eqref{eq:fepointwisevi} are computed at all nodes $p$ before any updates then we get the (parallel) PNJ smoother.
+Supposing \eqref{eq:fepointwisevi} is well-posed and solved for $c$, the surface elevation $s$ is then updated $s \gets s + c \psi_p$ by the smoother.  (Observe that admissibility is preserved: the updated surface elevation is also in $\mathcal{K}^h$.)  Each pointwise update is done immediately by the (serial) PNGS smoother, while the (parallel) PNJ smoother computes solutions to \eqref{eq:fepointwisevi} at all nodes $p$ before the updates.
 
-FIXME need pointwise derivative of $F^h$, i.e.~the diagonal entries of the Jacobian
+If $F_p^h(c)$ were linear and increasing then the solution of \eqref{eq:fepointwisevi} would be given by a simple formula \cite{GraeserKornhuber2009}, namely $c = \max\left\{-\beta/\alpha, \omega_p^s\right\}$ if $F_p^h(c) = \alpha c + \beta$ with $\alpha > 0$, but in fact $F_p^h(c)$ is nonlinear.  The simplest approximation scheme is thus to linearize $F_p^h(c)$, that is, smooth using one projected Newton step for the one-dimensional VI problem at each node.  To implement this strategy, note that \eqref{eq:sigpfunctionalderiv} and \eqref{eq:idoderiv} imply
+\begin{equation}
+F_p^h(c) = F^h(s+c\psi_p)[\psi_p] \approx F^h(s)[\psi_p] + c\, (F^h)'(s,\psi_p)[\psi_p] = \alpha c + \beta \label{eq:fepointwisefunctionalapprox}
+\end{equation}
+where
+\begin{align}
+\alpha &= \int_\Omega \left(- \left(\lim_{\eps\to 0^+} \frac{\bu^h|_{s+\eps \psi_p} - \bu^h|_s}{\eps}\right) \cdot \bn_s + \Phi^h(s) \cdot \left<(\psi_p)_x,(\psi_p)_y,0\right>\right)\, \psi_p \,dx dy \label{eq:fepointwisealpha} \\
+\beta &= - \int_\Omega (\Phi^h(s) + a)\, \psi_p \,dx dy \label{eq:fepointwisebeta}
+\end{align}
+Each smoother application will require at least one solution of the Glen-Stokes problem \eqref{eq:glenstokesweak} on the geometry determined by the current surface elevation.  In fact, supposing we have computed $\bu^h|_s$ and $\Phi^h(s)$ then several terms in these formulas are straightforward FE computations over the support of $\psi_p$.
+
+However, if we wish to compute $\alpha$ in \eqref{eq:fepointwisealpha}, even approximately, then it remains to compute a difference quotient in \eqref{eq:fepointwisealpha}, which in turn requires evaluating a perturbed-geometry surface velocity $\bu^h|_{s+\eps \psi_p}$.  The expensive direct way of doing this is to solve a Glen-Stokes problem for the perturbed upper-surface geometry $z=s + \eps \psi_p$.
+
+Thus we seek a less expensive way to estimate the perturbed velocity field for a small ``bump'' $\eps\psi_p$ added to the surface elevation $s$.  For small $\eps$ the nonlinearities of the Glen-Stokes problem should be modest, but furthermore the most important change to the velocity and pressure fields from this bump would be through the perturbed gravitational load of the ice in the bump.  Thus FIXME
 
 FIXME pseudocode for PNJ with bump approximation
 
