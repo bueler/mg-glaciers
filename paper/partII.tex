@@ -247,7 +247,7 @@ F(s)[r] = - \int_\Omega (\Phi(s) + a)\, r \,dx dy. \label{eq:sigpfunctional}
 \end{equation}
 One computes $F(s)[r]$ by defining the icy domain $\Lambda_s$ as in \eqref{eq:lambdas}, then solving the (weak form) Glen-Stokes problem \eqref{eq:glenstokesweak}, then evaluating the normal component of the surface trace of the velocity to compute the IDO \eqref{eq:ido}, and then integrating the SKE quantity $\Phi(s) + a$ against the test function $r$.  Implicit in formula \eqref{eq:sigpfunctional} is the assumption that $\Phi(s) + a$ is sufficiently regular to be in the dual space of $W^{1,\qq}(\Omega)$, but this allows significant singularities.
 
-Now the SIGP weak form is a variational inequality (VI) \cite{KinderlehrerStampacchia1980} which should determine $s\in\mathcal{K}$:
+The SIGP weak form is a variational inequality (VI) \cite{KinderlehrerStampacchia1980} which should determine $s\in\mathcal{K}$:
 \begin{equation}
 F(s)[r - s] \ge 0 \quad \text{for all $r \in \mathcal{K}$.}  \label{eq:sigpweakform}
 \end{equation}
@@ -272,18 +272,57 @@ In this computation note that the normal vectors and surface velocities are exte
 
 The new functionals $F'(s,t)$ and $\Phi'(s,t)$ are one-sided directional derivatives in the sense that $s+\eps t$ must be admissible, i.e.~$s+\eps t\ge b$, for all sufficiently-small $\eps>0$.  This requires $t\ge 0$ only on the (active) set where $s=b$.  However, to simplify our considerations we define an $s$-independent set
 \begin{equation}
-\mathcal{D}^+ = \{t \in W^{1,\qq}(\Omega) \,:\, t(x,y) \ge 0\}. \label{eq:infdefectset}
+\mathcal{D}_+ = \{t \in W^{1,\qq}(\Omega) \,:\, t(x,y) \ge 0\}. \label{eq:infdefectset}
 \end{equation}
-Then $\Phi'$ is well-defined on inputs $(s,t) \in \mathcal{K} \times \mathcal{D}^+$ and $F'$ is well-defined for $(s,t,r) \in \mathcal{K} \times \mathcal{D}^+ \times W^{1,\qq}(\Omega)$.
+Then $\Phi'$ is well-defined on inputs $(s,t) \in \mathcal{K} \times \mathcal{D}_+$ and $F'$ is well-defined for $(s,t,r) \in \mathcal{K} \times \mathcal{D}_+ \times W^{1,\qq}(\Omega)$.
 
 To compute a difference $\bu|_{s+\eps t} - \bus$ like that in \eqref{eq:idoderiv}, two Glen-Stokes solutions are required, namely over the ice domains $\Lambda_{s+\eps t}$ and $\Lambda_s$, and from these solutions we extract the surface velocity and extend by zero.  FIXME DESCRIBE AND ILLUSTRATE THE APPROXIMATION OF AN ACTUAL BUMP BY A DENSITY BUMP
 
 In the next two sections we construct an iterative, multilevel finite element solver for the SIGP.
 
 
-\section{Finite element discretization and smoothers} \label{sec:fesmoothers}
+\section{Finite element discretization, and smoothers} \label{sec:fesmoothers}
 
-FIXME triangulation notation; test functions $\psi_p(x,y)$ in $W^{1,\qq}(\Omega)$; pointwise VI $F(s+c\psi_p)[(s+\gamma \psi_p) - (s+c \psi_p)] \ge 0$; ideally we would use PNGS with following pseudocode; actually use PNJ with bump approximation
+Suppose $\mathcal{T}$ is a triangulation of $\Omega$, which we assume is polygonal.  Based on its low expected regularity at the ice margin, assume that surface elevations $s\in \mathcal{K}$ are represented using the piecewise-linear ($P_1$) finite element (FE) space \cite{Elmanetal2014}
+\begin{equation}
+\mathcal{V}^h = \{s:\Omega \to \RR \,:\, s|_T \text{ is linear for each } T \in \mathcal{T}, \text{ and $s$ is continuous}\}. \label{eq:feP1}
+\end{equation}
+(Note \cite{JouvetBueler2012} make the same choice for the SIA problem.)  Let $b^h \in \mathcal{V}^h$ be the discretized bed elevation, e.g.~the $P_1$ interpolant of $b$, and let
+\begin{equation}
+\mathcal{K}^h = \{r \in \mathcal{V}^h \,:\, r \ge b^h \text{ and } r|_{\partial\Omega} = b^h|_{\partial\Omega}\}, \qquad \mathcal{D}_+^h = \{t \in \mathcal{V}^h \,:\, t \ge 0\}. \label{eq:feKD}
+\end{equation}
+
+With these FE choices, the discrete SIGP is to compute $s^h \in \mathcal{K}^h$ such that
+\begin{equation}
+F^h(s^h)[r - s^h] \ge 0 \quad \text{for all } r \in \mathcal{K}^h  \label{eq:fesigpweakform}
+\end{equation}
+where $F^h(s)[r] = - \int_\Omega (\Phi^h(s) + a)\, r \,dx dy$, essentially as before, but with $\Phi^h$ an FE approximation of the IDO $\Phi$.  (We will compute $\Phi^h$ using a extruded-mesh approximation of the Glen-Stokes problem \eqref{eq:glenstokesweak}, about which we will say more below.)  We suppose that the discrete SIGP is well-posed, subject to the caveats in the last section regarding overhangs at the margin.
+
+As is standard in the FE literature, let $p$ denote an arbitrary node of the mesh $\mathcal{T}$, $(x_p,y_p)$ the coordinates of that node, and $\psi_p \in \mathcal{V}^h$ the corresponding $P_1$ hat function such that $\psi_p(x_q,y_q)=\delta_{pq}$ \cite{Elmanetal2014}.  Because $\psi_p \in \mathcal{D}_+^h$, if $r \in \mathcal{K}^h$ then $r + c \psi_p \in \mathcal{K}^h$ for all $c\ge b(x_p,y_p) - r(x_p,y_p)$.
+
+As a first step toward solving \eqref{eq:fesigpweakform} we will propose slow solvers which will become smoothers \cite{Trottenbergetal2001} in our multilevel method of the next section, namely projected nonlinear Gauss-Seidel (PNGS) and projected nonlinear Jacobi (PNJ) methods \cite{KinderlehrerStampacchia1980}.  Given a current surface elevation $s\in \mathcal{K}^h$, these smoothers sweeps through the nodes in some fixed order computing the solution of one-dimensional VI problems, as implied by \eqref{eq:fesigpweakform}, and updating $s$ in some manner.
+
+For node $p$ let $\omega_p = b(x_p,y_p) - s(x_p,y_p)$.  The one-dimensional VI at $p$ finds $c \ge \omega_p$ such that
+\begin{equation}
+F^h(s+c\psi_p)[(s+\gamma \psi_p) - (s+c \psi_p)] \ge 0 \label{eq:fepointwiseviEARLY}
+\end{equation}
+for all $\gamma \ge \omega_p$.  If
+\begin{equation}
+F_p^h(c) = F^h(s+c\psi_p)[\psi_p]
+\end{equation}
+then \eqref{eq:fepointwiseviEARLY} is equivalent to the simplified form
+\begin{equation}
+(\gamma - c) F_p^h(c) \ge 0. \label{eq:fepointwisevi}
+\end{equation}
+In the linear, increasing case the solution of \eqref{eq:fepointwisevi} is given by the formula \cite{GraeserKornhuber2009}
+\begin{equation}
+c = \max\left\{-\frac{\beta}{\alpha}, \omega_p\right\} \quad (\text{\emph{assumes $F_p^h(c) = \alpha c + \beta$ is linear with }} \alpha > 0), \label{eq:fepointwisevisolutionLINEAR}
+\end{equation}
+but this is counterfactual; in fact $F_p^h(c)$ is strongly nonlinear.  However, supposing \eqref{eq:fepointwisevi} is well-posed and solved for $c$, the current surface elevation $s$ is then updated $s \gets s + c \psi_p$.  Observe that the updated surface elevation is also in $\mathcal{K}^h$; admissibility is preserved.  If each pointwise update is done immediately then we have the (serial) PNGS smoother, while if solutions to \eqref{eq:fepointwisevi} are computed at all nodes $p$ before any updates then we get the (parallel) PNJ smoother.
+
+FIXME need pointwise derivative of $F^h$, i.e.~the diagonal entries of the Jacobian
+
+FIXME pseudocode for PNJ with bump approximation
 
 
 \section{Multilevel constraint decomposition} \label{sec:mcdstokes}
