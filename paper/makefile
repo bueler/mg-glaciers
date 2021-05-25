@@ -1,4 +1,4 @@
-all: partI.pdf partII.pdf
+all: partI.pdf
 
 partI.pdf: partI.tex partI.bib cropfiguresI
 	pdflatex partI
@@ -6,25 +6,11 @@ partI.pdf: partI.tex partI.bib cropfiguresI
 	pdflatex partI
 	pdflatex partI
 
-partII.pdf: partII.tex partII.bib cropfiguresII
-	pdflatex partII
-	bibtex partII
-	pdflatex partII
-	pdflatex partII
-
 _figuresI := finehats coarsehats coarsesthats residualpoints cartoonplane innerconeapprox prolongobstacle giscross poisson/convergence poisson/mcdl-cycles poisson/mcdl-wu poisson/mcdl-timeper poisson/perfni sia/convergence sia/asymprates sia/reshistory plap/convergence
 figuresI := $(addprefix genfigs/, $(addsuffix .pdf, $(_figuresI)))
 
-_figuresII := stokesdomain idoaction
-figuresII := $(addprefix genfigs/, $(addsuffix .pdf, $(_figuresII)))
-
 cropfiguresI: $(figuresI)
 	for X in $(figuresI); do \
-	     (pdfcrop $$X $$X); \
-	done
-
-cropfiguresII: $(figuresII)
-	for X in $(figuresII); do \
 	     (pdfcrop $$X $$X); \
 	done
 
@@ -70,10 +56,7 @@ genfigs/sia/reshistory.pdf: writeout genfigs/sia/reshistory.py
 genfigs/plap/convergence.pdf: writeout genfigs/plap/convergence.py
 	(cd genfigs/plap/ && python3 convergence.py)
 
-genfigs/stokesdomain.pdf genfigs/idoaction.pdf &: genfigs/stokesdomain.py
-	(cd genfigs/ && python3 stokesdomain.py)
-
-.PHONY: clean writeout cropfiguresI cropfiguresII
+.PHONY: clean writeout cropfiguresI
 
 clean:
 	@rm -f *~ *.out *.aux *.log *.blg *.snm *.toc *.nav *.vrb *.bbl *.synctex.gz
