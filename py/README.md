@@ -1,6 +1,6 @@
 # mg-glaciers/py/
 
-These Python examples apply the multilevel constraint decomposition of Tai (2003) on obstacle problems in glaciology.  They support the two-part paper [_Geometric multigrid for glacier modeling_](../paper/).
+These Python examples apply the multilevel constraint decomposition of Tai (2003) on obstacle problems in glaciology.  They support the paper [_Geometric multigrid for glacier modeling_](../paper/).
 
 ## partI/
 
@@ -14,8 +14,6 @@ All of these are solved with a from-scratch implementation of the piecewise-line
 
 See [partI/README.md](partI/README.md) for more details.
 
-## partII/
+## dome/
 
-These programs solve the steady and implicit time-stepping geometry-evolution for glaciers using Stokes dynamics.  These programs use the [Firedrake](https://www.firedrakeproject.org/) library.
-
-See [partII/README.md](partII/README.md) for more details.
+This is old Firedrake code, superseded by [stokes-ice-tutorial](https://github.com/bueler/stokes-ice-tutorial)
