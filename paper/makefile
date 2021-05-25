@@ -1,15 +1,15 @@
-all: partI.pdf
+all: gmggm.pdf
 
-partI.pdf: partI.tex partI.bib cropfiguresI
-	pdflatex partI
-	bibtex partI
-	pdflatex partI
-	pdflatex partI
+gmggm.pdf: gmggm.tex gmggm.bib cropfigures
+	pdflatex gmggm
+	bibtex gmggm
+	pdflatex gmggm
+	pdflatex gmggm
 
-_figuresI := finehats coarsehats coarsesthats residualpoints cartoonplane innerconeapprox prolongobstacle giscross poisson/convergence poisson/mcdl-cycles poisson/mcdl-wu poisson/mcdl-timeper poisson/perfni sia/convergence sia/asymprates sia/reshistory plap/convergence
-figuresI := $(addprefix genfigs/, $(addsuffix .pdf, $(_figuresI)))
+_figures := finehats coarsehats coarsesthats residualpoints cartoonplane innerconeapprox prolongobstacle giscross poisson/convergence poisson/mcdl-cycles poisson/mcdl-wu poisson/mcdl-timeper poisson/perfni sia/convergence sia/asymprates sia/reshistory plap/convergence
+figures := $(addprefix genfigs/, $(addsuffix .pdf, $(_figures)))
 
-cropfiguresI: $(figuresI)
+cropfigures: $(figures)
 	for X in $(figuresI); do \
 	     (pdfcrop $$X $$X); \
 	done
@@ -56,7 +56,7 @@ genfigs/sia/reshistory.pdf: writeout genfigs/sia/reshistory.py
 genfigs/plap/convergence.pdf: writeout genfigs/plap/convergence.py
 	(cd genfigs/plap/ && python3 convergence.py)
 
-.PHONY: clean writeout cropfiguresI
+.PHONY: clean writeout cropfigures
 
 clean:
 	@rm -f *~ *.out *.aux *.log *.blg *.snm *.toc *.nav *.vrb *.bbl *.synctex.gz

@@ -261,7 +261,7 @@ One may also adjust the \emph{relaxation factor} \id{omega} in \pr{gs-sweep} awa
 
 Algorithm \pr{gs-sweep} has no dependence on the dimension of the problem.  In particular, for any linear elliptic PDE which can be written in weak form \eqref{eq:weakpoisson}, \pr{gs-sweep} applies as stated with $m_j$ denoting the number of $j$th-level mesh nodes and $\psi_p^j$ the corresponding hat functions.  However, the rate of convergence and the smoothing efficiency of GS iterations depend on the details of the PDE, including its dimension.
 
-Note that GS involves repeatedly re-evaluating the pointwise residual, i.e.~computing $F(w)[\psi_p^j]$ after each update of $w$.  Where each evaluation of a point residual is expensive, for instance when a residual evaluation is non-local \cite{Bueler2022partII}, an alternative is to evaluate the residual vector (i.e.~at all points) once at the start of the iteration.  The resulting \emph{(weighted) Jacobi} method is parallel in the sense that pointwise updates can then be done in any order.
+Note that GS involves repeatedly re-evaluating the pointwise residual, i.e.~computing $F(w)[\psi_p^j]$ after each update of $w$.  Where each evaluation of a point residual is expensive, for instance when a residual evaluation is non-local \cite{BuelerMitchell2022}, an alternative is to evaluate the residual vector (i.e.~at all points) once at the start of the iteration.  The resulting \emph{(weighted) Jacobi} method is parallel in the sense that pointwise updates can then be done in any order.
 
 \begin{pseudo*} \label{ps:jacobi-sweep}
 \pr{jacobi-sweep}(j,w,a,\ell,\id{omega}=0.67)\text{:} \\+
@@ -1320,7 +1320,7 @@ FIXME can we see cross-over relative to explicit time-stepping?
 \small
 
 \bigskip
-\bibliography{partI}
+\bibliography{gmggm}
 \bibliographystyle{siam}
 
 \normalsize
