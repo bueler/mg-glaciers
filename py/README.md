@@ -53,7 +53,3 @@ Run software tests:
         $ make
 
 First this calls `python3 -m pytest` to test modules.  (This should work whether or not `pytest` has been installed (e.g. via pip).)  Then it uses `../testit.sh` to compare results from `obstacle.py` runs to stored results in `output/`.
-
-## dome/
-
-This is old Firedrake code, superseded by [stokes-ice-tutorial](https://github.com/bueler/stokes-ice-tutorial)
