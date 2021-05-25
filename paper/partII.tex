@@ -7,6 +7,8 @@
 \usepackage{longtable}
 \usepackage{booktabs}
 
+\usepackage[within=section]{newfloat}
+
 \usepackage{tikz}
 \usetikzlibrary{decorations.pathreplacing}
 
@@ -89,6 +91,7 @@ urlcolor=black    % ...
 \numberwithin{table}{section}
 \numberwithin{theorem}{section}
 
+\DeclareFloatingEnvironment[name=Pseudocode]{pcode}
 
 \begin{document}
 \title[Multilevel computation of glacier geometry from Stokes dynamics]{Multilevel computation of glacier geometry \\ from Stokes dynamics}
@@ -114,7 +117,7 @@ FIXME MCD = multilevel constraint decomposition, a multigrid \cite{Trottenberget
 
 \section{The steady ice geometry problem} \label{sec:stokesgeometry}
 
-The standard model for determining the geometry of glaciers is based in part upon a dynamical description of ice flow, namely a shear-thinning version of the Stokes equations.  This Glen-Stokes ice-dynamics model can only determine the free-surface glacier geometry when it is combined with the surface kinematical equation (SKE) and a form of climate input, namely the rate of accumulation of snow or ablation, i.e.~melting and runoff.  In this section we state the strong form of this ``coupled'' glacier geometry model in the steady-state case, which we call the steady ice geometry problem (SIGP).  The emphasis here is on the complementarity-problem nature of the SIGP, often not explicit in the glaciers literature (e.g.~as observed by \cite{SchoofHewitt2013}).  We then define its weak form, noting along the way several unknown aspects of the theory.  Section \ref{sec:stokesevolution} gives the straightfoward extension of the steady case to a time-discretized evolving-geometry model, the implicit ice geometry problem (IIGP).
+The standard model for determining the geometry of glaciers is based in part upon a dynamical description of ice flow, namely a shear-thinning version of the Stokes equations.  This Glen-Stokes ice-dynamics model can only determine the free-surface glacier geometry when it is combined with the surface kinematical equation (SKE) and a form of climate input, namely the rate of accumulation of snow or ablation, i.e.~melting and runoff.  In this section we state the strong form of this ``coupled'' glacier geometry model in the steady-state case, which we call the steady ice geometry problem (SIGP).  The emphasis here is on the complementarity-problem nature of the SIGP, often not explicit in the glaciers literature (e.g.~as observed by \cite{SchoofHewitt2013}).  We then define its weak form, noting along the way several unknown aspects of the theory.  Section \ref{sec:evolution} gives the straightfoward extension of the steady case to a time-discretized evolving-geometry model, the implicit ice geometry problem (IIGP).
 
 The SIGP is defined on a fixed, bounded map-plane region $\Omega \subset \RR^d$ (Figure \ref{fig:stokesdomain}).  We denote the map-plane variables as $x$ when $d=1$ and $x,y$ when $d=2$.  On $\Omega$ we assume that a climatic mass balance (CMB) function $a(x,y)$ is defined at every point, whether or not ice is present at that location.  In ice-free areas this function could be described as the ``potential'' CMB, namely the annual balance of snow accumulation and potential melt if ice were present \cite{Cogleyetal2011}, e.g.~as computed by energy balance in a climate or weather model.  Here we assume $a$ has units of ice thickness per time, equivalently ice volume per area (in $\Omega$) per time, compatible with our assumption of constant ice density below.  Also we assume there is a bed elevation function $b(x,y)$ defined everywhere on $\Omega$, which determines the topography upon which the glacier sits.  The functions $a$ and $b$ are the data (inputs) of the SIGP.
 
@@ -198,14 +201,16 @@ s - b &\ge 0 && \text{on $\Omega$} \label{eq:strongform} \\
 \left(2 \nu_\eps D\bu - pI\right) \bn_s &= \bzero && \text{on $\overline{\partial} \Lambda_s$} \notag \\
 \bu &= \bzero && \text{on $\underline{\partial} \Lambda_s$} \notag
 \end{align}
-(Definition \eqref{eq:regeffvisc} is also needed.)  The first three statements in \eqref{eq:strongform} form the NCP, but coupled to the dynamical boundary value problem formed by the last four statements.
+(Definition \eqref{eq:regeffvisc} is also needed.)  The first three statements in \eqref{eq:strongform} form the NCP, but it is coupled to the dynamical boundary value problem formed by the last four statements.
 
-The solution of \eqref{eq:strongform} is a triple of functions $s(x,y)$, $\bu(x,y,z)$, $p(x,y,z)$.  However, as the domain $\Lambda_s$ on which $\bu,p$ are defined is only known with the solution elevation $s$, \eqref{eq:strongform} is at best an incomplete description.  In fact, this inequality-constrained system of PDEs has a largely-unknown theory regarding well-posedness and solution regularity.  (Certain well-posedness theory is known for the SIA version of this problem, with existence established by \cite{JouvetBueler2012}, and uniqueness in the flat bed case.)  Nonetheless we will write it weak form, identifying reasonable function spaces and making solution existence credible, and solve it numerically.  As noted in the Introduction, numerical solutions usually apply explicit time-stepping to approach steady state, splitting the dynamics and the SKE into sub-steps and using truncation to address the NCP \cite[for example]{Jouvetetal2008,Lengetal2012}.  The weak form in the next Section, using a Stokes solution operator, will address this concern.  Then in Sections \ref{sec:fe}--\ref{sec:mcdstokes} we will construct and demonstrate a reasonably-robust multilevel scheme for the numerical solution of \eqref{eq:strongform}.
+The solution of \eqref{eq:strongform} is a triple of functions $s(x,y)$, $\bu(x,y,z)$, $p(x,y,z)$.  However, as the domain on which $\bu,p$ are defined is only known via the solution elevation $s$, \eqref{eq:strongform} is at best an incomplete description.  The weak form in the next section, using a $s\mapsto \bu|_s$ solution operator, will partially address this concern.  Whether in strong or weak form, this inequality-constrained system of PDEs has a largely-unknown theory regarding well-posedness and solution regularity.  However, certain well-posedness theory is known for the SIA version of this problem, with existence established by \cite{JouvetBueler2012}, and uniqueness in the flat bed case.
+
+In Sections \ref{sec:fe}--\ref{sec:mcdstokes} we will construct and demonstrate a robust multilevel scheme for the numerical solution of the SIGP weak form (Section \ref{sec:weakido}).  As noted in Section \ref{sec:intro}, numerical solutions have traditionally applied explicit time-stepping, even when computing steady states, splitting the dynamics and the SKE into sub-steps and using truncation to address the NCP \cite[for example]{Jouvetetal2008,Lengetal2012}.  By contrast, the implicit time-stepping model in Section \ref{sec:evolution} avoids time-splitting and is unconditionally stable.
 
 
 \section{Weak form and the ice dynamics operator} \label{sec:weakido}
 
-Recall that the weak form of a PDE states that a certain functional, constructed by multiplying by a test function and integrating by parts, is zero.  Both the solution and the test functions come from identified function spaces, namely Sobolev spaces \cite{Evans2010}, and here we denote by $W^{k,r}$ the Sobolev space of functions on which have $k$ derivatives which are $r$th-power integrable.
+Recall that the weak form of a PDE states that a certain functional, constructed by multiplying by a test function and integrating by parts, is zero.  Both the solution and the test functions come from identified function spaces, namely Sobolev spaces \cite{Evans2010}.  Here we denote by $W^{\text{k},\text{r}}$ the Sobolev space of functions on which have $k$ derivatives which are $r$th-power integrable.
 
 The weak form of the fixed-geometry Glen-Stokes model for ice, which extends the better-known linear Stokes weak form \cite{Elmanetal2014} to regularized power-law rheology, is relatively well-known \cite{IsaacStadlerGhattas2015,JouvetRappaz2011,Lengetal2012}, and we summarize it here.  Suppose that $\Lambda \subset \RR^{d+1}$ is fixed domain on which we prescribe a Dirchlet condition $\bu=0$ on a portion of the boundary, and where the remainder of the boundary (Neumann boundary) is stress-free.  Let $\pp=(1/n)+1$ as before, and let $\qq=(1-\pp^{-1})^{-1}=n+1$ be the conjugate exponent, so that $\pp^{-1}+\qq^{-1}=1$. (Note $\pp=4/3$ and $\qq = 4$ if $n=3$.)  Let $W_0^{1,\pp}(\Lambda)^{d+1}$ be the space of velocity functions which are zero along the Dirichlet boundary.  Let
 \begin{equation}
@@ -311,10 +316,12 @@ where $F^h(s)[r] = - \int_\Omega (\Phi^h(s) + a)\, r \,dx dy$, essentially as be
 
 Let $p$ denote an arbitrary node of the mesh $\mathcal{T}$, $(x_p,y_p)$ the coordinates of that node, and $\psi_p \in \mathcal{V}^h$ the corresponding $P_1$ hat function such that $\psi_p(x_q,y_q)=\delta_{pq}$ \cite{Elmanetal2014}.  Note that, because $\psi_p \in \mathcal{D}_+^h$, if $r \in \mathcal{K}^h$ then $r + c \psi_p \in \mathcal{K}^h$ for all $c\ge b(x_p,y_p) - r(x_p,y_p)$.
 
+FIXME use Firedrake \cite{Alnaesetal2014,Rathgeberetal2016} with extruded meshes \cite{Gibsonetal2019,McRaeetal2016} for computing $\Phi^h$
+
 
 \section{Smoothers} \label{sec:smoothers}
 
-As a first step toward solving \eqref{eq:fesigpweakform} we now propose (slow) solvers which will become smoothers in our multilevel method (next section)  The smoothers are the projected nonlinear Gauss-Seidel (PNGS) and projected nonlinear Jacobi (PNJ) methods \cite{KinderlehrerStampacchia1980}.  Given a current surface elevation $s\in \mathcal{K}^h$, these methods sweep through the nodes in a fixed order, solving one-dimensional VI problems, as follows, and updating $s$.  For node $p$ let $\omega_p^s = b(x_p,y_p) - s(x_p,y_p)$.  The one-dimensional VI at $p$ implied by \eqref{eq:fesigpweakform} is to find $c \ge \omega_p^s$ such that
+As a first step toward solving \eqref{eq:fesigpweakform} we now propose (slow) solvers which will become smoothers in our multilevel method (next section)  The smoothers are the projected nonlinear Gauss-Seidel and projected nonlinear Jacobi (PNJ) methods \cite{KinderlehrerStampacchia1980}.  Given a current surface elevation $s\in \mathcal{K}^h$, these methods sweep through the nodes in a fixed order, solving one-dimensional VI problems, as follows, and updating $s$.  For node $p$ let $\omega_p^s = b(x_p,y_p) - s(x_p,y_p)$.  The one-dimensional VI at $p$ implied by \eqref{eq:fesigpweakform} is to find $c \ge \omega_p^s$ such that
 \begin{equation}
 F^h(s+c\psi_p)[(s+\gamma \psi_p) - (s+c \psi_p)] \ge 0 \label{eq:fepointwiseviEARLY}
 \end{equation}
@@ -339,20 +346,81 @@ However, if we wish to compute $\alpha$ in \eqref{eq:fepointwisealpha}, even app
 
 Thus we seek a less expensive way to estimate the perturbed velocity field for a small ``bump'' $\eps\psi_p$ added to the surface elevation $s$.  For small $\eps$ the nonlinearities of the Glen-Stokes problem should be modest, but furthermore the most important change to the velocity and pressure fields from this bump would be through the perturbed gravitational load of the ice in the bump.  Thus FIXME
 
-FIXME pseudocode for PNJ with bump approximation
+FIXME Pseudocode \ref{pc:pnj} for PNJ with bump approximation
+
+\begin{pcode}[ht]
+\begin{pseudo*}
+\pr{pnj}(j,g^j,y^j,N^j,\ell^j,\phi^j,\id{newtonits}=2,\id{omega}=0.67)\text{:} \\+
+    \ct{check admissibility: $y^j \ge \phi^j$} \\
+    for $k=1,\dots,\id{newtonits}$ \\+
+        $\rho_p(c) := N^j(g^j+y^j+c\psi_p^j)[\psi_p^j] - \ell^j[\psi_p^j]$ \\
+        $r_p, \delta_p = \rho_p(0), \rho_p'(0)$ \qquad\qquad\qquad\qquad \ct{compute and save for all $p$}\\
+        for $p=1,\dots,m_j$ \\+
+            $c = \pr{pointupdate}(r_p, \delta_p,y_p,\phi_p,\ell^j[\psi_p^j])$ \\
+            $y_p \gets y_p + \id{omega}\,c$
+\end{pseudo*}
+\caption{Projected nonlinear Jacobi as a smoother.}
+\label{pc:pnj}
+\end{pcode}
 
 
 \section{Multilevel constraint decomposition} \label{sec:mcdstokes}
 
+FIXME CP residual norm
+
 FIXME MCD theory
 
-FIXME use Firedrake \cite{Alnaesetal2014,Rathgeberetal2016} with extruded meshes \cite{Gibsonetal2019,McRaeetal2016} and PETSc \cite{Balayetal2020,Bueler2021} to solve the dynamics problem and thereby evaluate the residual $F$
+FIXME nonlinear MCD V-cycle Pseudocode \ref{pc:mcdn-vcycle}
+
+\begin{pcode}[ht]
+\begin{pseudo*}
+\pr{mcdn-vcycle}(J,w^J,N,\ell^J,\chi^J,\id{down}=1,\id{coarse}=1,\id{up}=0)\text{:} \\+
+    $g^J = w^J$ \\
+    for $j=J$ downto $j=1$ \\+
+      $\chi^{j-1} = \mR \chi^j$ \\
+      $\phi^j = \chi^j - P\chi^{j-1}$ \\
+      $y^j = 0$ \\
+      $\text{\pr{smoother}}^{\text{\id{down}}}(j,g^j,y^j,N^j,\ell^j,\phi^j)$ \qquad \ct{smoothing in $\mathcal{K}^j$} \\
+      $F = N^j(g^j+y^j) - \ell^j$ \\
+      $g^{j-1} = \iR(g^j + y^j)$ \\
+      $\ell^{j-1} = N^{j-1}(g^{j-1}) - R F$ \\-
+    $y^0 = 0$ \\
+    $\text{\pr{smoother}}^{\text{\id{coarse}}}(0,g^0,y^0,N^0,\ell^0,\chi^0)$ \\
+    $z^0 = y^0$ \\
+    for $j=1$ to $j=J$ \\+
+      $z^j = P z^{j-1} + y^{j}$ \\
+      $\text{\pr{smoother}}^{\text{\id{up}}}(j,g^j,z^j,N^j,\ell^j,\chi^j)$ \qquad \ct{smoothing in $\mathcal{D}^j$} \\-
+    return $z^J$
+\end{pseudo*}
+\caption{Nonlinear MCD V-cycle.}
+\label{pc:mcdn-vcycle}
+\end{pcode}
+
+FIXME we will iterate \pr{mcdn-vcycle} until the CP residual norm has been reduced by a tolerance factor, as in Pseudocode \ref{pc:mcdn-solver}
+
+\begin{pcode}[ht]
+\begin{pseudo*}
+\pr{mcdn-solver}(J,w^J,N,a,b,\id{rtol}=10^{-3},\id{cyclemax}=100)\text{:} \\+
+    $\ell^J = \ip{a}{\cdot}$ \\
+    $F(z)[\cdot] := N^J(z)[\cdot] - \ell^J[\cdot]$ \\
+    $r_0=\|\hat\bF(w^J)\|$ \\
+    for $s=1,\dots,\id{cyclemax}$ \\+
+        $\chi^J = b^J - w^J$ \\
+        $w^J\gets w^J+\pr{mcdn-vcycle}(J,w^J,N,\ell^J,\chi^J)$ \\
+        if $\|\hat\bF(w^J)\| \le \id{rtol} \, r_0$ \\+
+            break \\--
+\end{pseudo*}
+\caption{The SIGP is solved by iterating \pr{mcdn-vcycle}.}
+\label{pc:mcdn-solver}
+\end{pcode}
+
+FIXME PETSc \cite{Balayetal2020,Bueler2021} used to solve the dynamics problem and thereby evaluate the residual $F$
 
 FIXME in this paper the Glen-Stokes problem is solved by Newton linearization and (parallel) direct solution of the Newton step equations; however, geometric multigrid is available already for Glen-Stokes dynamics \cite{IsaacStadlerGhattas2015}; see also \cite{BrownSmithAhmadia2013} and \cite{Tuminaroetal2016} which solve a first-order approximation of the Glen-Stokes ice sheet problem by geometric and algebraic multigrid, respectively
 
 FIXME convergence results; scaling results
 
-\section{Multilevel methods for evolving geometry} \label{sec:stokesevolution}
+\section{Multilevel methods for evolving geometry} \label{sec:evolution}
 
 FIXME time-dependent runs
 
@@ -376,11 +444,10 @@ FIXME time-dependent runs
 CMB & climatic mass balance & Section \ref{sec:stokesgeometry} \\
 FE & finite element & Section \ref{sec:fe} \\
 IDO & ice dynamics operator & Section \ref{sec:weakido}, eqn.~\eqref{eq:ido} \\
-IIGP & implicit ice geometry problem & Section \ref{sec:stokesevolution} \\
+IIGP & implicit ice geometry problem & Section \ref{sec:evolution} \\
 MCD & multilevel constraint decomposition & Section \ref{sec:mcdstokes} \\
 NCP & nonlinear complementarity problem & Section \ref{sec:stokesgeometry} \\
 PNJ & projected, nonlinear Jacobi & Section \ref{sec:smoothers} \\
-PNGS & projected, nonlinear Gauss-Seidel & Section \ref{sec:smoothers} \\
 SIA & shallow ice approximation & Section \ref{sec:intro} \\
 SIGP & steady ice geometry problem & Section \ref{sec:stokesgeometry}, eqn.~\eqref{eq:strongform} \\
 SKE & surface kinematical equation & Section \ref{sec:stokesgeometry}, eqn.~\eqref{eq:ske} \\
