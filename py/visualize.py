@@ -141,6 +141,22 @@ class VisObstacle():
         plt.xlabel('x')
         _output(filename, 'hierarchical decomposition')
 
+    def decomposition_plain(self, filename=''):
+        '''Hierarchical defect decomposition with different decorations.'''
+        assert self.hierarchy[-1].m == self.mesh.m
+        plt.figure(figsize=(15.0, 10.0))
+        J = len(self.hierarchy) - 1
+        for j in range(J):
+            plt.plot(self.hierarchy[j].xx(), self.hierarchy[j].chi,
+                     'k.--', ms=10.0, label=r'$\chi^{%d}$' % j)
+        plt.plot(self.mesh.xx(), self.mesh.chi, 'k.-',
+                 ms=14.0, linewidth=3.0,
+                 label=r'$\chi^{%d} = b^{%d} - s^{%d}$' % (J, J, J))
+        plt.legend(fontsize=24.0, frameon=False)
+        plt.xlabel('x')
+        plt.axis('off')
+        _output(filename, 'hierarchical decomposition')
+
     def icedecomposition(self, filename=''):
         '''Multilevel "ice-like" decomposition.'''
         assert self.hierarchy[-1].m == self.mesh.m
@@ -189,6 +205,9 @@ class VisObstacle():
                 if len(self.args.o) > 0:
                     dname = 'decomp_' + self.args.o
                 self.decomposition(filename=dname)
+                # following version used to generate a figure for
+                # multilevel-stokes-geometry project:
+                #self.decomposition_plain(filename=dname)
         if self.args.heuristic and not self.args.sweepsonly:
                 iname = ''
                 if len(self.args.o) > 0:
