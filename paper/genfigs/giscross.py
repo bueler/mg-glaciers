@@ -18,8 +18,8 @@ L = 750.0
 # s(x) and b(x) versus x, with 100x exaggeration
 plt.figure(figsize=(10,7))
 plt.subplot(2,1,1)
-plt.plot(x,s,'k--',label='$s$')
-plt.plot(x,b,'k',label='$b$')
+plt.plot(x,s,'k',label='$s$')
+plt.plot(x,b,'k--',label='$b$')
 plt.grid(True)
 plt.xlabel('')
 plt.ylabel('elevation  (m)',fontsize=18.0)
