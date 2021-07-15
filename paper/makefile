@@ -10,7 +10,7 @@ _figures := finehats coarsehats coarsesthats residualpoints cartoonplane innerco
 figures := $(addprefix genfigs/, $(addsuffix .pdf, $(_figures)))
 
 cropfigures: $(figures)
-	for X in $(figuresI); do \
+	for X in $(figures); do \
 	     (pdfcrop $$X $$X); \
 	done
 
