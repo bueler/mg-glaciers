@@ -1,7 +1,0 @@
-  0: residual norm 7.73782e+00
-  1: residual norm 3.83739e-03
-  2: residual norm 2.31568e-04
-  3: residual norm 1.39547e-05
-  4: residual norm 8.40955e-07
-  5: residual norm 5.06788e-08
-  m=8 mesh, 100 sweeps of NGS only (100.00 WU): |u|_2=0.797087, |u-u_ex|_2=9.0323e-02
