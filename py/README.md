@@ -4,7 +4,7 @@ These Python examples apply the multilevel constraint decomposition of Tai (2003
 
 We solve three one-dimensional problems using basic Python, along with standard libraries including [NumPy](https://numpy.org/) and [Matplotlib](https://matplotlib.org/):
 
-  1. a classical obstacle problem for the Poisson equation (Laplace operator) on the interval [0,1],
+  1. a classical obstacle problem for the Poisson equation on [0,1],
   2. the corresponding obstacle problem for the p-Laplacian operator, and
   3. the steady and implicit time-stepping obstacle problem for the shallow ice approximation (SIA) on an interval [0,L].
 
@@ -16,11 +16,20 @@ Program `obstacle.py` solves 1D obstacle problems on an interval.  For detailed 
 
         $ ./obstacle.py -h | less
 
+The available smoothers are:
+
+  * projected Gauss-Seidel (PGS) iteration [default]
+  * projected Jacobi iteration (`-jacobi`)
+
+These require a Newton iteration in the nonlinear SIA case (PNGS, PNJacobi).
+
 The available solver algorithms are:
 
-  * V-cycles and F-cycles (`-ni`) of the Tai (2003) multilevel constraint decomposition (MCD) method, both in a linear (MCDL) and a nonlinear FAS-type (MCDN) version, using the smoothers below
+  * V-cycles [default] of the Tai (2003) multilevel constraint decomposition (MCD) method, both in a linear (MCDL) and a nonlinear FAS-type (MCDN) version, using the above smoothers
 
-  * sweeps (`-sweepsonly`) of projected Gauss-Seidel (PGS) or Jacobi iteration smoothers, which require a Newton iteration in the nonlinear SIA case (PNGS, PNJacobi)
+  * F-cycles (`-ni`, for nested iteration) of same MCD method
+
+  * sweeps (`-sweepsonly`) of the smoothers
 
 There are three obstacle problems:
 
@@ -40,7 +49,7 @@ Illustration of the MCD method (F-cycle then V-cycles) for the SIA problem:
 
 Solve the classical obstacle problem slowly using single-level PGS:
 
-        $ ./obstacle.py -sweepsonly -cyclemax 1000 -J 4
+        $ ./obstacle.py -sweepsonly -cyclemax 10000 -J 6
 
 Higher resolution and different options for SIA:
 

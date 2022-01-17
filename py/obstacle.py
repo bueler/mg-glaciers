@@ -26,37 +26,34 @@ Note u solves an interior PDE in the inactive set {x | u(x) > phi(x)}.
 We solve three such problems:
 
 1. -problem poisson = classical obstacle problem:
-    X = H_0^1[0,1]
+    I = [0,1]
+    X = H_0^1(I)
     phi (obstacle)
-    f (source) is in L^2[0,1]
+    f (source) is in L^2(I)
     ell[v] = <f,v>
-             /1
-    a(u,v) = |  u'(x) v'(x) dx   (bilinear form)
-             /0
+    a(u,v) = int_I u'(x) v'(x) dx   (bilinear form)
     F(u)[v] = a(u,v) - ell[v]
-    PDE is Poisson equation  - u'' = f
+    PDE is Poisson equation:  - u'' = f
 
 2. -problem plap = p-Laplacian (p=4) obstacle problem:
-    X = W_0^{1,p}[0,1]
+    I = [0,1]
+    X = W_0^{1,4}(I)
     phi (obstacle)
-    f (source) is in L^q[0,1]
+    f (source) is in L^(4/3)(I)
     ell[v] = <f,v>
-              /1
-    N(u)[v] = |  |u'|^{p-2} u' v dx
-              /0
+    N(u)[v] = int_I |u'|^2 u' v dx
     F(u)[v] = N(u)[v] - ell[v]
-    PDE is p-Laplacian equation  - (|u'|^{p-2} u')' = f
+    PDE is p-Laplacian equation:  - (|u'|^2 u')' = f
 
 3. -problem sia = shallow ice approximation (SIA) obstacle problem:
-    X = W_0^{1,p}[0,xmax]  where p = n + 1
+    I = [0,xmax]
+    X = W_0^{1,p}(I)  where p = n + 1
     b = phi (bed elevation)
-    a (mass balance) is in L^q[0,xmax]
+    a (mass balance) is in L^q(I)
     ell[v] = <a,v>
-              /xmax
-    N(s)[v] = |     Gamma (s-b)^{n+2} |s'|^{n-1} s' v dx
-              /0
+    N(s)[v] = int_I Gamma (s-b)^{n+2} |s'|^{n-1} s' v dx
     F(s)[v] = N(s)[v] - ell[v]
-    PDE is SIA equation  - (Gamma (s-b)^{n+2} |s'|^{n-1} s')' = a
+    PDE is SIA equation:  - (Gamma (s-b)^{n+2} |s'|^{n-1} s')' = a
 
 Solution is by the multilevel constraint decomposition (MCD) method of
 Tai (2003).  As in Alg. 4.7 of Gräser & Kornhuber (2009), we implement
@@ -67,8 +64,9 @@ up-slash V(0,1) cycle.
 
 The smoother and the coarse-mesh solver are either projected Gauss-Seidel
 or projected Jacobi using a relaxation parameter (-omega).  These are
-nonlinear for problem 2, using a fixed number of Newton iterations at each
-point.  Option -sweepsonly reverts to using these smoothers on a single level.
+nonlinear for problems 2 and 3, using a fixed number of Newton iterations
+at each point.  Option -sweepsonly reverts to using these smoothers on a
+single level.
 
 Get usage help with -h.
 
@@ -146,7 +144,8 @@ parser.add_argument('-poissonparabolay', type=float, default=-1.0, metavar='X',
                     help='vertical location of obstacle (default X=-1.0)')
 parser.add_argument('-printwarnings', action='store_true', default=False,
                     help='print pointwise feasibility warnings')
-parser.add_argument('-problem', choices=['poisson', 'plap', 'sia'], metavar='X', default='poisson',
+parser.add_argument('-problem', choices=['poisson', 'plap', 'sia'],
+                    metavar='X', default='poisson',
                     help='determines obstacle problem (default: %(default)s)')
 parser.add_argument('-random', action='store_true', default=False,
                     help='make a smooth random perturbation of the obstacle')
