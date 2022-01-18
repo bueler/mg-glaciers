@@ -261,10 +261,14 @@ linear = (args.problem == 'poisson')
 
 # do F-cycle first if requested; counts as first iterate
 if args.ni:
+    if args.monitor:
+        print('  ---- nested iteration ----')
     if linear:
         uu = mcdlfcycle(args, obsprob, levels-1, hierarchy)
     else:
         uu = mcdnfcycle(args, obsprob, levels-1, hierarchy)
+    if args.monitor:
+        print('  --------------------------')
 
 # apply sweeps of fine-level smoother (versus mcdXsolver())
 def sweepssolver(args, obsprob, mesh, ellf, phi, w, monitor,

@@ -29,10 +29,11 @@ class ObstacleMonitor():
         self.s = 0
 
     def inactiveresidual(self, w, ell, phi, ireps=1.0e-10):
-        '''Compute the values of the residual for w at nodes where the constraint
-        is NOT active.  Note that where the constraint is active the residual F(w)
-        in the complementarity problem is allowed to have any positive value, and
-        only the residual at inactive nodes is relevant to convergence.'''
+        '''Compute the values of the residual for w at nodes where the
+        constraint is NOT active.  Note that where the constraint is active the
+        residual F(w) in the complementarity problem is allowed to have any
+        positive value, and only the residual at inactive nodes is relevant to
+        convergence.'''
         F = self.obsprob.residual(self.mesh, w, ell)
         F[w < phi + ireps] = np.minimum(F[w < phi + ireps], 0.0)
         return F
