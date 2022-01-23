@@ -4,6 +4,7 @@ __all__ = ['VisObstacle']
 
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 from monitor import ObstacleMonitor
 
 # better defaults for graphs
@@ -131,14 +132,21 @@ class VisObstacle():
         assert self.hierarchy[-1].m == self.mesh.m
         plt.figure(figsize=(15.0, 10.0))
         J = len(self.hierarchy) - 1
+        xscale = 1.0 if self.mesh.xmax < 2000.0 else 1000.0
+        style = ['k.--','k.:']
         for j in range(J):
-            plt.plot(self.hierarchy[j].xx(), self.hierarchy[j].chi,
-                     'k.--', ms=10.0, label=r'$\chi^{%d}$' % j)
-        plt.plot(self.mesh.xx(), self.mesh.chi, 'k.-',
+            plt.plot(self.hierarchy[j].xx()/xscale, self.hierarchy[j].chi,
+                     style[np.mod(j,2)], ms=10.0, label=r'$\chi^{%d}$' % j)
+        plt.plot(self.mesh.xx()/xscale, self.mesh.chi, 'k.-',
                  ms=14.0, linewidth=3.0,
                  label=r'$\chi^{%d} = \varphi^{%d} - w^{%d}$' % (J, J, J))
-        plt.legend(fontsize=24.0, frameon=False)
+        plt.legend(fontsize=28.0, frameon=False, loc='lower left')
         plt.xlabel('x')
+        if self.mesh.xmax >= 2000.0:
+            plt.xlabel('x  (km)', fontsize=24.0)
+            plt.xticks([0.0,300.0,600.0,900.0,1200.0,1500.0,1800.0], fontsize=24.0)
+            plt.ylabel('z  (m)', fontsize=24.0)
+            plt.yticks([-3000.0,-2000.0,-1000.0,0.0], fontsize=24.0)
         _output(filename, 'hierarchical decomposition')
 
     def decomposition_plain(self, filename=''):
@@ -146,14 +154,21 @@ class VisObstacle():
         assert self.hierarchy[-1].m == self.mesh.m
         plt.figure(figsize=(15.0, 10.0))
         J = len(self.hierarchy) - 1
+        xscale = 1.0 if self.mesh.xmax < 2000.0 else 1000.0
+        style = ['k.--','k.:']
         for j in range(J):
-            plt.plot(self.hierarchy[j].xx(), self.hierarchy[j].chi,
-                     'k.--', ms=10.0, label=r'$\chi^{%d}$' % j)
-        plt.plot(self.mesh.xx(), self.mesh.chi, 'k.-',
+            plt.plot(self.hierarchy[j].xx()/xscale, self.hierarchy[j].chi,
+                     style[np.mod(j,2)], ms=10.0, label=r'$\chi^{%d}$' % j)
+        plt.plot(self.mesh.xx()/xscale, self.mesh.chi, 'k.-',
                  ms=14.0, linewidth=3.0,
                  label=r'$\chi^{%d} = b^{%d} - s^{%d}$' % (J, J, J))
-        plt.legend(fontsize=24.0, frameon=False)
+        plt.legend(fontsize=28.0, frameon=False, loc='lower left')
         plt.xlabel('x')
+        if self.mesh.xmax >= 2000.0:
+            plt.xlabel('x  (km)', fontsize=24.0)
+            plt.xticks([0.0,300.0,600.0,900.0,1200.0,1500.0,1800.0], fontsize=24.0)
+            plt.ylabel('z  (m)', fontsize=24.0)
+            plt.yticks([-3000.0,-2000.0,-1000.0,0.0], fontsize=24.0)
         plt.axis('off')
         _output(filename, 'hierarchical decomposition')
 
@@ -162,6 +177,7 @@ class VisObstacle():
         assert self.hierarchy[-1].m == self.mesh.m
         plt.figure(figsize=(15.0, 10.0))
         J = len(self.hierarchy) - 1
+        xscale = 1.0 if self.mesh.xmax < 2000.0 else 1000.0
         for j in range(J, -1, -1):
             z = self.hierarchy[j].chi
             for k in range(j, J):
@@ -172,12 +188,17 @@ class VisObstacle():
             else:
                 chilabel = r'level $%d$' % j   # i.e. phi - chi^j
                 chistyle = 'k--'
-            plt.plot(self.mesh.xx(), self.phi - z, chistyle,
+            plt.plot(self.mesh.xx()/xscale, self.phi - z, chistyle,
                      label=chilabel)
-        plt.plot(self.mesh.xx(), self.phi, 'k',
+        plt.plot(self.mesh.xx()/xscale, self.phi, 'k',
                  label=r'$\varphi^{%d}$' % J, linewidth=4.0)
-        plt.legend(fontsize=24.0, frameon=False)
+        plt.legend(fontsize=28.0, frameon=False, loc='upper right')
         plt.xlabel('x')
+        if self.mesh.xmax >= 2000.0:
+            plt.xlabel('x  (km)', fontsize=24.0)
+            plt.xticks([0.0,300.0,600.0,900.0,1200.0,1500.0,1800.0], fontsize=24.0)
+            plt.ylabel('z  (m)', fontsize=24.0)
+            plt.yticks([0.0,1000.0,2000.0,3000.0], fontsize=24.0)
         _output(filename, '"ice-like" decomposition')
 
     def generate(self):
