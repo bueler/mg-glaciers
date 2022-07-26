@@ -140,6 +140,7 @@ class VisObstacle():
         plt.plot(self.mesh.xx()/xscale, self.mesh.chi, 'k.-',
                  ms=14.0, linewidth=3.0,
                  label=r'$\chi^{%d} = \varphi^{%d} - w^{%d}$' % (J, J, J))
+                 #label=r'$\chi^{%d} = \gamma^{%d} - w^{%d}$' % (J, J, J))
         plt.legend(fontsize=28.0, frameon=False, loc='lower left')
         plt.xlabel('x')
         if self.mesh.xmax >= 2000.0:
@@ -147,6 +148,7 @@ class VisObstacle():
             plt.xticks([0.0,300.0,600.0,900.0,1200.0,1500.0,1800.0], fontsize=24.0)
             plt.ylabel('z  (m)', fontsize=24.0)
             plt.yticks([-3000.0,-2000.0,-1000.0,0.0], fontsize=24.0)
+        #plt.axis('off')
         _output(filename, 'hierarchical decomposition')
 
     def decomposition_plain(self, filename=''):
