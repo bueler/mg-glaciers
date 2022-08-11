@@ -4,6 +4,11 @@ __all__ = ['VisObstacle']
 
 import matplotlib
 import matplotlib.pyplot as plt
+try:
+    from matplotlib import rc
+    rc('text', usetex=True)
+except ImportError:
+    pass
 import numpy as np
 from monitor import ObstacleMonitor
 
@@ -137,10 +142,12 @@ class VisObstacle():
         for j in range(J):
             plt.plot(self.hierarchy[j].xx()/xscale, self.hierarchy[j].chi,
                      style[np.mod(j,2)], ms=10.0, label=r'$\chi^{%d}$' % j)
+            #plt.plot(self.hierarchy[j].xx()/xscale, self.hierarchy[j].chi,
+            #         style[np.mod(j,2)], ms=10.0, label=r'$\underline\chi^{%d}$' % j)
         plt.plot(self.mesh.xx()/xscale, self.mesh.chi, 'k.-',
                  ms=14.0, linewidth=3.0,
                  label=r'$\chi^{%d} = \varphi^{%d} - w^{%d}$' % (J, J, J))
-                 #label=r'$\chi^{%d} = \gamma^{%d} - w^{%d}$' % (J, J, J))
+                 #label=r'$\underline\chi^{%d} = \underline\gamma^{%d} - w^{%d}$' % (J, J, J))
         plt.legend(fontsize=28.0, frameon=False, loc='lower left')
         plt.xlabel('x')
         if self.mesh.xmax >= 2000.0:
