@@ -55,6 +55,12 @@ Higher resolution and different options for SIA:
 
         $ ./obstacle.py -problem sia -J 11 -jcoarse 1 -irtol 1.0e-7 -ni -nicycles 2 -show -diagnostics -monitor
 
+FEB 2023:  Runs to try for talk:
+
+        ./obstacle.py -problem sia -J 8 -jcoarse 3 -ni -monitor -nicycles 5 -irtol X -show
+
+for X = 1.0e-3, 1.0e-4, 1.0e-5, 5.0e-6, 1.0e-6, 1.0e-7
+
 ## testing
 
 Run software tests:

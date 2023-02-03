@@ -6,7 +6,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 try:
     from matplotlib import rc
-    rc('text', usetex=True)
+    #rc('text', usetex=True)
 except ImportError:
     pass
 import numpy as np
