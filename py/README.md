@@ -43,7 +43,7 @@ Illustration of the MCD method (V-cycles only) for the classical obstacle proble
 
         $ ./obstacle.py -show -diagnostics -J 8
 
-Illustration of the MCD method (F-cycle then V-cycles) for the SIA problem:
+Illustration of the MCDN=FASCD method (F-cycle then V-cycles) for the SIA problem:
 
         $ ./obstacle.py -problem sia -show -diagnostics -J 8 -ni
 
