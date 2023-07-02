@@ -1,5 +1,10 @@
 # mg-glaciers/py/
 
+> **Note**  
+> This Python+1D implementation of "MCDN" (old name) is completely
+> deprecated and replaced by the Python+Firedrake+DMPlex+any-dimension
+> implementation of FASCD in https://bitbucket.org/pefarrell/fascd/src/master/.
+
 These Python examples apply the multilevel constraint decomposition of Tai (2003) on obstacle problems in glaciology.  They support the paper [_Geometric multigrid for glacier modeling_](../paper/).
 
 We solve three one-dimensional problems using basic Python, along with standard libraries including [NumPy](https://numpy.org/) and [Matplotlib](https://matplotlib.org/):
